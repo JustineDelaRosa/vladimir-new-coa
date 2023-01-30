@@ -267,7 +267,9 @@ class UserController extends Controller
                 $restoreUser = $User->withTrashed()->where('id',$id)->restore();
                 $updateStatus = $User->update(['is_active' => true]); 
                 return response()->json(['message' => 'User Successfully Activated!'], 200);
+
             }
+
         }
 
     }

@@ -34,6 +34,7 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::post('setup/module', [SetupController::class, 'createModule']);
     Route::get('setup/get-modules', [SetupController::class, 'getModule']);
     Route::put('setup/get-modules/archived-modules/{id}', [SetupController::class, 'archived']);
+    Route::get('setup/getById/{id}', [SetupController::class, 'getModuleId']);
 
     ///AUTH//
     Route::put('auth/reset/{id}', [AuthController::class, 'resetPassword']);

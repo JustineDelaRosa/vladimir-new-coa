@@ -164,6 +164,12 @@ class SetupController extends Controller
         }
     }
 
+    public function getModuleId(Request $request, $id){
+        $module = Module::query();
+        $getId = $module->where('id', $id)->first();
+        return $getId; 
+    }
+
 
 
  
