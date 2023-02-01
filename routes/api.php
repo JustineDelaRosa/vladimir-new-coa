@@ -30,6 +30,8 @@ Route::post('/auth/login', [AuthController::class, 'Login']);
 
 Route::group(['middleware' => ['auth:sanctum']], function() {
 
+   
+
     //SETUP//
     Route::post('setup/module', [SetupController::class, 'createModule']);
     Route::get('setup/get-modules', [SetupController::class, 'getModule']);
@@ -46,7 +48,7 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::get('users/search', [UserController::class, 'search']);
     Route::put('user/archived-user/{id}', [UserController::class, 'archived']);
     
-    
+  
 });
 
 

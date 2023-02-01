@@ -133,7 +133,6 @@ class SetupController extends Controller
     }
 
     public function archived(Request $request, $id){
-        
         $status = $request->status; 
         $Module = Module::query();
         if(!$Module->withTrashed()->where('id', $id)->exists()){

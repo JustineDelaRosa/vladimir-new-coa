@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
+
 class AuthController extends Controller
 {
     public function Login(Request $request){
@@ -28,10 +29,11 @@ class AuthController extends Controller
             'user' => $user,
             'token' => $token
         ];
+        $cookie =cookie('authcookie',$token);
         return response()->json([
             'data' => $response,
             'message' => 'Successfully Logged In'
-        ], 200);
+        ], 200)->withCookie($cookie);
 
     }
 
