@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Setup\SetupController;
+use App\Http\Controllers\ServiceProviderController;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,6 +38,7 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::get('setup/get-modules', [SetupController::class, 'getModule']);
     Route::put('setup/get-modules/archived-modules/{id}', [SetupController::class, 'archived']);
     Route::get('setup/getById/{id}', [SetupController::class, 'getModuleId']);
+    Route::put('setup/update-modules/{id}',  [SetupController::class, 'updateModule']);
 
     ///AUTH//
     Route::put('auth/reset/{id}', [AuthController::class, 'resetPassword']);
@@ -48,6 +50,11 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::get('users/search', [UserController::class, 'search']);
     Route::put('user/archived-user/{id}', [UserController::class, 'archived']);
     
+
+    //ServiceProvider
+
+    Route::resource('service-provider', ServiceProviderController::class);
+    Route::put('service-provider/archived-service-provider/{id}', [ServiceProviderController::class, 'archived']);
   
 });
 

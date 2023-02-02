@@ -33,12 +33,15 @@ class SetupController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param  int $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         //
+    
+       
+      
     }
 
     /**
@@ -161,6 +164,14 @@ class SetupController extends Controller
                 return response()->json(['message' => 'Module Successfully Activated!'], 200);
             }
         }
+    }
+
+    public function updateModule(Request $request, $id){
+        $id = $request->route('id');
+        
+        $module_name = $request->module_name;
+        $update = Module::where('id', $id)->update(['module_name' => $module_name]);
+        return response()->json(['message' => 'Module Successfully Updated!']);
     }
 
     public function getModuleId(Request $request, $id){
