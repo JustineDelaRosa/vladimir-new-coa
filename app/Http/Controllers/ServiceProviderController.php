@@ -17,7 +17,7 @@ class ServiceProviderController extends Controller
     public function index(Request $request)
     {
         // return $request->method();
-        return $request->url();
+        // return $request->url();
 
         $ServiceProvider = ServiceProvider::get();
         return $ServiceProvider;
@@ -63,6 +63,12 @@ class ServiceProviderController extends Controller
     public function update(ServiceProviderRequest $request, $id)
     {
         $service_provider_name = $request->service_provider_name;
+        if(!ServiceProvider::where('id', $id)->exists()){
+            return response()->json(['message' => 'Service Provider Not Exists!']);
+        }
+        if(ServiceProvider::where('id',$id)->where('service_provider_name', $service_provider_name)->exists()){
+            return response()->json(['message' => 'No Changes'], 200);
+        }
         $update = ServiceProvider::where('id', $id)->update(['service_provider_name' => $service_provider_name]);
         return response()->json(['message' => 'Successfully Updated!'], 200);
     
@@ -111,6 +117,35 @@ class ServiceProviderController extends Controller
         }
 
     }
+
+    public function search(Request $request){
+        $search = $request->query('search');
+        $limit = $request->query('limit');
+        $page = $request->get('page');
+        $status = $request->query('status');
+        if($status == NULL ){
+            $status = 1;
+        }
+        if($status == "active"){
+            $status = 1;
+        }
+        if($status == "deactivated"){
+            $status = 0;
+        }
+        if($status != "active" || $status != "deactivated"){
+            $status = 1;
+        }
+        $ServiceProvider = ServiceProvider::withTrashed()
+        ->where(function($query) use($status){
+            $query->where('is_active', $status);
+        })
+        ->where(function($query) use($search){
+            $query->where('service_provider_name', 'LIKE', "%{$search}%" );
+        })
+        ->orderby('created_at', 'DESC')
+        ->paginate($limit);
+        return $ServiceProvider;
+    } 
 
 
 

@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Setup\SetupController;
+use App\Http\Controllers\MajorCategoryController;
 use App\Http\Controllers\ServiceProviderController;
 
 /*
@@ -28,6 +29,7 @@ Route::post('setup/role', [SetupController::class, 'createRole']);
 Route::resource('user', UserController::class);
 
 Route::post('/auth/login', [AuthController::class, 'Login']);
+Route::get('sedar', [UserController::class, 'validateEmployeeName']);
 
 Route::group(['middleware' => ['auth:sanctum']], function() {
 
@@ -55,6 +57,14 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
 
     Route::resource('service-provider', ServiceProviderController::class);
     Route::put('service-provider/archived-service-provider/{id}', [ServiceProviderController::class, 'archived']);
+    Route::get('service-providers/search', [ServiceProviderController::class, 'search']);
+
+    
+    //major category
+    Route::resource('major-category', MajorCategoryController::class);
+    Route::put('major-category/archived-major-category/{id}', [MajorCategoryController::class, 'archived']);
+    Route::get('major-categories/search', [MajorCategoryController::class, 'search']);
+
   
 });
 

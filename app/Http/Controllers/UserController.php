@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Test;
 use App\Models\User;
+use App\Models\Sedar;
 use App\Models\Module;
 use App\Models\Department;
 use Illuminate\Http\Request;
 use App\Models\Access_Permission;
+use App\Http\Requests\UserRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Crypt;
-use App\Http\Requests\UserRequest;
 
 class UserController extends Controller
 {
@@ -271,6 +272,53 @@ class UserController extends Controller
             }
 
         }
+
+    }
+
+
+    public function validateEmployeeName(Request $request){
+
+
+        $token = '9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4';
+        $cookie = cookie('authcookied',$token);
+        // return response()->json([
+        //     'data' => $response,
+        //     'message' => 'Successfully Logged In'
+        // ], 200)->withCookie($cookie);
+
+
+
+        // $client = new Sedar();
+        // $url = "http://rdfsedar.com/api/data/employees";
+        // $test = $request->headers->set('Authorization', 'Bearer ' .   $cookie);
+        
+        // $response = $client->request('GET', $url, [
+        //     // 'json' => $params,
+        //     'headers' => $token,
+        //     'verify'  => false,
+        // ]);
+
+        // $responseBody = json_decode($response->getBody());
+
+        // return $response;
+
+
+        // $request = Request::create('http://rdfsedar.com/api/data/employees', 'GET');
+        // $request->headers->set('Accept', 'application/json');
+        // $request->headers->set('Authorization', 'Bearer '.$token);
+        // $res = app()->handle($request);
+        // $profile_details = json_decode($res->getContent()); // convert to json object
+    
+    
+        // return response()->json(['profile' =>$profile_details], $res->getStatusCode());
+        $collect = Http::withToken($token)
+        ->accept('application/json')
+        ->get('http://rdfsedar.com/api/data/employees' );
+        $sedar = Sedar::hydrate(array($collect));
+        return Sedar::get();
+
+        
+
 
     }
 
