@@ -29,7 +29,7 @@ Route::post('setup/role', [SetupController::class, 'createRole']);
 Route::resource('user', UserController::class);
 
 Route::post('/auth/login', [AuthController::class, 'Login']);
-Route::get('sedar', [UserController::class, 'validateEmployeeName']);
+// Route::resource('user', UserController::class);
 
 Route::group(['middleware' => ['auth:sanctum']], function() {
 
@@ -51,6 +51,7 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::resource('user', UserController::class);
     Route::get('users/search', [UserController::class, 'search']);
     Route::put('user/archived-user/{id}', [UserController::class, 'archived']);
+    Route::get('test', [UserController::class, 'test']);
     
 
     //ServiceProvider

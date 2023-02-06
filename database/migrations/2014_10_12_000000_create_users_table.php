@@ -19,7 +19,7 @@ class CreateUsersTable extends Migration
             $table->string('first_name');
             $table->string('middle_name');
             $table->string('last_name');
-            $table->unsignedInteger('department_id');
+            $table->string('department');
             $table->string('position');
             $table->string('username');
             $table->string('password');
@@ -27,10 +27,6 @@ class CreateUsersTable extends Migration
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes($column='deleted_at',$precision=0);
-            $table->foreign('department_id')
-            ->references('id')
-            ->on('departments')
-            ->onDelete('cascade');
         });
     }
 

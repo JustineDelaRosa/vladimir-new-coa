@@ -27,7 +27,7 @@ class ServiceProviderRequest extends FormRequest
     protected function prepareForValidation() 
     {
         $this->merge(['service_provider_id' => $this->route()->parameter('service_provider')]);
-        $this->merge(['id' => $this->route()->parameter('id')]);
+        $this->merge(['id' => $this->rute()->parameter('id')]);
         
     }
 

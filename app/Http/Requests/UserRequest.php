@@ -27,7 +27,7 @@ class UserRequest extends FormRequest
             'employee_id' => 'required',
             'first_name' => 'required',
             'middle_name' => 'required',
-            'department_id' => 'required|exists:departments,id',
+            'department' => 'required',
             'position' => 'required',
             'username' => 'required|unique:users,username',
             'access_permission' => 'array'
