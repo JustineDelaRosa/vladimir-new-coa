@@ -6,7 +6,9 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Setup\SetupController;
 use App\Http\Controllers\MajorCategoryController;
+use App\Http\Controllers\MinorCategoryController;
 use App\Http\Controllers\ServiceProviderController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -22,7 +24,7 @@ use App\Http\Controllers\ServiceProviderController;
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //     return $request->user();
 
-Route::post('setup/department', [SetupController::class, 'createDepartment']);
+// Route::post('setup/department', [SetupController::class, 'createDepartment']);
 Route::post('setup/role', [SetupController::class, 'createRole']);
 
 
@@ -66,6 +68,10 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::put('major-category/archived-major-category/{id}', [MajorCategoryController::class, 'archived']);
     Route::get('major-categories/search', [MajorCategoryController::class, 'search']);
 
+
+    //minor category
+    Route::resource('minor-category', MinorCategoryController::class);
+    Route::put('minor-category/archived-minor-category/{id}', [MinorCategoryController::class, 'archived']);
   
 });
 

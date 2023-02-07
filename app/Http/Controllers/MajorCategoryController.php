@@ -44,7 +44,7 @@ class MajorCategoryController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(MajorCategoryRequest $request,$id)
     {
         $getById = MajorCategory::where('id', $id)->first();
         return $getById;

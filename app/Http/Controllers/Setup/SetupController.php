@@ -81,17 +81,17 @@ class SetupController extends Controller
     }
 
 
-    // public function createRole(Request $request){
-    //     $role_name = $request->role_name;
-    //     if(Role::where('role_name', $role_name)->exists()){
-    //         return response()->json(['message' => 'Role is already Exists!!'], 409);
-    //     }
-    //     $create = Role::create([
-    //         'role_name' => $role_name
-    //     ]);
-    //     return response()->json(['message' => 'Successfully Created', 'data' => $create], 201);
+    public function createRole(Request $request){
+        $role_name = $request->role_name;
+        if(Role::where('role_name', $role_name)->exists()){
+            return response()->json(['message' => 'Role is already Exists!!'], 409);
+        }
+        $create = Role::create([
+            'role_name' => $role_name
+        ]);
+        return response()->json(['message' => 'Successfully Created', 'data' => $create], 201);
         
-    // }
+    }
 
     public function createModule(Request $request){
         $module_name = $request->module_name;

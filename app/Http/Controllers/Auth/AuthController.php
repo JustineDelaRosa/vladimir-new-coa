@@ -13,7 +13,7 @@ class AuthController extends Controller
     public function Login(Request $request){
         $username = $request->username;
         $password = $request->password;
-        $user = User::with('modules')->with('department')->where('username', $username)->first();
+        $user = User::with('modules')->where('username', $username)->first();
         if(!$user){
             return response()->json(['message' => 'Username does not Exists!'], 404);
         }
