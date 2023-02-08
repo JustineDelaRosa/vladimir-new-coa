@@ -45,7 +45,7 @@ class MajorCategoryRequest extends FormRequest
             if($this->isMethod('put') &&  ($this->route()->parameter('major_category'))){
                 $id = $this->route()->parameter('major_category');
                 return [
-                'major_category_id' => 'exists:major_categories,id,deleted_at,NULL',
+                // 'major_category_id' => 'exists:major_categories,id,deleted_at,NULL',
                 'major_category_name' => ['required',Rule::unique('major_categories','major_category_name')->ignore($id)]
                     
                 ];
@@ -53,14 +53,14 @@ class MajorCategoryRequest extends FormRequest
 
             if($this->isMethod('get') && ($this->route()->parameter('major_category'))){
                 return [
-                    'major_category_id' => 'exists:major_categories,id,deleted_at,NULL'
+                    // 'major_category_id' => 'exists:major_categories,id,deleted_at,NULL'
                 ];
             }
     
             if($this->isMethod('put') && ($this->route()->parameter('id'))){
                 return [
                     'status' => 'required|boolean',
-                    'id' => 'exists:major_categories,id',
+                    // 'id' => 'exists:major_categories,id',
                 ];
             }
 

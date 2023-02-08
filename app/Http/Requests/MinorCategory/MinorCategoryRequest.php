@@ -47,7 +47,7 @@ class MinorCategoryRequest extends FormRequest
             if($this->isMethod('put') &&  ($this->route()->parameter('minor_category'))){
                 $id = $this->route()->parameter('minor_category');
                 return [
-                'minor_category_id' => 'exists:minor_categories,id,deleted_at,NULL',
+                // 'minor_category_id' => 'exists:minor_categories,id,deleted_at,NULL',
                 'minor_category_name' => ['required',Rule::unique('minor_categories','minor_category_name')->ignore($id)],
                 'urgency_level' => 'required|in:HIGH,MEDIUM,LOW',
                 'personally_assign' => 'required|boolean',
@@ -58,14 +58,14 @@ class MinorCategoryRequest extends FormRequest
 
             if($this->isMethod('get') && ($this->route()->parameter('minor_category'))){
                 return [
-                    'minor_category_id' => 'exists:minor_categories,id,deleted_at,NULL'
+                    // 'minor_category_id' => 'exists:minor_categories,id,deleted_at,NULL'
                 ];
             }
     
             if($this->isMethod('put') && ($this->route()->parameter('id'))){
                 return [
                     'status' => 'required|boolean',
-                    'id' => 'exists:minor_categories,id',
+                   // 'id' => 'exists:minor_categories,id',
                 ];
             }
     

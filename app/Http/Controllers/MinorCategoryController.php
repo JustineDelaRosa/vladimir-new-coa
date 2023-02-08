@@ -15,7 +15,8 @@ class MinorCategoryController extends Controller
      */
     public function index()
     {
-        //
+        $MinorCategory = MinorCategory::get();
+        return $MinorCategory;
     }
 
     /**
@@ -47,10 +48,14 @@ class MinorCategoryController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show(MinorCategoryRequest $request,$id)
-    {
-       $MinorCategory = MinorCategory::where('id', $id)->first();
-       return $MinorCategory;
+    public function show($id)
+    {  
+       $MinorCategory = MinorCategory::query();
+       if(!$MinorCategory->where('id', $id)->exists()){
+        return response()->json(['error' => 'Minor Category Route Not Found'], 404);
+       }
+       return $MinorCategory->where('id', $id)->first();
+      
     }
 
     /**
@@ -66,9 +71,9 @@ class MinorCategoryController extends Controller
         $urgency_level = $request->urgency_level;
         $personally_assign = $request->personally_assign;
         $evaluate_in_every_movement = $request->evaluate_in_every_movement;
-        // if(!MinorCategory::where('id', $id)->exists()){
-        //     return response()->json(['message' => 'The given data was invalid.', 'errors' => ['id'=> 'The selected minor category id is invalid']],422);
-        // }
+        if(!MinorCategory::where('id', $id)->exists()){
+            return response()->json(['error' => 'Minor Category Route Not Found'], 404);
+        }
         if(MinorCategory::where('id',$id)
         ->where([
             'minor_category_name' => $minor_category_name,
@@ -107,7 +112,7 @@ class MinorCategoryController extends Controller
         $status = $request->status; 
         $MinorCategory = MinorCategory::query();
         if(!$MinorCategory->withTrashed()->where('id', $id)->exists()){
-            return response()->json(['message' => 'The given data was invalid.', 'errors' => ['id'=>['Minor CategoryNot Found']]], 404);
+            return response()->json(['error' => 'Minor Category Route Not Found'], 404);
         }
 
         if($status == false){
@@ -134,4 +139,35 @@ class MinorCategoryController extends Controller
         }
 
     }
+
+    public function search(Request $request){
+        $search = $request->query('search');
+        $limit = $request->query('limit');
+        $page = $request->get('page');
+        $status = $request->query('status');
+        if($status == NULL ){
+            $status = 1;
+        }
+        if($status == "active"){
+            $status = 1;
+        }
+        if($status == "deactivated"){
+            $status = 0;
+        }
+        if($status != "active" || $status != "deactivated"){
+            $status = 1;
+        }
+        $MinorCategory = MinorCategory::withTrashed()
+        ->where(function($query) use($status){
+            $query->where('is_active', $status);
+        })
+        ->where(function($query) use($search){
+            $query->where('minor_category_name', 'LIKE', "%{$search}%" )
+            ->where('urgency_level', 'LIKE', "%{$search}%");
+        })
+        ->orderby('created_at', 'DESC')
+        ->paginate($limit);
+        return $MinorCategory;
+    }
+
 }

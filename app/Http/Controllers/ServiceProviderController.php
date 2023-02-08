@@ -49,8 +49,11 @@ class ServiceProviderController extends Controller
      */
     public function show(ServiceProviderRequest $request, $id)
     {
-        $getById = ServiceProvider::where('id', $id)->first();
-        return $getById;
+       $ServiceProvider = ServiceProvider::query();
+       if(!$ServiceProvider->where('id', $id)->exists()){
+        return response()->json(['error' => 'Service ProviderRoute Not Found'], 404);
+       }
+       return $ServiceProvider->where('id', $id)->first();
     }
 
     /**
@@ -64,7 +67,7 @@ class ServiceProviderController extends Controller
     {
         $service_provider_name = $request->service_provider_name;
         if(!ServiceProvider::where('id', $id)->exists()){
-            return response()->json(['message' => 'Service Provider Not Exists!']);
+            return response()->json(['error' => 'Service Provider Route Not Found'], 404);
         }
         if(ServiceProvider::where('id',$id)->where('service_provider_name', $service_provider_name)->exists()){
             return response()->json(['message' => 'No Changes'], 200);
@@ -90,7 +93,7 @@ class ServiceProviderController extends Controller
         $status = $request->status; 
         $ServiceProvider = ServiceProvider::query();
         if(!$ServiceProvider->withTrashed()->where('id', $id)->exists()){
-            return response()->json(['message' => 'The given data was invalid.', 'errors' => ['id'=>['Service Provider Not Found']]], 404);
+            return response()->json(['error' => 'Service Provider Route Not Found'], 404);
         }
 
         if($status == false){

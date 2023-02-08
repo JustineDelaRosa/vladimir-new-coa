@@ -46,8 +46,11 @@ class MajorCategoryController extends Controller
      */
     public function show(MajorCategoryRequest $request,$id)
     {
-        $getById = MajorCategory::where('id', $id)->first();
-        return $getById;
+        $MajorCategory = MajorCategory::query();
+        if(!$MajorCategory->where('id', $id)->exists()){
+            return response()->json(['error' => 'Major Category Route Not Found'], 404);
+        }
+       return $MajorCategory->where('id', $id)->first();
     }
 
     /**
@@ -57,11 +60,11 @@ class MajorCategoryController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(MajorCategoryRequest $request, $id)
+    public function update(MajorCategoryRequest $request,$id)
     {
         $major_category_name = $request->major_category_name;
         if(!MajorCategory::where('id', $id)->exists()){
-            return response()->json(['message' => 'Major Category Not Exists!']);
+            return response()->json(['error' => 'Major Category Route Not Found'], 404);
         }
         if(MajorCategory::where('id',$id)->where('major_category_name', $major_category_name)->exists()){
             return response()->json(['message' => 'No Changes'], 200);
@@ -87,8 +90,8 @@ class MajorCategoryController extends Controller
         $status = $request->status; 
         $MajorCategory = MajorCategory::query();
         if(!$MajorCategory->withTrashed()->where('id', $id)->exists()){
-            return response()->json(['message' => 'The given data was invalid.', 'errors' => ['id'=>['Major Category Not Found']]], 404);
-        }
+            return response()->json(['error' => 'Major Category Route Not Found'], 404);
+        } 
 
         if($status == false){
             if(!MajorCategory::where('id',$id)->where('is_active', true)->exists()){

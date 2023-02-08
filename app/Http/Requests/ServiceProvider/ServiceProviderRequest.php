@@ -44,7 +44,7 @@ class ServiceProviderRequest extends FormRequest
         if($this->isMethod('put') &&  ($this->route()->parameter('service_provider'))){
             $id = $this->route()->parameter('service_provider');
            return [
-            'service_provider_id' => 'exists:service_providers,id,deleted_at,NULL',
+            // 'service_provider_id' => 'exists:service_providers,id,deleted_at,NULL',
             'service_provider_name' => ['required',Rule::unique('service_providers','service_provider_name')->ignore($id)]
                
             ];
@@ -52,13 +52,13 @@ class ServiceProviderRequest extends FormRequest
 
         if($this->isMethod('get') && ($this->route()->parameter('service_provider'))){
             return [
-                'service_provider_id' => 'exists:service_providers,id,deleted_at,NULL'
+                // 'service_provider_id' => 'exists:service_providers,id,deleted_at,NULL'
             ];
         }
 
         if($this->isMethod('put') && ($this->route()->parameter('id'))){
             return [
-                'id' => 'exists:service_providers,id',
+                // 'id' => 'exists:service_providers,id',
                 'status' => 'required|boolean'
             ];
         }
