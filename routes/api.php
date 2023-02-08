@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Setup\SetupController;
+use App\Http\Controllers\CategoryListController;
 use App\Http\Controllers\MajorCategoryController;
 use App\Http\Controllers\MinorCategoryController;
 use App\Http\Controllers\ServiceProviderController;
@@ -73,6 +74,8 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::resource('minor-category', MinorCategoryController::class);
     Route::put('minor-category/archived-minor-category/{id}', [MinorCategoryController::class, 'archived']);
     Route::get('minor-categories/search', [MinorCategoryController::class, 'search']);
+
+    Route::resource('category-list', CategoryListController::class);
   
 });
 
