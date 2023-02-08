@@ -11,6 +11,7 @@ class MajorCategory extends Model
     use HasFactory, SoftDeletes;
     protected $fillable = [
         'major_category_name',
-        'is_active'
+        'is_active',
+        'classification'
     ];
 }

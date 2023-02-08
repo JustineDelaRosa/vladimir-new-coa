@@ -38,7 +38,8 @@ class MajorCategoryRequest extends FormRequest
         if($this->isMethod('post')){
         
             return [
-                'major_category_name' => 'required|unique:major_categories,major_category_name'
+                'major_category_name' => 'required|unique:major_categories,major_category_name',
+                'classification' => 'required|in:small_tools,machinery_&_equipment,mobile_phone,vechicle'
             ];
             }
     
@@ -46,7 +47,8 @@ class MajorCategoryRequest extends FormRequest
                 $id = $this->route()->parameter('major_category');
                 return [
                 // 'major_category_id' => 'exists:major_categories,id,deleted_at,NULL',
-                'major_category_name' => ['required',Rule::unique('major_categories','major_category_name')->ignore($id)]
+                'major_category_name' => ['required',Rule::unique('major_categories','major_category_name')->ignore($id)],
+                'classification' => 'required|in:small_tools,machinery_&_equipment,mobile_phone,vechicle'
                     
                 ];
             }

@@ -29,9 +29,11 @@ class MajorCategoryController extends Controller
     public function store(MajorCategoryRequest $request)
     {
         $major_category_name = $request->major_category_name;
+        $classification = $request->classification;
         $MajorCategory = MajorCategory::query();
         $create = $MajorCategory->create([
             "major_category_name" => $major_category_name,
+            "classification" => $classification,
             "is_active" => 1
         ]);
         
@@ -63,13 +65,18 @@ class MajorCategoryController extends Controller
     public function update(MajorCategoryRequest $request,$id)
     {
         $major_category_name = $request->major_category_name;
+        $classification = $request->classification;
         if(!MajorCategory::where('id', $id)->exists()){
             return response()->json(['error' => 'Major Category Route Not Found'], 404);
         }
         if(MajorCategory::where('id',$id)->where('major_category_name', $major_category_name)->exists()){
             return response()->json(['message' => 'No Changes'], 200);
         }
-        $update = MajorCategory::where('id', $id)->update(['major_category_name' => $major_category_name]);
+        $update = MajorCategory::where('id', $id)
+        ->update([
+            'major_category_name' => $major_category_name,
+            'classification' => $classification
+        ]);
         return response()->json(['message' => 'Successfully Updated!'], 200);
     }
 
