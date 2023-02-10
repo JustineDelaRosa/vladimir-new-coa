@@ -14,4 +14,7 @@ class MajorCategory extends Model
         'is_active',
         'classification'
     ];
+    protected $casts = [
+        'is_active' => 'boolean'
+    ];
 }

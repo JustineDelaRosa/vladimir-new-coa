@@ -13,4 +13,7 @@ class ServiceProvider extends Model
         'service_provider_name',
         'is_active'
     ];
+    protected $casts = [
+        'is_active' => 'boolean'
+    ];
 }

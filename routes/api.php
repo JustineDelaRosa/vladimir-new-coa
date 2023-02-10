@@ -76,6 +76,8 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::get('minor-categories/search', [MinorCategoryController::class, 'search']);
 
     Route::resource('category-list', CategoryListController::class);
+    Route::put('category-list/archived-category-list/{id}', [CategoryListController::class, 'archived']);
+    Route::get('category-lists/search', [CategoryListController::class, 'search']);
   
 });
 

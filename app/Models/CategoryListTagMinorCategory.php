@@ -6,17 +6,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class MinorCategory extends Model
+class CategoryListTagMinorCategory extends Model
 {
     use HasFactory,SoftDeletes;
     protected $fillable = [
-        'minor_category_name',
-        'is_active',
-        'urgency_level',
-        'personally_assign',
-        'evaluate_in_every_movement'
+        'category_list_id',
+        'minor_category_id',
+        'is_active'
     ];
     protected $hidden = [
+        'category_list_id',
+        'minor_category_id',
         'updated_at',
         'created_at',
         'deleted_at'
@@ -25,4 +25,8 @@ class MinorCategory extends Model
     protected $casts = [
         'is_active' => 'boolean'
     ];
+
+    public function minorCategory() {
+        return $this->belongsTo(MinorCategory::class, 'minor_category_id','id');
+    }
 }

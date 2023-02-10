@@ -20,8 +20,16 @@ class CategoryList extends Model
         'service_provider_id',
         'major_category_id',
         'minor_category_id',
-        
+        'updated_at',
+        'created_at',
+        'deleted_at'
     ];
+
+    protected $casts = [
+        'is_active' => 'boolean'
+    ];
+
+    
 
 
     public function serviceProvider() {
@@ -32,8 +40,8 @@ class CategoryList extends Model
         return $this->belongsTo(MajorCategory::class, 'major_category_id','id');
     }
 
-    public function minorCategory() {
-        return $this->belongsTo(MinorCategory::class, 'minor_category_id','id');
+    public function categoryListTag() {
+        return $this->hasMany(CategoryListTagMinorCategory::class, 'category_list_id','id');
     }
 }
 
