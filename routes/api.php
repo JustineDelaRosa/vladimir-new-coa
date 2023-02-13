@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Setup\SetupController;
 use App\Http\Controllers\CategoryListController;
@@ -78,6 +79,10 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::resource('category-list', CategoryListController::class);
     Route::put('category-list/archived-category-list/{id}', [CategoryListController::class, 'archived']);
     Route::get('category-lists/search', [CategoryListController::class, 'search']);
+
+    Route::resource('supplier', SupplierController::class);
+    Route::put('supplier/archived-supplier/{id}', [SupplierController::class, 'archived']);
+    Route::get('suppliers/search', [SupplierController::class, 'search']);
   
 });
 
