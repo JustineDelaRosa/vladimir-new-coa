@@ -169,20 +169,21 @@ class CategoryListController extends Controller
         ->with('serviceProvider')
         ->with('majorCategory')
         ->with('categoryListTag.minorCategory')
-        // ->where(function($query) use($status){
-        //     $query->where('is_active', $status);
-        // })
-        ->where('is_active', $status)
-        ->orWhereHas('serviceProvider', function($q) use($search){
-            $q->where('service_provider_name', 'like', '%'.$search.'%');
+        ->where(function($query) use($status){
+            $query->where('is_active', 'LIKE', "%{$status}%" );
         })
-        ->orWhereHas('majorCategory', function($q) use($search){
-            $q->where('major_category_name', 'like', '%'.$search.'%')
-            ->where('classification', 'like', '%'.$search.'%');
-        })
-        ->orWhereHas('categoryListTag.minorCategory', function($q) use($search){
-            $q->where('minor_category_name', 'like', '%'.$search.'%')
-            ->where('urgency_level', 'like', '%'.$search.'%');
+        ->where(function($query) use($search){
+            $query->orWhereHas('serviceProvider', function($q) use($search){
+                $q->where('service_provider_name', 'like', '%'.$search.'%');
+            })
+            ->orWhereHas('majorCategory', function($q) use($search){
+                $q->where('major_category_name', 'like', '%'.$search.'%')
+                ->where('classification', 'like', '%'.$search.'%');
+            })
+            ->orWhereHas('categoryListTag.minorCategory', function($q) use($search){
+                $q->where('minor_category_name', 'like', '%'.$search.'%')
+                ->where('urgency_level', 'like', '%'.$search.'%');
+            });
         })
         ->orderby('created_at', 'DESC')
         ->paginate($limit);

@@ -48,15 +48,15 @@ class UserController extends Controller
         // $accessPermissionConvertedToString = implode(", ",$access_permission);
 
         $user = User::query();
-        $role = Role::query();
+        // $role = Role::query();
         $access_permission = Access_Permission::query();
         
         if($user->where('employee_id', $employee_id)->exists()){
             return response()->json(['message'=>'User Already Exists!'], 409);
         }
-        if(!$role->where('id', $department_id)->exists()){
-            return response()->json(['message'=>'Department Not Exists!'], 404);
-        }
+        // if(!$role->where('id', $department_id)->exists()){
+        //     return response()->json(['message'=>'Department Not Exists!'], 404);
+        // }
         $createUser = $user->create([
             'employee_id' => $employee_id,
             'first_name' => $first_name,
@@ -67,7 +67,7 @@ class UserController extends Controller
             'username' => $username,
             'password' => Crypt::encryptString($username),
             'is_active' => 1,
-            'role_id'=> $role_id
+            // 'role_id'=> $role_id
         ]);
         $userid = $createUser->id;
         $moduleNotExist =[];
