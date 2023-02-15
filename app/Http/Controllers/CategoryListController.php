@@ -174,15 +174,15 @@ class CategoryListController extends Controller
         })
         ->where(function($query) use($search){
             $query->orWhereHas('serviceProvider', function($q) use($search){
-                $q->where('service_provider_name', 'like', '%'.$search.'%');
+                $q->orWhere('service_provider_name', 'like', '%'.$search.'%');
             })
             ->orWhereHas('majorCategory', function($q) use($search){
                 $q->where('major_category_name', 'like', '%'.$search.'%')
-                ->where('classification', 'like', '%'.$search.'%');
+                ->orWhere('classification', 'like', '%'.$search.'%');
             })
             ->orWhereHas('categoryListTag.minorCategory', function($q) use($search){
                 $q->where('minor_category_name', 'like', '%'.$search.'%')
-                ->where('urgency_level', 'like', '%'.$search.'%');
+                ->orWhere('urgency_level', 'like', '%'.$search.'%');
             });
         })
         ->orderby('created_at', 'DESC')
