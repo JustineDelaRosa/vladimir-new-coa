@@ -165,26 +165,28 @@ class CategoryListController extends Controller
         if($status != "active" || $status != "deactivated"){
             $status = 1;
         }
-        $CategoryList = CategoryList::withTrashed()
-        ->with('serviceProvider')
+        $CategoryList = CategoryList::with('serviceProvider')
         ->with('majorCategory')
         ->with('categoryListTag.minorCategory')
+        ->withTrashed()
         ->where(function($query) use($status){
             $query->where('is_active', 'LIKE', "%{$status}%" );
         })
         ->where(function($query) use($search){
-            $query->orWhereHas('serviceProvider', function($q) use($search){
-                $q->orWhere('service_provider_name', 'like', '%'.$search.'%');
+            $query->where('id', 'like', "%{$search}%")
+            ->orWhereHas('serviceProvider', function($q1) use($search){
+                $q1->where('service_provider_name', 'like', '%'.$search.'%');
             })
-            ->orWhereHas('majorCategory', function($q) use($search){
-                $q->where('major_category_name', 'like', '%'.$search.'%')
+            ->orWhereHas('majorCategory', function($q2) use($search){
+                $q2->where('major_category_name', 'like', '%'.$search.'%')
                 ->orWhere('classification', 'like', '%'.$search.'%');
             })
-            ->orWhereHas('categoryListTag.minorCategory', function($q) use($search){
-                $q->where('minor_category_name', 'like', '%'.$search.'%')
+            ->orWhereHas('categoryListTag.minorCategory', function($q3) use($search){
+                $q3->where('minor_category_name', 'like', '%'.$search.'%')
                 ->orWhere('urgency_level', 'like', '%'.$search.'%');
             });
         })
+       
         ->orderby('created_at', 'DESC')
         ->paginate($limit);
         return $CategoryList;
