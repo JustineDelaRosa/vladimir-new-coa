@@ -44,7 +44,7 @@ class RoleManagementRequest extends FormRequest
             if($this->isMethod('put') && ($this->route()->parameter('id'))){
                 return [
                     'status' => 'required|boolean',
-                    // 'id' => 'exists:major_categories,id',
+                 
                 ];
             }
     }
