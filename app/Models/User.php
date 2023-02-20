@@ -20,14 +20,12 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'employee_id',
-        'first_name',
-        'middle_name',
-        'last_name',
-        'department',
-        'position',
+        'firstname',
+        'lastname',
         'username',
         'password',
-        'is_active'
+        'is_active',
+        'role_id'
     ];
 
     /**
@@ -36,10 +34,12 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
+        // 'password',
+        // 'remember_token',
+        // 'pivot',
+        // 'department_id'
         'password',
         'remember_token',
-        'pivot',
-        'department_id'
     ];
 
     /**
@@ -52,16 +52,19 @@ class User extends Authenticatable
         'is_active' => 'boolean',
         'status' => 'boolean',
     ];
-    // protected $guarded = [];
-
-   
 
 
-    public function modules() {
-        return $this->belongsToMany(Module::class, 'access__permissions');
+    // public function modules() {
+    //     return $this->belongsToMany(Module::class, 'access__permissions');
+    // }
+
+    // public function department(){
+    //     return $this->belongsTo(Department::class)->select('id', 'department_name');
+    // }
+
+    public function role(){
+        return $this->belongsTo(RoleManagement::class, 'role_id','id');
     }
 
-    public function department(){
-        return $this->belongsTo(Department::class)->select('id', 'department_name');
-    }
+
 }

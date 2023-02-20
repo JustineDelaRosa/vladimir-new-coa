@@ -16,17 +16,19 @@ class CreateUsersTable extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->increments('id');
             $table->string('employee_id');
-            $table->string('first_name');
-            $table->string('middle_name');
-            $table->string('last_name');
-            $table->string('department');
-            $table->string('position');
+            $table->string('firstname');
+            $table->string('lastname');
             $table->string('username');
             $table->string('password');
             $table->boolean('is_active');
+            $table->unsignedInteger('role_id');
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes($column='deleted_at',$precision=0);
+            $table->foreign('role_id')
+            ->references('id')
+            ->on('role_management')
+            ->onDelete('cascade');
         });
     }
 

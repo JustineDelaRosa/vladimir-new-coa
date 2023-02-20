@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CategoryList;
 use Illuminate\Http\Request;
 use App\Models\ServiceProvider;
-use App\Http\Requests\ServiceProvider\ServiceProviderRequest;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\ServiceProvider\ServiceProviderRequest;
 
 class ServiceProviderController extends Controller
 {
@@ -101,9 +102,12 @@ class ServiceProviderController extends Controller
                 return response()->json(['message' => 'No Changes'], 200);
             }
             else{
-                $updateStatus = $ServiceProvider->where('id', $id)->update(['is_active' => false]);
-                $ServiceProvider->where('id',$id)->delete();
-                return response()->json(['message' => 'Service Provider Successfully Deactived!'], 200);
+                if(!CategoryList::where('service_provider_id', $id)->exists()){
+                    $updateStatus = $ServiceProvider->where('id', $id)->update(['is_active' => false]);
+                    $ServiceProvider->where('id',$id)->delete();
+                    return response()->json(['message' => 'Service Provider Successfully Deactived!'], 200);
+                }
+                return response()->json(['message' => 'Unable to Archived!, Service Provider was tagged!']);
             }
         }
         if($status == true){
@@ -114,7 +118,6 @@ class ServiceProviderController extends Controller
                 $restoreUser = $ServiceProvider->withTrashed()->where('id',$id)->restore();
                 $updateStatus = $ServiceProvider->update(['is_active' => true]); 
                 return response()->json(['message' => 'ServiceProvider Successfully Activated!'], 200);
-
             }
 
         }

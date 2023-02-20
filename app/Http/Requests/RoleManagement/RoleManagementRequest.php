@@ -1,11 +1,10 @@
 <?php
 
-namespace App\Http\Requests;
-use Illuminate\Validation\Rule;
+namespace App\Http\Requests\RoleManagement;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UserRequest extends FormRequest
+class RoleManagementRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -27,20 +26,17 @@ class UserRequest extends FormRequest
         if($this->isMethod('post')){
         
             return [
-                'employee_id' => 'required|unique:users,employee_id',
-                'firstname' => 'required',
-                'lastname' => 'required',
-                'username' => 'required|unique:users,username',
-                'role_id' => 'required|exists:role_management,id'
+                'role_name' => 'required|unique:role_management,role_name',
+                'access_permission' => 'required|array'
             ];
             }
     
-            if($this->isMethod('put') &&  ($this->route()->parameter('user'))){
-                $id = $this->route()->parameter('user');
+            if($this->isMethod('put') &&  ($this->route()->parameter('role_management'))){
+                $id = $this->route()->parameter('role_management');
                 return [
                 // 'major_category_id' => 'exists:major_categories,id,deleted_at,NULL',
-                'username' => ['required',Rule::unique('users','username')->ignore($id)],
-                'role_id' => 'required|exists:role_management,id'
+                'role_name' => ['required',Rule::unique('role_management','role_name')->ignore($id)],
+                'access_permission' => 'required|array'
                     
                 ];
             }

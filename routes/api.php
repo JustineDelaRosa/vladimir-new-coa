@@ -10,6 +10,7 @@ use App\Http\Controllers\CategoryListController;
 use App\Http\Controllers\MajorCategoryController;
 use App\Http\Controllers\MinorCategoryController;
 use App\Http\Controllers\ServiceProviderController;
+use App\Http\Controllers\Setup\RoleManagementController;
 
 
 /*
@@ -30,7 +31,10 @@ use App\Http\Controllers\ServiceProviderController;
 Route::post('setup/role', [SetupController::class, 'createRole']);
 
 
-Route::resource('user', UserController::class);
+// Route::resource('user', UserController::class);
+Route::resource('role-management', RoleManagementController::class);
+Route::put('role-management/archived-role-management/{id}', [RoleManagementController::class, 'archived']);
+Route::get('search/role-management', [RoleManagementController::class, 'search']);
 
 Route::post('/auth/login', [AuthController::class, 'Login']);
 // Route::resource('user', UserController::class);
@@ -45,6 +49,9 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::put('setup/get-modules/archived-modules/{id}', [SetupController::class, 'archived']);
     Route::get('setup/getById/{id}', [SetupController::class, 'getModuleId']);
     Route::put('setup/update-modules/{id}',  [SetupController::class, 'updateModule']);
+
+   
+
 
     ///AUTH//
     Route::put('auth/reset/{id}', [AuthController::class, 'resetPassword']);
