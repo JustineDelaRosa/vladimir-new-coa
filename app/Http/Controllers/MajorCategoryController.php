@@ -105,9 +105,12 @@ class MajorCategoryController extends Controller
                 return response()->json(['message' => 'No Changes'], 200);
             }
             else{
-                $updateStatus = $MajorCategory->where('id', $id)->update(['is_active' => false]);
-                $MajorCategory->where('id',$id)->delete();
-                return response()->json(['message' => 'Major Category Successfully Deactived!'], 200);
+                if(!CategoryList::where('major_category_id', $id)->exists()){
+                    $updateStatus = $ServiceProvider->where('id', $id)->update(['is_active' => false]);
+                    $ServiceProvider->where('id',$id)->delete();
+                    return response()->json(['message' => 'Major Category Successfully Deactived!'], 200);
+                }
+                return response()->json(['message' => 'Unable to Archived!, Major Category was tagged!']);
             }
         }
         if($status == true){
