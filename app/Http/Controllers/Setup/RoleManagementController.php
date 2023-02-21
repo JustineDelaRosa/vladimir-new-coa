@@ -16,6 +16,12 @@ class RoleManagementController extends Controller
     public function index()
     {
         $RoleManagement = RoleManagement::get();
+        $array = [];
+        foreach($RoleManagement as $access){
+            $access_permission = explode(", ", $access->access_permission);
+        
+            $access['access_permission'] = $access_permission;
+        }
         return $RoleManagement;
     }
 
