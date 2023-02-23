@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Setup;
 use Illuminate\Http\Request;
 use App\Models\RoleManagement;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RoleManagement\RoleManagementRequest;
 
 class RoleManagementController extends Controller
 {
@@ -16,7 +17,6 @@ class RoleManagementController extends Controller
     public function index()
     {
         $RoleManagement = RoleManagement::get();
-        $array = [];
         foreach($RoleManagement as $access){
             $access_permission = explode(", ", $access->access_permission);
         
@@ -31,7 +31,7 @@ class RoleManagementController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(RoleManagementRequest $request)
+    public function store(Request $request)
     {
         $role_name = $request->role_name;
         $access_permission = $request->access_permission;
@@ -42,6 +42,10 @@ class RoleManagementController extends Controller
             'is_active' => 1
         ]);
         return response()->json(['message' => 'Successfully Created', 'data'=>$create]);
+    
+        
+       
+
     }
 
     /**
