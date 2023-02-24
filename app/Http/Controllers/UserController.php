@@ -126,7 +126,7 @@ class UserController extends Controller
             'username' => $username,
             'role_id' => $role_id
         ]);
-        $data = new UserResource(User::with('role')->findOrFail($id));
+
         return response()->json(['message' => 'Successfully Updated!'], 201);
 
     //    $username = $request->username;

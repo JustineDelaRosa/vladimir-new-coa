@@ -31,7 +31,7 @@ class RoleManagementController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(RoleManagementRequest $request)
     {
         $role_name = $request->role_name;
         $access_permission = $request->access_permission;
