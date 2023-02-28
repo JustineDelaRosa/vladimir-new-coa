@@ -192,5 +192,31 @@ class CategoryListController extends Controller
         return $CategoryList;
     }
 
+    public function UpdateMinorCategory(Request $request, $id){
+       $minor_category =  $request->minor_category;
+
+       $CategoryListTagMinorCategory = CategoryListTagMinorCategory::find($id);
+       if(!$CategoryListTagMinorCategory){
+           return "Route Not Found!";
+       }
+       foreach($minor_category as $minor){
+        CategoryListTagMinorCategory::where('category_list_id',$id)->updateOrCreate(
+            [
+                'category_list_id' => $id,
+                'minor_category_id' => $minor,
+                'is_active' => 1
+            ],
+            [
+                'category_list_id' => $id,
+                'minor_category_id' => $minor
+            ]
+         );
+
+         return response()->json(['message' => 'Successfully Updated!']);
+       }
+
+
+    }
+
 
 }
