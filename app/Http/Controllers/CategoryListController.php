@@ -90,12 +90,12 @@ class CategoryListController extends Controller
         if(!CategoryList::find($id)){
             return response()->json(['error' => 'Category List Route Not Found'], 404);
         }
-        if(CategoryList::where('id',$id)
-        ->where('service_provider_id', $service_provider_id)
-        ->where('major_category_id', $major_category_id)
-        ->exists()){
-            return response()->json(['message' => 'No Changes'], 200);
-        }
+        // if(CategoryList::where('id',$id)
+        // ->where('service_provider_id', $service_provider_id)
+        // ->where('major_category_id', $major_category_id)
+        // ->exists()){
+        //     return response()->json(['message' => 'No Changes'], 200);
+        // }
         $update = CategoryList::where('id', $id)
         ->update([
             'service_provider_id' => $service_provider_id,

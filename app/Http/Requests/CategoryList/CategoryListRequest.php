@@ -3,6 +3,7 @@
 namespace App\Http\Requests\CategoryList;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CategoryListRequest extends FormRequest
 {
@@ -42,8 +43,10 @@ class CategoryListRequest extends FormRequest
     
             if($this->isMethod('put') &&  ($this->route()->parameter('category_list'))){
                 $id = $this->route()->parameter('category_list');
-                return [
-                    'categorylist' => 'unique:category_lists,service_provider_id,'.request('service_provider_id').',id,major_category_id,'.request('major_category_id'),
+                return [ 
+                    'categorylist' => Rule::unique('category_lists', 'service_provider_id')
+                    ->where('major_category_id',request('major_category_id'))
+                    ->ignore($id),
                     'service_provider_id' => 'required|exists:service_providers,id',
                     'major_category_id' => 'required|exists:major_categories,id'
                     
