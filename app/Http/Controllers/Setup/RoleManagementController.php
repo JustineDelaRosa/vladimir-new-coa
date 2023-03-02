@@ -42,10 +42,6 @@ class RoleManagementController extends Controller
             'is_active' => 1
         ]);
         return response()->json(['message' => 'Successfully Created', 'data'=>$create]);
-    
-        
-       
-
     }
 
     /**
@@ -132,8 +128,6 @@ class RoleManagementController extends Controller
                 $restoreUser = $RoleManagement->withTrashed()->where('id',$id)->restore();
                 $updateStatus = $RoleManagement->update(['is_active' => true]); 
                 return response()->json(['message' => 'Role Management Successfully Activated!'], 200);
-
-
             }
         }
     }
@@ -164,16 +158,11 @@ class RoleManagementController extends Controller
         })
         ->orderby('created_at', 'DESC')
         ->paginate($limit);
-        
         foreach($RoleManagement as $access){
             $access_permission = explode(", ", $access->access_permission);
         
             $access['access_permission'] = $access_permission;
         }
         return $RoleManagement;
-
-
-        
-  
     }
 }

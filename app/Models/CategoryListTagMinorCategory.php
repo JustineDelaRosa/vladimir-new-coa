@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CategoryListTagMinorCategory extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory;
     protected $fillable = [
         'category_list_id',
         'minor_category_id',

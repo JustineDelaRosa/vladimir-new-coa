@@ -200,12 +200,23 @@ class CategoryListController extends Controller
     //        return "Route Not Found!";
     //    }
        $notExists = [];
+       $getMinorList = [];
+       $minorList = CategoryListTagMinorCategory::where('category_list_id', $id)->get();
+       foreach($minorList as $List){
+        $minorLists = $List->minor_category_id;
+        array_push($getMinorList, $minorLists);
+       }
+       
+      
+       $compare_MinorList = (array_diff($getMinorList, $minor_category));
+       $implode = implode(", ", $compare_MinorList);
+       $explode = array_map('intval',explode(', ', $implode));
        foreach($minor_category as $minor){
+
         if(!MinorCategory::where('id',$minor)->exists()){
             array_push($notExists, $minor);
         }
         else {
-            
             CategoryListTagMinorCategory::where('category_list_id',$id)->updateOrCreate(
                 [
                     'category_list_id' => $id,
@@ -220,6 +231,11 @@ class CategoryListController extends Controller
         }
 
         }
+
+        foreach($explode as $delete){
+            CategoryListTagMinorCategory::where('category_list_id',$id)->where('minor_category_id', $delete)->delete();
+        }
+
         if(!empty($notExists)){
             return response()->json([
                 'message' => "Successfully Updated!",
@@ -232,9 +248,8 @@ class CategoryListController extends Controller
              ]);
         }
         
-      
 
-
+       
     }
 
 

@@ -20,7 +20,6 @@ class CreateCategoryListTagMinorCategoriesTable extends Migration
             $table->boolean('is_active');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
-            $table->softDeletes($column='deleted_at',$precision=0);
             $table->foreign('category_list_id')
             ->references('id')
             ->on('category_lists')
