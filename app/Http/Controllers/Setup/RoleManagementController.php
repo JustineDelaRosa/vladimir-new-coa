@@ -164,7 +164,16 @@ class RoleManagementController extends Controller
         })
         ->orderby('created_at', 'DESC')
         ->paginate($limit);
+        
+        foreach($RoleManagement as $access){
+            $access_permission = explode(", ", $access->access_permission);
+        
+            $access['access_permission'] = $access_permission;
+        }
         return $RoleManagement;
+
+
+        
   
     }
 }
