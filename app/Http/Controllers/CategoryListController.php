@@ -220,9 +220,19 @@ class CategoryListController extends Controller
         }
 
         }
-        return response()->json([
-            'error' => ['minorcatergory_id_not_exists'=>$notExists] 
-         ]);
+        if(!empty($notExists)){
+            return response()->json([
+                'message' => "Successfully Updated!",
+                'minor_id_not_exist' => $notExists
+             ]);
+        }
+        else{
+            return response()->json([
+                'message' => "Successfully Updated!"
+             ]);
+        }
+        
+      
 
 
     }
