@@ -195,25 +195,34 @@ class CategoryListController extends Controller
     public function UpdateMinorCategory(Request $request, $id){
        $minor_category =  $request->minor_category;
 
-       $CategoryListTagMinorCategory = CategoryListTagMinorCategory::find($id);
-       if(!$CategoryListTagMinorCategory){
-           return "Route Not Found!";
-       }
+    //    $CategoryListTagMinorCategory = CategoryListTagMinorCategory::find($id);
+    //    if(!$CategoryListTagMinorCategory){
+    //        return "Route Not Found!";
+    //    }
+       $notExists = [];
        foreach($minor_category as $minor){
-        CategoryListTagMinorCategory::where('category_list_id',$id)->updateOrCreate(
-            [
-                'category_list_id' => $id,
-                'minor_category_id' => $minor,
-                'is_active' => 1
-            ],
-            [
-                'category_list_id' => $id,
-                'minor_category_id' => $minor
-            ]
-         );
+        if(!MinorCategory::where('id',$minor)->exists()){
+            array_push($notExists, $minor);
+        }
+        else {
+            
+            CategoryListTagMinorCategory::where('category_list_id',$id)->updateOrCreate(
+                [
+                    'category_list_id' => $id,
+                    'minor_category_id' => $minor,
+                    'is_active' => 1
+                ],
+                [
+                    'category_list_id' => $id,
+                    'minor_category_id' => $minor
+                ]
+             );
+        }
 
-         return response()->json(['message' => 'Successfully Updated!']);
-       }
+        }
+        return response()->json([
+            'error' => ['minorcatergory_id_not_exists'=>$notExists] 
+         ]);
 
 
     }

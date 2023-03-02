@@ -65,5 +65,11 @@ class CategoryListRequest extends FormRequest
                     // 'id' => 'exists:major_categories,id',
                 ];
             }
+
+            // if($this->isMethod('put') && ($this->route()->parameter('category_id'))){
+            //     return [
+            //         ''
+            //     ]
+            // }
     }
 }
