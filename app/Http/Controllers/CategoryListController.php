@@ -123,12 +123,17 @@ class CategoryListController extends Controller
             return response()->json(['error' => 'Category List Route Not Found'], 404);
         } 
         if(CategoryListTagMinorCategory::where('category_list_id', $id)->exists()){
-            return response()->json(['message' => 'Unable to Archived!'], 409);
+            if($status == true){
+                return response()->json(['message' => 'No Changes'],200);
+            }
+            else{
+                return response()->json(['message' => 'Unable to Archived!'],409);
+            }
         }
 
         if($status == false){
             if(!CategoryList::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 304);
+                return response()->json(['message' => 'No Changes'], 200);
             }
             else{
                 $updateStatus = $CategoryList->where('id', $id)->update(['is_active' => false]);
@@ -138,7 +143,7 @@ class CategoryListController extends Controller
         }
         if($status == true){
             if(CategoryList::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 304);
+                return response()->json(['message' => 'No Changes'], 200);
             }
             else{              
                 $restoreUser = $CategoryList->withTrashed()->where('id',$id)->restore();

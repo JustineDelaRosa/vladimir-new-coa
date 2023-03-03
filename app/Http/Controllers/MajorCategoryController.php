@@ -102,12 +102,17 @@ class MajorCategoryController extends Controller
         } 
 
         if(CategoryList::where('major_category', $id)->exists()){
-            return response()->json(['message' => 'Unable to Archived!'], 409);
+            if($status == true){
+                return response()->json(['message' => 'No Changes'],200);
+            }
+            else{
+                return response()->json(['message' => 'Unable to Archived!'],409);
+            }
         }
 
         if($status == false){
             if(!MajorCategory::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 304);
+                return response()->json(['message' => 'No Changes'], 200);
             }
             else{
                 if(!CategoryList::where('major_category_id', $id)->exists()){
@@ -120,7 +125,7 @@ class MajorCategoryController extends Controller
         }
         if($status == true){
             if(MajorCategory::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 304);
+                return response()->json(['message' => 'No Changes'], 200);
             }
             else{              
                 $restoreUser = $MajorCategory->withTrashed()->where('id',$id)->restore();

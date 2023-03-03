@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\MinorCategory;
+use App\Models\CategoryListTagMinorCategory;
 use App\Http\Requests\MinorCategory\MinorCategoryRequest;
 
 class MinorCategoryController extends Controller
@@ -116,11 +117,16 @@ class MinorCategoryController extends Controller
         }
 
         if(CategoryListTagMinorCategory::where('minor_category_id', $id)->exists()){
-            return response()->json(['message' => 'Unable to Archived!'], 409);
+            if($status == true){
+                return response()->json(['message' => 'No Changes'],200);
+            }
+            else{
+                return response()->json(['message' => 'Unable to Archived!'],409);
+            }
         }
         if($status == false){
             if(!MinorCategory::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 304);
+                return response()->json(['message' => 'No Changes'], 200);
             }
             else{
                 $updateStatus = $MinorCategory->where('id', $id)->update(['is_active' => false]);
@@ -130,7 +136,7 @@ class MinorCategoryController extends Controller
         }
         if($status == true){
             if(MinorCategory::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 304);
+                return response()->json(['message' => 'No Changes'], 200);
             }
             else{              
                 $restoreUser = $MinorCategory->withTrashed()->where('id',$id)->restore();

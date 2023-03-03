@@ -109,7 +109,7 @@ class SupplierController extends Controller
 
         if($status == false){
             if(!Supplier::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 304);
+                return response()->json(['message' => 'No Changes'], 200);
             }
             else{
                 $updateStatus = $Supplier->where('id', $id)->update(['is_active' => false]);
@@ -119,7 +119,7 @@ class SupplierController extends Controller
         }
         if($status == true){
             if(Supplier::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 304);
+                return response()->json(['message' => 'No Changes'], 200);
             }
             else{              
                 $restoreUser = $Supplier->withTrashed()->where('id',$id)->restore();
