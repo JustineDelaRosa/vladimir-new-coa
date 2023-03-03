@@ -122,6 +122,9 @@ class CategoryListController extends Controller
         if(!$CategoryList->withTrashed()->where('id', $id)->exists()){
             return response()->json(['error' => 'Category List Route Not Found'], 404);
         } 
+        if(CategoryListTagMinorCategory::where('category_list_id', $id)->exists()){
+            return response()->json(['message' => 'Unable to Archived!'], 409);
+        }
 
         if($status == false){
             if(!CategoryList::where('id',$id)->where('is_active', true)->exists()){

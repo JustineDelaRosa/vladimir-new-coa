@@ -115,6 +115,9 @@ class MinorCategoryController extends Controller
             return response()->json(['error' => 'Minor Category Route Not Found'], 404);
         }
 
+        if(CategoryListTagMinorCategory::where('minor_category_id', $id)->exists()){
+            return response()->json(['message' => 'Unable to Archived!'], 409);
+        }
         if($status == false){
             if(!MinorCategory::where('id',$id)->where('is_active', true)->exists()){
                 return response()->json(['message' => 'No Changes'], 304);
