@@ -116,7 +116,7 @@ class RoleManagementController extends Controller
             else{
                 $updateStatus = $RoleManagement->where('id', $id)->update(['is_active' => false]);
                 $RoleManagement->where('id',$id)->delete();
-                return response()->json(['message' => 'Role Management Successfully Deactived!'], 200);
+                return response()->json(['message' => 'Successfully Deactived!'], 200);
             }
         }
         if($status == true){
@@ -127,7 +127,7 @@ class RoleManagementController extends Controller
             else{              
                 $restoreUser = $RoleManagement->withTrashed()->where('id',$id)->restore();
                 $updateStatus = $RoleManagement->update(['is_active' => true]); 
-                return response()->json(['message' => 'Role Management Successfully Activated!'], 200);
+                return response()->json(['message' => 'Successfully Activated!'], 200);
             }
         }
     }

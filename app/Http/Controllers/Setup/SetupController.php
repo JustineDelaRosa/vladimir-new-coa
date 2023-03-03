@@ -151,7 +151,7 @@ class SetupController extends Controller
             else{
                 $updateStatus = $Module->where('id', $id)->update(['is_active' => false]);
                 $Module->where('id',$id)->delete();
-                return response()->json(['message' => 'User Successfully Deactived!'], 200);
+                return response()->json(['message' => 'Successfully Deactived!'], 200);
             }
         }
         if($status == true){
@@ -161,7 +161,7 @@ class SetupController extends Controller
             else{              
                 $restoreModule = $Module->withTrashed()->where('id',$id)->restore();
                 $updateStatus = $Module->update(['is_active' => true]); 
-                return response()->json(['message' => 'Module Successfully Activated!'], 200);
+                return response()->json(['message' => 'Successfully Activated!'], 200);
             }
         }
     }

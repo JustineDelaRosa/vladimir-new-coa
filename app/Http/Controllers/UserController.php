@@ -304,7 +304,7 @@ class UserController extends Controller
             else{
                 $updateStatus = $User->where('id', $id)->update(['is_active' => false]);
                 $User->where('id',$id)->delete();
-                return response()->json(['message' => 'User Account Successfully Deactived!'], 200);
+                return response()->json(['message' => 'Successfully Deactived!'], 200);
             }
         }
         if($status == true){
@@ -314,7 +314,7 @@ class UserController extends Controller
             else{              
                 $restoreUser = $User->withTrashed()->where('id',$id)->restore();
                 $updateStatus = $User->update(['is_active' => true]); 
-                return response()->json(['message' => 'User Account Successfully Activated!'], 200);
+                return response()->json(['message' => 'Successfully Activated!'], 200);
             }
         }
 

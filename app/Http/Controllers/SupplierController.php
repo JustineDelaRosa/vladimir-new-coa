@@ -114,7 +114,7 @@ class SupplierController extends Controller
             else{
                 $updateStatus = $Supplier->where('id', $id)->update(['is_active' => false]);
                 $Supplier->where('id',$id)->delete();
-                return response()->json(['message' => 'Supplier Successfully Deactived!'], 200);
+                return response()->json(['message' => 'Successfully Deactived!'], 200);
             }
         }
         if($status == true){
@@ -124,7 +124,7 @@ class SupplierController extends Controller
             else{              
                 $restoreUser = $Supplier->withTrashed()->where('id',$id)->restore();
                 $updateStatus = $Supplier->update(['is_active' => true]); 
-                return response()->json(['message' => 'Supplier Successfully Activated!'], 200);
+                return response()->json(['message' => 'Successfully Activated!'], 200);
 
             }
 

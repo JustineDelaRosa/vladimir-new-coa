@@ -105,7 +105,7 @@ class ServiceProviderController extends Controller
                 if(!CategoryList::where('service_provider_id', $id)->exists()){
                     $updateStatus = $ServiceProvider->where('id', $id)->update(['is_active' => false]);
                     $ServiceProvider->where('id',$id)->delete();
-                    return response()->json(['message' => 'Service Provider Successfully Deactived!'], 200);
+                    return response()->json(['message' => 'Successfully Deactived!'], 200);
                 }
                 return response()->json(['message' => 'Unable to Archived!, Service Provider was tagged!']);
             }
@@ -117,7 +117,7 @@ class ServiceProviderController extends Controller
             else{              
                 $restoreUser = $ServiceProvider->withTrashed()->where('id',$id)->restore();
                 $updateStatus = $ServiceProvider->update(['is_active' => true]); 
-                return response()->json(['message' => 'ServiceProvider Successfully Activated!'], 200);
+                return response()->json(['message' => 'Successfully Activated!'], 200);
             }
 
         }

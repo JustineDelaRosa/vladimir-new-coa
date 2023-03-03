@@ -122,7 +122,7 @@ class MinorCategoryController extends Controller
             else{
                 $updateStatus = $MinorCategory->where('id', $id)->update(['is_active' => false]);
                 $MinorCategory->where('id',$id)->delete();
-                return response()->json(['message' => 'Minor Category Successfully Deactived!'], 200);
+                return response()->json(['message' => 'Successfully Deactived!'], 200);
             }
         }
         if($status == true){
@@ -132,7 +132,7 @@ class MinorCategoryController extends Controller
             else{              
                 $restoreUser = $MinorCategory->withTrashed()->where('id',$id)->restore();
                 $updateStatus = $MinorCategory->update(['is_active' => true]); 
-                return response()->json(['message' => 'Minor Category Successfully Activated!'], 200);
+                return response()->json(['message' => 'Successfully Activated!'], 200);
 
             }
 

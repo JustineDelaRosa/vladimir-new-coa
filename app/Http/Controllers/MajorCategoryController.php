@@ -109,7 +109,7 @@ class MajorCategoryController extends Controller
                 if(!CategoryList::where('major_category_id', $id)->exists()){
                     $updateStatus = $MajorCategory->where('id', $id)->update(['is_active' => false]);
                     $MajorCategory->where('id',$id)->delete();
-                    return response()->json(['message' => 'Major Category Successfully Deactived!'], 200);
+                    return response()->json(['message' => 'Successfully Deactived!'], 200);
                 }
                 return response()->json(['message' => 'Unable to Archived!, Major Category was tagged!']);
             }
@@ -121,7 +121,7 @@ class MajorCategoryController extends Controller
             else{              
                 $restoreUser = $MajorCategory->withTrashed()->where('id',$id)->restore();
                 $updateStatus = $MajorCategory->update(['is_active' => true]); 
-                return response()->json(['message' => 'Major Category Successfully Activated!'], 200);
+                return response()->json(['message' => 'Successfully Activated!'], 200);
 
             }
 

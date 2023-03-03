@@ -130,7 +130,7 @@ class CategoryListController extends Controller
             else{
                 $updateStatus = $CategoryList->where('id', $id)->update(['is_active' => false]);
                 $CategoryList->where('id',$id)->delete();
-                return response()->json(['message' => 'Category List Successfully Deactived!'], 200);
+                return response()->json(['message' => 'Successfully Deactived!'], 200);
             }
         }
         if($status == true){
@@ -140,7 +140,7 @@ class CategoryListController extends Controller
             else{              
                 $restoreUser = $CategoryList->withTrashed()->where('id',$id)->restore();
                 $updateStatus = $CategoryList->update(['is_active' => true]); 
-                return response()->json(['message' => 'Category List Successfully Activated!'], 200);
+                return response()->json(['message' => 'Successfully Activated!'], 200);
 
             }
 
