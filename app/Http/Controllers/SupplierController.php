@@ -155,8 +155,8 @@ class SupplierController extends Controller
         })
         ->where(function($query) use($search){
             $query->where('supplier_name', 'LIKE', "%{$search}%" )
-            ->where('address', 'LIKE', "%{$search}%" )
-            ->where('contact_no', 'LIKE', "%{$search}%" );
+            ->orWhere('address', 'LIKE', "%{$search}%" )
+            ->orWhere('contact_no', 'LIKE', "%{$search}%" );
         })
         ->orderby('created_at', 'DESC')
         ->paginate($limit);

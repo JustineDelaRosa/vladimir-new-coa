@@ -163,7 +163,7 @@ class MinorCategoryController extends Controller
         })
         ->where(function($query) use($search){
             $query->where('minor_category_name', 'LIKE', "%{$search}%" )
-            ->where('urgency_level', 'LIKE', "%{$search}%");
+            ->orWhere('urgency_level', 'LIKE', "%{$search}%");
         })
         ->orderby('created_at', 'DESC')
         ->paginate($limit);
