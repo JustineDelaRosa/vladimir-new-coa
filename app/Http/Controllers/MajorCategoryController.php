@@ -101,9 +101,13 @@ class MajorCategoryController extends Controller
             return response()->json(['error' => 'Major Category Route Not Found'], 404);
         } 
 
+        if(CategoryList::where('major_category', $id)->exists()){
+            return response()->json(['message' => 'Unable to Archived!'], 409);
+        }
+
         if($status == false){
             if(!MajorCategory::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 200);
+                return response()->json(['message' => 'No Changes'], 304);
             }
             else{
                 if(!CategoryList::where('major_category_id', $id)->exists()){
@@ -116,7 +120,7 @@ class MajorCategoryController extends Controller
         }
         if($status == true){
             if(MajorCategory::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 200);
+                return response()->json(['message' => 'No Changes'], 304);
             }
             else{              
                 $restoreUser = $MajorCategory->withTrashed()->where('id',$id)->restore();

@@ -117,7 +117,7 @@ class MinorCategoryController extends Controller
 
         if($status == false){
             if(!MinorCategory::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 200);
+                return response()->json(['message' => 'No Changes'], 304);
             }
             else{
                 $updateStatus = $MinorCategory->where('id', $id)->update(['is_active' => false]);
@@ -127,7 +127,7 @@ class MinorCategoryController extends Controller
         }
         if($status == true){
             if(MinorCategory::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 200);
+                return response()->json(['message' => 'No Changes'], 304);
             }
             else{              
                 $restoreUser = $MinorCategory->withTrashed()->where('id',$id)->restore();

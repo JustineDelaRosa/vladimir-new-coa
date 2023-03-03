@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Setup;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\RoleManagement;
 use App\Http\Controllers\Controller;
@@ -108,10 +109,13 @@ class RoleManagementController extends Controller
         $RoleManagement = RoleManagement::query();
         if(!$RoleManagement->withTrashed()->where('id',$id)->exists()){
             return response()->json(['error' => 'Role Management Route Not Found'], 404);
-        } 
+        }
+        if(User::where('role_id', $id)->exists()){
+            return response()->json(['message' => 'Unable to Archived!'], 409);
+        }
         if($status == false){
             if(!RoleManagement::where('id', $id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 200);
+                return response()->json(['message' => 'No Changes'], 304);
             }
             else{
                 $updateStatus = $RoleManagement->where('id', $id)->update(['is_active' => false]);
@@ -121,7 +125,7 @@ class RoleManagementController extends Controller
         }
         if($status == true){
             if(RoleManagement::where('id', $id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 200);
+                return response()->json(['message' => 'No Changes'], 304);
 
             }
             else{              

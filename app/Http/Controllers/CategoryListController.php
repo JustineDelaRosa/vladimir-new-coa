@@ -125,7 +125,7 @@ class CategoryListController extends Controller
 
         if($status == false){
             if(!CategoryList::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 200);
+                return response()->json(['message' => 'No Changes'], 304);
             }
             else{
                 $updateStatus = $CategoryList->where('id', $id)->update(['is_active' => false]);
@@ -135,7 +135,7 @@ class CategoryListController extends Controller
         }
         if($status == true){
             if(CategoryList::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 200);
+                return response()->json(['message' => 'No Changes'], 304);
             }
             else{              
                 $restoreUser = $CategoryList->withTrashed()->where('id',$id)->restore();

@@ -97,9 +97,13 @@ class ServiceProviderController extends Controller
             return response()->json(['error' => 'Service Provider Route Not Found'], 404);
         }
 
+        if(CategoryList::where('service_provider_id', $id)->exists()){
+            return response()->json(['message' => 'Unable to Archived!'],409);
+        }
+
         if($status == false){
             if(!ServiceProvider::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 200);
+                return response()->json(['message' => 'No Changes'], 304);
             }
             else{
                 if(!CategoryList::where('service_provider_id', $id)->exists()){
@@ -112,7 +116,7 @@ class ServiceProviderController extends Controller
         }
         if($status == true){
             if(ServiceProvider::where('id',$id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 200);
+                return response()->json(['message' => 'No Changes'], 304);
             }
             else{              
                 $restoreUser = $ServiceProvider->withTrashed()->where('id',$id)->restore();

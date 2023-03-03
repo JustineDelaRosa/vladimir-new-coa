@@ -299,7 +299,7 @@ class UserController extends Controller
         } 
         if($status == false){
             if(!User::where('id', $id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 200);
+                return response()->json(['message' => 'No Changes'], 304);
             }
             else{
                 $updateStatus = $User->where('id', $id)->update(['is_active' => false]);
@@ -309,7 +309,7 @@ class UserController extends Controller
         }
         if($status == true){
             if(User::where('id', $id)->where('is_active', true)->exists()){
-                return response()->json(['message' => 'No Changes'], 200);
+                return response()->json(['message' => 'No Changes'], 304);
             }
             else{              
                 $restoreUser = $User->withTrashed()->where('id',$id)->restore();
