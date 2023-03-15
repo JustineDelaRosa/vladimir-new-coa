@@ -56,6 +56,7 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::put('setup/update-modules/{id}',  [SetupController::class, 'updateModule']);
 
     Route::resource('company', CompanyController::class);
+    Route::get('companies/search', [CompanyController::class, 'search']);
 
    
 

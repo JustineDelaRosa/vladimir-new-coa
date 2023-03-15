@@ -13,4 +13,7 @@ class Company extends Model
         'is_active',
         'company_name'
     ];
+    protected $casts = [
+        'is_active' => 'boolean'
+    ];
 }

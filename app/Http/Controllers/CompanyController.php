@@ -14,7 +14,8 @@ class CompanyController extends Controller
      */
     public function index()
     {
-        //
+        $company = Company::get();
+        return $company;
     }
 
     /**
@@ -78,5 +79,36 @@ class CompanyController extends Controller
     public function destroy($id)
     {
         //
+    }
+
+    public function search(Request $request){
+        $search = $request->query('search');
+        $limit = $request->query('limit');
+        $page = $request->get('page');
+        $status = $request->query('status');
+        if($status == NULL ){
+            $status = 1;
+        }
+        if($status == "active"){
+            $status = 1;
+        }
+        if($status == "deactivated"){
+            $status = 0;
+        }
+        if($status != "active" || $status != "deactivated"){
+            $status = 1;
+        }
+        $MajorCategory = Company::withTrashed()
+        ->where(function($query) use($status){
+            $query->where('is_active', $status);
+        })
+        ->where(function($query) use($search){
+            $query->where('company_code', 'LIKE', "%{$search}%" )
+            ->orWhere('company_name', 'LIKE', "%{$search}%" );
+     
+        })
+        ->orderby('created_at', 'DESC')
+        ->paginate($limit);
+        return $MajorCategory;
     }
 }
