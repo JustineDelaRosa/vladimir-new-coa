@@ -67,6 +67,7 @@ class AuthController extends Controller
         auth('sanctum')->user()->currentAccessToken()->delete();//logout currentAccessToken
         return response()->json(['message' => 'You are Successfully Logged Out!']);
     }
+     
 
     
 }

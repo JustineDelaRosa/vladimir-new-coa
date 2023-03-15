@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Setup\SetupController;
@@ -39,6 +40,10 @@ Route::get('search/role-management', [RoleManagementController::class, 'search']
 Route::post('/auth/login', [AuthController::class, 'Login']);
 // Route::resource('user', UserController::class);
 
+
+
+
+
 Route::group(['middleware' => ['auth:sanctum']], function() {
 
    
@@ -49,6 +54,8 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::put('setup/get-modules/archived-modules/{id}', [SetupController::class, 'archived']);
     Route::get('setup/getById/{id}', [SetupController::class, 'getModuleId']);
     Route::put('setup/update-modules/{id}',  [SetupController::class, 'updateModule']);
+
+    Route::resource('company', CompanyController::class);
 
    
 
