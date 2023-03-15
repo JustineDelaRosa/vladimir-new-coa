@@ -27,6 +27,10 @@ class CompanyController extends Controller
     public function store(Request $request)
     {
         $company_request = $request->all('result.companies');
+        if(empty($request->all())){
+            return response()->json(['message' => 'Data not Ready']);
+        }
+
         foreach($company_request as $companies){
             foreach($companies as $company){
                 foreach($company as $com){
