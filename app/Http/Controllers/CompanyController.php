@@ -98,8 +98,7 @@ class CompanyController extends Controller
         if($status != "active" || $status != "deactivated"){
             $status = 1;
         }
-        $MajorCategory = Company::withTrashed()
-        ->where(function($query) use($status){
+        $MajorCategory = Company::where(function($query) use($status){
             $query->where('is_active', $status);
         })
         ->where(function($query) use($search){
