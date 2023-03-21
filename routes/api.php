@@ -6,6 +6,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\Setup\SetupController;
 use App\Http\Controllers\CategoryListController;
 use App\Http\Controllers\MajorCategoryController;
@@ -55,8 +56,14 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::get('setup/getById/{id}', [SetupController::class, 'getModuleId']);
     Route::put('setup/update-modules/{id}',  [SetupController::class, 'updateModule']);
 
+    //COMPANY//
     Route::resource('company', CompanyController::class);
     Route::get('companies/search', [CompanyController::class, 'search']);
+
+    //DEPARTMENT//
+    Route::resource('department', DepartmentController::class);
+    Route::get('departments/search', [DepartmentController::class, 'search']);
+
 
    
 

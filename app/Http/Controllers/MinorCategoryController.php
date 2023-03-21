@@ -40,7 +40,7 @@ class MinorCategoryController extends Controller
             'is_active' => 1
         ]);
 
-        return response()->json(['message' => 'Successfully Created', 'data' => $create ]);
+        return response()->json(['message' => 'Successfully Created', 'data' => $create]);
     }
 
     /**
@@ -50,13 +50,12 @@ class MinorCategoryController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function show($id)
-    {  
-       $MinorCategory = MinorCategory::query();
-       if(!$MinorCategory->where('id', $id)->exists()){
-        return response()->json(['error' => 'Minor Category Route Not Found'], 404);
-       }
-       return $MinorCategory->where('id', $id)->first();
-      
+    {
+        $MinorCategory = MinorCategory::query();
+        if (!$MinorCategory->where('id', $id)->exists()) {
+            return response()->json(['error' => 'Minor Category Route Not Found'], 404);
+        }
+        return $MinorCategory->where('id', $id)->first();
     }
 
     /**
@@ -72,27 +71,28 @@ class MinorCategoryController extends Controller
         $urgency_level = $request->urgency_level;
         $personally_assign = $request->personally_assign;
         $evaluate_in_every_movement = $request->evaluate_in_every_movement;
-        if(!MinorCategory::where('id', $id)->exists()){
+        if (!MinorCategory::where('id', $id)->exists()) {
             return response()->json(['error' => 'Minor Category Route Not Found'], 404);
         }
-        if(MinorCategory::where('id',$id)
-        ->where([
-            'minor_category_name' => $minor_category_name,
-            'urgency_level' => $urgency_level,
-            'personally_assign' => $personally_assign,
-            'evaluate_in_every_movement' => $evaluate_in_every_movement,
+        if (MinorCategory::where('id', $id)
+            ->where([
+                'minor_category_name' => $minor_category_name,
+                'urgency_level' => $urgency_level,
+                'personally_assign' => $personally_assign,
+                'evaluate_in_every_movement' => $evaluate_in_every_movement,
 
-        ])
-        ->exists()){
+            ])
+            ->exists()
+        ) {
             return response()->json(['message' => 'No Changes'], 200);
         }
         $update = MinorCategory::where('id', $id)
-        ->update([
-            'minor_category_name' => $minor_category_name,
-            'urgency_level' => $urgency_level,
-            'personally_assign' => $personally_assign,
-            'evaluate_in_every_movement' => $evaluate_in_every_movement
-        ]);
+            ->update([
+                'minor_category_name' => $minor_category_name,
+                'urgency_level' => $urgency_level,
+                'personally_assign' => $personally_assign,
+                'evaluate_in_every_movement' => $evaluate_in_every_movement
+            ]);
         return response()->json(['message' => 'Successfully Updated!'], 200);
     }
 
@@ -108,75 +108,70 @@ class MinorCategoryController extends Controller
     }
 
 
-    public function archived(MinorCategoryRequest $request, $id){
+    public function archived(MinorCategoryRequest $request, $id)
+    {
 
-        $status = $request->status; 
+        $status = $request->status;
         $MinorCategory = MinorCategory::query();
-        if(!$MinorCategory->withTrashed()->where('id', $id)->exists()){
+        if (!$MinorCategory->withTrashed()->where('id', $id)->exists()) {
             return response()->json(['error' => 'Minor Category Route Not Found'], 404);
         }
 
-        if(CategoryListTagMinorCategory::where('minor_category_id', $id)->exists()){
-            if($status == true){
-                return response()->json(['message' => 'No Changes'],200);
-            }
-            else{
-                return response()->json(['message' => 'Unable to Archived!'],409);
+        if (CategoryListTagMinorCategory::where('minor_category_id', $id)->exists()) {
+            if ($status == true) {
+                return response()->json(['message' => 'No Changes'], 200);
+            } else {
+                return response()->json(['message' => 'Unable to Archived!'], 409);
             }
         }
-        if($status == false){
-            if(!MinorCategory::where('id',$id)->where('is_active', true)->exists()){
+        if ($status == false) {
+            if (!MinorCategory::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
-            }
-            else{
+            } else {
                 $updateStatus = $MinorCategory->where('id', $id)->update(['is_active' => false]);
-                $MinorCategory->where('id',$id)->delete();
+                $MinorCategory->where('id', $id)->delete();
                 return response()->json(['message' => 'Successfully Deactived!'], 200);
             }
         }
-        if($status == true){
-            if(MinorCategory::where('id',$id)->where('is_active', true)->exists()){
+        if ($status == true) {
+            if (MinorCategory::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
-            }
-            else{              
-                $restoreUser = $MinorCategory->withTrashed()->where('id',$id)->restore();
-                $updateStatus = $MinorCategory->update(['is_active' => true]); 
+            } else {
+                $restoreUser = $MinorCategory->withTrashed()->where('id', $id)->restore();
+                $updateStatus = $MinorCategory->update(['is_active' => true]);
                 return response()->json(['message' => 'Successfully Activated!'], 200);
-
             }
-
         }
-
     }
 
-    public function search(Request $request){
+    public function search(Request $request)
+    {
         $search = $request->query('search');
         $limit = $request->query('limit');
         $page = $request->get('page');
         $status = $request->query('status');
-        if($status == NULL ){
+        if ($status == NULL) {
             $status = 1;
         }
-        if($status == "active"){
+        if ($status == "active") {
             $status = 1;
         }
-        if($status == "deactivated"){
+        if ($status == "deactivated") {
             $status = 0;
         }
-        if($status != "active" || $status != "deactivated"){
+        if ($status != "active" || $status != "deactivated") {
             $status = 1;
         }
         $MinorCategory = MinorCategory::withTrashed()
-        ->where(function($query) use($status){
-            $query->where('is_active', $status);
-        })
-        ->where(function($query) use($search){
-            $query->where('minor_category_name', 'LIKE', "%{$search}%" )
-            ->orWhere('urgency_level', 'LIKE', "%{$search}%");
-        })
-        ->orderby('created_at', 'DESC')
-        ->paginate($limit);
+            ->where(function ($query) use ($status) {
+                $query->where('is_active', $status);
+            })
+            ->where(function ($query) use ($search) {
+                $query->where('minor_category_name', 'LIKE', "%{$search}%")
+                    ->orWhere('urgency_level', 'LIKE', "%{$search}%");
+            })
+            ->orderby('created_at', 'DESC')
+            ->paginate($limit);
         return $MinorCategory;
     }
-
 }
