@@ -115,7 +115,7 @@ class RoleManagementController extends Controller
                 return response()->json(['message' => 'No Changes'],200);
             }
             else{
-                return response()->json(['message' => 'Unable to Archived!'],409);
+                return response()->json(['message' => 'Unable to Archive!'],409);
             }
         }
         
