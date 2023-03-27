@@ -101,7 +101,7 @@ class MajorCategoryController extends Controller
             return response()->json(['error' => 'Major Category Route Not Found'], 404);
         } 
 
-        if(CategoryList::where('major_category', $id)->exists()){
+        if(CategoryList::where('major_category_id', $id)->exists()){
             if($status == true){
                 return response()->json(['message' => 'No Changes'],200);
             }
