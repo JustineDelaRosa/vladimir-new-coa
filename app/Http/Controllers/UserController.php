@@ -264,7 +264,7 @@ class UserController extends Controller
 
     public function archived(UserRequest $request, $id){
         $auth_id = auth('sanctum')->user()->id;
-        if($id = $auth_id){
+        if($id == $auth_id){
             return response()->json(['error' => 'Unable to Archieve!'],409);
         }
         $status = $request->status; 
