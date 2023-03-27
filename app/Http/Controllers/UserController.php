@@ -247,38 +247,10 @@ class UserController extends Controller
         ->orderby('created_at', 'DESC')
         ->paginate($limit);
         return $User;
-        // $search = $request->query('search');
-        // $limit = $request->query('limit');
-        // $page = $request->get('page');
-        // $status = $request->query('status');
-        // if($status == NULL ){
-        //     $status = 1;
-        // }
-        // if($status == "active"){
-        //     $status = 1;
-        // }
-        // if($status == "deactivated"){
-        //     $status = 0;
-        // }
-        // if($status != "active" || $status != "deactivated"){
-        //     $status = 1;
-        // }
-        // $user = User::withTrashed()->with('modules')
-        // ->where(function($query) use($status){
-        //     $query->where('is_active', $status);
-        // })
-        // ->where(function($query) use($search){
-        //     $query->where('employee_id', 'LIKE', "%{$search}%" )
-        //     ->orWhere('first_name', 'LIKE', "%{$search}%" )
-        //     ->orWhere('middle_name', 'LIKE', "%{$search}%" )
-        //     ->orWhere('last_name', 'LIKE', "%{$search}%" )
-        //     ->orWhere('position', 'LIKE', "%{$search}%" )
-        //     ->orWhere('username', 'LIKE', "%{$search}%" );
+        
+      
+    
 
-        // })
-        // ->orderby('created_at', 'DESC')
-        // ->paginate($limit);
-        // return $user;
     } 
 
 
@@ -291,8 +263,11 @@ class UserController extends Controller
 
 
     public function archived(UserRequest $request, $id){
-       
-         $status = $request->status; 
+        $auth_id = auth('sanctum')->user()->id;
+        if($id = $auth_id){
+            return response()->json(['error' => 'Unable to modify!'],200);
+        }
+        $status = $request->status; 
         $User = User::query();
         if(!$User->withTrashed()->where('id',$id)->exists()){
             return response()->json(['error' => 'User Route Not Found'], 404);
