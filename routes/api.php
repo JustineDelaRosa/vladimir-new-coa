@@ -9,6 +9,7 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\Setup\SetupController;
+use App\Http\Controllers\AccountTitleController;
 use App\Http\Controllers\CategoryListController;
 use App\Http\Controllers\MajorCategoryController;
 use App\Http\Controllers\MinorCategoryController;
@@ -69,6 +70,9 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::resource('location', LocationController::class);
     Route::get('locations/search', [LocationController::class, 'search']);
 
+     //LOCATION//
+     Route::resource('account-title', AccountTitleController::class);
+     Route::get('account-titles/search', [AccountTitleController::class, 'search']);
 
    
 

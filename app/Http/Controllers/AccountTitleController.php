@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AccountTitle;
 use Illuminate\Http\Request;
-use App\Models\Company;
 
-class CompanyController extends Controller
+class AccountTitleController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -14,8 +14,8 @@ class CompanyController extends Controller
      */
     public function index()
     {
-        $company = Company::get();
-        return $company;
+        $accountTitle = AccountTitle::get();
+        return $accountTitle;
     }
 
     /**
@@ -26,21 +26,21 @@ class CompanyController extends Controller
      */
     public function store(Request $request)
     {
-        $company_request = $request->all('result.companies');
+        $accountitle_request = $request->all('result.account_titles');
         if(empty($request->all())){
             return response()->json(['message' => 'Data not Ready']);
         }
         
-        foreach($company_request as $companies){
-            foreach($companies as $company){
-                foreach($company as $com){
-                    $code = $com['code'];
-                    $name = $com['name'];
-                    $is_active = $com['status'];
+        foreach($accountitle_request as $accountitles){
+            foreach($accountitles as $accountitle){
+                foreach($accountitle as $accountTitle){
+                    $code = $accountTitle['code'];
+                    $name = $accountTitle['name'];
+                    $is_active = $accountTitle['status'];
 
-                    $sync = Company::updateOrCreate([
-                        'company_code' => $code],
-                        ['company_name' => $name, 'is_active' => $is_active],
+                    $sync = AccountTitle::updateOrCreate([
+                        'account_title_code' => $code],
+                        ['account_title_name' => $name, 'is_active' => $is_active],
                     );
                     // $sync = Company::upsert([
                     //     ['company_code' => $code, 'company_name' => $name,  'is_active' => $is_active]
@@ -51,7 +51,6 @@ class CompanyController extends Controller
             }
         }
         return response()->json(['message' => 'Successfully Synched!']);
-    
     }
 
     /**
@@ -105,16 +104,16 @@ class CompanyController extends Controller
         if($status != "active" || $status != "deactivated"){
             $status = 1;
         }
-        $Company = Company::where(function($query) use($status){
+        $AccountTitle = AccountTitle::where(function($query) use($status){
             $query->where('is_active', $status);
         })
         ->where(function($query) use($search){
-            $query->where('company_code', 'LIKE', "%{$search}%" )
-            ->orWhere('company_name', 'LIKE', "%{$search}%" );
+            $query->where('account_title_code', 'LIKE', "%{$search}%" )
+            ->orWhere('account_title_name', 'LIKE', "%{$search}%" );
      
         })
         ->orderby('created_at', 'DESC')
         ->paginate($limit);
-        return $Company;
+        return $AccountTitle;
     }
 }
