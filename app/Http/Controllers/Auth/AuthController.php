@@ -54,7 +54,7 @@ class AuthController extends Controller
         $user = User::where('id', $auth_id)->first();
         $decryptedPassword = Crypt::decryptString($user->password);
         if($old_password != $decryptedPassword){
-            return response()->json(['message' => 'Password not match!!'], 401);
+            return response()->json(['message' => 'Password not match!!'], 422);
         }
         $encrypted_new_password = Crypt::encryptString($new_password);
         $user->update([
