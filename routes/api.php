@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\Auth\AuthController;
@@ -47,9 +48,9 @@ Route::post('/auth/login', [AuthController::class, 'Login']);
 
 
 
-Route::group(['middleware' => ['auth:sanctum']], function() {
+Route::group(['middleware' => ['auth:sanctum']], function () {
 
-   
+
 
     //SETUP//
     Route::post('setup/module', [SetupController::class, 'createModule']);
@@ -70,11 +71,11 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::resource('location', LocationController::class);
     Route::get('locations/search', [LocationController::class, 'search']);
 
-     //LOCATION//
-     Route::resource('account-title', AccountTitleController::class);
-     Route::get('account-titles/search', [AccountTitleController::class, 'search']);
+    //LOCATION//
+    Route::resource('account-title', AccountTitleController::class);
+    Route::get('account-titles/search', [AccountTitleController::class, 'search']);
 
-   
+
 
 
     ///AUTH//
@@ -87,7 +88,7 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::get('users/search', [UserController::class, 'search']);
     Route::put('user/archived-user/{id}', [UserController::class, 'archived']);
     Route::get('test', [UserController::class, 'test']);
-    
+
 
     //ServiceProvider
 
@@ -95,7 +96,7 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::put('service-provider/archived-service-provider/{id}', [ServiceProviderController::class, 'archived']);
     Route::get('service-providers/search', [ServiceProviderController::class, 'search']);
 
-    
+
     //major category
     Route::resource('major-category', MajorCategoryController::class);
     Route::put('major-category/archived-major-category/{id}', [MajorCategoryController::class, 'archived']);
@@ -115,8 +116,9 @@ Route::group(['middleware' => ['auth:sanctum']], function() {
     Route::resource('supplier', SupplierController::class);
     Route::put('supplier/archived-supplier/{id}', [SupplierController::class, 'archived']);
     Route::get('suppliers/search', [SupplierController::class, 'search']);
-  
+
+    //division
+    Route::resource('division', DivisionController::class);
+    Route::put('division/archived-division/{id}', [DivisionController::class, 'archived']);
+    Route::get('divisions/search', [DivisionController::class, 'search']);
 });
-
-
-

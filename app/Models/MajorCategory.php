@@ -10,11 +10,21 @@ class MajorCategory extends Model
 {
     use HasFactory, SoftDeletes;
     protected $fillable = [
+        'division_id',
         'major_category_name',
         'is_active',
-        'classification'
     ];
     protected $casts = [
         'is_active' => 'boolean'
     ];
+
+    public function division()
+    {
+        return $this->belongsTo(Division::class, 'division_id', 'id');
+    }
+
+    public function minorCategory()
+    {
+        return $this->hasMany(MinorCategory::class, 'major_category_id', 'id');
+    }
 }
