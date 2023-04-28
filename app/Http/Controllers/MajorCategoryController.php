@@ -17,7 +17,7 @@ class MajorCategoryController extends Controller
      */
     public function index()
     {
-        $major_category = MajorCategory::with('division')->get();
+        $major_category = MajorCategory::with('minorCategory')->get();
         return response()->json([
             'data' => $major_category
         ], 200);
@@ -31,11 +31,11 @@ class MajorCategoryController extends Controller
      */
     public function store(MajorCategoryRequest $request)
     {
-        $division_name = $request->division_name;
+        $division_id = $request->division_id;
         $major_category_name = ucwords(strtolower($request->major_category_name));
         $major_category_name_check = str_replace(' ', '', $major_category_name);
 
-        $division_id = Division::where('division_name', $division_name)->first()->id;
+
         MajorCategory::where('major_category_name', $major_category_name)->exists();
         if (MajorCategory::where('major_category_name', $major_category_name_check)
             ->where('division_id', $division_id)
@@ -65,7 +65,7 @@ class MajorCategoryController extends Controller
         if (!$MajorCategory->where('id', $id)->exists()) {
             return response()->json(['error' => 'Major Category Route Not Found'], 404);
         }
-        return $MajorCategory->where('id', $id)->first();
+        return $MajorCategory->with('minorCategory')->where('id', $id)->first();
     }
 
     /**

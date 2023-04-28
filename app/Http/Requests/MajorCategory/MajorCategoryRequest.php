@@ -38,18 +38,10 @@ class MajorCategoryRequest extends FormRequest
         if ($this->isMethod('post')) {
 
             return [
-                'division_name' => 'required|exists:divisions,division_name,deleted_at,NULL',
+                'division_id' => 'required|exists:divisions,id,deleted_at,NULL',
                 'major_category_name' => [
                     'required', Rule::unique('major_categories', 'major_category_name')->where(function ($query) {
-                        $query->whereExists(function ($query) {
-                            $query->select('id')
-                                ->from('divisions')
-                                ->whereColumn('divisions.id', 'major_categories.division_id')->wherenull('divisions.deleted_at')
-                                ->where('divisions.division_name', $this->division_name);
-                        });
-
-
-                        // $query->where('division_id', Division::withTrashed()->where('division_name', $this->division_name)->first()->id);
+                        return $query->where('division_id', $this->division_id)->whereNull('deleted_at');
                     }),
 
 
@@ -88,7 +80,7 @@ class MajorCategoryRequest extends FormRequest
             'division_name.required' => 'Division name is required',
             'division_name.exists' => 'Division name does not exist',
             'major_category_name.required' => 'Major category name is required',
-            'major_category_name.unique' => 'Major category name already exist for this division',
+            'major_category_name.unique' => 'Major category already exist for this division',
             'status.required' => 'Status is required',
             'status.boolean' => 'Status must be boolean',
             'id.exists' => 'Major category id does not exist',
