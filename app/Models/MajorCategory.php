@@ -27,4 +27,9 @@ class MajorCategory extends Model
     {
         return $this->hasMany(MinorCategory::class, 'major_category_id', 'id');
     }
+
+    public function masterlists()
+    {
+        return $this->hasMany(Masterlist::class, 'major_category_id', 'id');
+    }
 }

@@ -32,8 +32,18 @@ class MajorCategoryController extends Controller
     public function store(MajorCategoryRequest $request)
     {
         $division_name = $request->division_name;
-        $major_category_name = $request->major_category_name;
+        $major_category_name = ucwords(strtolower($request->major_category_name));
+        $major_category_name_check = str_replace(' ', '', $major_category_name);
+
         $division_id = Division::where('division_name', $division_name)->first()->id;
+        MajorCategory::where('major_category_name', $major_category_name)->exists();
+        if (MajorCategory::where('major_category_name', $major_category_name_check)
+            ->where('division_id', $division_id)
+            ->exists()
+        ) {
+            return response()->json(['error' => 'Major Category Already Exists'], 404);
+        }
+
 
         $create = MajorCategory::create([
             'division_id' => $division_id,
@@ -68,12 +78,21 @@ class MajorCategoryController extends Controller
     public function update(MajorCategoryRequest $request, $id)
     {
 
-        $major_category_name = $request->major_category_name;
-
-        // $classification = $request->classification;
-        if (!MajorCategory::where('id', $id)->exists()) {
+        $major_category_name = ucwords(strtolower($request->major_category_name));
+        $major_category_name_check = str_replace(' ', '', $major_category_name);
+        $major_category = MajorCategory::find($id);
+        if (!$major_category) {
             return response()->json(['error' => 'Major Category Route Not Found'], 404);
         }
+
+        if ($major_category->where('major_category_name', $major_category_name_check)
+            ->where('division_id', $major_category->division_id)
+            ->exists()
+        ) {
+            return response()->json(['message' => 'This Major Category Already Exists for this Division'], 409);
+        }
+
+        // $classification = $request->classification;
         if (MajorCategory::where('id', $id)->where('major_category_name', $major_category_name)->exists()) {
             return response()->json(['message' => 'No Changes'], 200);
         }
@@ -106,19 +125,19 @@ class MajorCategoryController extends Controller
             return response()->json(['error' => 'Major Category Route Not Found'], 404);
         }
 
-        if (CategoryList::where('major_category_id', $id)->exists()) {
-            if ($status == true) {
-                return response()->json(['message' => 'No Changes'], 200);
-            } else {
-                return response()->json(['message' => 'Unable to Archived!'], 409);
-            }
-        }
+        // if (MajorCategory::where('id', $id)->exists()) {
+        //     if ($status == true) {
+        //         return response()->json(['message' => 'No Changes'], 200);
+        //     } else {
+        //         return response()->json(['message' => 'Unable to Archived!'], 409);
+        //     }
+        // }
 
         if ($status == false) {
             if (!MajorCategory::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
-                if (!CategoryList::where('major_category_id', $id)->exists()) {
+                if (!MajorCategory::where('id', $id)->exists()) {
                     $updateStatus = $MajorCategory->where('id', $id)->update(['is_active' => false]);
                     $MajorCategory->where('id', $id)->delete();
                     return response()->json(['message' => 'Successfully Deactived!'], 200);

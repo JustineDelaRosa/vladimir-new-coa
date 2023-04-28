@@ -37,18 +37,24 @@ class MajorCategoryRequest extends FormRequest
 
         if ($this->isMethod('post')) {
 
-
-            //check if division_name is trash
             return [
                 'division_name' => 'required|exists:divisions,division_name,deleted_at,NULL',
-                //unique validation for major_category_name in division_id and if trash
-                'major_category_name' => ['required', Rule::unique('major_categories', 'major_category_name')->where(function ($query) {
-                })],
+                'major_category_name' => [
+                    'required', Rule::unique('major_categories', 'major_category_name')->where(function ($query) {
+                        $query->whereExists(function ($query) {
+                            $query->select('id')
+                                ->from('divisions')
+                                ->whereColumn('divisions.id', 'major_categories.division_id')->wherenull('divisions.deleted_at')
+                                ->where('divisions.division_name', $this->division_name);
+                        });
 
 
+                        // $query->where('division_id', Division::withTrashed()->where('division_name', $this->division_name)->first()->id);
+                    }),
 
-                // 'major_category_name' => 'required|unique:major_categories,major_category_name',
-                // 'classification' => 'required|in:small_tools,machinery_&_equipment,mobile_phone,vechicle'
+
+                ],
+
             ];
         }
 
@@ -56,7 +62,7 @@ class MajorCategoryRequest extends FormRequest
             $id = $this->route()->parameter('major_category');
             return [
                 // 'major_category_id' => 'exists:major_categories,id,deleted_at,NULL',
-                'major_category_name' => ['required', Rule::unique('major_categories', 'major_category_name')->ignore($id)],
+                'major_category_name' => ['required'],
                 // 'classification' => 'required|in:small_tools,machinery_&_equipment,mobile_phone,vechicle'
 
             ];
@@ -82,7 +88,7 @@ class MajorCategoryRequest extends FormRequest
             'division_name.required' => 'Division name is required',
             'division_name.exists' => 'Division name does not exist',
             'major_category_name.required' => 'Major category name is required',
-            'major_category_name.unique' => 'Major category name already exist',
+            'major_category_name.unique' => 'Major category name already exist for this division',
             'status.required' => 'Status is required',
             'status.boolean' => 'Status must be boolean',
             'id.exists' => 'Major category id does not exist',
