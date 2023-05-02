@@ -190,7 +190,10 @@ class MajorCategoryController extends Controller
         $MajorCategory->getCollection()->transform(function ($item) {
             return [
                 'id' => $item->id,
-                'division_name' => $item->division->division_name,
+                'division' => [
+                    'id' => $item->division->id,
+                    'division_name' => $item->division->division_name,
+                ],
                 'major_category_name' => $item->major_category_name,
                 'is_active' => $item->is_active,
                 'created_at' => $item->created_at,
