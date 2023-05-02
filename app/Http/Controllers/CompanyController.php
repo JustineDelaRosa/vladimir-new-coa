@@ -27,31 +27,37 @@ class CompanyController extends Controller
     public function store(Request $request)
     {
         $company_request = $request->all('result.companies');
-        if(empty($request->all())){
+        if (empty($request->all())) {
             return response()->json(['message' => 'Data not Ready']);
         }
-        
-        foreach($company_request as $companies){
-            foreach($companies as $company){
-                foreach($company as $com){
+
+
+        foreach ($company_request as $companies) {
+            foreach ($companies as $company) {
+                foreach ($company as $com) {
+                    $sync_id = $com['id'];
                     $code = $com['code'];
                     $name = $com['name'];
                     $is_active = $com['status'];
 
-                    $sync = Company::updateOrCreate([
-                        'company_code' => $code],
-                        ['company_name' => $name, 'is_active' => $is_active],
+                    $sync = Company::updateOrCreate(
+                        [
+                            'sync_id' => $sync_id,
+                        ],
+                        [
+                            'company_code' => $code,
+                            'company_name' => $name,
+                            'is_active' => $is_active
+                        ],
                     );
                     // $sync = Company::upsert([
                     //     ['company_code' => $code, 'company_name' => $name,  'is_active' => $is_active]
                     //     ], ['company_code'], ['is_active']);
-                    
+
                 }
-            
             }
         }
         return response()->json(['message' => 'Successfully Synched!']);
-    
     }
 
     /**
@@ -88,33 +94,33 @@ class CompanyController extends Controller
         //
     }
 
-    public function search(Request $request){
+    public function search(Request $request)
+    {
         $search = $request->query('search');
         $limit = $request->query('limit');
         $page = $request->get('page');
         $status = $request->query('status');
-        if($status == NULL ){
+        if ($status == NULL) {
             $status = 1;
         }
-        if($status == "active"){
+        if ($status == "active") {
             $status = 1;
         }
-        if($status == "deactivated"){
+        if ($status == "deactivated") {
             $status = 0;
         }
-        if($status != "active" || $status != "deactivated"){
+        if ($status != "active" || $status != "deactivated") {
             $status = 1;
         }
-        $Company = Company::where(function($query) use($status){
+        $Company = Company::where(function ($query) use ($status) {
             $query->where('is_active', $status);
         })
-        ->where(function($query) use($search){
-            $query->where('company_code', 'LIKE', "%{$search}%" )
-            ->orWhere('company_name', 'LIKE', "%{$search}%" );
-     
-        })
-        ->orderby('created_at', 'DESC')
-        ->paginate($limit);
+            ->where(function ($query) use ($search) {
+                $query->where('company_code', 'LIKE', "%{$search}%")
+                    ->orWhere('company_name', 'LIKE', "%{$search}%");
+            })
+            ->orderby('created_at', 'DESC')
+            ->paginate($limit);
         return $Company;
     }
 }

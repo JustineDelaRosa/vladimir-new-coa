@@ -27,24 +27,27 @@ class LocationController extends Controller
     public function store(Request $request)
     {
         $location_request = $request->all('result.locations');
-        if(empty($request->all())){
+        if (empty($request->all())) {
             return response()->json(['message' => 'Data not Ready']);
         }
-        
-        foreach($location_request as $locations){
-            foreach($locations as $location){
-                foreach($location as $loc){
+
+        foreach ($location_request as $locations) {
+            foreach ($locations as $location) {
+                foreach ($location as $loc) {
+                    $sync_id = $loc['id'];
                     $code = $loc['code'];
                     $name = $loc['name'];
                     $is_active = $loc['status'];
 
-                    $sync = Location::updateOrCreate([
-                        'location_code' => $code],
-                        ['location_name' => $name, 'is_active' => $is_active],
+                    $sync = Location::updateOrCreate(
+                        [
+                            'sync_id' => $sync_id,
+                        ],
+                        [
+                            'location_code' => $code, 'location_name' => $name, 'is_active' => $is_active
+                        ],
                     );
-                    
                 }
-            
             }
         }
         return response()->json(['message' => 'Successfully Synched!']);
@@ -85,33 +88,33 @@ class LocationController extends Controller
     }
 
 
-    public function search(Request $request){
+    public function search(Request $request)
+    {
         $search = $request->query('search');
         $limit = $request->query('limit');
         $page = $request->get('page');
         $status = $request->query('status');
-        if($status == NULL ){
+        if ($status == NULL) {
             $status = 1;
         }
-        if($status == "active"){
+        if ($status == "active") {
             $status = 1;
         }
-        if($status == "deactivated"){
+        if ($status == "deactivated") {
             $status = 0;
         }
-        if($status != "active" || $status != "deactivated"){
+        if ($status != "active" || $status != "deactivated") {
             $status = 1;
         }
-        $Location = Location::where(function($query) use($status){
+        $Location = Location::where(function ($query) use ($status) {
             $query->where('is_active', $status);
         })
-        ->where(function($query) use($search){
-            $query->where('location_code', 'LIKE', "%{$search}%" )
-            ->orWhere('location_name', 'LIKE', "%{$search}%" );
-     
-        })
-        ->orderby('created_at', 'DESC')
-        ->paginate($limit);
+            ->where(function ($query) use ($search) {
+                $query->where('location_code', 'LIKE', "%{$search}%")
+                    ->orWhere('location_name', 'LIKE', "%{$search}%");
+            })
+            ->orderby('created_at', 'DESC')
+            ->paginate($limit);
         return $Location;
     }
 }

@@ -9,6 +9,7 @@ class Location extends Model
 {
     use HasFactory;
     protected $fillable = [
+        'sync_id',
         'location_code',
         'is_active',
         'location_name'
@@ -16,4 +17,9 @@ class Location extends Model
     protected $casts = [
         'is_active' => 'boolean'
     ];
+
+    public function masterlists()
+    {
+        return $this->hasMany(Masterlist::class, 'location_sync_id', 'sync_id');
+    }
 }

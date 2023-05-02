@@ -27,27 +27,31 @@ class AccountTitleController extends Controller
     public function store(Request $request)
     {
         $accountitle_request = $request->all('result.account_titles');
-        if(empty($request->all())){
+        if (empty($request->all())) {
             return response()->json(['message' => 'Data not Ready']);
         }
-        
-        foreach($accountitle_request as $accountitles){
-            foreach($accountitles as $accountitle){
-                foreach($accountitle as $accountTitle){
+
+        foreach ($accountitle_request as $accountitles) {
+            foreach ($accountitles as $accountitle) {
+                foreach ($accountitle as $accountTitle) {
+                    $sync_id = $accountTitle['id'];
                     $code = $accountTitle['code'];
                     $name = $accountTitle['name'];
                     $is_active = $accountTitle['status'];
 
-                    $sync = AccountTitle::updateOrCreate([
-                        'account_title_code' => $code],
-                        ['account_title_name' => $name, 'is_active' => $is_active],
+                    $sync = AccountTitle::updateOrCreate(
+                        [
+                            'sync_id' => $sync_id,
+                        ],
+                        [
+                            'account_title_code' => $code, 'account_title_name' => $name, 'is_active' => $is_active
+                        ],
                     );
                     // $sync = Company::upsert([
                     //     ['company_code' => $code, 'company_name' => $name,  'is_active' => $is_active]
                     //     ], ['company_code'], ['is_active']);
-                    
+
                 }
-            
             }
         }
         return response()->json(['message' => 'Successfully Synched!']);
@@ -87,33 +91,33 @@ class AccountTitleController extends Controller
         //
     }
 
-    public function search(Request $request){
+    public function search(Request $request)
+    {
         $search = $request->query('search');
         $limit = $request->query('limit');
         $page = $request->get('page');
         $status = $request->query('status');
-        if($status == NULL ){
+        if ($status == NULL) {
             $status = 1;
         }
-        if($status == "active"){
+        if ($status == "active") {
             $status = 1;
         }
-        if($status == "deactivated"){
+        if ($status == "deactivated") {
             $status = 0;
         }
-        if($status != "active" || $status != "deactivated"){
+        if ($status != "active" || $status != "deactivated") {
             $status = 1;
         }
-        $AccountTitle = AccountTitle::where(function($query) use($status){
+        $AccountTitle = AccountTitle::where(function ($query) use ($status) {
             $query->where('is_active', $status);
         })
-        ->where(function($query) use($search){
-            $query->where('account_title_code', 'LIKE', "%{$search}%" )
-            ->orWhere('account_title_name', 'LIKE', "%{$search}%" );
-     
-        })
-        ->orderby('created_at', 'DESC')
-        ->paginate($limit);
+            ->where(function ($query) use ($search) {
+                $query->where('account_title_code', 'LIKE', "%{$search}%")
+                    ->orWhere('account_title_name', 'LIKE', "%{$search}%");
+            })
+            ->orderby('created_at', 'DESC')
+            ->paginate($limit);
         return $AccountTitle;
     }
 }

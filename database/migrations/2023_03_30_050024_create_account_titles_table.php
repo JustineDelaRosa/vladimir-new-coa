@@ -15,7 +15,8 @@ class CreateAccountTitlesTable extends Migration
     {
         Schema::create('account_titles', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('account_title_code')->unique();
+            $table->unsignedInteger('sync_id')->unique();
+            $table->integer('account_title_code')->unique();
             $table->longText('account_title_name');
             $table->boolean('is_active');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));

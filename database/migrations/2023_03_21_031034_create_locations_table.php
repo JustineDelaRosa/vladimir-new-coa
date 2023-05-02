@@ -15,7 +15,8 @@ class CreateLocationsTable extends Migration
     {
         Schema::create('locations', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('location_code')->unique();
+            $table->unsignedInteger('sync_id')->unique();
+            $table->integer('location_code')->unique();
             $table->longText('location_name');
             $table->boolean('is_active');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));

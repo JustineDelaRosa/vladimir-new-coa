@@ -15,7 +15,8 @@ class CreateCompaniesTable extends Migration
     {
         Schema::create('companies', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('company_code')->unique();
+            $table->unsignedInteger('sync_id')->unique();
+            $table->integer('company_code')->unique();
             $table->string('company_name');
             $table->boolean('is_active');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));

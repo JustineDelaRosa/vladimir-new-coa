@@ -15,7 +15,8 @@ class CreateDepartmentsTable extends Migration
     {
         Schema::create('departments', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('department_code')->unique();
+            $table->unsignedInteger('sync_id')->unique();
+            $table->integer('department_code')->unique();
             $table->longText('department_name');
             $table->boolean('is_active');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
