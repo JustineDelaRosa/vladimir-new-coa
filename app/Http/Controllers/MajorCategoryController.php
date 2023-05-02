@@ -94,6 +94,13 @@ class MajorCategoryController extends Controller
             return response()->json(['message' => 'No Changes'], 200);
         }
 
+        if (MajorCategory::where('major_category_name', $major_category_name_check)->where('division_id', $division_id)
+            ->where('id', '!=', $id)
+            ->exists()
+        ) {
+            return response()->json(['error' => 'This Major Category Already Exists for this Division'], 409);
+        }
+
 
         $update = MajorCategory::where('id', $id)
             ->update([
