@@ -97,24 +97,24 @@ class ServiceProviderController extends Controller
             return response()->json(['error' => 'Service Provider Route Not Found'], 404);
         }
 
-        if (ServiceProvider::where('id', $id)->exists()) {
-            if ($status == true) {
-                return response()->json(['message' => 'No Changes'], 200);
-            } else {
-                return response()->json(['message' => 'Unable to Archived!'], 409);
-            }
-        }
+        // if (ServiceProvider::where('id', $id)->exists()) {
+        //     if ($status == true) {
+        //         return response()->json(['message' => 'No Changes'], 200);
+        //     } else {
+        //         return response()->json(['message' => 'Unable to Archived!'], 409);
+        //     }
+        // }
 
         if ($status == false) {
             if (!ServiceProvider::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
-                if (!ServiceProvider::where('service_provider_id', $id)->exists()) {
+                if (ServiceProvider::where('id', $id)->exists()) {
                     $updateStatus = $ServiceProvider->where('id', $id)->update(['is_active' => false]);
                     $ServiceProvider->where('id', $id)->delete();
                     return response()->json(['message' => 'Successfully Deactived!'], 200);
                 }
-                return response()->json(['message' => 'Unable to Archived!, Service Provider was tagged!']);
+                // return response()->json(['message' => 'Unable to Archived!, Service Provider was tagged!']);
             }
         }
         if ($status == true) {
