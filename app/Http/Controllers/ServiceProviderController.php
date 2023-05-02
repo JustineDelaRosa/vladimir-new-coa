@@ -109,7 +109,7 @@ class ServiceProviderController extends Controller
             if (!ServiceProvider::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
-                if (ServiceProvider::where('id', $id)->exists()) {
+                if (ServiceProvider::where('id', $id)->where('is_active', true)->exists()) {
                     $updateStatus = $ServiceProvider->where('id', $id)->update(['is_active' => false]);
                     $ServiceProvider->where('id', $id)->delete();
                     return response()->json(['message' => 'Successfully Deactived!'], 200);
