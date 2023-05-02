@@ -80,6 +80,7 @@ class MajorCategoryController extends Controller
         $division_id = $request->division_id;
         $major_category_name = ucwords(strtolower($request->major_category_name));
         $major_category_name_check = str_replace(' ', '', $major_category_name);
+
         $major_category = MajorCategory::find($id);
         if (!$major_category) {
             return response()->json(['error' => 'Major Category Route Not Found'], 404);
@@ -90,7 +91,10 @@ class MajorCategoryController extends Controller
             return response()->json(['error' => 'Major Category Route Not Found'], 404);
         }
 
-        if (MajorCategory::where('id', $id)->where('major_category_name', $major_category_name)->exists()) {
+        if (MajorCategory::where('id', $id)
+            ->where(['major_category_name' => $major_category_name, 'division_id' => $division_id])
+            ->exists()
+        ) {
             return response()->json(['message' => 'No Changes'], 200);
         }
 
