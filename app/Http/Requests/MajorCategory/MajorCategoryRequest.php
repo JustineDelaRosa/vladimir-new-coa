@@ -54,7 +54,10 @@ class MajorCategoryRequest extends FormRequest
             $id = $this->route()->parameter('major_category');
             return [
                 // 'major_category_id' => 'exists:major_categories,id,deleted_at,NULL',
-                'major_category_name' => ['required'],
+                'division_id' => 'required|exists:divisions,id,deleted_at,NULL',
+                'major_category_name' => ['required', Rule::unique('major_categories', 'major_category_name')->where(function ($query) use ($id) {
+                    return $query->where('division_id', $this->division_id)->where('id', '!=', $id)->whereNull('deleted_at');
+                })],
                 // 'classification' => 'required|in:small_tools,machinery_&_equipment,mobile_phone,vechicle'
 
             ];
@@ -77,13 +80,14 @@ class MajorCategoryRequest extends FormRequest
     function messages()
     {
         return [
+            'division_id.exists' => 'Division does not exist',
+            'division_id.required' => 'Division is required',
             'division_name.required' => 'Division name is required',
             'division_name.exists' => 'Division name does not exist',
             'major_category_name.required' => 'Major category name is required',
             'major_category_name.unique' => 'Major category already exist for this division',
             'status.required' => 'Status is required',
             'status.boolean' => 'Status must be boolean',
-            'id.exists' => 'Major category id does not exist',
 
         ];
     }
