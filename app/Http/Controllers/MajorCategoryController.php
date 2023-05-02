@@ -174,15 +174,58 @@ class MajorCategoryController extends Controller
         if ($status != "active" || $status != "deactivated") {
             $status = 1;
         }
-        $MajorCategory = MajorCategory::withTrashed()
+        $MajorCategory = MajorCategory::with(['division' => function ($query) {
+            // $query->select('id', 'division_name');
+        }])
+            ->withTrashed()
             ->where(function ($query) use ($status) {
                 $query->where('is_active', $status);
             })
             ->where(function ($query) use ($search) {
                 $query->where('major_category_name', 'LIKE', "%{$search}%");
             })
-            ->orderby('created_at', 'DESC')
+            ->orderBy('created_at', 'DESC')
             ->paginate($limit);
+
+        $MajorCategory->getCollection()->transform(function ($item) {
+            return [
+                'id' => $item->id,
+                'division_name' => $item->division->division_name,
+                'major_category_name' => $item->major_category_name,
+                'is_active' => $item->is_active,
+                'created_at' => $item->created_at,
+                'updated_at' => $item->updated_at,
+                'deleted_at' => $item->deleted_at,
+            ];
+        });
+
         return $MajorCategory;
+
+
+        // $MajorCategory = MajorCategory::with(['division' => function ($query) {
+        //     $query->select('id', 'division_name', 'is_active', 'created_at', 'updated_at', 'deleted_at');
+        // }])
+        //     ->withTrashed()
+        //     ->where(function ($query) use ($status) {
+        //         $query->where('is_active', $status);
+        //     })
+        //     ->where(function ($query) use ($search) {
+        //         $query->where('major_category_name', 'LIKE', "%{$search}%");
+        //     })
+        //     ->orderby('created_at', 'DESC')
+        //     ->paginate($limit);
+
+        // $MajorCategory = MajorCategory::withTrashed()
+        //     ->where(function ($query) use ($status) {
+        //         $query->where('is_active', $status);
+        //     })
+        //     ->where(function ($query) use ($search) {
+        //         $query->where('major_category_name', 'LIKE', "%{$search}%");
+        //     })
+        //     ->orderby('created_at', 'DESC')
+        //     ->paginate($limit);
+        // $MajorCategoryArray = $MajorCategory->toArray();
+
+        // return response()->json(['data' => $MajorCategoryArray]);
     }
 }
