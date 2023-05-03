@@ -37,8 +37,8 @@ class MajorCategoryController extends Controller
         $major_category_name_check = str_replace(' ', '', $major_category_name);
 
 
-        MajorCategory::where('major_category_name', $major_category_name)->exists();
-        if (MajorCategory::where('major_category_name', $major_category_name_check)
+        // MajorCategory::withTrashed()->where('major_category_name', $major_category_name)->->exists();
+        if (MajorCategory::withTrashed()->where('major_category_name', $major_category_name_check)
             ->where('division_id', $division_id)
             ->exists()
         ) {
@@ -82,15 +82,16 @@ class MajorCategoryController extends Controller
         $major_category_name = ucwords(strtolower($request->major_category_name));
         $major_category_name_check = str_replace(' ', '', $major_category_name);
 
-        $major_category = MajorCategory::find($id);
-        if (!$major_category) {
-            return response()->json(['error' => 'Major Category Route Not Found'], 404);
-        }
 
-        $major_category = MajorCategory::where('id', $id)->where('division_id', $division_id)->exists();
-        if (!$major_category) {
-            return response()->json(['error' => 'Major Category Route Not Found'], 404);
-        }
+        // $major_category = MajorCategory::find($id);
+        // if (!$major_category) {
+        //     return response()->json(['error' => 'Major Category Route Not Found1'], 404);
+        // }
+
+        // $major_category = MajorCategory::where('id', $id)->where('division_id', $division_id)->exists();
+        // if (!$major_category) {
+        //     return response()->json(['error' => 'Major Category Route Not Found2'], 404);
+        // }
 
         if (MajorCategory::where('id', $id)
             ->where(['major_category_name' => $major_category_name, 'division_id' => $division_id])
@@ -99,19 +100,32 @@ class MajorCategoryController extends Controller
             return response()->json(['message' => 'No Changes'], 200);
         }
 
-        if (MajorCategory::where('major_category_name', $major_category_name_check)->where('division_id', $division_id)
+        if (MajorCategory::withTrashed()->where('major_category_name', $major_category_name_check)->where('division_id', $division_id)
             ->where('id', '!=', $id)
             ->exists()
         ) {
-            return response()->json(['error' => 'This Major Category Already Exists for this Division'], 409);
+            return response()->json(['error' => 'This Major Category Already Exists'], 409);
+        }
+
+        if (MajorCategory::where('id', $id)->exists()) {
+            $update = MajorCategory::where('id', $id)->update([
+                'division_id' => $division_id,
+                'major_category_name' => $major_category_name,
+                'is_active' => true
+            ]);
+            return response()->json(['message' => 'Successfully Updated!'], 200);
+        } else {
+            return response()->json(['error' => 'Major Category Route Not Found'], 404);
         }
 
 
-        $update = MajorCategory::where('id', $id)
-            ->update([
-                'major_category_name' => $major_category_name,
-            ]);
-        return response()->json(['message' => 'Successfully Updated!'], 200);
+        // $update = MajorCategory::where('id', $id)->update([
+        //     'division_id' => $division_id,
+        //     'major_category_name' => $major_category_name,
+        //     'is_active' => true
+        // ]);
+        // // return $major_category_name;
+        // return response()->json(['message' => 'Successfully Updated!'], 200);
     }
 
     /**
@@ -193,15 +207,15 @@ class MajorCategoryController extends Controller
         if ($status != "active" || $status != "deactivated") {
             $status = 1;
         }
-        $MajorCategory = MajorCategory::with(['division' => function ($query) {
-            // $query->select('id', 'division_name');
-        }])
-            ->withTrashed()
+        $MajorCategory = MajorCategory::withTrashed()->with('division')
             ->where(function ($query) use ($status) {
                 $query->where('is_active', $status);
             })
             ->where(function ($query) use ($search) {
                 $query->where('major_category_name', 'LIKE', "%{$search}%");
+                $query->orWhereHas('division', function ($query) use ($search) {
+                    $query->where('division_name', 'LIKE', "%{$search}%");
+                });
             })
             ->orderBy('created_at', 'DESC')
             ->paginate($limit);
