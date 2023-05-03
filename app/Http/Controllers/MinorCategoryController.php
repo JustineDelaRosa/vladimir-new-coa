@@ -191,6 +191,12 @@ class MinorCategoryController extends Controller
             })
             ->where(function ($query) use ($search) {
                 $query->where('minor_category_name', 'LIKE', "%{$search}%");
+                $query->orWhereHas('majorCategory', function ($query) use ($search) {
+                    $query->where('major_category_name', 'LIKE', "%{$search}%");
+                });
+                $query->orWhereHas('majorCategory.division', function ($query) use ($search) {
+                    $query->where('division_name', 'LIKE', "%{$search}%");
+                });
             })
             ->orderby('created_at', 'DESC')
             ->paginate($limit);

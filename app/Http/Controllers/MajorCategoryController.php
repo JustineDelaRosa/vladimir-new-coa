@@ -36,12 +36,10 @@ class MajorCategoryController extends Controller
         $major_category_name = ucwords(strtolower($request->major_category_name));
         $major_category_name_check = str_replace(' ', '', $major_category_name);
 
-
-        // MajorCategory::withTrashed()->where('major_category_name', $major_category_name)->->exists();
-        if (MajorCategory::withTrashed()->where('major_category_name', $major_category_name_check)
+        $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name_check)
             ->where('division_id', $division_id)
-            ->exists()
-        ) {
+            ->exists();
+        if ($majorCategoryCheck) {
             return response()->json(['error' => 'Major Category Already Exists'], 404);
         }
 
@@ -236,32 +234,5 @@ class MajorCategoryController extends Controller
         });
 
         return $MajorCategory;
-
-
-        // $MajorCategory = MajorCategory::with(['division' => function ($query) {
-        //     $query->select('id', 'division_name', 'is_active', 'created_at', 'updated_at', 'deleted_at');
-        // }])
-        //     ->withTrashed()
-        //     ->where(function ($query) use ($status) {
-        //         $query->where('is_active', $status);
-        //     })
-        //     ->where(function ($query) use ($search) {
-        //         $query->where('major_category_name', 'LIKE', "%{$search}%");
-        //     })
-        //     ->orderby('created_at', 'DESC')
-        //     ->paginate($limit);
-
-        // $MajorCategory = MajorCategory::withTrashed()
-        //     ->where(function ($query) use ($status) {
-        //         $query->where('is_active', $status);
-        //     })
-        //     ->where(function ($query) use ($search) {
-        //         $query->where('major_category_name', 'LIKE', "%{$search}%");
-        //     })
-        //     ->orderby('created_at', 'DESC')
-        //     ->paginate($limit);
-        // $MajorCategoryArray = $MajorCategory->toArray();
-
-        // return response()->json(['data' => $MajorCategoryArray]);
     }
 }
