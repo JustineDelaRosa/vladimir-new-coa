@@ -6,6 +6,7 @@ use App\Models\Division;
 use App\Models\CategoryList;
 use Illuminate\Http\Request;
 use App\Models\MajorCategory;
+use App\Models\MinorCategory;
 use App\Http\Requests\MajorCategory\MajorCategoryRequest;
 
 class MajorCategoryController extends Controller
@@ -141,17 +142,20 @@ class MajorCategoryController extends Controller
         //         return response()->json(['message' => 'Unable to Archived!'], 409);
         //     }
         // }
+        $checkMajorCategory = MinorCategory::where('major_category_id', $id)->exists();
+        if ($checkMajorCategory) {
+            return response()->json(['error' => 'Unable to Archived!, Major Category was tagged!'], 409);
+        }
 
         if ($status == false) {
             if (!MajorCategory::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
-                if (!MajorCategory::where('id', $id)->exists()) {
+                if (MajorCategory::where('id', $id)->exists()) {
                     $updateStatus = $MajorCategory->where('id', $id)->update(['is_active' => false]);
                     $MajorCategory->where('id', $id)->delete();
                     return response()->json(['message' => 'Successfully Deactived!'], 200);
                 }
-                return response()->json(['message' => 'Unable to Archived!, Major Category was tagged!']);
             }
         }
         if ($status == true) {
