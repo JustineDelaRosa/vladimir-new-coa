@@ -144,7 +144,13 @@ class MajorCategoryController extends Controller
         // }
         $checkMajorCategory = MinorCategory::where('major_category_id', $id)->exists();
         if ($checkMajorCategory) {
-            return response()->json(['error' => 'Unable to Archived!, Major Category was tagged!'], 409);
+            return response()->json(['error' => 'Unable to Archived!, Archived Minor Category First'], 409);
+        }
+
+
+        $checkDivision = Division::where('id', $MajorCategory->where('id', $id)->first()->division_id)->exists();
+        if (!$checkDivision) {
+            return response()->json(['error' => 'Unable to Archived!, Division was Archived!'], 409);
         }
 
         if ($status == false) {
