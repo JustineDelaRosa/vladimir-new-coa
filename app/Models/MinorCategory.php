@@ -10,11 +10,9 @@ class MinorCategory extends Model
 {
     use HasFactory, SoftDeletes;
     protected $fillable = [
+        'major_category_id',
         'minor_category_name',
         'is_active',
-        // 'urgency_level',
-        // 'personally_assign',
-        // 'evaluate_in_every_movement'
     ];
     protected $hidden = [
         'updated_at',
@@ -29,5 +27,10 @@ class MinorCategory extends Model
     public function majorCategory()
     {
         return $this->belongsTo(MajorCategory::class, 'major_category_id', 'id');
+    }
+
+    public function masterlists()
+    {
+        return $this->hasMany(Masterlist::class, 'minor_category_id', 'id');
     }
 }
