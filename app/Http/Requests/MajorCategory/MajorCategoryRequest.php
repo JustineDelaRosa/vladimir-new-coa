@@ -39,14 +39,10 @@ class MajorCategoryRequest extends FormRequest
 
             return [
                 'division_id' => 'required|exists:divisions,id,deleted_at,NULL',
-                'major_category_name' => [
-                    'required', Rule::unique('major_categories', 'major_category_name')->where(function ($query) {
-                        return $query->where('division_id', $this->division_id)->whereNull('deleted_at');
-                    }),
-
-
-                ],
-
+                'major_category_name' => ['required'],
+                // , Rule::unique('major_categories', 'major_category_name')->where(function ($query) {
+                //     return $query->where('division_id', $this->division_id)->whereNull('deleted_at');
+                // }),
             ];
         }
 

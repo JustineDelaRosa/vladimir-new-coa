@@ -39,8 +39,18 @@ class MajorCategoryController extends Controller
         $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name_check)
             ->where('division_id', $division_id)
             ->exists();
-        if ($majorCategoryCheck) {
-            return response()->json(['error' => 'Major Category Already Exists'], 404);
+        if ($majorCategory) {
+            return response()->json(
+                [
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'major_category_name' => [
+                            'The major category name has already been taken.'
+                        ]
+                    ]
+                ],
+                422
+            );
         }
 
 
@@ -97,11 +107,12 @@ class MajorCategoryController extends Controller
         ) {
             return response()->json(['message' => 'No Changes'], 200);
         }
-
-        if (MajorCategory::withTrashed()->where('major_category_name', $major_category_name_check)->where('division_id', $division_id)
+        $majorCategory = MajorCategory::withTrashed()
+            ->where('major_category_name', $major_category_name_check)
+            ->where('division_id', $division_id)
             ->where('id', '!=', $id)
-            ->exists()
-        ) {
+            ->exists();
+        if ($majorCategory) {
             return response()->json(['error' => 'This Major Category Already Exists'], 409);
         }
 
@@ -109,7 +120,7 @@ class MajorCategoryController extends Controller
             $update = MajorCategory::where('id', $id)->update([
                 'division_id' => $division_id,
                 'major_category_name' => $major_category_name,
-                'is_active' => true
+                // 'is_active' => true
             ]);
             return response()->json(['message' => 'Successfully Updated!'], 200);
         } else {
