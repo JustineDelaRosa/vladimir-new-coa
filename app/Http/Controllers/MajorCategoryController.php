@@ -74,7 +74,21 @@ class MajorCategoryController extends Controller
         if (!$MajorCategory->where('id', $id)->exists()) {
             return response()->json(['error' => 'Major Category Route Not Found'], 404);
         }
-        return $MajorCategory->with('minorCategory')->where('id', $id)->first();
+        $MajorCategory =  MajorCategory::with('division')->where('id', $id)->first();
+        return response()->json([
+            'data' => [
+                'id' => $MajorCategory->id,
+                'division' => [
+                    'id' => $MajorCategory->division->id,
+                    'division_name' => $MajorCategory->division->division_name
+                ],
+                'major_category_name' => $MajorCategory->major_category_name,
+                'is_active' => $MajorCategory->is_active,
+                'created_at' => $MajorCategory->created_at,
+                'updated_at' => $MajorCategory->updated_at,
+                'deleted_at' => $MajorCategory->deleted_at
+            ]
+        ]);
     }
 
     /**
@@ -167,13 +181,13 @@ class MajorCategoryController extends Controller
         // }
         $checkMajorCategory = MinorCategory::where('major_category_id', $id)->exists();
         if ($checkMajorCategory) {
-            return response()->json(['error' => 'Unable to Archived!, Archived Minor Category First'], 409);
+            return response()->json(['message' => 'Unable to Archived!, Archived Minor Category First'], 409);
         }
 
 
         $checkDivision = Division::where('id', $MajorCategory->where('id', $id)->first()->division_id)->exists();
         if (!$checkDivision) {
-            return response()->json(['error' => 'Unable to Archived!, Division was Archived!'], 409);
+            return response()->json(['message' => 'Unable to Archived!, Division was Archived!'], 409);
         }
 
         if ($status == false) {
