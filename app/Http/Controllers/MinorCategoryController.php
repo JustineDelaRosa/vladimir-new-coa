@@ -94,7 +94,28 @@ class MinorCategoryController extends Controller
                 404
             );
         }
-        return $MinorCategory->where('id', $id)->first();
+        $minorCategory = MinorCategory::with('majorCategory.division')->where('id', $id)->first();
+        // $minorCategory->getColle 
+
+        return response()->json([
+            'data' => [
+                'id' => $minorCategory->id,
+                'division' => [
+                    'id' => $minorCategory->majorCategory->division->id,
+                    'division_name' => $minorCategory->majorCategory->division->division_name,
+                ],
+                'major_category' => [
+                    'id' => $minorCategory->majorCategory->id,
+                    'major_category_name' => $minorCategory->majorCategory->major_category_name,
+
+                ],
+                'minor_category_name' => $minorCategory->minor_category_name,
+                'is_active' => $minorCategory->is_active,
+                'created_at' => $minorCategory->created_at,
+                'updated_at' => $minorCategory->updated_at,
+                'deleted_at' => $minorCategory->deleted_at
+            ]
+        ]);
     }
 
     /**
