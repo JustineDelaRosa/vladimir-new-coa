@@ -242,7 +242,7 @@ class MinorCategoryController extends Controller
 
         $MinorCategory = MinorCategory::with(['majorCategory.division'])
             ->where(function ($query) use ($status) {
-                $query->where('is_active', $status);
+                $query->withTrashed();
             })
             ->where(function ($query) use ($search) {
                 $query->where('minor_category_name', 'LIKE', "%{$search}%");

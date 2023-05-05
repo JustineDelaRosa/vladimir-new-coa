@@ -216,7 +216,9 @@ class MajorCategoryController extends Controller
         if ($status != "active" || $status != "deactivated") {
             $status = 1;
         }
-        $MajorCategory = MajorCategory::withTrashed()->with('division')
+        $MajorCategory = MajorCategory::withTrashed()->with('division', function ($query) {
+            $query->withTrashed();
+        })
             ->where(function ($query) use ($status) {
                 $query->where('is_active', $status);
             })
@@ -229,12 +231,16 @@ class MajorCategoryController extends Controller
             ->orderBy('created_at', 'DESC')
             ->paginate($limit);
 
+        //if division was trashed or not trashed
+
+
         $MajorCategory->getCollection()->transform(function ($item) {
             return [
                 'id' => $item->id,
+
                 'division' => [
-                    'id' => $item->division->id,
-                    'division_name' => $item->division->division_name,
+                    'id' => $item->division->id ?? null,
+                    'division_name' => $item->division->division_name ?? null,
                 ],
                 'major_category_name' => $item->major_category_name,
                 'is_active' => $item->is_active,
@@ -243,6 +249,7 @@ class MajorCategoryController extends Controller
                 'deleted_at' => $item->deleted_at,
             ];
         });
+
 
         return $MajorCategory;
     }
