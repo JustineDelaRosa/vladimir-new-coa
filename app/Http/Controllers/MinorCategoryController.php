@@ -35,6 +35,8 @@ class MinorCategoryController extends Controller
         // $division_id = $request->division_id;
         $major_cat_id = $request->major_category_id;
         $minor_cat_name = ucwords(strtolower($request->minor_category_name));
+        // $minor_category_name_check = str_replace(' ', '', $minor_cat_name);
+
 
 
 
@@ -43,6 +45,23 @@ class MinorCategoryController extends Controller
             return response()->json([
                 'error' => 'Major Category Not Found'
             ], 404);
+        }
+
+        $minorCategory = MinorCategory::withTrashed()->where('minor_category_name', $minor_cat_name)
+            ->where('major_category_id', $major_cat_id)
+            ->exists();
+        if ($minorCategory) {
+            return response()->json(
+                [
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'minor_category_name' => [
+                            'The minor category name has already been taken.'
+                        ]
+                    ]
+                ],
+                422
+            );
         }
 
 
@@ -89,14 +108,14 @@ class MinorCategoryController extends Controller
     {
         $major_category_id = $request->major_category_id;
         $minor_category_name = ucwords(strtolower($request->minor_category_name));
-        $minor_category_name_check = str_replace(' ', '', $minor_category_name);
+        // $minor_category_name_check = str_replace(' ', '', $minor_category_name);
 
-        if (!MinorCategory::where('id', $id)->exists()) {
-            return response()->json(['error' => 'Minor Category Route Not Found'], 404);
-        }
-        if (!MinorCategory::where('id', $id)->where('major_category_id', $major_category_id)->exists()) {
-            return response()->json(['error' => 'Minor Category Route Not Found'], 404);
-        }
+        // if (!MinorCategory::where('id', $id)->exists()) {
+        //     return response()->json(['error' => 'Minor Category Route Not Found'], 404);
+        // }
+        // if (!MinorCategory::where('id', $id)->where('major_category_id', $major_category_id)->exists()) {
+        //     return response()->json(['error' => 'Minor Category Route Not Found'], 404);
+        // }
 
         if (MinorCategory::where('id', $id)
             ->where(['minor_category_name' => $minor_category_name, 'major_category_id' => $major_category_id])
@@ -104,11 +123,26 @@ class MinorCategoryController extends Controller
         ) {
             return response()->json(['message' => 'No Changes'], 200);
         }
-        $update = MinorCategory::where('id', $id)
-            ->update([
-                'minor_category_name' => $minor_category_name,
-            ]);
-        return response()->json(['message' => 'Successfully Updated!'], 200);
+
+        $minorCategory = MinorCategory::withTrashed()
+            ->where('minor_category_name', $minor_category_name)
+            ->where('major_category_id', $major_category_id)
+            ->where('id', '!=', $id)
+            ->exists();
+        if ($minorCategory) {
+            return response()->json(['error' => 'This Minor Category Already Exists'], 409);
+        }
+
+        if (MinorCategory::where('id', $id)->exists()) {
+            $update = MinorCategory::where('id', $id)
+                ->update([
+                    'major_category_id' => $major_category_id,
+                    'minor_category_name' => $minor_category_name,
+                ]);
+            return response()->json(['message' => 'Successfully Updated!'], 200);
+        } else {
+            return response()->json(['error' => 'Minor Category Route Not Found'], 404);
+        }
     }
 
     /**
@@ -222,17 +256,5 @@ class MinorCategoryController extends Controller
         });
 
         return $MinorCategory;
-
-
-        // $MinorCategory = MinorCategory::withTrashed()
-        //     ->where(function ($query) use ($status) {
-        //         $query->where('is_active', $status);
-        //     })
-        //     ->where(function ($query) use ($search) {
-        //         $query->where('minor_category_name', 'LIKE', "%{$search}%");
-        //     })
-        //     ->orderby('created_at', 'DESC')
-        //     ->paginate($limit);
-        // return $MinorCategory;
     }
 }

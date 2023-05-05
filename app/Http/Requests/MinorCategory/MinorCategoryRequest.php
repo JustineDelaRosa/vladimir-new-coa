@@ -36,9 +36,7 @@ class MinorCategoryRequest extends FormRequest
             return [
                 'major_category_id' => 'required|exists:major_categories,id,deleted_at,NULL',
                 //if minor category name and major category id has duplicate
-                'minor_category_name' => ['required', Rule::unique('minor_categories', 'minor_category_name')->where(function ($query) {
-                    return $query->where('major_category_id', $this->major_category_id)->whereNull('deleted_at');
-                })],
+                'minor_category_name' => 'required',
             ];
         }
 

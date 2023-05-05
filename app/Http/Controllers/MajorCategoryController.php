@@ -34,9 +34,9 @@ class MajorCategoryController extends Controller
     {
         $division_id = $request->division_id;
         $major_category_name = ucwords(strtolower($request->major_category_name));
-        $major_category_name_check = str_replace(' ', '', $major_category_name);
+        // $major_category_name_check = str_replace(' ', '', $major_category_name);
 
-        $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name_check)
+        $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name)
             ->where('division_id', $division_id)
             ->exists();
         if ($majorCategory) {
