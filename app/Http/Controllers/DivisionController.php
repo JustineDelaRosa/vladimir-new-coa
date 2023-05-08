@@ -31,7 +31,7 @@ class DivisionController extends Controller
      */
     public function store(DivisionRequest $request)
     {
-        $division_name = ucwords(strtolower($request->division_name));
+        $division_name = strtoupper($request->division_name);
 
         Division::create([
             'division_name' => $division_name,
@@ -63,7 +63,7 @@ class DivisionController extends Controller
      */
     public function update(DivisionRequest $request, $id)
     {
-        $division_name = ucwords(strtolower($request->division_name));
+        $division_name = strtoupper($request->division_name);
 
         if (!Division::where('id', $id)->exists()) {
             return response()->json(['error' => 'Division Route Not Found'], 404);

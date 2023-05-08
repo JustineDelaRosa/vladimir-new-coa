@@ -33,7 +33,7 @@ class MajorCategoryController extends Controller
     public function store(MajorCategoryRequest $request)
     {
         $division_id = $request->division_id;
-        $major_category_name = ucwords(strtolower($request->major_category_name));
+        $major_category_name = strtoupper($request->major_category_name);
         // $major_category_name_check = str_replace(' ', '', $major_category_name);
 
         $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name)
@@ -104,7 +104,7 @@ class MajorCategoryController extends Controller
     public function update(MajorCategoryRequest $request, $id)
     {
         $division_id = $request->division_id;
-        $major_category_name = ucwords(strtolower($request->major_category_name));
+        $major_category_name = strtoupper($request->major_category_name);
         $major_category_name_check = str_replace(' ', '', $major_category_name);
 
 
@@ -125,7 +125,7 @@ class MajorCategoryController extends Controller
             return response()->json(['message' => 'No Changes'], 200);
         }
         $majorCategory = MajorCategory::withTrashed()
-            ->where('major_category_name', $major_category_name_check)
+            ->where('major_category_name', $major_category_name)
             ->where('division_id', $division_id)
             ->where('id', '!=', $id)
             ->exists();
@@ -243,7 +243,8 @@ class MajorCategoryController extends Controller
         if ($status != "active" || $status != "deactivated") {
             $status = 1;
         }
-        $MajorCategory = MajorCategory::withTrashed()->with('division', function ($query) {
+        $MajorCategory = MajorCategory::withTrashed()->with('division', function ($query) use ($status) {
+            $query->where('is_active', $status);
             $query->withTrashed();
         })
             ->where(function ($query) use ($status) {

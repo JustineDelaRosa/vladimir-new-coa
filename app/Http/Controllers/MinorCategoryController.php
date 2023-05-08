@@ -34,7 +34,7 @@ class MinorCategoryController extends Controller
     {
         // $division_id = $request->division_id;
         $major_cat_id = $request->major_category_id;
-        $minor_cat_name = ucwords(strtolower($request->minor_category_name));
+        $minor_cat_name = strtoupper($request->minor_category_name);
         // $minor_category_name_check = str_replace(' ', '', $minor_cat_name);
 
 
@@ -126,7 +126,7 @@ class MinorCategoryController extends Controller
     public function update(MinorCategoryRequest $request, $id)
     {
         $major_category_id = $request->major_category_id;
-        $minor_category_name = ucwords(strtolower($request->minor_category_name));
+        $minor_category_name = strtoupper($request->minor_category_name);
         // $minor_category_name_check = str_replace(' ', '', $minor_category_name);
 
         // if (!MinorCategory::where('id', $id)->exists()) {
@@ -248,8 +248,9 @@ class MinorCategoryController extends Controller
         }
 
 
-        $MinorCategory = MinorCategory::with(['majorCategory.division'])
+        $MinorCategory = MinorCategory::withTrashed()->with(['majorCategory.division'])
             ->where(function ($query) use ($status) {
+                $query->where('is_active', $status);
                 $query->withTrashed();
             })
             ->where(function ($query) use ($search) {
