@@ -95,8 +95,6 @@ class MinorCategoryController extends Controller
             );
         }
         $minorCategory = MinorCategory::with('majorCategory.division')->where('id', $id)->first();
-        // $minorCategory->getColle 
-
         return response()->json([
             'data' => [
                 'id' => $minorCategory->id,
@@ -151,7 +149,7 @@ class MinorCategoryController extends Controller
             ->where('id', '!=', $id)
             ->exists();
         if ($minorCategory) {
-            return response()->json(['error' => 'This Minor Category Already Exists'], 409);
+            return response()->json(['error' => 'This Minor Category Already Exists'], 422);
         }
 
         if (MinorCategory::where('id', $id)->exists()) {

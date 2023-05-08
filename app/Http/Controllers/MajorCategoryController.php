@@ -74,21 +74,24 @@ class MajorCategoryController extends Controller
         if (!$MajorCategory->where('id', $id)->exists()) {
             return response()->json(['error' => 'Major Category Route Not Found'], 404);
         }
-        $MajorCategory =  MajorCategory::with('division')->where('id', $id)->first();
-        return response()->json([
-            'data' => [
-                'id' => $MajorCategory->id,
-                'division' => [
-                    'id' => $MajorCategory->division->id,
-                    'division_name' => $MajorCategory->division->division_name
-                ],
-                'major_category_name' => $MajorCategory->major_category_name,
-                'is_active' => $MajorCategory->is_active,
-                'created_at' => $MajorCategory->created_at,
-                'updated_at' => $MajorCategory->updated_at,
-                'deleted_at' => $MajorCategory->deleted_at
-            ]
-        ]);
+
+        return $MajorCategory->with('division')->where('id', $id)->first();
+
+        // $MajorCategory =  MajorCategory::with('division')->where('id', $id)->first();
+        // return response()->json([
+        //     'data' => [
+        //         'id' => $MajorCategory->id,
+        //         'division' => [
+        //             'id' => $MajorCategory->division->id,
+        //             'division_name' => $MajorCategory->division->division_name
+        //         ],
+        //         'major_category_name' => $MajorCategory->major_category_name,
+        //         'is_active' => $MajorCategory->is_active,
+        //         'created_at' => $MajorCategory->created_at,
+        //         'updated_at' => $MajorCategory->updated_at,
+        //         'deleted_at' => $MajorCategory->deleted_at
+        //     ]
+        // ]);
     }
 
     /**
@@ -127,7 +130,7 @@ class MajorCategoryController extends Controller
             ->where('id', '!=', $id)
             ->exists();
         if ($majorCategory) {
-            return response()->json(['error' => 'This Major Category Already Exists'], 409);
+            return response()->json(['error' => 'This Major Category Already Exists'], 422);
         }
 
         if (MajorCategory::where('id', $id)->exists()) {
