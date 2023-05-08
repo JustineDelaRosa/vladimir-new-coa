@@ -130,7 +130,17 @@ class MajorCategoryController extends Controller
             ->where('id', '!=', $id)
             ->exists();
         if ($majorCategory) {
-            return response()->json(['error' => 'This Major Category Already Exists'], 422);
+            return response()->json(
+                [
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'major_category_name' => [
+                            'The major category name has already been taken.'
+                        ]
+                    ]
+                ],
+                422
+            );
         }
 
         if (MajorCategory::where('id', $id)->exists()) {

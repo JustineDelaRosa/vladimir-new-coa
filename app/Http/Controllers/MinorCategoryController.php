@@ -149,7 +149,17 @@ class MinorCategoryController extends Controller
             ->where('id', '!=', $id)
             ->exists();
         if ($minorCategory) {
-            return response()->json(['error' => 'This Minor Category Already Exists'], 422);
+            return response()->json(
+                [
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'minor_category_name' => [
+                            'The minor category name has already been taken.'
+                        ]
+                    ]
+                ],
+                422
+            );
         }
 
         if (MinorCategory::where('id', $id)->exists()) {
