@@ -36,6 +36,7 @@ class AccountTitleController extends Controller
                 foreach ($accountitle as $accountTitle) {
                     $sync_id = $accountTitle['id'];
                     $code = $accountTitle['code'];
+//                    $name = strtoupper($accountTitle['name']);
                     $name = $accountTitle['name'];
                     $is_active = $accountTitle['status'];
 

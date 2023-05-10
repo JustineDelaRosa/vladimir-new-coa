@@ -37,6 +37,7 @@ class CompanyController extends Controller
                 foreach ($company as $com) {
                     $sync_id = $com['id'];
                     $code = $com['code'];
+//                    $name = strtoupper($com['name']);
                     $name = $com['name'];
                     $is_active = $com['status'];
 

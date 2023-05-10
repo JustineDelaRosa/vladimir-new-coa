@@ -36,6 +36,7 @@ class DepartmentController extends Controller
                 foreach ($department as $dept) {
                     $sync_id = $dept['id'];
                     $code = $dept['code'];
+//                    $name = strtoupper($dept['name']);
                     $name = $dept['name'];
                     $is_active = $dept['status'];
 

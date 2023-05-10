@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\FixedAssetController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Setup\SetupController;
 use App\Http\Controllers\AccountTitleController;
 use App\Http\Controllers\CategoryListController;
 use App\Http\Controllers\MajorCategoryController;
+use App\Http\Controllers\MasterlistImportController;
 use App\Http\Controllers\MinorCategoryController;
 use App\Http\Controllers\ServiceProviderController;
 use App\Http\Controllers\Setup\RoleManagementController;
@@ -121,4 +123,11 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('division', DivisionController::class);
     Route::put('division/archived-division/{id}', [DivisionController::class, 'archived']);
     Route::get('divisions/search', [DivisionController::class, 'search']);
+
+    //materlist import
+    Route::post('/import-masterlist', [MasterlistImportController::class, 'masterlistImport']);
+
+    //fixed asset
+    Route::resource('fixed-asset', FixedAssetController::class);
+    Route::get('fixed-assets/search', [FixedAssetController::class, 'search']);
 });

@@ -18,8 +18,8 @@ class Department extends Model
         'is_active' => 'boolean'
     ];
 
-    public function masterlists()
+    public function fixedAsset()
     {
-        return $this->hasMany(Masterlist::class, 'department_sync_id', 'sync_id');
+        return $this->hasMany(FixedAsset::class, 'department_sync_id', 'sync_id');
     }
 }

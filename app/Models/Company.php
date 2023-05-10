@@ -19,8 +19,8 @@ class Company extends Model
         'is_active' => 'boolean'
     ];
 
-    public function masterlists()
+    public function fixedAsset()
     {
-        return $this->hasMany(Masterlist::class, 'company_sync_id', 'sync_id');
+        return $this->hasMany(FixedAsset::class, 'company_sync_id', 'sync_id');
     }
 }

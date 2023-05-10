@@ -18,8 +18,8 @@ class AccountTitle extends Model
         'is_active' => 'boolean'
     ];
 
-    public function masterlists()
+    public function fixedAsset()
     {
-        return $this->hasMany(Masterlist::class, 'account_sync_id', 'sync_id');
+        return $this->hasMany(FixedAsset::class, 'account_sync_id', 'sync_id');
     }
 }

@@ -36,6 +36,7 @@ class LocationController extends Controller
                 foreach ($location as $loc) {
                     $sync_id = $loc['id'];
                     $code = $loc['code'];
+//                    $name = strtoupper($loc['name']);
                     $name = $loc['name'];
                     $is_active = $loc['status'];
 

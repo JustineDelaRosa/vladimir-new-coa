@@ -29,7 +29,7 @@ class MinorCategory extends Model
         return $this->belongsTo(MajorCategory::class, 'major_category_id', 'id');
     }
 
-    public function masterlists()
+    public function fixedAsset()
     {
         return $this->hasMany(Masterlist::class, 'minor_category_id', 'id');
     }

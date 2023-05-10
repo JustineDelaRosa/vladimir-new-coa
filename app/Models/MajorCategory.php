@@ -18,6 +18,11 @@ class MajorCategory extends Model
         'is_active' => 'boolean'
     ];
 
+    // public function findDivisionIdAttribute($value)
+    // {
+    //     return $this->attributes['division_id'] = Division::find($value);
+    // }
+
     public function division()
     {
         return $this->belongsTo(Division::class, 'division_id', 'id');
@@ -28,8 +33,8 @@ class MajorCategory extends Model
         return $this->hasMany(MinorCategory::class, 'major_category_id', 'id');
     }
 
-    public function masterlists()
+    public function fixedAsset()
     {
-        return $this->hasMany(Masterlist::class, 'major_category_id', 'id');
+        return $this->hasMany(FixedAsset::class, 'major_category_id', 'id');
     }
 }

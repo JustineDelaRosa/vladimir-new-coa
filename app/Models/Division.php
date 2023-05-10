@@ -19,4 +19,9 @@ class Division extends Model
     {
         return $this->hasMany(MajorCategory::class, 'division_id', 'id');
     }
+
+    public function fixedAsset()
+    {
+        return $this->hasMany(FixedAsset::class, 'division_id', 'id');
+    }
 }
