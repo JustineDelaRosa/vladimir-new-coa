@@ -51,7 +51,11 @@ class DivisionController extends Controller
      */
     public function show($id)
     {
-        //
+        $division = Division::query();
+        if (!$division->where('id', $id)->exists()) {
+            return response()->json(['error' => 'Division Route Not Found'], 404);
+        }
+        return $division->where('id', $id)->with('major_category')->first();
     }
 
     /**

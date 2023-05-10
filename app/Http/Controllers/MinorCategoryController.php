@@ -205,7 +205,7 @@ class MinorCategoryController extends Controller
 
         $checkMajorCategory = MajorCategory::where('id', $MinorCategory->where('id', $id)->first()->major_category_id)->exists();
         if (!$checkMajorCategory) {
-            return response()->json(['error' => 'Unable to Archived!, Major Category was Archived!'], 409);
+            return response()->json(['error' => 'Unable to Restore!, Major Category was Archived!'], 409);
         }
 
         if ($status == false) {
@@ -248,10 +248,13 @@ class MinorCategoryController extends Controller
         }
 
 
-        $MinorCategory = MinorCategory::withTrashed()->with(['majorCategory.division'])
+        $MinorCategory = MinorCategory::withTrashed()->with(['majorCategory' => function ($query) {
+            $query->withTrashed()->with(['division' => function ($query) {
+                $query->withTrashed();
+            }]);
+        }])
             ->where(function ($query) use ($status) {
                 $query->where('is_active', $status);
-                $query->withTrashed();
             })
             ->where(function ($query) use ($search) {
                 $query->where('minor_category_name', 'LIKE', "%{$search}%");
@@ -259,10 +262,10 @@ class MinorCategoryController extends Controller
                     $query->where('major_category_name', 'LIKE', "%{$search}%");
                 });
                 $query->orWhereHas('majorCategory.division', function ($query) use ($search) {
-                    $query->where('division_name', 'LIKE', "%{$search}%");
+                    $query->withTrashed()->where('division_name', 'LIKE', "%{$search}%");
                 });
             })
-            ->orderby('created_at', 'DESC')
+            ->orderBy('created_at', 'DESC')
             ->paginate($limit);
 
         $MinorCategory->getCollection()->transform(function ($item) {
@@ -275,7 +278,6 @@ class MinorCategoryController extends Controller
                 'major_category' => [
                     'id' => $item->majorCategory->id,
                     'major_category_name' => $item->majorCategory->major_category_name,
-
                 ],
                 'minor_category_name' => $item->minor_category_name,
                 'is_active' => $item->is_active,
@@ -286,5 +288,7 @@ class MinorCategoryController extends Controller
         });
 
         return $MinorCategory;
+
+
     }
 }

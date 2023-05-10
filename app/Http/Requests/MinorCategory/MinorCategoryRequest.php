@@ -65,9 +65,8 @@ class MinorCategoryRequest extends FormRequest
     function messages()
     {
         return [
-            'major_category_name.required' => 'Major Category Name is required',
-            'major_category_name.exists' => 'Major Category Name does not exist',
-            'major_category_name.unique' => 'Major Category Name already exists',
+            'major_category_id.required' => 'Major Category is required',
+            'major_category_id.exists' => 'Major Category does not exist',
             'minor_category_name.required' => 'Minor Category Name is required',
             'minor_category_name.unique' => 'Minor Category Name already exists for this major category',
             'status.required' => 'Status is required',

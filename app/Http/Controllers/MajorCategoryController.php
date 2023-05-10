@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Division;
-use App\Models\CategoryList;
 use Illuminate\Http\Request;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
@@ -200,7 +199,7 @@ class MajorCategoryController extends Controller
 
         $checkDivision = Division::where('id', $MajorCategory->where('id', $id)->first()->division_id)->exists();
         if (!$checkDivision) {
-            return response()->json(['message' => 'Unable to Archived!, Division was Archived!'], 409);
+            return response()->json(['message' => 'Unable to Restore!, Division was Archived!'], 409);
         }
 
         if ($status == false) {
