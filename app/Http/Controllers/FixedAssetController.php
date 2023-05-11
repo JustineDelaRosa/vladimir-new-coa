@@ -15,7 +15,7 @@ class FixedAssetController extends Controller
      */
     public function index()
     {
-        $fixed_assets = FixedAsset::with('location')->get();
+        $fixed_assets = FixedAsset::with('formula')->get();
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
             'data' => $fixed_assets
