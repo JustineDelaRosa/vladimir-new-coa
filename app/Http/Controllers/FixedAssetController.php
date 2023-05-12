@@ -54,11 +54,11 @@ class FixedAssetController extends Controller
             'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
             'tag_number' => $fixed_asset->tag_number,
             'tag_number_old' => $fixed_asset->tag_number_old,
-            'description' => $fixed_asset->description,
+            'asset_description' => $fixed_asset->asset_description,
             'type_of_request' => $fixed_asset->type_of_request,
-            'additional_description' => $fixed_asset->additional_description,
+            'asset_specification' => $fixed_asset->asset_specification,
             'accountability' => $fixed_asset->accountability,
-            'name' => $fixed_asset->name,
+            'accountable' => $fixed_asset->accountable,
             'brand' => $fixed_asset->brand,
             'division' => $fixed_asset->division->division_name,
             'major_category' => $fixed_asset->majorCategory->major_category_name,
@@ -170,7 +170,7 @@ class FixedAssetController extends Controller
                     ->orWhere('tag_number_old', 'LIKE', '%' . $search . '%')
                     ->orWhere('type_of_request', 'LIKE', '%' . $search . '%')
                     ->orWhere('accountability', 'LIKE', '%' . $search . '%')
-                    ->orWhere('name', 'LIKE', '%' . $search . '%')
+                    ->orWhere('accountable', 'LIKE', '%' . $search . '%')
                     ->orWhere('brand', 'LIKE', '%' . $search . '%')
                     ->orWhere('depreciation_method', 'LIKE', '%' . $search . '%');
                 $query->orWhereHas('majorCategory', function ($query) use ($search) {
@@ -206,11 +206,11 @@ class FixedAssetController extends Controller
                 'vladimir_tag_number' => $item->vladimir_tag_number,
                 'tag_number' => $item->tag_number,
                 'tag_number_old' => $item->tag_number_old,
-                'description' => $item->description,
+                'asset_description' => $item->asset_description,
                 'type_of_request' => $item->type_of_request,
-                'additional_description' => $item->additional_description,
+                'asset_specification' => $item->asset_specification,
                 'accountability' => $item->accountability,
-                'name' => $item->name,
+                'accountable' => $item->accountable,
                 'brand' => $item->brand,
                 'division' => $item->division->division_name,
                 'major_category' => $item->majorCategory->major_category_name,
