@@ -20,11 +20,11 @@ class CreateFixedAssetsTable extends Migration
             $table->string('vladimir_tag_number');
             $table->string('tag_number');
             $table->string('tag_number_old');
-            $table->string('description');
+            $table->string('asset_description');
             $table->string('type_of_request');
-            $table->string('additional_description');
+            $table->string('asset_specification');
             $table->string('accountability');
-            $table->string('name');
+            $table->string('accountable');
             $table->string('cellphone_number');
             $table->string('brand');
             $table->unsignedInteger('major_category_id');

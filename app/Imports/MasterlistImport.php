@@ -47,13 +47,13 @@ class MasterlistImport extends DefaultValueBinder implements ToCollection, WithH
         return 150;
     }
 
-    public function bindValue(Cell $cell, $value) : bool
+    public function bindValue(Cell $cell, $value): bool
     {
 
-        if ($cell->getColumn() == 'U' ) {
+        if ($cell->getColumn() == 'U') {
             $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y-m-d'), DataType::TYPE_STRING);
             return true;
-        }elseif ($cell->getColumn() == 'AC' ) {
+        } elseif ($cell->getColumn() == 'AC') {
             $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y-m'), DataType::TYPE_STRING);
             return true;
         }
@@ -79,11 +79,11 @@ class MasterlistImport extends DefaultValueBinder implements ToCollection, WithH
                 '*.vladimir_tag_number' => ['required', Rule::unique('fixed_assets', 'vladimir_tag_number')],
                 '*.tag_number' => ['required', Rule::unique('fixed_assets', 'tag_number')],
                 '*.tag_number_old' => ['required', Rule::unique('fixed_assets', 'tag_number_old')],
-                '*.description' => 'required',
+                '*.asset_description' => 'required',
                 '*.type_of_request' => 'required',
-                '*.additional_description' => 'required',
+                '*.asset_specification' => 'required',
                 '*.accountability' => 'required',
-                '*.name' => 'required',
+                '*.accountable' => 'required',
                 '*.cellphone_number' => 'required',
                 '*.brand' => 'required',
                 '*.division' => ['required', function ($attribute, $value, $fail) {
@@ -148,11 +148,11 @@ class MasterlistImport extends DefaultValueBinder implements ToCollection, WithH
                 '*.vladimir_tag_number.required' => 'Vladimir Tag Number is required',
                 '*.tag_number.required' => 'Tag Number is required',
                 '*.tag_number_old.required' => 'Tag Number Old is required',
-                '*.description.required' => 'Description is required',
+                '*.asset_description.required' => 'Description is required',
                 '*.type_of_request.required' => 'Type of Request is required',
-                '*.additional_description.required' => 'Additional Description is required',
+                '*.asset_specification.required' => 'Additional Description is required',
                 '*.accountability.required' => 'Accountability is required',
-                '*.name.required' => 'Name is required',
+                '*.accountable.required' => 'accountable is required',
                 '*.cellphone_number.required' => 'Cellphone Number is required',
                 '*.brand.required' => 'Brand is required',
                 '*.division.required' => 'Division is required',
@@ -231,11 +231,11 @@ class MasterlistImport extends DefaultValueBinder implements ToCollection, WithH
                 'vladimir_tag_number' => $collection['vladimir_tag_number'],
                 'tag_number' => $collection['tag_number'],
                 'tag_number_old' => $collection['tag_number_old'],
-                'description' => $collection['description'],
+                'asset_description' => $collection['asset_description'],
                 'type_of_request' => $collection['type_of_request'],
-                'additional_description' => $collection['additional_description'],
+                'asset_specification' => $collection['asset_specification'],
                 'accountability' => $collection['accountability'],
-                'name' => $collection['name'],
+                'accountable' => $collection['accountable'],
                 'cellphone_number' => $collection['cellphone_number'],
                 'brand' => $collection['brand'],
                 'division_id' => $divisionId,
@@ -278,8 +278,6 @@ class MasterlistImport extends DefaultValueBinder implements ToCollection, WithH
                 'remaining_book_value' => $collection['remaining_book_value'],
                 'start_depreciation' => $collection['start_depreciation'],
             ]);
-
         }
-
     }
 }
