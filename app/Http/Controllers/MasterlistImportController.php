@@ -24,7 +24,7 @@ class MasterlistImportController extends Controller
             [
                 'message' => 'Masterlist imported successfully.',
                 // 'count' => $count,
-                'data' => $file,
+                //'data' => $file,
             ],
             200
         );

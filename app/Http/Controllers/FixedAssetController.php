@@ -41,9 +41,9 @@ class FixedAssetController extends Controller
      */
     public function show($id)
     {
-        $fixed_asset = FixedAsset::withTrashed()->find($id);
+        $fixed_asset = FixedAsset::withTrashed()->where('id', $id)->first();
         //        return $fixed_asset->majorCategory->major_category_name;
-        if (!$fixed_asset->where('id', $id)->exists()) {
+        if (!$fixed_asset) {
             return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
         }
         $fixed_asset->with('formula')->where('id', $id)->first();
