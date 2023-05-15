@@ -17,9 +17,9 @@ class CreateFixedAssetsTable extends Migration
             $table->increments('id');
             $table->string('capex')->nullable();
             $table->string('project_name');
-            $table->string('vladimir_tag_number');
-            $table->string('tag_number');
-            $table->string('tag_number_old');
+            $table->string('vladimir_tag_number')->unique();
+            $table->string('tag_number')->unique();
+            $table->string('tag_number_old')->unique();
             $table->string('asset_description');
             $table->string('type_of_request');
             $table->string('asset_specification');

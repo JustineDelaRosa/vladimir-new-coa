@@ -62,9 +62,6 @@ class MasterlistImport extends DefaultValueBinder implements ToCollection, WithH
         return parent::bindValue($cell, $value);
     }
 
-
-
-
     /**
      * @param Collection $collections
      */
@@ -74,11 +71,32 @@ class MasterlistImport extends DefaultValueBinder implements ToCollection, WithH
         Validator::make(
             $collections->toArray(),
             [
-                '*.capex' => 'required',
+                '*.capex' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|\d+-\d+|)$/'],
                 '*.project_name' => 'required',
-                '*.vladimir_tag_number' => ['required', Rule::unique('fixed_assets', 'vladimir_tag_number')],
-                '*.tag_number' => ['required', Rule::unique('fixed_assets', 'tag_number')],
-                '*.tag_number_old' => ['required', Rule::unique('fixed_assets', 'tag_number_old')],
+                '*.vladimir_tag_number' => 'required',
+                '*.tag_number' => ['required', function ($attribute, $value, $fail)use($collections) {
+                $duplicate = $collections->where('tag_number', $value)->count();
+                if ($duplicate > 1) {
+                    $fail('Tag number in row ' . $attribute[0] . ' is not unique');
+                }
+                //check in database
+                $fixed_asset = FixedAsset::withTrashed()->where('tag_number', $value)->first();
+                if ($fixed_asset) {
+                    $fail('Tag number already exists');
+                }
+
+                }],
+                '*.tag_number_old' => ['required', function ($attribute, $value, $fail) use ($collections) {
+                    $duplicate = $collections->where('tag_number_old', $value)->count();
+                    if ($duplicate > 1) {
+                        $fail('Tag number old in row '. $attribute[0].' is not unique');
+                    }
+                    //check in database
+                    $fixed_asset = FixedAsset::withTrashed()->where('tag_number_old', $value)->first();
+                    if ($fixed_asset) {
+                        $fail('Tag number old already exists');
+                    }
+                }],
                 '*.asset_description' => 'required',
                 '*.type_of_request' => 'required',
                 '*.asset_specification' => 'required',
@@ -119,20 +137,20 @@ class MasterlistImport extends DefaultValueBinder implements ToCollection, WithH
                 '*.receipt' => 'required',
                 '*.quantity' => 'required',
                 '*.depreciation_method' => 'required',
-                '*.est_useful_life' => 'required',
+                '*.est_useful_life' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
                 '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date'],
-                '*.acquisition_cost' => 'required',
-                '*.scrap_value' => 'required',
-                '*.original_cost' => 'required',
-                '*.accumulated_cost' => 'required',
-                '*.status' => 'required',
+                '*.acquisition_cost' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+                '*.scrap_value' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+                '*.original_cost' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+                '*.accumulated_cost' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+                '*.status' => 'required|boolean',
                 '*.care_of' => 'required',
-                '*.age' => 'required',
+                '*.age' => 'required|numeric',
                 '*.end_depreciation' => 'required|date_format:Y-m',
-                '*.depreciation_per_year' => 'required',
-                '*.depreciation_per_month' => 'required',
-                '*.remaining_book_value' => 'required',
-                '*.start_depreciation' => 'required',
+                '*.depreciation_per_year' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+                '*.depreciation_per_month' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+                '*.remaining_book_value' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+                '*.start_depreciation' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
                 '*.company_code' => 'required|exists:companies,company_code',
                 '*.company' => 'required|exists:companies,company_name',
                 '*.department_code' => 'required|exists:departments,department_code',
@@ -224,60 +242,79 @@ class MasterlistImport extends DefaultValueBinder implements ToCollection, WithH
             }
 
 
-            // Create the Masterlist with the obtained ids or null if not found
-            FixedAsset::create([
-                'capex' => $collection['capex'],
-                'project_name' => $collection['project_name'],
-                'vladimir_tag_number' => $collection['vladimir_tag_number'],
-                'tag_number' => $collection['tag_number'],
-                'tag_number_old' => $collection['tag_number_old'],
-                'asset_description' => $collection['asset_description'],
-                'type_of_request' => $collection['type_of_request'],
-                'asset_specification' => $collection['asset_specification'],
-                'accountability' => $collection['accountability'],
-                'accountable' => $collection['accountable'],
-                'cellphone_number' => $collection['cellphone_number'],
-                'brand' => $collection['brand'],
-                'division_id' => $divisionId,
-                'major_category_id' => $majorCategoryId,
-                'minor_category_id' => $minorCategoryId,
-                'voucher' => $collection['voucher'],
-                'receipt' => $collection['receipt'],
-                'quantity' => $collection['quantity'],
-                'depreciation_method' => $collection['depreciation_method'],
-                'est_useful_life' => $collection['est_useful_life'],
-                'acquisition_date' => $collection['acquisition_date'],
-                'acquisition_cost' => $collection['acquisition_cost'],
-                'is_active' => $collection['status'],
-                'care_of' => $collection['care_of'],
-                'company_id' => Company::where('company_code', $collection['company_code'])->first()->id,
-                'company_name' => $collection['company'],
-                'department_id' => Department::where('department_code', $collection['department_code'])->first()->id,
-                'department_name' => $collection['department'],
-                'location_id' => Location::where('location_code', $collection['location_code'])->first()->id,
-                'location_name' => $collection['location'],
-                'account_id' => AccountTitle::where('account_title_code', $collection['account_code'])->first()->id,
-                'account_title' => $collection['account_title'],
-            ]);
+//            // Create the Masterlist with the obtained ids or null if not found
+//            $fixedAsset =FixedAsset::create([
+//                'capex' => $collection['capex'],
+//                'project_name' => $collection['project_name'],
+//                'vladimir_tag_number' => $collection['capex'] != '-' ? $collection['vladimir_tag_number'] : $this->vladimirTagGenerator(),
+//                'tag_number' => $collection['tag_number'],
+//                'tag_number_old' => $collection['tag_number_old'],
+//                'asset_description' => $collection['asset_description'],
+//                'type_of_request' => $collection['type_of_request'],
+//                'asset_specification' => $collection['asset_specification'],
+//                'accountability' => $collection['accountability'],
+//                'accountable' => $collection['accountable'],
+//                'cellphone_number' => $collection['cellphone_number'],
+//                'brand' => $collection['brand'],
+//                'division_id' => $divisionId,
+//                'major_category_id' => $majorCategoryId,
+//                'minor_category_id' => $minorCategoryId,
+//                'voucher' => $collection['voucher'],
+//                'receipt' => $collection['receipt'],
+//                'quantity' => $collection['quantity'],
+//                'depreciation_method' => $collection['depreciation_method'],
+//                'est_useful_life' => $collection['est_useful_life'],
+//                'acquisition_date' => $collection['acquisition_date'],
+//                'acquisition_cost' => $collection['acquisition_cost'],
+//                'is_active' => $collection['status'],
+//                'care_of' => $collection['care_of'],
+//                'company_id' => Company::where('company_code', $collection['company_code'])->first()->id,
+//                'company_name' => $collection['company'],
+//                'department_id' => Department::where('department_code', $collection['department_code'])->first()->id,
+//                'department_name' => $collection['department'],
+//                'location_id' => Location::where('location_code', $collection['location_code'])->first()->id,
+//                'location_name' => $collection['location'],
+//                'account_id' => AccountTitle::where('account_title_code', $collection['account_code'])->first()->id,
+//                'account_title' => $collection['account_title'],
+//            ]);
+//
+//            $fixedAsset->formula()->create(
+//                    [
+//                       'depreciation_method' => $collection['depreciation_method'],
+//                       'est_useful_life' => $collection['est_useful_life'],
+//                       'acquisition_date' => $collection['acquisition_date'],
+//                       'acquisition_cost' => $collection['acquisition_cost'],
+//                       'scrap_value' => $collection['scrap_value'],
+//                       'original_cost' => $collection['original_cost'],
+//                       'accumulated_cost' => $collection['accumulated_cost'],
+//                       'age' => $collection['age'],
+//                       'end_depreciation' => $collection['end_depreciation'],
+//                       'depreciation_per_year' => $collection['depreciation_per_year'],
+//                       'depreciation_per_month' => $collection['depreciation_per_month'],
+//                       'remaining_book_value' => $collection['remaining_book_value'],
+//                       'start_depreciation' => $collection['start_depreciation'],
+//
+//                   ]
+//               );
 
-
-
-            Formula::create([
-                'fixed_asset_id' => FixedAsset::where('vladimir_tag_number', $collection['vladimir_tag_number'])->first()->id,
-                'depreciation_method' => $collection['depreciation_method'],
-                'est_useful_life' => $collection['est_useful_life'],
-                'acquisition_date' => $collection['acquisition_date'],
-                'acquisition_cost' => $collection['acquisition_cost'],
-                'scrap_value' => $collection['scrap_value'],
-                'original_cost' => $collection['original_cost'],
-                'accumulated_cost' => $collection['accumulated_cost'],
-                'age' => $collection['age'],
-                'end_depreciation' => $collection['end_depreciation'],
-                'depreciation_per_year' => $collection['depreciation_per_year'],
-                'depreciation_per_month' => $collection['depreciation_per_month'],
-                'remaining_book_value' => $collection['remaining_book_value'],
-                'start_depreciation' => $collection['start_depreciation'],
-            ]);
         }
     }
+
+
+// Generate a unique vladimir tag number
+    function vladimirTagGenerator(): string
+    {
+        $prefix = 'VDR';
+        $timestamp = time();
+        $random = mt_rand(1000, 9999);
+        $number = $prefix . $timestamp . $random;
+        //check if the number is unique
+        $check = FixedAsset::where('vladimir_tag_number', $number)->first();
+        if ($check) {
+            vladimirTagGenerator();
+        }
+        return $number;
+    }
+
+
 }
