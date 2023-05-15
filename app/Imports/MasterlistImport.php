@@ -311,7 +311,7 @@ class MasterlistImport extends DefaultValueBinder implements ToCollection, WithH
         //check if the number is unique
         $check = FixedAsset::where('vladimir_tag_number', $number)->first();
         if ($check) {
-            vladimirTagGenerator();
+            $this->vladimirTagGenerator();
         }
         return $number;
     }
