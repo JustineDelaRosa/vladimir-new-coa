@@ -36,7 +36,7 @@ class MasterlistImport extends DefaultValueBinder implements
 
     public function chunkSize(): int
     {
-        return 150;
+        return 200;
     }
 
     public function startRow(): int
@@ -46,7 +46,7 @@ class MasterlistImport extends DefaultValueBinder implements
 
     public function batchSize(): int
     {
-        return 150;
+        return 200;
     }
 
     public function bindValue(Cell $cell, $value): bool

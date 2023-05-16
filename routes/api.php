@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\FixedAssetController;
+use App\Http\Controllers\MasterlistExportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -126,6 +127,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //materlist import
     Route::post('/import-masterlist', [MasterlistImportController::class, 'masterlistImport']);
+    //materlist export
+    Route::get('/export-masterlist', [MasterlistExportController::class, 'export']);
 
     //fixed asset
     Route::resource('fixed-asset', FixedAssetController::class);
