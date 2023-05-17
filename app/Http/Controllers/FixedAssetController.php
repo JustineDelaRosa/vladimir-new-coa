@@ -2,8 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\MasterlistExport;
+use App\Http\Requests\FixedAsset\FixedAssetRequest;
+use App\Imports\MasterlistImport;
+use App\Models\AccountTitle;
+use App\Models\Company;
+use App\Models\Department;
+use App\Models\Division;
 use App\Models\FixedAsset;
+use App\Models\Location;
 use App\Models\MajorCategory;
+use App\Models\MinorCategory;
 use Illuminate\Http\Request;
 
 class FixedAssetController extends Controller
@@ -16,6 +25,62 @@ class FixedAssetController extends Controller
     public function index()
     {
         $fixed_assets = FixedAsset::with('formula')->get();
+//        //transform collection to array
+//        $fixed_assets_arr = [];
+//        foreach ($fixed_assets as $fixed_asset) {
+//            $fixed_assets_arr[] = [
+//                'id' => $fixed_asset->id,
+//                'capex' => $fixed_asset->capex,
+//                'project_name' => $fixed_asset->project_name,
+//                'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
+//                'tag_number' => $fixed_asset->tag_number,
+//                'tag_number_old' => $fixed_asset->tag_number_old,
+//                'asset_description' => $fixed_asset->asset_description,
+//                'type_of_request' => $fixed_asset->type_of_request,
+//                'asset_specification' => $fixed_asset->asset_specification,
+//                'accountability' => $fixed_asset->accountability,
+//                'accountable' => $fixed_asset->accountable,
+//                'brand' => $fixed_asset->brand,
+//                'division' => $fixed_asset->division->division_name,
+//                'major_category' => $fixed_asset->majorCategory->major_category_name,
+//                'minor_category' => $fixed_asset->minorCategory->minor_category_name,
+//                'voucher' => $fixed_asset->voucher,
+//                'receipt' => $fixed_asset->receipt,
+//                'quantity' => $fixed_asset->quantity,
+//                'depreciation_method' => $fixed_asset->depreciation_method,
+//                'est_useful_life' => $fixed_asset->est_useful_life,
+//                //                    'salvage_value' => $fixed_asset->salvage_value,
+//                'acquisition_date' => $fixed_asset->acquisition_date,
+//                'acquisition_cost' => $fixed_asset->acquisition_cost,
+//                'scrap_value' => $fixed_asset->formula->scrap_value,
+//                'original_cost' => $fixed_asset->formula->original_cost,
+//                'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
+//                'status' => $fixed_asset->is_active,
+//                'care_of' => $fixed_asset->care_of,
+//                'age' => $fixed_asset->formula->age,
+//                'end_depreciation' => $fixed_asset->formula->end_depreciation,
+//                'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year,
+//                'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month,
+//                'remaining_book_value' => $fixed_asset->formula->remaining_book_value,
+//                'start_depreciation' => $fixed_asset->formula->start_depreciation,
+//                'company_code' => $fixed_asset->company->company_code,
+//                'company_name' => $fixed_asset->company->company_name,
+//                'department_code' => $fixed_asset->department->department_code,
+//                'department_name' => $fixed_asset->department->department_name,
+//                'location_code' => $fixed_asset->location->location_code,
+//                'location_name' => $fixed_asset->location->location_name,
+//                'account_title_code' => $fixed_asset->accountTitle->account_title_code,
+//                'account_title_name' => $fixed_asset->accountTitle->account_title_name
+//            ];
+//        }
+//        return response()->json([
+//            'message' => 'Fixed Assets retrieved successfully.',
+//            'data' => $fixed_assets_arr
+//        ], 200);
+
+
+
+
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
             'data' => $fixed_assets
@@ -26,18 +91,116 @@ class FixedAssetController extends Controller
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function store(Request $request)
+    public function store(FixedAssetRequest $request)
     {
-        //
+
+        //Minor Category check
+        $majorCategoryCheck = MajorCategory::where('major_category_name', $request->major_category)
+                            ->where('division_id', Division::where('division_name', $request->division)
+                                ->first()->id)->exists();
+        if(!$majorCategoryCheck) {
+            return response()->json(
+                [
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'major_category' => [
+                            'The major category does not match the division.'
+                        ]
+                    ]
+                ],
+                422
+            );
+        }
+
+        //minor Category check
+        $majorCategory = MajorCategory::where('major_category_name', $request->major_category)
+                        ->where('division_id', Division::where('division_name', $request->division)
+                        ->first()->id)->first()->id;
+        $minorCategoryCheck = MinorCategory::where('minor_category_name', $request->minor_category)
+                            ->where('major_category_id',$majorCategory)->exists();
+        if(!$minorCategoryCheck) {
+            return response()->json(
+                [
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'minor_category' => [
+                            'The minor category does not match the major category.'
+                        ]
+                    ]
+                ],
+                422
+            );
+        }
+
+
+
+        $fixedAsset = FixedAsset::create([
+                'capex' => $request->capex ?? '-',
+                'project_name' => $request->project_name,
+                'vladimir_tag_number' => (new MasterlistImport())->vladimirTagGenerator(),
+                'tag_number' => $request->tag_number,
+                'tag_number_old' => $request->tag_number_old,
+                'asset_description' => $request->asset_description,
+                'type_of_request' => $request->type_of_request,
+                'asset_specification' => $request->asset_specification,
+                'accountability' => $request->accountability,
+                'accountable' => $request->accountable,
+                'cellphone_number' => $request->cellphone_number ?? '-',
+                'brand' => $request->brand ?? '-',
+                'division_id' => Division::where('division_name', $request->division)->first()->id,
+                'major_category_id' => MajorCategory::where('major_category_name', $request->major_category)->first()->id,
+                'minor_category_id' => MinorCategory::where('minor_category_name', $request->minor_category)->first()->id,
+                'voucher' => $request->voucher ?? '-',
+                'receipt' => $request->receipt ?? '-',
+                'quantity' => $request->quantity,
+                'depreciation_method' => $request->depreciation_method,
+                'est_useful_life' => $request->est_useful_life,
+                'acquisition_date' => $request->acquisition_date, //TODO:
+                'acquisition_cost' => $request->acquisition_cost,
+                'is_active' => $request->status,
+                'care_of' => $request->care_of,
+                'company_id' => Company::where('company_code', $request->company_code)->first()->id,
+                'company_name' => $request->company,
+                'department_id' => Department::where('department_code', $request->department_code)->first()->id,
+                'department_name' => $request->department,
+                'location_id' => Location::where('location_code', $request->location_code)->first()->id,
+                'location_name' => $request->location,
+                'account_id' => AccountTitle::where('account_title_code', $request->account_code)->first()->id,
+                'account_title' => $request->account_title,
+            ]
+        );
+
+        $fixedAsset->formula()->create([
+            'depreciation_method' => $request->depreciation_method,
+            'est_useful_life' => $request->est_useful_life,
+            'acquisition_date' => $request->acquisition_date,
+            'acquisition_cost' => $request->acquisition_cost,
+            'scrap_value' => $request->scrap_value,
+            'original_cost' => $request->original_cost,
+            'accumulated_cost' => $request->accumulated_cost,
+            'age' => $request->age,
+            'end_depreciation' => $request->end_depreciation,
+            'depreciation_per_year' => $request->depreciation_per_year,
+            'depreciation_per_month' => $request->depreciation_per_month,
+            'remaining_book_value' => $request->remaining_book_value,
+            'start_depreciation' => $request->start_depreciation,
+        ]);
+
+        //return the fixed asset and formula
+        return response()->json([
+            'message' => 'Fixed Asset created successfully.',
+            'data' => $fixedAsset->with('formula')->where('id', $fixedAsset->id)->first()
+        ], 201);
+
     }
 
     /**
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
@@ -109,16 +272,6 @@ class FixedAssetController extends Controller
         //
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
-    }
 
 
     public function search(Request $request)
