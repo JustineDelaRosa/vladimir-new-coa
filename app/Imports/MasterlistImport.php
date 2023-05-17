@@ -13,6 +13,7 @@ use App\Models\MajorCategory;
 use App\Models\MinorCategory;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use Illuminate\Support\Facades\Validator;
@@ -27,8 +28,14 @@ use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 
 class MasterlistImport extends DefaultValueBinder implements
-    ToCollection, WithHeadingRow, WithCustomValueBinder, WithChunkReading, ShouldQueue, WithStartRow
+    ToCollection,
+    WithHeadingRow,
+    WithCustomValueBinder,
+    WithChunkReading,
+    ShouldQueue,
+    WithStartRow
 {
+    use Importable;
     function headingRow(): int
     {
         return 1;
@@ -46,7 +53,7 @@ class MasterlistImport extends DefaultValueBinder implements
 
     public function batchSize(): int
     {
-        return 200;
+        return 150;
     }
 
     public function bindValue(Cell $cell, $value): bool
@@ -64,9 +71,6 @@ class MasterlistImport extends DefaultValueBinder implements
         return parent::bindValue($cell, $value);
     }
 
-    /**
-     * @param Collection $collections
-     */
     public function collection(Collection $collections)
     {
 
@@ -213,7 +217,6 @@ class MasterlistImport extends DefaultValueBinder implements
                 '*.account_code.exists' => 'Account Code does not exist',
                 '*.account_title.required' => 'Account Title is required',
                 '*.account_title.exists' => 'Account Title does not exist',
-
             ]
         )->validate();
 
@@ -303,7 +306,7 @@ class MasterlistImport extends DefaultValueBinder implements
     }
 
 
-// Generate a unique vladimir tag number
+
     function vladimirTagGenerator(): string
     {
 
@@ -313,7 +316,7 @@ class MasterlistImport extends DefaultValueBinder implements
 
         // Generate a new random value
         do {
-            $random = mt_rand(1, 500) . mt_rand(1, 9999);
+            $random = mt_rand(1, 499) . mt_rand(1, 9999);
         } while ($random === $lastRandom);
 
         $lastRandom = $random;

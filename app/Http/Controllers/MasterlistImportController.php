@@ -4,9 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Imports\MasterlistImport;
-use App\Models\Division;
-use App\Models\MajorCategory;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Http\JsonResponse;
 
 class MasterlistImportController extends Controller
 {
@@ -16,15 +15,12 @@ class MasterlistImportController extends Controller
             'file' => 'required|mimes:csv,txt,xlx,xls,pdf,xlsx'
         ]);
 
-        $file = $request->file('file');
+        $file = $request->file('file')->store('import');
 
         Excel::import(new MasterlistImport, $file);
-        $file = Excel::toArray(new MasterlistImport, $file);
         return response()->json(
             [
                 'message' => 'Masterlist imported successfully.',
-                // 'count' => $count,
-                //'data' => $file,
             ],
             200
         );
