@@ -32,14 +32,18 @@ class FixedAssetRequest extends FormRequest
             return [
                 'capex' => 'nullable',
                 'project_name' => 'required',
-                'tag_number' => ['required', function ($attribute, $value, $fail) {
-                $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)->exists();
+                'tag_number' => ['nullable', function ($attribute, $value, $fail) {
+                $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
+                    ->where('tag_number', '!=', '-')
+                    ->exists();
                     if ($tag_number) {
                         $fail('Tag number already exists');
                     }
                 }],
-                'tag_number_old' => ['required', function ($attribute, $value, $fail) {
-                $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)->exists();
+                'tag_number_old' => ['nullable', function ($attribute, $value, $fail) {
+                $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)
+                    ->where('tag_number_old', '!=', '-')
+                    ->exists();
                     if ($tag_number_old) {
                         $fail('Tag number old already exists');
                     }
@@ -90,6 +94,7 @@ class FixedAssetRequest extends FormRequest
                 'project_name' => 'required',
                 'tag_number' => ['required', function ($attribute, $value, $fail)use ($id) {
                     $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
+                        ->where('tag_number', '!=', '-')
                         ->where('id', '!=', $id)
                         ->exists();
                     if ($tag_number) {
@@ -98,6 +103,7 @@ class FixedAssetRequest extends FormRequest
                 }],
                 'tag_number_old' => ['required', function ($attribute, $value, $fail)use ($id) {
                     $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)
+                        ->where('tag_number_old', '!=', '-')
                         ->where('id', '!=', $id)
                         ->exists();
                     if ($tag_number_old) {

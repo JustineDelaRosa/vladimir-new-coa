@@ -134,13 +134,12 @@ class FixedAssetController extends Controller
         }
 
 
-
         $fixedAsset = FixedAsset::create([
                 'capex' => $request->capex ?? '-',
                 'project_name' => $request->project_name,
                 'vladimir_tag_number' => (new MasterlistImport())->vladimirTagGenerator(),
-                'tag_number' => $request->tag_number,
-                'tag_number_old' => $request->tag_number_old,
+                'tag_number' => $request->tag_number ?? '-',
+                'tag_number_old' => $request->tag_number_old ?? '-',
                 'asset_description' => $request->asset_description,
                 'type_of_request' => $request->type_of_request,
                 'asset_specification' => $request->asset_specification,
@@ -312,9 +311,9 @@ class FixedAssetController extends Controller
             $fixedAsset->update([
                 'capex' => $request->capex ?? '-',
                 'project_name' => $request->project_name,
-                'vladimir_tag_number' => (new MasterlistImport())->vladimirTagGenerator(),
-                'tag_number' => $request->tag_number,
-                'tag_number_old' => $request->tag_number_old,
+//                'vladimir_tag_number' => $request->vladimir_tag_number,
+                'tag_number' => $request->tag_number ?? '-',
+                'tag_number_old' => $request->tag_number_old ?? '-',
                 'asset_description' => $request->asset_description,
                 'type_of_request' => $request->type_of_request,
                 'asset_specification' => $request->asset_specification,

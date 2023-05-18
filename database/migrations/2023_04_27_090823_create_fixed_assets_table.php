@@ -18,8 +18,8 @@ class CreateFixedAssetsTable extends Migration
             $table->string('capex')->nullable();
             $table->string('project_name');
             $table->string('vladimir_tag_number');
-            $table->string('tag_number')->unique();
-            $table->string('tag_number_old')->unique();
+            $table->string('tag_number');
+            $table->string('tag_number_old');
             $table->string('asset_description');
             $table->string('type_of_request');
             $table->string('asset_specification');
@@ -37,7 +37,7 @@ class CreateFixedAssetsTable extends Migration
             $table->integer('est_useful_life');
             $table->date('acquisition_date');
             $table->Biginteger('acquisition_cost');
-            $table->boolean('is_active');
+            $table->boolean('is_active'); //->default(1)
             $table->string('care_of');
             $table->unsignedInteger('company_id');
             $table->string('company_name');
