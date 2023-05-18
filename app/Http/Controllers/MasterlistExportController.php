@@ -13,9 +13,13 @@ class MasterlistExportController extends Controller
             'startDate' => 'nullable|date',
             'endDate' => 'nullable|date',
         ]);
+        $filename = $request->get('filename');
+        //ternary if empty the default filename is Fixed_Asset_Date
+        $filename = $filename == null ? 'Fixed_Asset'. '_' . date('Y-m-d') :
+                    str_replace(' ', '_', $filename) . '_' . date('Y-m-d');
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
-        return (new MasterlistExport($search, $startDate, $endDate))->download('masterlist.xlsx');
+        return (new MasterlistExport($search, $startDate, $endDate))->download($filename . '.xlsx');
     }
 }

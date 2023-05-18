@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Division;
+use App\Models\FixedAsset;
 use Illuminate\Http\Request;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
-use App\Models\CategoryListTagMinorCategory;
 use App\Http\Requests\MinorCategory\MinorCategoryRequest;
 
 class MinorCategoryController extends Controller
@@ -14,7 +14,7 @@ class MinorCategoryController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index()
     {
@@ -28,7 +28,7 @@ class MinorCategoryController extends Controller
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(MinorCategoryRequest $request)
     {
@@ -36,8 +36,6 @@ class MinorCategoryController extends Controller
         $major_cat_id = $request->major_category_id;
         $minor_cat_name = strtoupper($request->minor_category_name);
         // $minor_category_name_check = str_replace(' ', '', $minor_cat_name);
-
-
 
 
         $major_cat_id_check = MajorCategory::where('id', $major_cat_id)->exists();
@@ -81,7 +79,7 @@ class MinorCategoryController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
@@ -121,7 +119,7 @@ class MinorCategoryController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function update(MinorCategoryRequest $request, $id)
     {
@@ -174,17 +172,6 @@ class MinorCategoryController extends Controller
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
-    }
-
 
     public function archived(MinorCategoryRequest $request, $id)
     {
@@ -195,13 +182,10 @@ class MinorCategoryController extends Controller
             return response()->json(['error' => 'Minor Category Route Not Found'], 404);
         }
 
-        // if (CategoryListTagMinorCategory::where('minor_category_id', $id)->exists()) {
-        //     if ($status == true) {
-        //         return response()->json(['message' => 'No Changes'], 200);
-        //     } else {
-        //         return response()->json(['message' => 'Unable to Archived!'], 409);
-        //     }
-        // }
+//        $checkFixedAsset = FixedAsset::where('minor_category_id', $id)->exists();
+//        if ($checkFixedAsset) {
+//            return response()->json(['error' => 'Unable to archived , Minor Category is still in use!'], 409);
+//        }
 
         $checkMajorCategory = MajorCategory::where('id', $MinorCategory->where('id', $id)->first()->major_category_id)->exists();
         if (!$checkMajorCategory) {
@@ -214,7 +198,7 @@ class MinorCategoryController extends Controller
             } else {
                 $updateStatus = $MinorCategory->where('id', $id)->update(['is_active' => false]);
                 $MinorCategory->where('id', $id)->delete();
-                return response()->json(['message' => 'Successfully Deactived!'], 200);
+                return response()->json(['message' => 'Successfully Deactivated!'], 200);
             }
         }
         if ($status == true) {

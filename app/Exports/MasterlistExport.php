@@ -30,9 +30,6 @@ class MasterlistExport implements
     WithColumnFormatting,
     WithEvents,
     WithStrictNullComparison
-
-
-
 {
     use Exportable;
 
@@ -257,4 +254,6 @@ class MasterlistExport implements
 
         ];
     }
+
+
 }
