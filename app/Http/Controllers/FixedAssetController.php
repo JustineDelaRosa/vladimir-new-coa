@@ -159,13 +159,13 @@ class FixedAssetController extends Controller
                 'acquisition_cost' => $request->acquisition_cost,
                 'is_active' => $request->status ?? 1,
                 'care_of' => $request->care_of,
-                'company_id' => Company::where('company_code', $request->company_code)->first()->id,
+                'company_id' => Company::where('company_name', $request->company)->value('id'),
                 'company_name' => $request->company,
-                'department_id' => Department::where('department_code', $request->department_code)->first()->id,
+                'department_id' => Department::where('department_name', $request->department)->value('id'),
                 'department_name' => $request->department,
-                'location_id' => Location::where('location_code', $request->location_code)->first()->id,
+                'location_id' => Location::where('location_name', $request->location)->value('id'),
                 'location_name' => $request->location,
-                'account_id' => AccountTitle::where('account_title_code', $request->account_code)->first()->id,
+                'account_id' => AccountTitle::where('account_title_name', $request->account_title)->value('id'),
                 'account_title' => $request->account_title,
             ]);
 
@@ -306,7 +306,6 @@ class FixedAssetController extends Controller
         }
 
         $fixedAsset = FixedAsset::where('id', $id)->where('is_active', true)->first();
-
         if ($fixedAsset) {
             $fixedAsset->update([
                 'capex' => $request->capex ?? '-',
@@ -333,13 +332,13 @@ class FixedAssetController extends Controller
                 'acquisition_cost' => $request->acquisition_cost,
                 'is_active' => $request->status ?? 1,
                 'care_of' => $request->care_of,
-                'company_id' => Company::where('company_code', $request->company_code)->value('id'),
+                'company_id' => Company::where('company_name', $request->company)->value('id'),
                 'company_name' => $request->company,
-                'department_id' => Department::where('department_code', $request->department_code)->value('id'),
+                'department_id' => Department::where('department_name', $request->department)->value('id'),
                 'department_name' => $request->department,
-                'location_id' => Location::where('location_code', $request->location_code)->value('id'),
+                'location_id' => Location::where('location_name', $request->location)->value('id'),
                 'location_name' => $request->location,
-                'account_id' => AccountTitle::where('account_title_code', $request->account_code)->value('id'),
+                'account_id' => AccountTitle::where('account_title', $request->account)->value('id'),
                 'account_title' => $request->account_title,
             ]);
 

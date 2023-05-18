@@ -32,8 +32,8 @@ class MasterlistImport extends DefaultValueBinder implements
     ToCollection,
     WithHeadingRow,
     WithCustomValueBinder,
-    WithChunkReading,
-    ShouldQueue,
+//    WithChunkReading,
+//    ShouldQueue,
     WithStartRow
 {
     use Importable;
@@ -42,10 +42,10 @@ class MasterlistImport extends DefaultValueBinder implements
         return 1;
     }
 
-    public function chunkSize(): int
-    {
-        return 200;
-    }
+//    public function chunkSize(): int
+//    {
+//        return 500;
+//    }
 
     public function startRow(): int
     {
@@ -54,7 +54,7 @@ class MasterlistImport extends DefaultValueBinder implements
 
     public function batchSize(): int
     {
-        return 150;
+        return 200;
     }
 
     public function bindValue(Cell $cell, $value): bool
