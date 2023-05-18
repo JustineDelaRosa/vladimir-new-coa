@@ -27,11 +27,10 @@ class FixedAssetRequest extends FormRequest
      */
     public function rules()
     {
-
         //Adding of Fixed Asset
         if ($this->isMethod('post')) {
             return [
-                'capex' => 'required',
+                'capex' => 'nullable',
                 'project_name' => 'required',
                 'tag_number' => ['required', function ($attribute, $value, $fail) {
                 $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)->exists();
@@ -87,7 +86,7 @@ class FixedAssetRequest extends FormRequest
         if ($this->isMethod('put') ) {
             $id = $this->route()->parameter('fixed_asset');
             return [
-                'capex' => 'required',
+                'capex' => 'nullable',
                 'project_name' => 'required',
                 'tag_number' => ['required', function ($attribute, $value, $fail)use ($id) {
                     $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
