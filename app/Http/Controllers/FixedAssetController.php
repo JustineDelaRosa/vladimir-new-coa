@@ -10,6 +10,7 @@ use App\Models\Company;
 use App\Models\Department;
 use App\Models\Division;
 use App\Models\FixedAsset;
+use App\Models\Formula;
 use App\Models\Location;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
@@ -79,8 +80,6 @@ class FixedAssetController extends Controller
 //        ], 200);
 
 
-
-
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
             'data' => $fixed_assets
@@ -96,7 +95,7 @@ class FixedAssetController extends Controller
     public function store(FixedAssetRequest $request)
     {
 
-        //Minor Category check
+        //Major Category check
         $majorCategoryCheck = MajorCategory::where('major_category_name', $request->major_category)
                             ->where('division_id', Division::where('division_name', $request->division)
                                 ->first()->id)->exists();
@@ -159,7 +158,7 @@ class FixedAssetController extends Controller
                 'est_useful_life' => $request->est_useful_life,
                 'acquisition_date' => $request->acquisition_date, //TODO:
                 'acquisition_cost' => $request->acquisition_cost,
-                'is_active' => $request->status,
+                'is_active' => $request->status ?? 1,
                 'care_of' => $request->care_of,
                 'company_id' => Company::where('company_code', $request->company_code)->first()->id,
                 'company_name' => $request->company,
@@ -169,8 +168,7 @@ class FixedAssetController extends Controller
                 'location_name' => $request->location,
                 'account_id' => AccountTitle::where('account_title_code', $request->account_code)->first()->id,
                 'account_title' => $request->account_title,
-            ]
-        );
+            ]);
 
         $fixedAsset->formula()->create([
             'depreciation_method' => $request->depreciation_method,
@@ -265,11 +263,208 @@ class FixedAssetController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function update(Request $request, $id)
+    public function update(FixedAssetRequest $request, $id)
     {
-        //
+
+        //Major Category check
+        $majorCategoryCheck = MajorCategory::where('major_category_name', $request->major_category)
+            ->where('division_id', Division::where('division_name', $request->division)
+                ->first()->id)->exists();
+        if(!$majorCategoryCheck) {
+            return response()->json(
+                [
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'major_category' => [
+                            'The major category does not match the division.'
+                        ]
+                    ]
+                ],
+                422
+            );
+        }
+
+        //minor Category check
+        $majorCategory = MajorCategory::where('major_category_name', $request->major_category)
+            ->where('division_id', Division::where('division_name', $request->division)
+                ->first()->id)->first()->id;
+        $minorCategoryCheck = MinorCategory::where('minor_category_name', $request->minor_category)
+            ->where('major_category_id',$majorCategory)->exists();
+        if(!$minorCategoryCheck) {
+            return response()->json(
+                [
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'minor_category' => [
+                            'The minor category does not match the major category.'
+                        ]
+                    ]
+                ],
+                422
+            );
+        }
+
+        $fixedAsset = FixedAsset::where('id', $id)->where('is_active', true)->first();
+
+        if ($fixedAsset) {
+            $fixedAsset->update([
+                'capex' => $request->capex ?? '-',
+                'project_name' => $request->project_name,
+                'vladimir_tag_number' => (new MasterlistImport())->vladimirTagGenerator(),
+                'tag_number' => $request->tag_number,
+                'tag_number_old' => $request->tag_number_old,
+                'asset_description' => $request->asset_description,
+                'type_of_request' => $request->type_of_request,
+                'asset_specification' => $request->asset_specification,
+                'accountability' => $request->accountability,
+                'accountable' => $request->accountable,
+                'cellphone_number' => $request->cellphone_number ?? '-',
+                'brand' => $request->brand ?? '-',
+                'division_id' => Division::where('division_name', $request->division)->value('id'),
+                'major_category_id' => MajorCategory::where('major_category_name', $request->major_category)->value('id'),
+                'minor_category_id' => MinorCategory::where('minor_category_name', $request->minor_category)->value('id'),
+                'voucher' => $request->voucher ?? '-',
+                'receipt' => $request->receipt ?? '-',
+                'quantity' => $request->quantity,
+                'depreciation_method' => $request->depreciation_method,
+                'est_useful_life' => $request->est_useful_life,
+                'acquisition_date' => $request->acquisition_date,
+                'acquisition_cost' => $request->acquisition_cost,
+                'is_active' => $request->status ?? 1,
+                'care_of' => $request->care_of,
+                'company_id' => Company::where('company_code', $request->company_code)->value('id'),
+                'company_name' => $request->company,
+                'department_id' => Department::where('department_code', $request->department_code)->value('id'),
+                'department_name' => $request->department,
+                'location_id' => Location::where('location_code', $request->location_code)->value('id'),
+                'location_name' => $request->location,
+                'account_id' => AccountTitle::where('account_title_code', $request->account_code)->value('id'),
+                'account_title' => $request->account_title,
+            ]);
+
+            $fixedAsset->formula()->update([
+                'depreciation_method' => $request->depreciation_method,
+                'est_useful_life' => $request->est_useful_life,
+                'acquisition_date' => $request->acquisition_date,
+                'acquisition_cost' => $request->acquisition_cost,
+                'scrap_value' => $request->scrap_value,
+                'original_cost' => $request->original_cost,
+                'accumulated_cost' => $request->accumulated_cost,
+                'age' => $request->age,
+                'end_depreciation' => $request->end_depreciation,
+                'depreciation_per_year' => $request->depreciation_per_year,
+                'depreciation_per_month' => $request->depreciation_per_month,
+                'remaining_book_value' => $request->remaining_book_value,
+                'start_depreciation' => $request->start_depreciation,
+            ]);
+
+            return response()->json([
+                'message' => 'Fixed Asset updated successfully',
+                'data' => $fixedAsset->load('formula')
+            ], 200);
+        }else{
+            return response()->json([
+                'message' => 'Fixed Asset Route Not Found.'
+            ], 404);
+        }
+
+//        if(FixedAsset::where('id', $id)->where('is_active', true)->exists()){
+//            $fixedAsset = FixedAsset::where('id', $id)->update([
+//                'capex' => $request->capex ?? '-',
+//                'project_name' => $request->project_name,
+//                'vladimir_tag_number' => (new MasterlistImport())->vladimirTagGenerator(),
+//                'tag_number' => $request->tag_number,
+//                'tag_number_old' => $request->tag_number_old,
+//                'asset_description' => $request->asset_description,
+//                'type_of_request' => $request->type_of_request,
+//                'asset_specification' => $request->asset_specification,
+//                'accountability' => $request->accountability,
+//                'accountable' => $request->accountable,
+//                'cellphone_number' => $request->cellphone_number ?? '-',
+//                'brand' => $request->brand ?? '-',
+//                'division_id' => Division::where('division_name', $request->division)->first()->id,
+//                'major_category_id' => MajorCategory::where('major_category_name', $request->major_category)->first()->id,
+//                'minor_category_id' => MinorCategory::where('minor_category_name', $request->minor_category)->first()->id,
+//                'voucher' => $request->voucher ?? '-',
+//                'receipt' => $request->receipt ?? '-',
+//                'quantity' => $request->quantity,
+//                'depreciation_method' => $request->depreciation_method,
+//                'est_useful_life' => $request->est_useful_life,
+//                'acquisition_date' => $request->acquisition_date, //TODO:
+//                'acquisition_cost' => $request->acquisition_cost,
+//                'is_active' => $request->status ?? 1,
+//                'care_of' => $request->care_of,
+//                'company_id' => Company::where('company_code', $request->company_code)->first()->id,
+//                'company_name' => $request->company,
+//                'department_id' => Department::where('department_code', $request->department_code)->first()->id,
+//                'department_name' => $request->department,
+//                'location_id' => Location::where('location_code', $request->location_code)->first()->id,
+//                'location_name' => $request->location,
+//                'account_id' => AccountTitle::where('account_title_code', $request->account_code)->first()->id,
+//                'account_title' => $request->account_title,
+//            ]);
+//
+//            $formula = Formula::where('fixed_asset_id', $id)->update([
+//                'depreciation_method' => $request->depreciation_method,
+//                'est_useful_life' => $request->est_useful_life,
+//                'acquisition_date' => $request->acquisition_date,
+//                'acquisition_cost' => $request->acquisition_cost,
+//                'scrap_value' => $request->scrap_value,
+//                'original_cost' => $request->original_cost,
+//                'accumulated_cost' => $request->accumulated_cost,
+//                'age' => $request->age,
+//                'end_depreciation' => $request->end_depreciation,
+//                'depreciation_per_year' => $request->depreciation_per_year,
+//                'depreciation_per_month' => $request->depreciation_per_month,
+//                'remaining_book_value' => $request->remaining_book_value,
+//                'start_depreciation' => $request->start_depreciation,
+//            ]);
+//
+//
+//
+//            return response()->json([
+//                'message' => 'Fixed Asset updated successfully.',
+//                'data' => $fixedAsset = FixedAsset::where('id', $id)->with('formula')->first()
+//            ], 200);
+//        }else{
+//            return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
+//        }
+    }
+
+    public function archived(FixedAssetRequest $request, $id)
+    {
+        $status = $request->status;
+        $fixedAsset = FixedAsset::query();
+        $formula = Formula::query();
+        if (!$fixedAsset->withTrashed()->where('id', $id)->exists()) {
+            return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
+        }
+        $checkMinorCategory = MinorCategory::where('id', $fixedAsset->where('id', $id)->first()->minor_category_id)->exists();
+        if(!$checkMinorCategory){
+            return response()->json(['error' => 'Unable to Restore!, Minor Category was Archived!'], 404);
+        }
+        if ($status == false) {
+            if (!FixedAsset::where('id', $id)->where('is_active', true)->exists()) {
+                return response()->json(['message' => 'No Changes'], 200);
+            } else {
+                $fixedAsset->where('id', $id)->update(['is_active' => false]);
+                $fixedAsset->where('id', $id)->delete();
+                $formula->where('fixed_asset_id', $id)->delete();
+                return response()->json(['message' => 'Successfully Deactivated!'], 200);
+            }
+        }
+        if ($status == true) {
+            if (FixedAsset::where('id', $id)->where('is_active', true)->exists()) {
+                return response()->json(['message' => 'No Changes'], 200);
+            } else {
+                $fixedAsset->withTrashed()->where('id', $id)->restore();
+                $fixedAsset->update(['is_active' => true]);
+                $formula->where('fixed_asset_id', $id)->restore();
+                return response()->json(['message' => 'Successfully Activated!'], 200);
+            }
+        }
     }
 
 

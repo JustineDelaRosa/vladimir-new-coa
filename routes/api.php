@@ -132,5 +132,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //fixed asset
     Route::resource('fixed-asset', FixedAssetController::class);
+    Route::patch('fixed-asset/archived-fixed-asset/{id}', [FixedAssetController::class, 'archived']);
     Route::get('fixed-assets/search', [FixedAssetController::class, 'search']);
 });

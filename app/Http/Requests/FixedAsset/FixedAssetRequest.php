@@ -28,9 +28,10 @@ class FixedAssetRequest extends FormRequest
     public function rules()
     {
 
+        //Adding of Fixed Asset
         if ($this->isMethod('post')) {
             return [
-                'capex' => 'nullable',
+                'capex' => 'required',
                 'project_name' => 'required',
                 'tag_number' => ['required', function ($attribute, $value, $fail) {
                 $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)->exists();
@@ -64,7 +65,6 @@ class FixedAssetRequest extends FormRequest
                 'scrap_value' => ['required','numeric'],
                 'original_cost' => ['required','numeric'],
                 'accumulated_cost' => ['required','numeric'],
-                'status' => 'required|boolean',
                 'care_of' => 'required',
                 'age' => 'required|numeric',
                 'end_depreciation' => 'required|date_format:Y-m',
@@ -80,6 +80,73 @@ class FixedAssetRequest extends FormRequest
                 'location' => 'required|exists:locations,location_name',
                 'account_code' => 'required|exists:account_titles,account_title_code',
                 'account_title' => 'required|exists:account_titles,account_title_name',
+            ];
+        }
+
+        //Editing of Fixed Asset
+        if ($this->isMethod('put') ) {
+            $id = $this->route()->parameter('fixed_asset');
+            return [
+                'capex' => 'required',
+                'project_name' => 'required',
+                'tag_number' => ['required', function ($attribute, $value, $fail)use ($id) {
+                    $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
+                        ->where('id', '!=', $id)
+                        ->exists();
+                    if ($tag_number) {
+                        $fail('Tag number already exists');
+                    }
+                }],
+                'tag_number_old' => ['required', function ($attribute, $value, $fail)use ($id) {
+                    $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)
+                        ->where('id', '!=', $id)
+                        ->exists();
+                    if ($tag_number_old) {
+                        $fail('Tag number old already exists');
+                    }
+                }],
+                'asset_description' => 'required',
+                'type_of_request' => 'required',
+                'asset_specification' => 'required',
+                'accountability' => 'required',
+                'accountable' => 'required',
+                'cellphone_number' => 'nullable|numeric',
+                'brand' => 'nullable',
+                'division' => 'required|exists:divisions,division_name',
+                'major_category' => 'required|exists:major_categories,major_category_name',
+                'minor_category' => 'required|exists:minor_categories,minor_category_name',
+                'voucher' => 'nullable',
+                'receipt' => 'nullable',
+                'quantity' => 'required',
+                'depreciation_method' => 'required',
+                'est_useful_life' => ['required', 'numeric', 'max:100'],
+                'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
+                'acquisition_cost' => ['required', 'numeric'],
+                'scrap_value' => ['required','numeric'],
+                'original_cost' => ['required','numeric'],
+                'accumulated_cost' => ['required','numeric'],
+                'care_of' => 'required',
+                'age' => 'required|numeric',
+                'end_depreciation' => 'required|date_format:Y-m',
+                'depreciation_per_year' => ['required','numeric'],
+                'depreciation_per_month' => ['required','numeric'],
+                'remaining_book_value' => ['required','numeric'],
+                'start_depreciation' => ['required','numeric'],
+                'company_code' => 'required|exists:companies,company_code',
+                'company' => 'required|exists:companies,company_name',
+                'department_code' => 'required|exists:departments,department_code',
+                'department' => 'required|exists:departments,department_name',
+                'location_code' => 'required|exists:locations,location_code',
+                'location' => 'required|exists:locations,location_name',
+                'account_code' => 'required|exists:account_titles,account_title_code',
+                'account_title' => 'required|exists:account_titles,account_title_name',
+            ];
+        }
+
+        //Archiving of Fixed Asset
+        if ($this->isMethod('patch')) {
+            return [
+                'status' => 'required|boolean',
             ];
         }
     }

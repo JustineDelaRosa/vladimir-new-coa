@@ -40,7 +40,7 @@ class MinorCategoryRequest extends FormRequest
             ];
         }
 
-        if ($this->isMethod('put') &&  ($this->route()->parameter('minor_category'))) {
+        if ($this->isMethod('put') &&  ($this->route()->parameter('minor_clategory'))) {
             $id = $this->route()->parameter('minor_category');
             return [
                 'major_category_id' => 'required|exists:major_categories,id,deleted_at,NULL',
