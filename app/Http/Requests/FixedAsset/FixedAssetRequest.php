@@ -75,14 +75,10 @@ class FixedAssetRequest extends FormRequest
                 'depreciation_per_month' => ['required','numeric'],
                 'remaining_book_value' => ['required','numeric'],
                 'start_depreciation' => ['required','numeric'],
-//                'company_code' => 'required|exists:companies,company_code',
-                'company' => 'required|exists:companies,company_name',
-//                'department_code' => 'required|exists:departments,department_code',
-                'department' => 'required|exists:departments,department_name',
-//                'location_code' => 'required|exists:locations,location_code',
-                'location' => 'required|exists:locations,location_name',
-//                'account_code' => 'required|exists:account_titles,account_title_code',
-                'account_title' => 'required|exists:account_titles,account_title_name',
+                'company_id' => 'required|exists:companies,id',
+                'department_id' => 'required|exists:departments,id',
+                'location_id' => 'required|exists:locations,id',
+                'account_title_id' => 'required|exists:account_titles,id',
             ];
         }
 
@@ -137,14 +133,10 @@ class FixedAssetRequest extends FormRequest
                 'depreciation_per_month' => ['required','numeric'],
                 'remaining_book_value' => ['required','numeric'],
                 'start_depreciation' => ['required','numeric'],
-//                'company_code' => 'required|exists:companies,company_code',
-                'company' => 'required|exists:companies,company_name',
-//                'department_code' => 'required|exists:departments,department_code',
-                'department' => 'required|exists:departments,department_name',
-//                'location_code' => 'required|exists:locations,location_code',
-                'location' => 'required|exists:locations,location_name',
-//                'account_code' => 'required|exists:account_titles,account_title_code',
-                'account_title' => 'required|exists:account_titles,account_title_name',
+                'company_id' => 'required|exists:companies,id',
+                'department_id' => 'required|exists:departments,id',
+                'location_id' => 'required|exists:locations,id',
+                'account_title_id' => 'required|exists:account_titles,id',
             ];
         }
 
