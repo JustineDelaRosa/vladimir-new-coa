@@ -96,9 +96,8 @@ class FixedAssetController extends Controller
     {
 
         //Major Category check
-        $majorCategoryCheck = MajorCategory::where('major_category_name', $request->major_category)
-                            ->where('division_id', Division::where('division_name', $request->division)
-                                ->first()->id)->exists();
+        $majorCategoryCheck = MajorCategory::where('id', $request->major_category)
+                            ->where('division_id', $request->division)->exists();
         if(!$majorCategoryCheck) {
             return response()->json(
                 [
@@ -114,10 +113,9 @@ class FixedAssetController extends Controller
         }
 
         //minor Category check
-        $majorCategory = MajorCategory::where('major_category_name', $request->major_category)
-                        ->where('division_id', Division::where('division_name', $request->division)
-                        ->first()->id)->first()->id;
-        $minorCategoryCheck = MinorCategory::where('minor_category_name', $request->minor_category)
+        $majorCategory = MajorCategory::where('id', $request->major_category)
+            ->where('division_id', $request->division)->first()->id;
+        $minorCategoryCheck = MinorCategory::where('id', $request->minor_category)
                             ->where('major_category_id',$majorCategory)->exists();
         if(!$minorCategoryCheck) {
             return response()->json(
@@ -147,9 +145,9 @@ class FixedAssetController extends Controller
                 'accountable' => $request->accountable,
                 'cellphone_number' => $request->cellphone_number ?? '-',
                 'brand' => $request->brand ?? '-',
-                'division_id' => Division::where('division_name', $request->division)->first()->id,
-                'major_category_id' => MajorCategory::where('major_category_name', $request->major_category)->first()->id,
-                'minor_category_id' => MinorCategory::where('minor_category_name', $request->minor_category)->first()->id,
+                'division_id' => $request->division,
+                'major_category_id' => $request->major_category,
+                'minor_category_id' => $request->minor_category,
                 'voucher' => $request->voucher ?? '-',
                 'receipt' => $request->receipt ?? '-',
                 'quantity' => $request->quantity,
@@ -268,9 +266,8 @@ class FixedAssetController extends Controller
     {
 
         //Major Category check
-        $majorCategoryCheck = MajorCategory::where('major_category_name', $request->major_category)
-            ->where('division_id', Division::where('division_name', $request->division)
-                ->first()->id)->exists();
+        $majorCategoryCheck = MajorCategory::where('id', $request->major_category)
+            ->where('division_id', $request->division)->exists();
         if(!$majorCategoryCheck) {
             return response()->json(
                 [
@@ -286,10 +283,9 @@ class FixedAssetController extends Controller
         }
 
         //minor Category check
-        $majorCategory = MajorCategory::where('major_category_name', $request->major_category)
-            ->where('division_id', Division::where('division_name', $request->division)
-                ->first()->id)->first()->id;
-        $minorCategoryCheck = MinorCategory::where('minor_category_name', $request->minor_category)
+        $majorCategory = MajorCategory::where('id', $request->major_category)
+            ->where('division_id', $request->division)->first()->id;
+        $minorCategoryCheck = MinorCategory::where('id', $request->minor_category)
             ->where('major_category_id',$majorCategory)->exists();
         if(!$minorCategoryCheck) {
             return response()->json(
@@ -320,9 +316,9 @@ class FixedAssetController extends Controller
                 'accountable' => $request->accountable,
                 'cellphone_number' => $request->cellphone_number ?? '-',
                 'brand' => $request->brand ?? '-',
-                'division_id' => Division::where('division_name', $request->division)->value('id'),
-                'major_category_id' => MajorCategory::where('major_category_name', $request->major_category)->value('id'),
-                'minor_category_id' => MinorCategory::where('minor_category_name', $request->minor_category)->value('id'),
+                'division_id' => $request->division,
+                'major_category_id' => $request->major_category,
+                'minor_category_id' => $request->minor_category,
                 'voucher' => $request->voucher ?? '-',
                 'receipt' => $request->receipt ?? '-',
                 'quantity' => $request->quantity,
@@ -464,8 +460,6 @@ class FixedAssetController extends Controller
             }
         }
     }
-
-
 
     public function search(Request $request)
     {
