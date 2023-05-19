@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\FixedAssetController;
 use App\Http\Controllers\MasterlistExportController;
+use App\Http\Controllers\PrintBarcode\PrintBarCodeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -134,4 +135,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('fixed-asset', FixedAssetController::class);
     Route::patch('fixed-asset/archived-fixed-asset/{id}', [FixedAssetController::class, 'archived']);
     Route::get('fixed-assets/search', [FixedAssetController::class, 'search']);
+
+    //barcode
+    Route::post('fixed-asset/barcode', [PrintBarCodeController::class, 'printBarcode']);
 });
