@@ -14,6 +14,7 @@ use App\Models\MinorCategory;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\Importable;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
@@ -35,6 +36,7 @@ class MasterlistImport extends DefaultValueBinder implements
 //    WithChunkReading,
 //    ShouldQueue,
     WithStartRow
+//    WithBatchInserts
 {
     use Importable;
     function headingRow(): int
@@ -42,19 +44,20 @@ class MasterlistImport extends DefaultValueBinder implements
         return 1;
     }
 
+//    public function batchSize(): int
+//    {
+//        return 500;
+//    }
+
 //    public function chunkSize(): int
 //    {
+//
 //        return 500;
 //    }
 
     public function startRow(): int
     {
         return 2;
-    }
-
-    public function batchSize(): int
-    {
-        return 200;
     }
 
     public function bindValue(Cell $cell, $value): bool
@@ -74,6 +77,7 @@ class MasterlistImport extends DefaultValueBinder implements
 
     public function collection(Collection $collections)
     {
+
          Validator::make($collections->toArray(),$this->rules($collections->toArray()),$this->messages())->validate();
 
 
@@ -313,7 +317,6 @@ class MasterlistImport extends DefaultValueBinder implements
     function vladimirTagGenerator(): string
     {
 
-        $prefix = 'VDR';
         $timestamp = time();
         static $lastRandom = 0;
 
@@ -323,7 +326,7 @@ class MasterlistImport extends DefaultValueBinder implements
         } while ($random === $lastRandom);
 
         $lastRandom = $random;
-        $number = $prefix . $timestamp . $random;
+        $number = $timestamp . $random;
         $check = FixedAsset::where('vladimir_tag_number', $number)->first();
         if ($check) {
             $this->vladimirTagGenerator();
