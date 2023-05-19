@@ -96,7 +96,6 @@ class FixedAssetController extends Controller
     {
 
         //Major Category check
-//Major Category check
         $majorCategoryCheck = MajorCategory::where('id', $request->major_category_id)
             ->where('division_id', $request->division_id)->exists();
         if(!$majorCategoryCheck) {
