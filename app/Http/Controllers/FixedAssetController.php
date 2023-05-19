@@ -134,7 +134,7 @@ class FixedAssetController extends Controller
 
         $fixedAsset = FixedAsset::create([
                 'capex' => $request->capex ?? '-',
-                'project_name' => $request->project_name,
+                'project_name' => $request->project_name ?? '-',
                 'vladimir_tag_number' => (new MasterlistImport())->vladimirTagGenerator(),
                 'tag_number' => $request->tag_number ?? '-',
                 'tag_number_old' => $request->tag_number_old ?? '-',
@@ -305,7 +305,7 @@ class FixedAssetController extends Controller
         if ($fixedAsset) {
             $fixedAsset->update([
                 'capex' => $request->capex ?? '-',
-                'project_name' => $request->project_name,
+                'project_name' => $request->project_name ?? '-',
 //                'vladimir_tag_number' => $request->vladimir_tag_number,
                 'tag_number' => $request->tag_number ?? '-',
                 'tag_number_old' => $request->tag_number_old ?? '-',

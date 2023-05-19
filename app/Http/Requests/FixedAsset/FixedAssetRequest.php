@@ -31,7 +31,7 @@ class FixedAssetRequest extends FormRequest
         if ($this->isMethod('post')) {
             return [
                 'capex' => 'nullable',
-                'project_name' => 'required',
+                'project_name' => 'nullable',
                 'tag_number' => ['nullable', function ($attribute, $value, $fail) {
                 $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
                     ->where('tag_number', '!=', '-')
@@ -87,7 +87,7 @@ class FixedAssetRequest extends FormRequest
             $id = $this->route()->parameter('fixed_asset');
             return [
                 'capex' => 'nullable',
-                'project_name' => 'required',
+                'project_name' => 'nullable',
                 'tag_number' => ['required', function ($attribute, $value, $fail)use ($id) {
                     $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
                         ->where('tag_number', '!=', '-')
