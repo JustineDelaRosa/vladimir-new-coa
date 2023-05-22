@@ -19,7 +19,7 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Database\Eloquent\Builder[]|\Illuminate\Database\Eloquent\Collection|\Illuminate\Http\Response
      */
     public function index()
     {
@@ -31,7 +31,7 @@ class UserController extends Controller
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(UserRequest $request)
     {
@@ -68,13 +68,13 @@ class UserController extends Controller
         //         $access_permission_create = $access_permission->create([
         //             'module_id' => $permission_id,
         //             'user_id' => $userid
-        //         ]);  
+        //         ]);
         //          $module_id = $access_permission_create->module_id;
         //          $module = Module::where('id', $module_id)->first();
-        //         array_push($moduleExist, $module);   
+        //         array_push($moduleExist, $module);
         //     }
         // }
-        
+
         // return response()->json([
         //     'message' => 'Successfully',
         //     'data' => $createUser,
@@ -87,7 +87,7 @@ class UserController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Builder[]|\Illuminate\Database\Eloquent\Collection|\Illuminate\Database\Eloquent\Model|\Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
@@ -104,7 +104,7 @@ class UserController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function update(UserRequest $request, $id)
     {
@@ -120,7 +120,7 @@ class UserController extends Controller
         if(User::where('id', $id)->where('username', $username)->where('role_id', $role_id)->exists()){
             return response()->json(['message' => 'No Changes'], 200);
         }
-        
+
         $update = User::where('id',$id)
          ->update([
             'username' => $username,
@@ -141,11 +141,11 @@ class UserController extends Controller
     //     ]);
     //     // $user_changed = $user_update->username->first();
     //     $user_changed = $username;
-        
+
 
     // }
     // else{
-    //  $user_changed = 'Nothing has Changed'; 
+    //  $user_changed = 'Nothing has Changed';
     // }
 
 
@@ -154,7 +154,7 @@ class UserController extends Controller
     // //    $user_update = $user->update([
     // //     "username" => $username
     // //    ]);
-    
+
     //     $moduleNotExist =[];
     //     $moduleUpdated =[];
     //     $not_included = $access_permission->where('user_id', $id)->get();
@@ -174,7 +174,7 @@ class UserController extends Controller
     //                 $access_permission_create = $access_permission->create([
     //                     'module_id' => $permission_id,
     //                     'user_id' => $id
-    //                 ]); 
+    //                 ]);
     //                 array_push($moduleUpdated, $access_permission_create);
     //             }
     //         }
@@ -192,9 +192,9 @@ class UserController extends Controller
     //        'userdata' => [
     //         'message' => 'Successfully Updated!',
     //         // 'username' => $user->first()->username,
-    //         'username' => $user_changed, 
+    //         'username' => $user_changed,
     //         'module_added' => $moduleUpdated
-    //        ] 
+    //        ]
     //     ], 201);
 
     }
@@ -241,17 +241,17 @@ class UserController extends Controller
             ->orWhere('lastname', 'LIKE', "%{$search}%" )
             ->orWhere('username', 'LIKE', "%{$search}%" )
             ->orWhereHas('role', function($q) use($search){
-                $q->where('role_name', 'like', '%'.$search.'%');       
+                $q->where('role_name', 'like', '%'.$search.'%');
             });
         })
         ->orderby('created_at', 'DESC')
         ->paginate($limit);
         return $User;
-        
-      
-    
 
-    } 
+
+
+
+    }
 
 
 
@@ -261,11 +261,11 @@ class UserController extends Controller
         if($id == $auth_id){
             return response()->json(['message' => 'Unable to Archive, User already in used!'],409);
         }
-        $status = $request->status; 
+        $status = $request->status;
         $User = User::query();
         if(!$User->withTrashed()->where('id',$id)->exists()){
             return response()->json(['error' => 'User Route Not Found'], 404);
-        } 
+        }
         if($status == false){
             if(!User::where('id', $id)->where('is_active', true)->exists()){
                 return response()->json(['message' => 'No Changes'], 200);
@@ -280,9 +280,9 @@ class UserController extends Controller
             if(User::where('id', $id)->where('is_active', true)->exists()){
                 return response()->json(['message' => 'No Changes'], 200);
             }
-            else{              
+            else{
                 $restoreUser = $User->withTrashed()->where('id',$id)->restore();
-                $updateStatus = $User->update(['is_active' => true]); 
+                $updateStatus = $User->update(['is_active' => true]);
                 return response()->json(['message' => 'Successfully Activated!'], 200);
             }
         }
@@ -303,6 +303,6 @@ class UserController extends Controller
 
 
 
-    
+
 }
 

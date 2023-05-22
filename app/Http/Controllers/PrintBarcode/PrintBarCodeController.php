@@ -13,9 +13,8 @@ class PrintBarCodeController extends Controller
     public function printBarcode(Request $request)
     {
         $vladimirTagNumber = [];
-        //call the result from search function
         $tagNumber = $this->search($request);
-        foreach ( $tagNumber->original as $tag) {
+        foreach ($tagNumber as $tag) {
             array_push($vladimirTagNumber, $tag->vladimir_tag_number);
         }
 
@@ -55,7 +54,6 @@ class PrintBarCodeController extends Controller
                         ^FT79,61^A0N,28,28^FH\^CI28^FDVladimir tag Number^FS^CI27
                         ^PQ1,0,1,Y
                         ^XZ";
-
                 $printer->textRaw($zplCode);
 
                 // Cut the paper
@@ -127,6 +125,6 @@ class PrintBarCodeController extends Controller
 
         //return only the vladimir tag number
         $fixedAsset = $fixedAsset->get(['vladimir_tag_number']);
-        return response()->json($fixedAsset);
+        return $fixedAsset;
     }
 }
