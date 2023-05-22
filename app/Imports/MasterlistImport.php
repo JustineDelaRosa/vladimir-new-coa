@@ -105,7 +105,7 @@ class MasterlistImport extends DefaultValueBinder implements
             }
 
 
-            // Create the Masterlist with the obtained ids or null if not found
+            // Create the Masterlist with the obtained ids
             $fixedAsset =FixedAsset::create([
                 'capex' => $collection['capex'],
                 'project_name' => $collection['project_name'],
@@ -129,7 +129,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 'est_useful_life' => $collection['est_useful_life'],
                 'acquisition_date' => $collection['acquisition_date'],
                 'acquisition_cost' => $collection['acquisition_cost'],
-                'is_active' => $collection['status'],
+                'is_active' => MinorCategory::withTrashed()->where('id', $minorCategoryId)->first()->deleted_at == null,
                 'care_of' => $collection['care_of'],
                 'company_id' => Company::where('company_code', $collection['company_code'])->first()->id,
                 'company_name' => $collection['company'],
@@ -159,6 +159,12 @@ class MasterlistImport extends DefaultValueBinder implements
 
                    ]
                );
+
+            //if the is_status is false, delete the fixed asset and formula
+            if (!$fixedAsset->is_active) {
+                $fixedAsset->delete();
+                $fixedAsset->formula()->delete();
+            }
 
         }
     }
@@ -257,7 +263,6 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.account_title' => 'required|exists:account_titles,account_title_name',
         ];
     }
-
     function messages(): array
     {
         return [
