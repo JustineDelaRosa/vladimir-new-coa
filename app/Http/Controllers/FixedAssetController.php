@@ -194,10 +194,10 @@ class FixedAssetController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function show($id)
+    public function show(int $id)
     {
         $fixed_asset = FixedAsset::withTrashed()->where('id', $id)->first();
         //        return $fixed_asset->majorCategory->major_category_name;
@@ -280,10 +280,10 @@ class FixedAssetController extends Controller
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function update(FixedAssetRequest $request, $id)
+    public function update(FixedAssetRequest $request, int $id)
     {
 
         //Major Category check
