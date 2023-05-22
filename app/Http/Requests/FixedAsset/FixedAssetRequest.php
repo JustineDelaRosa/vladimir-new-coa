@@ -89,7 +89,7 @@ class FixedAssetRequest extends FormRequest
             return [
                 'capex' => 'nullable',
                 'project_name' => 'nullable',
-                'tag_number' => ['required', function ($attribute, $value, $fail)use ($id) {
+                'tag_number' => ['nullable', function ($attribute, $value, $fail)use ($id) {
                     $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
                         ->where('tag_number', '!=', '-')
                         ->where('id', '!=', $id)
@@ -98,7 +98,7 @@ class FixedAssetRequest extends FormRequest
                         $fail('Tag number already exists');
                     }
                 }],
-                'tag_number_old' => ['required', function ($attribute, $value, $fail)use ($id) {
+                'tag_number_old' => ['nullable', function ($attribute, $value, $fail)use ($id) {
                     $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)
                         ->where('tag_number_old', '!=', '-')
                         ->where('id', '!=', $id)
