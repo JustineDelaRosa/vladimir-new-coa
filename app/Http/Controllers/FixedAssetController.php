@@ -321,6 +321,13 @@ class FixedAssetController extends Controller
                 422
             );
         }
+        //if no changes in all fields
+//        if ( FixedAsset::where('id', $id)->first()) {
+//            return response()->json([
+//                'message' => 'No changes made.',
+//                'data' => $request->all()
+//            ], 200);
+//        }
 
         $fixedAsset = FixedAsset::where('id', $id)->where('is_active', true)->first();
         if ($fixedAsset) {
@@ -572,6 +579,7 @@ class FixedAssetController extends Controller
                 'asset_specification' => $item->asset_specification,
                 'accountability' => $item->accountability,
                 'accountable' => $item->accountable,
+                'cellphone_number' => $item->cellphone_number,
                 'brand' => $item->brand,
                 'division' => [
                     'id' => $item->division->id,
