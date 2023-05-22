@@ -82,7 +82,7 @@ class FixedAssetRequest extends FormRequest
             ];
         }
 
-        //Editing of Fixed Asset
+        //Updating of Fixed Asset
         if ($this->isMethod('put') ) {
             $id = $this->route()->parameter('fixed_asset');
             return [
@@ -148,7 +148,12 @@ class FixedAssetRequest extends FormRequest
         }
     }
 
-    function messages()
+    /**
+     * Custom error messages
+     *
+     * @return array
+     */
+    function messages(): array
     {
         return [
             'capex.required' => 'Capex is required',

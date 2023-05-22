@@ -217,6 +217,7 @@ class FixedAssetController extends Controller
                 'asset_specification' => $fixed_asset->asset_specification,
                 'accountability' => $fixed_asset->accountability,
                 'accountable' => $fixed_asset->accountable,
+                'cellphone_number' => $fixed_asset->cellphone_number,
                 'brand' => $fixed_asset->brand,
                 'division' => [
                     'id' => $fixed_asset->division->id,
