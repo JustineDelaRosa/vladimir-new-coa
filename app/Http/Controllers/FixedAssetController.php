@@ -244,6 +244,7 @@ class FixedAssetController extends Controller
                 'original_cost' => $fixed_asset->formula->original_cost,
                 'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
                 'status' => $fixed_asset->is_active,
+                'is_old_asset' => $fixed_asset->is_old_asset,
                 'care_of' => $fixed_asset->care_of,
                 'age' => $fixed_asset->formula->age,
                 'end_depreciation' => $fixed_asset->formula->end_depreciation,
