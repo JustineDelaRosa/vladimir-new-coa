@@ -156,6 +156,7 @@ class FixedAssetController extends Controller
                 'acquisition_date' => $request->acquisition_date, //TODO:
                 'acquisition_cost' => $request->acquisition_cost,
                 'is_active' => $request->status ?? 1,
+                'is_old_asset' => $request->is_old_asset ?? 0,
                 'care_of' => $request->care_of,
                 'company_id' => $request->company_id,
                 'company_name' => Company::where('id', $request->company_id)->value('company_name'),
@@ -356,6 +357,7 @@ class FixedAssetController extends Controller
                 'acquisition_date' => $request->acquisition_date,
                 'acquisition_cost' => $request->acquisition_cost,
                 'is_active' => $request->status ?? 1,
+                'is_old_asset' => $request->is_old_asset ?? 0,
                 'care_of' => $request->care_of,
                 'company_id' => $request->company_id,
                 'company_name' => Company::where('id', $request->company_id)->value('company_name'),

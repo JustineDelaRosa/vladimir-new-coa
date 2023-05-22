@@ -39,6 +39,7 @@ class MasterlistImport extends DefaultValueBinder implements
 //    WithBatchInserts
 {
     use Importable;
+
     function headingRow(): int
     {
         return 1;
@@ -104,41 +105,41 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
             }
 
-
             // Create the Masterlist with the obtained ids
             $fixedAsset =FixedAsset::create([
-                'capex' => $collection['capex'],
-                'project_name' => $collection['project_name'],
+                'capex' => strtoupper($collection['capex']) ,
+                'project_name' => strtoupper($collection['project_name']),
                 'vladimir_tag_number' => $collection['capex'] != '-' ? $collection['vladimir_tag_number'] : $this->vladimirTagGenerator(),
-                'tag_number' => $collection['tag_number'],
-                'tag_number_old' => $collection['tag_number_old'],
-                'asset_description' => $collection['asset_description'],
-                'type_of_request' => $collection['type_of_request'],
-                'asset_specification' => $collection['asset_specification'],
-                'accountability' => $collection['accountability'],
-                'accountable' => $collection['accountable'],
+                'tag_number' => $collection['tag_number'] ?? '-',
+                'tag_number_old' => $collection['tag_number_old'] ?? '-',
+                'asset_description' => strtoupper($collection['asset_description']) ,
+                'type_of_request' => strtoupper($collection['type_of_request']),
+                'asset_specification' => strtoupper($collection['asset_specification']),
+                'accountability' =>strtoupper($collection['accountability']) ,
+                'accountable' => strtoupper($collection['accountable']),
                 'cellphone_number' => $collection['cellphone_number'],
-                'brand' => $collection['brand'],
+                'brand' => strtoupper($collection['brand']),
                 'division_id' => $divisionId,
                 'major_category_id' => $majorCategoryId,
                 'minor_category_id' => $minorCategoryId,
-                'voucher' => $collection['voucher'],
-                'receipt' => $collection['receipt'],
+                'voucher' => strtoupper($collection['voucher']),
+                'receipt' => strtoupper($collection['receipt']),
                 'quantity' => $collection['quantity'],
-                'depreciation_method' => $collection['depreciation_method'],
+                'depreciation_method' => strtoupper($collection['depreciation_method']),
                 'est_useful_life' => $collection['est_useful_life'],
                 'acquisition_date' => $collection['acquisition_date'],
                 'acquisition_cost' => $collection['acquisition_cost'],
                 'is_active' => MinorCategory::withTrashed()->where('id', $minorCategoryId)->first()->deleted_at == null,
-                'care_of' => $collection['care_of'],
-                'company_id' => Company::where('company_code', $collection['company_code'])->first()->id,
-                'company_name' => $collection['company'],
-                'department_id' => Department::where('department_code', $collection['department_code'])->first()->id,
-                'department_name' => $collection['department'],
-                'location_id' => Location::where('location_code', $collection['location_code'])->first()->id,
-                'location_name' => $collection['location'],
-                'account_id' => AccountTitle::where('account_title_code', $collection['account_code'])->first()->id,
-                'account_title' => $collection['account_title'],
+                'is_old_asset' => $collection['tag_number'] != null && $collection['tag_number_old'] != null,
+                'care_of' => strtoupper($collection['care_of']),
+                'company_id' => Company::where('company_name', $collection['company'])->first()->id,
+                'company_name' => strtoupper($collection['company']),
+                'department_id' => Department::where('department_name', $collection['department'])->first()->id,
+                'department_name' => strtoupper($collection['department']),
+                'location_id' => Location::where('location_name', $collection['location'])->first()->id,
+                'location_name' => strtoupper($collection['location']),
+                'account_id' => AccountTitle::where('account_title_name', $collection['account_title'])->first()->id,
+                'account_title' => strtoupper($collection['account_title']),
             ]);
 
             $fixedAsset->formula()->create(
@@ -176,7 +177,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.capex' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|\d+-\d+|)$/'],
             '*.project_name' => 'required',
             '*.vladimir_tag_number' => 'required',
-            '*.tag_number' => ['required', function ($attribute, $value, $fail)use($collections) {
+            '*.tag_number' => ['nullable', function ($attribute, $value, $fail)use($collections) {
                 $duplicate = $collections->where('tag_number', $value)->count();
                 if ($duplicate > 1) {
                     $fail('Tag number in row ' . $attribute[0] . ' is not unique');
@@ -188,7 +189,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
 
             }],
-            '*.tag_number_old' => ['required', function ($attribute, $value, $fail) use ($collections) {
+            '*.tag_number_old' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
                 $duplicate = $collections->where('tag_number_old', $value)->count();
                 if ($duplicate > 1) {
                     $fail('Tag number old in row '. $attribute[0].' is not unique');
