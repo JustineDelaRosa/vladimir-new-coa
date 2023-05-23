@@ -14,6 +14,10 @@ class PrintBarCodeController extends Controller
     {
         $vladimirTagNumber = [];
         $tagNumber = $this->search($request);
+        if ($tagNumber == "[]") {
+            return response()->json(['message' => 'No data found'], 404);
+        }
+
         foreach ($tagNumber as $tag) {
             array_push($vladimirTagNumber, $tag->vladimir_tag_number);
         }
@@ -28,32 +32,32 @@ class PrintBarCodeController extends Controller
 
             foreach($vladimirTagNumber as $VDM){
                 $zplCode = "^XA
-                        ~TA000
-                        ~JSN
-                        ^LT0
-                        ^MNW
-                        ^MTT
-                        ^PON
-                        ^PMN
-                        ^LH0,0
-                        ^JMA
-                        ^PR6,6
-                        ~SD30
-                        ^JUS
-                        ^LRN
-                        ^CI27
-                        ^PA0,1,1,0
-                        ^XZ
-                        ^XA
-                        ^MMT
-                        ^PW406
-                        ^LL203
-                        ^LS0
-                        ^BY2,3,41^FT101,130^BCN,,Y,N
-                        ^FH\^FD>;$VDM^FS
-                        ^FT79,61^A0N,28,28^FH\^CI28^FDVladimir tag Number^FS^CI27
-                        ^PQ1,0,1,Y
-                        ^XZ";
+                            ~TA000
+                            ~JSN
+                            ^LT0
+                            ^MNW
+                            ^MTT
+                            ^PON
+                            ^PMN
+                            ^LH0,0
+                            ^JMA
+                            ^PR4,4
+                            ~SD30
+                            ^JUS
+                            ^LRN
+                            ^CI27
+                            ^PA0,1,1,0
+                            ^XZ
+                            ^XA
+                            ^MMT
+                            ^PW406
+                            ^LL203
+                            ^LS0
+                            ^BY2,3,41^FT101,130^BCN,,Y,N
+                            ^FH\^FD>;$VDM^FS
+                            ^FT79,61^A0N,28,28^FH\^CI28^FDVladimir tag Number^FS^CI27
+                            ^PQ1,0,1,Y
+                            ^XZ";
                 $printer->textRaw($zplCode);
 
                 // Cut the paper
@@ -126,5 +130,6 @@ class PrintBarCodeController extends Controller
         //return only the vladimir tag number
         $fixedAsset = $fixedAsset->get(['vladimir_tag_number']);
         return $fixedAsset;
+
     }
 }
