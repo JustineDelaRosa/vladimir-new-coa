@@ -67,8 +67,11 @@ class MasterlistImport extends DefaultValueBinder implements
         if ($cell->getColumn() == 'U') {
             $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y-m-d'), DataType::TYPE_STRING);
             return true;
-        } elseif ($cell->getColumn() == 'AC') {
+        }elseif ($cell->getColumn() == 'AC') {
             $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y-m'), DataType::TYPE_STRING);
+            return true;
+        }elseif($cell->getColumn() == 'AG') {
+            $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y'), DataType::TYPE_STRING);
             return true;
         }
 
@@ -238,7 +241,7 @@ class MasterlistImport extends DefaultValueBinder implements
             }],
             '*.voucher' => 'required',
             '*.receipt' => 'required',
-            '*.quantity' => 'required',
+            '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required',
             '*.est_useful_life' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
             '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date'],
@@ -253,7 +256,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.depreciation_per_year' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
             '*.depreciation_per_month' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
             '*.remaining_book_value' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
-            '*.start_depreciation' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+            '*.start_depreciation' => ['required', 'date_format:Y'],
             '*.company_code' => 'required|exists:companies,company_code',
             '*.company' => 'required|exists:companies,company_name',
             '*.department_code' => 'required|exists:departments,department_code',
@@ -286,6 +289,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.voucher.required' => 'Voucher is required',
             '*.receipt.required' => 'Receipt is required',
             '*.quantity.required' => 'Quantity is required',
+            '*.quantity.numeric' => 'Quantity must be a number',
             '*.depreciation_method.required' => 'Depreciation Method is required',
             '*.est_useful_life.required' => 'Est Useful Life is required',
             '*.acquisition_date.required' => 'Acquisition Date is required',
@@ -301,6 +305,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.depreciation_per_month.required' => 'Depreciation Per Month is required',
             '*.remaining_book_value.required' => 'Remaining Book Value is required',
             '*.start_depreciation.required' => 'Start Depreciation is required',
+            '*.start_depreciation.date_format' => 'Start Depreciation format must be a year',
             '*.company_code.required' => 'Company Code is required',
             '*.company_code.exists' => 'Company Code does not exist',
             '*.company.required' => 'Company is required',
