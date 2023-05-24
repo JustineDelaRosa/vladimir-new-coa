@@ -202,6 +202,7 @@ class MasterlistExport implements
     public function columnFormats(): array
     {
         return [
+            'C' => '0',
             'D' => '0',
             'E' => '0',
             'V' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
@@ -243,15 +244,14 @@ class MasterlistExport implements
                         ],
                     ],
               ]);
-
-                $event->sheet->getStyle('A2:AO1000')->applyFromArray([
-                    'alignment' => [
+              $lastRow = $event->sheet->getHighestRow();
+              //align center as long as there is data in the cell
+              $event->sheet->getStyle('A2:AO'.$lastRow)->applyFromArray([
+                  'alignment' => [
                         'horizontal' => Alignment::HORIZONTAL_CENTER,
-                    ],
-                ]);
+                  ],
+              ]);
           }
-
-
         ];
     }
 

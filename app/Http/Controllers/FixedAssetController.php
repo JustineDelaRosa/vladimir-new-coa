@@ -94,7 +94,13 @@ class FixedAssetController extends Controller
      */
     public function store(FixedAssetRequest $request)
     {
-
+        $vladimirTagNumber = (new MasterlistImport())->vladimirTagGenerator();
+        if(!is_numeric($vladimirTagNumber) || strlen($vladimirTagNumber) != 13) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => ['Wrong vladimir tag number format. Please try again.']
+            ], 422);
+        }
         //Major Category check
         $majorCategoryCheck = MajorCategory::where('id', $request->major_category_id)
             ->where('division_id', $request->division_id)->exists();
@@ -131,11 +137,10 @@ class FixedAssetController extends Controller
             );
         }
 
-
         $fixedAsset = FixedAsset::create([
                 'capex' => $request->capex ?? '-',
                 'project_name' => $request->project_name ?? '-',
-                'vladimir_tag_number' => (new MasterlistImport())->vladimirTagGenerator(),
+                'vladimir_tag_number' => $vladimirTagNumber,
                 'tag_number' => $request->tag_number ?? '-',
                 'tag_number_old' => $request->tag_number_old ?? '-',
                 'asset_description' => $request->asset_description,

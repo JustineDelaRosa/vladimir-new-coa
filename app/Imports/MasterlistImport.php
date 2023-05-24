@@ -11,7 +11,6 @@ use App\Models\Department;
 use App\Models\Formula;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
@@ -33,9 +32,9 @@ class MasterlistImport extends DefaultValueBinder implements
     ToCollection,
     WithHeadingRow,
     WithCustomValueBinder,
+    WithStartRow
 //    WithChunkReading,
 //    ShouldQueue,
-    WithStartRow
 //    WithBatchInserts
 {
     use Importable;
@@ -132,7 +131,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 'est_useful_life' => $collection['est_useful_life'],
                 'acquisition_date' => $collection['acquisition_date'],
                 'acquisition_cost' => $collection['acquisition_cost'],
-                'is_active' => MinorCategory::withTrashed()->where('id', $minorCategoryId)->first()->deleted_at == null,
+                'is_active' => MinorCategory::withTrashed()->where('id', $minorCategoryId)->first()->deleted_at == null ? $collection['status'] : false,
                 'is_old_asset' => $collection['tag_number'] != null || $collection['tag_number_old'] != null,
                 'care_of' => strtoupper($collection['care_of']),
                 'company_id' => Company::where('company_name', $collection['company'])->first()->id,
@@ -169,7 +168,6 @@ class MasterlistImport extends DefaultValueBinder implements
                 $fixedAsset->delete();
                 $fixedAsset->formula()->delete();
             }
-
         }
     }
 
@@ -180,20 +178,19 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.capex' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|\d+-\d+|)$/'],
             '*.project_name' => 'required',
             '*.vladimir_tag_number' => 'required',
-            '*.tag_number' => ['nullable', function ($attribute, $value, $fail)use($collections) {
-                $duplicate = $collections->where('tag_number', $value)->count();
+            '*.tag_number' => ['required','regex:/^(.{6,13}|-)$/', function ($attribute, $value, $fail)use($collections) {
+                $duplicate = $collections->where('tag_number', $value)->where('tag_number', '!=', '-')->count();
                 if ($duplicate > 1) {
-                    $fail('Tag number in row ' . $attribute[0] . ' is not unique');
+                    $fail('Tag number in row ' . $attribute[0] . ' is not unique'. $duplicate);
                 }
                 //check in database
                 $fixed_asset = FixedAsset::withTrashed()->where('tag_number', $value)->first();
                 if ($fixed_asset) {
                     $fail('Tag number already exists');
                 }
-
             }],
-            '*.tag_number_old' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
-                $duplicate = $collections->where('tag_number_old', $value)->count();
+            '*.tag_number_old' => ['required','regex:/^(.{6,13}|-)$/', function ($attribute, $value, $fail) use ($collections) {
+                $duplicate = $collections->where('tag_number_old', $value)->where('tag_number_old', '!=', '-')->count();
                 if ($duplicate > 1) {
                     $fail('Tag number old in row '. $attribute[0].' is not unique');
                 }
@@ -267,6 +264,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.account_title' => 'required|exists:account_titles,account_title_name',
         ];
     }
+
     function messages(): array
     {
         return [
@@ -325,24 +323,46 @@ class MasterlistImport extends DefaultValueBinder implements
         ];
 
     }
-    function vladimirTagGenerator(): string
-    {
 
-        $timestamp = time();
+    function vladimirTagGenerator()
+    {
+        $date = date('ymd');
         static $lastRandom = 0;
 
         // Generate a new random value
         do {
-            $random = mt_rand(1, 499) . mt_rand(1, 9999);
+            $random = mt_rand(10, 99) . mt_rand(1000, 9999);
         } while ($random === $lastRandom);
 
         $lastRandom = $random;
-        $number = $timestamp . $random;
-        $check = FixedAsset::where('vladimir_tag_number', $number)->first();
+        $number =  $date . $random;
+        $numbers = (string)$number;
+        $legnth = strlen($numbers);
+        if($legnth !== 12)
+        {
+            return 'Invalid Number';
+        }
+        $evenSum = 0;
+        for ($i = 1; $i < $legnth; $i += 2) {
+            $evenSum += (int)$numbers[$i];
+        }
+        $evenSum *= 3;
+
+        $oddSum = 0;
+        for($i = 0; $i < $legnth; $i += 2) {
+            $oddSum += (int)$numbers[$i];
+        }
+        $totalSum = $evenSum + $oddSum;
+
+        $remainder = $totalSum % 10;
+
+        $checkDigit = ($remainder === 0) ? 0 : 10 - $remainder;
+        $ean13Result = $numbers . $checkDigit;
+        $check = FixedAsset::where('vladimir_tag_number', $ean13Result)->first();
         if ($check) {
             $this->vladimirTagGenerator();
         }
-        return $number;
+        return $ean13Result;
     }
 
 }
