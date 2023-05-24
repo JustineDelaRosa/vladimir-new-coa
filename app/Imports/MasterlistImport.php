@@ -132,7 +132,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 'acquisition_date' => $collection['acquisition_date'],
                 'acquisition_cost' => $collection['acquisition_cost'],
                 'is_active' => MinorCategory::withTrashed()->where('id', $minorCategoryId)->first()->deleted_at == null ? $collection['status'] : false,
-                'is_old_asset' => $collection['tag_number'] != null || $collection['tag_number_old'] != null,
+                'is_old_asset' => $collection['tag_number'] != '-' || $collection['tag_number_old'] != '-',
                 'care_of' => strtoupper($collection['care_of']),
                 'company_id' => Company::where('company_name', $collection['company'])->first()->id,
                 'company_name' => strtoupper($collection['company']),

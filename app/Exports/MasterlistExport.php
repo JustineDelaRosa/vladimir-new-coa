@@ -48,60 +48,56 @@ class MasterlistExport implements
         $search = $this->search;
         $startDate = $this->startDate;
         $endDate = $this->endDate;
-            $fixedAsset = FixedAsset::query()
-                ->with('formula')
-                ->with('majorCategory')
-                ->with('minorCategory')
-                ->with('division')
-                ->with('company')
-                ->with('department')
-                ->with('location')
-                ->with('accountTitle')
-                ->when($search, function ($query, $search) {
-                      return  $query->where('capex', 'LIKE', '%' . $search . '%')
-                            ->orWhere('project_name', 'LIKE', '%' . $search . '%')
-                            ->orWhere('vladimir_tag_number', 'LIKE', '%' . $search . '%')
-                            ->orWhere('tag_number', 'LIKE', '%' . $search . '%')
-                            ->orWhere('tag_number_old', 'LIKE', '%' . $search . '%')
-//                            ->orWhere('asset_description', 'LIKE', '%' . $search . '%')
-                            ->orWhere('type_of_request', 'LIKE', '%' . $search . '%')
-                            ->orWhere('accountability', 'LIKE', '%' . $search . '%')
-                            ->orWhere('accountable', 'LIKE', '%' . $search . '%')
-                            ->orWhere('brand', 'LIKE', '%' . $search . '%')
-                            ->orWhere('depreciation_method', 'LIKE', '%' . $search . '%')
-                            ->orWhereHas('formula', function ($query) use ($search) {
-                                $query->where('depreciation_method', 'LIKE', '%' . $search . '%');
-                            })
-                            ->orWhereHas('majorCategory', function ($query) use ($search) {
-                                $query->where('major_category_name', 'LIKE', '%' . $search . '%');
-                            })
-                            ->orWhereHas('minorCategory', function ($query) use ($search) {
-                                $query->where('minor_category_name', 'LIKE', '%' . $search . '%');
-                            })
-                            ->orWhereHas('division', function ($query) use ($search) {
-                                $query->where('division_name', 'LIKE', '%' . $search . '%');
-                            })
-                            ->orWhereHas('company', function ($query) use ($search) {
-                                $query->where('company_name', 'LIKE', '%' . $search . '%');
-                            })
-                            ->orWhereHas('department', function ($query) use ($search) {
-                                $query->where('department_name', 'LIKE', '%' . $search . '%');
-                            })
-                            ->orWhereHas('location', function ($query) use ($search) {
-                                $query->where('location_name', 'LIKE', '%' . $search . '%');
-                            })
-                            ->orWhereHas('accountTitle', function ($query) use ($search) {
-                                $query->where('account_title_name', 'LIKE', '%' . $search . '%');
-                            });
-
-                })
-                ->when($startDate, function ($query, $startDate) {
-                    return $query->where('created_at', '>=', $startDate);
-                })
-                ->when($endDate, function ($query, $endDate) {
-                    return $query->where('created_at', '<=', $endDate);
-                })
-                ->orderBy('id', 'asc');
+        $fixedAsset = FixedAsset::withTrashed()->with(
+            [
+                'formula' => function ($query) {
+                    $query->withTrashed();
+                },
+                'division' => function ($query) {
+                    $query->withTrashed()->select('id', 'division_name');
+                },
+                'majorCategory' => function ($query) {
+                    $query->withTrashed()->select('id', 'major_category_name');
+                },
+                'minorCategory' => function ($query) {
+                    $query->withTrashed()->select('id', 'minor_category_name');
+                },
+            ])
+            ->where(function ($query) use ($search, $startDate, $endDate) {
+                $query->where('capex', 'LIKE', '%' . $search . '%')
+                    ->orWhere('project_name', 'LIKE', '%' . $search . '%')
+                    ->orWhere('vladimir_tag_number', 'LIKE', '%' . $search . '%')
+                    ->orWhere('tag_number', 'LIKE', '%' . $search . '%')
+                    ->orWhere('tag_number_old', 'LIKE', '%' . $search . '%')
+                    ->orWhere('type_of_request', 'LIKE', '%' . $search . '%')
+                    ->orWhere('accountability', 'LIKE', '%' . $search . '%')
+                    ->orWhere('accountable', 'LIKE', '%' . $search . '%')
+                    ->orWhere('brand', 'LIKE', '%' . $search . '%')
+                    ->orWhere('depreciation_method', 'LIKE', '%' . $search . '%')
+                    ->orWhereBetween('created_at', [$startDate, $endDate]);
+                $query->orWhereHas('majorCategory', function ($query) use ($search) {
+                    $query->where('major_category_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('minorCategory', function ($query) use ($search) {
+                    $query->where('minor_category_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('division', function ($query) use ($search) {
+                    $query->where('division_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('location', function ($query) use ($search) {
+                    $query->where('location_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('company', function ($query) use ($search) {
+                    $query->where('company_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('department', function ($query) use ($search) {
+                    $query->where('department_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('accountTitle', function ($query) use ($search) {
+                    $query->where('account_title_name', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orderBy('id', 'ASC');
         return $fixedAsset;
     }
 
@@ -183,19 +179,19 @@ class MasterlistExport implements
             'Status',
             'Care Of',
             'Age',
-            'End of Depreciation',
+            'End Depreciation',
             'Depreciation Per Year',
             'Depreciation Per Month',
             'Remaining Book Value',
             'Start Depreciation',
             'Company Code',
-            'Company Name',
+            'Company',
             'Department Code',
-            'Department Name',
+            'Department',
             'Location Code',
-            'Location Name',
-            'Account Title Code',
-            'Account Title Name',
+            'Location',
+            'Account Code',
+            'Account Title',
         ];
     }
 
@@ -223,9 +219,13 @@ class MasterlistExport implements
         return[
           AfterSheet::class => function(AfterSheet $event){
               $event->sheet->getStyle('A1:AO1')->applyFromArray([
+                  //capitalized all header
                   'font' => [
-                      'bold' => true
+                      'bold' => true,
                   ],
+                  //capitalized all header
+
+
                   'alignment' => [
                         'horizontal' => Alignment::HORIZONTAL_CENTER,
                   ],
@@ -243,6 +243,7 @@ class MasterlistExport implements
                             'color' => ['argb' => '0000'],
                         ],
                     ],
+
               ]);
               $lastRow = $event->sheet->getHighestRow();
               //align center as long as there is data in the cell
