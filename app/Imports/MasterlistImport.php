@@ -178,7 +178,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.capex' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|\d+-\d+|)$/'],
             '*.project_name' => 'required',
             '*.vladimir_tag_number' => 'required',
-            '*.tag_number' => ['required','regex:/^(.{6,13}|-)$/', function ($attribute, $value, $fail)use($collections) {
+            '*.tag_number' => ['required','regex:/^([0-9-]{6,13}|-)$/', function ($attribute, $value, $fail)use($collections) {
                 $duplicate = $collections->where('tag_number', $value)->where('tag_number', '!=', '-')->count();
                 if ($duplicate > 1) {
                     $fail('Tag number in row ' . $attribute[0] . ' is not unique'. $duplicate);
@@ -189,7 +189,7 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Tag number already exists');
                 }
             }],
-            '*.tag_number_old' => ['required','regex:/^(.{6,13}|-)$/', function ($attribute, $value, $fail) use ($collections) {
+            '*.tag_number_old' => ['required','regex:/^([0-9-]{6,13}|-)$/', function ($attribute, $value, $fail) use ($collections) {
                 $duplicate = $collections->where('tag_number_old', $value)->where('tag_number_old', '!=', '-')->count();
                 if ($duplicate > 1) {
                     $fail('Tag number old in row '. $attribute[0].' is not unique');
