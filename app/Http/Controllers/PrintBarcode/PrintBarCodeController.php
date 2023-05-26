@@ -90,30 +90,33 @@ class PrintBarCodeController extends Controller
         $fixedAsset = FixedAsset::withTrashed()->
             where('capex','-')->
             where(function ($query) use ($search, $startDate, $endDate)  {
-                $query->where('vladimir_tag_number',  $search )
+                $query->where('vladimir_tag_number',  $search)
+                        ->orWhere('type_of_request',$search)
+                        ->orWhere('accountability',$search)
+                        ->orWhere('is_old_asset', $search)
                         ->orWhereBetween('created_at', [$startDate, $endDate]);
 //                        ->orWhere('id',  $id );
-//                $query->orWhereHas('majorCategory', function ($query) use ($search) {
-//                    $query->where('major_category_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $query->orWhereHas('minorCategory', function ($query) use ($search) {
-//                    $query->where('minor_category_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $query->orWhereHas('division', function ($query) use ($search) {
-//                    $query->where('division_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $query->orWhereHas('location', function ($query) use ($search) {
-//                    $query->where('location_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $query->orWhereHas('company', function ($query) use ($search) {
-//                    $query->where('company_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $query->orWhereHas('department', function ($query) use ($search) {
-//                    $query->where('department_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $query->orWhereHas('accountTitle', function ($query) use ($search) {
-//                    $query->where('account_title_name', 'LIKE', '%' . $search . '%');
-//                });
+                $query->orWhereHas('majorCategory', function ($query) use ($search) {
+                    $query->where('major_category_name', $search);
+                });
+                $query->orWhereHas('minorCategory', function ($query) use ($search) {
+                    $query->where('minor_category_name', $search);
+                });
+                $query->orWhereHas('division', function ($query) use ($search) {
+                    $query->where('division_name', $search);
+                });
+                $query->orWhereHas('location', function ($query) use ($search) {
+                    $query->where('location_name',  $search);
+                });
+                $query->orWhereHas('company', function ($query) use ($search) {
+                    $query->where('company_name', $search);
+                });
+                $query->orWhereHas('department', function ($query) use ($search) {
+                    $query->where('department_name', $search);
+                });
+                $query->orWhereHas('accountTitle', function ($query) use ($search) {
+                    $query->where('account_title_name', $search);
+                });
             })
             ->orderBy('id', 'ASC');
 

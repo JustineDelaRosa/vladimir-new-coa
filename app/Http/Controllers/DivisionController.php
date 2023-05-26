@@ -106,7 +106,7 @@ class DivisionController extends Controller
         //check id Division is tag or not
         $division_tag_check = MajorCategory::where('division_id', $id)->exists();
         if ($division_tag_check) {
-            return response()->json(['message' => 'Unable to Archived!, Division was tagged!'], 409);
+            return response()->json(['message' => 'Unable to Archived!, Archive Major Category first!'], 409);
         }
 
         if ($status == false) {

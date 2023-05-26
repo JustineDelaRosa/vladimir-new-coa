@@ -330,7 +330,7 @@ class FixedAssetController extends Controller
             );
         }
         //if no changes in all fields
-//        if ( FixedAsset::where('id', $id)->first()) {
+//        if( FixedAsset::where('id', $id)->first()) {
 //            return response()->json([
 //                'message' => 'No changes made.',
 //                'data' => $request->all()
@@ -645,5 +645,103 @@ class FixedAssetController extends Controller
             ];
         });
         return $fixedAsset;
+    }
+
+    public function searchAssetTag(Request $request){
+        $search = $request->get('search');
+        if($search == null){
+            return response()->json([
+                'message' => 'No data found'
+            ], 404);
+        }
+        $fixedAsset = FixedAsset::withTrashed()
+            ->with('division',function ($query){
+                $query->withTrashed();
+            })
+            ->with('majorCategory',function ($query){
+                $query->withTrashed();
+            })
+            ->with('minorCategory',function ($query){
+                $query->withTrashed();
+            })
+            ->with('formula',function ($query){
+                $query->withTrashed();
+            })
+            ->where('vladimir_tag_number', $search)->first();
+
+        $fixed_asset_arr = [
+            'id' => $fixedAsset->id,
+            'capex' => $fixedAsset->capex,
+            'project_name' => $fixedAsset->project_name,
+            'vladimir_tag_number' => $fixedAsset->vladimir_tag_number,
+            'tag_number' => $fixedAsset->tag_number,
+            'tag_number_old' => $fixedAsset->tag_number_old,
+            'asset_description' => $fixedAsset->asset_description,
+            'type_of_request' => $fixedAsset->type_of_request,
+            'asset_specification' => $fixedAsset->asset_specification,
+            'accountability' => $fixedAsset->accountability,
+            'accountable' => $fixedAsset->accountable,
+            'cellphone_number' => $fixedAsset->cellphone_number,
+            'brand' => $fixedAsset->brand,
+            'division' => [
+                'id' => $fixedAsset->division->id,
+                'division_name' => $fixedAsset->division->division_name,
+            ],
+            'major_category' => [
+                'id' => $fixedAsset->majorCategory->id,
+                'major_category_name' => $fixedAsset->majorCategory->major_category_name,
+            ],
+            'minor_category' => [
+                'id' => $fixedAsset->minorCategory->id,
+                'minor_category_name' => $fixedAsset->minorCategory->minor_category_name,
+            ],
+            'voucher' => $fixedAsset->voucher,
+            'receipt' => $fixedAsset->receipt,
+            'quantity' => $fixedAsset->quantity,
+            'depreciation_method' => $fixedAsset->depreciation_method,
+            'est_useful_life' => $fixedAsset->est_useful_life,
+            //                    'salvage_value' => $fixedAsset->salvage_value,
+            'acquisition_date' => $fixedAsset->acquisition_date,
+            'acquisition_cost' => $fixedAsset->acquisition_cost,
+            'scrap_value' => $fixedAsset->formula->scrap_value,
+            'original_cost' => $fixedAsset->formula->original_cost,
+            'accumulated_cost' => $fixedAsset->formula->accumulated_cost,
+            'status' => $fixedAsset->is_active,
+            'is_old_asset' => $fixedAsset->is_old_asset,
+            'care_of' => $fixedAsset->care_of,
+            'age' => $fixedAsset->formula->age,
+            'end_depreciation' => $fixedAsset->formula->end_depreciation,
+            'depreciation_per_year' => $fixedAsset->formula->depreciation_per_year,
+            'depreciation_per_month' => $fixedAsset->formula->depreciation_per_month,
+            'remaining_book_value' => $fixedAsset->formula->remaining_book_value,
+            'start_depreciation' => $fixedAsset->formula->start_depreciation,
+            'company' => [
+                'id' => $fixedAsset->company->id,
+                'company_code' => $fixedAsset->company->company_code,
+                'company_name' => $fixedAsset->company->company_name,
+            ],
+            'department' => [
+                'id' => $fixedAsset->department->id,
+                'department_code' => $fixedAsset->department->department_code,
+                'department_name' => $fixedAsset->department->department_name,
+            ],
+            'location' => [
+                'id' => $fixedAsset->location->id,
+                'location_code' => $fixedAsset->location->location_code,
+                'location_name' => $fixedAsset->location->location_name,
+            ],
+            'account_title' => [
+                'id' => $fixedAsset->accountTitle->id,
+                'account_title_code' => $fixedAsset->accountTitle->account_title_code,
+                'account_title_name' => $fixedAsset->accountTitle->account_title_name,
+            ],
+        ];
+
+        return response()->json([
+            'message' => 'Fixed Asset retrieved successfully.',
+            'data' => $fixedAsset
+        ], 200);
+
+
     }
 }

@@ -64,40 +64,37 @@ class MasterlistExport implements
                 },
             ])
             ->when($search, function ($query, $search) {
-                return  $query->where('capex', 'LIKE', '%' . $search . '%')
-                    ->orWhere('project_name', 'LIKE', '%' . $search . '%')
-                    ->orWhere('vladimir_tag_number', 'LIKE', '%' . $search . '%')
-                    ->orWhere('tag_number', 'LIKE', '%' . $search . '%')
-                    ->orWhere('tag_number_old', 'LIKE', '%' . $search . '%')
-//                            ->orWhere('asset_description', 'LIKE', '%' . $search . '%')
-                    ->orWhere('type_of_request', 'LIKE', '%' . $search . '%')
-                    ->orWhere('accountability', 'LIKE', '%' . $search . '%')
-                    ->orWhere('accountable', 'LIKE', '%' . $search . '%')
-                    ->orWhere('brand', 'LIKE', '%' . $search . '%')
-                    ->orWhere('depreciation_method', 'LIKE', '%' . $search . '%')
-                    ->orWhereHas('formula', function ($query) use ($search) {
-                        $query->withTrashed()->where('depreciation_method', 'LIKE', '%' . $search . '%');
-                    })
+                return  $query->where('capex',$search)
+                    ->orWhere('project_name',$search)
+                    ->orWhere('vladimir_tag_number',$search)
+                    ->orWhere('tag_number',$search)
+                    ->orWhere('tag_number_old',$search)
+                    //->orWhere('asset_description',$search)
+                    ->orWhere('type_of_request',$search)
+                    ->orWhere('accountability',$search)
+                    ->orWhere('accountable',$search)
+                    ->orWhere('brand',$search)
+                    ->orWhere('depreciation_method',$search)
                     ->orWhereHas('majorCategory', function ($query) use ($search) {
-                        $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
+                        $query->withTrashed()->where('major_category_name', $search);
                     })
                     ->orWhereHas('minorCategory', function ($query) use ($search) {
-                        $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
+                        $query->withTrashed()->where('minor_category_name',  $search );
                     })
                     ->orWhereHas('division', function ($query) use ($search) {
-                        $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
+                        $query->withTrashed()->where('division_name',  $search);
                     })
                     ->orWhereHas('company', function ($query) use ($search) {
-                        $query->where('company_name', 'LIKE', '%' . $search . '%');
+                        $query->where('company_name', $search);
                     })
                     ->orWhereHas('department', function ($query) use ($search) {
-                        $query->where('department_name', 'LIKE', '%' . $search . '%');
+                        $query->where('department_name', $search );
                     })
                     ->orWhereHas('location', function ($query) use ($search) {
-                        $query->where('location_name', 'LIKE', '%' . $search . '%');
+                        $query->where('location_name', $search);
                     })
                     ->orWhereHas('accountTitle', function ($query) use ($search) {
-                        $query->where('account_title_name', 'LIKE', '%' . $search . '%');
+                        $query->where('account_title_name', $search);
                     });
 
             })
@@ -108,7 +105,7 @@ class MasterlistExport implements
             ->when($endDate, function ($query, $endDate) {
                 return $query->where('created_at', '<=', $endDate);
             })
-            ->orderBy('created_at', 'DESC');
+            ->orderBy('id', 'ASC');
         return $fixedAsset;
     }
 

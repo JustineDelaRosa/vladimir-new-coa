@@ -54,8 +54,6 @@ Route::post('/auth/login', [AuthController::class, 'Login']);
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
 
-
-
     //SETUP//
     Route::post('setup/module', [SetupController::class, 'createModule']);
     Route::get('setup/get-modules', [SetupController::class, 'getModule']);
@@ -135,6 +133,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('fixed-asset', FixedAssetController::class);
     Route::patch('fixed-asset/archived-fixed-asset/{id}', [FixedAssetController::class, 'archived']);
     Route::get('fixed-assets/search', [FixedAssetController::class, 'search']);
+    Route::get('fixed-assets/search-asset-tag', [FixedAssetController::class, 'searchAssetTag']);
 
     //barcode
     Route::post('fixed-asset/barcode', [PrintBarCodeController::class, 'printBarcode']);

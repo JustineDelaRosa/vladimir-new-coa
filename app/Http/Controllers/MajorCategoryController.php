@@ -242,6 +242,7 @@ class MajorCategoryController extends Controller
         if ($status != "active" || $status != "deactivated") {
             $status = 1;
         }
+
         $MajorCategory = MajorCategory::withTrashed()->with('division', function ($query) use ($status) {
             $query->where('is_active', $status);
             $query->withTrashed();
