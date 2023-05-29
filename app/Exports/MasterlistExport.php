@@ -106,6 +106,7 @@ class MasterlistExport implements
                 return $query->where('created_at', '<=', $endDate);
             })
             ->orderBy('id', 'ASC');
+
         return $fixedAsset;
     }
 
@@ -261,6 +262,4 @@ class MasterlistExport implements
           }
         ];
     }
-
-
 }
