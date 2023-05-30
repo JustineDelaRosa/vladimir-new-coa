@@ -83,51 +83,82 @@ class PrintBarCodeController extends Controller
 
     public function search(Request $request)
     {
-//        $id = $request->get('id');
+//      //  $id = $request->get('id');
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
-        $fixedAsset = FixedAsset::withTrashed()->
-            where('capex','-')->
-            where(function ($query) use ($search, $startDate, $endDate)  {
-                $query->where('vladimir_tag_number',  $search)
-                        ->orWhere('type_of_request',$search)
-                        ->orWhere('accountability',$search)
-                        ->orWhere('is_old_asset', $search)
-                        ->orWhereBetween('created_at', [$startDate, $endDate]);
-//                        ->orWhere('id',  $id );
+//        $oldAsset = $request->get('oldAsset');
+//        $fixedAsset = FixedAsset::withTrashed()->
+//            where('capex','-')->
+//            where(function ($query) use ($search, $startDate, $endDate)  {
+//                $query->where('vladimir_tag_number', $search)
+//                        ->orWhere('type_of_request',$search)
+//                        ->orWhere('accountability',$search)
+//                        ->orWhere('accountable', $search)
+//                        ->orWhere('is_old_asset', $search)
+//                        ->orWhereBetween('created_at', [$startDate, $endDate]);
+//                $query->orWhereHas('majorCategory', function ($query) use ($search) {
+//                    $query->where('major_category_name', $search);
+//                });
+//                $query->orWhereHas('minorCategory', function ($query) use ($search) {
+//                    $query->where('minor_category_name', $search);
+//                });
+//                $query->orWhereHas('division', function ($query) use ($search) {
+//                    $query->where('division_name', $search);
+//                });
+//                $query->orWhereHas('location', function ($query) use ($search) {
+//                    $query->where('location_name',  $search);
+//                });
+//                $query->orWhereHas('company', function ($query) use ($search) {
+//                    $query->where('company_name', $search);
+//                });
+//                $query->orWhereHas('department', function ($query) use ($search) {
+//                    $query->where('department_name', $search);
+//                });
+//                $query->orWhereHas('accountTitle', function ($query) use ($search) {
+//                    $query->where('account_title_name', $search);
+//                });
+//            })
+//            ->orderBy('id', 'ASC');
+        $fixedAsset = FixedAsset::withTrashed()
+            ->where('capex', '-')
+            ->where(function ($query) use ($search, $startDate, $endDate) {
+                $query->Where('vladimir_tag_number', $search )
+                    ->orWhere('type_of_request',$search)
+                    ->orWhere('accountability',$search)
+                    ->orWhere('accountable',$search)
+                    ->orWhere('depreciation_method',$search)
+                    ->orWhereBetween('created_at', [$startDate, $endDate]);
                 $query->orWhereHas('majorCategory', function ($query) use ($search) {
-                    $query->where('major_category_name', $search);
+                    $query->where('major_category_name', $search );
                 });
                 $query->orWhereHas('minorCategory', function ($query) use ($search) {
-                    $query->where('minor_category_name', $search);
+                    $query->where('minor_category_name', $search );
                 });
                 $query->orWhereHas('division', function ($query) use ($search) {
-                    $query->where('division_name', $search);
+                    $query->where('division_name',$search);
                 });
                 $query->orWhereHas('location', function ($query) use ($search) {
-                    $query->where('location_name',  $search);
+                    $query->where('location_name', $search);
                 });
                 $query->orWhereHas('company', function ($query) use ($search) {
                     $query->where('company_name', $search);
                 });
                 $query->orWhereHas('department', function ($query) use ($search) {
-                    $query->where('department_name', $search);
+                    $query->where('department_name', $search );
                 });
                 $query->orWhereHas('accountTitle', function ($query) use ($search) {
-                    $query->where('account_title_name', $search);
+                    $query->where('account_title_name', $search );
                 });
             })
             ->orderBy('id', 'ASC');
 
         //return only the vladimir tag number
-        $fixedAsset = $fixedAsset->get(
-            [
+        $fixedAsset = $fixedAsset->get([
                 'vladimir_tag_number',
-//                'department_name'
+                //'department_name'
                 'asset_description',
             ]);
         return $fixedAsset;
-
     }
 }

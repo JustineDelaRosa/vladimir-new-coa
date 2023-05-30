@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Exports\MasterlistExport;
 use App\Models\FixedAsset;
-use http\Env\Response;
 use Illuminate\Http\Request;
 
 class MasterlistExportController extends Controller
@@ -15,19 +14,16 @@ class MasterlistExportController extends Controller
             'startDate' => 'nullable|date',
             'endDate' => 'nullable|date',
         ]);
-        $filename = $request->get('filename');
-        //ternary if empty, the default filename is Fixed_Asset_Date
-        $filename = $filename == null ? 'Fixed_Asset'. '_' . date('Y-m-d') :
-                    str_replace(' ', '_', $filename) . '_' . date('Y-m-d');
+//        $filename = $request->get('filename');
+//        //ternary if empty, the default filename is Fixed_Asset_Date
+//        $filename = $filename == null ? 'Fixed_Asset'. '_' . date('Y-m-d') :
+//                    str_replace(' ', '_', $filename) . '_' . date('Y-m-d');
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
 
-
-
         if($startDate != null && $endDate != null){
-            $fixed_assets = FixedAsset::withTrashed()->with(
-                [
+            $fixed_assets = FixedAsset::withTrashed()->with([
                     'formula' => function ($query) {
                         $query->withTrashed();
                     },
@@ -40,15 +36,13 @@ class MasterlistExportController extends Controller
                     'minorCategory' => function ($query) {
                         $query->withTrashed()->select('id', 'minor_category_name');
                     },
-                ]
-            )
+                ])
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->get();
             return $this->refactorExport($fixed_assets);
         }
 
-        $fixedAsset = FixedAsset::withTrashed()->with(
-            [
+        $fixedAsset = FixedAsset::withTrashed()->with([
                 'formula' => function ($query) {
                     $query->withTrashed();
                 },
@@ -61,8 +55,7 @@ class MasterlistExportController extends Controller
                 'minorCategory' => function ($query) {
                     $query->withTrashed()->select('id', 'minor_category_name');
                 },
-            ]
-        )
+            ])
             ->Where(function ($query) use ($search, $startDate, $endDate) {
                 $query->Where('capex', 'LIKE', '%'.$search.'%')
                     ->orWhere('project_name', 'LIKE', '%'.$search.'%')
@@ -95,11 +88,7 @@ class MasterlistExportController extends Controller
                 $query->orWhereHas('accountTitle', function ($query) use ($search) {
                     $query->where('account_title_name', 'LIKE', '%'.$search.'%');
                 });
-//                $query->orWhere(function ($query) use ($startDate, $endDate) {
-//                    $query->whereBetween('created_at', [$startDate, $endDate]);
-//                });
-
-        })
+            })
             ->orderBy('id', 'ASC')
             ->get();
 
