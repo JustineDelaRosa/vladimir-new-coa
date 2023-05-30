@@ -531,9 +531,6 @@ class FixedAssetController extends Controller
                 'minorCategory' => function ($query) {
                     $query->withTrashed()->select('id', 'minor_category_name');
                 },
-                //                'majorCategory', 'minorCategory','division',
-                //                'location', 'company', 'department', 'accountTitle',
-                //                'formula'
             ]
         )
             ->where(function ($query) use ($status) {
@@ -551,13 +548,13 @@ class FixedAssetController extends Controller
                     ->orWhere('brand', 'LIKE', '%' . $search . '%')
                     ->orWhere('depreciation_method', 'LIKE', '%' . $search . '%');
                 $query->orWhereHas('majorCategory', function ($query) use ($search) {
-                    $query->where('major_category_name', 'LIKE', '%' . $search . '%');
+                    $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('minorCategory', function ($query) use ($search) {
-                    $query->where('minor_category_name', 'LIKE', '%' . $search . '%');
+                    $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('division', function ($query) use ($search) {
-                    $query->where('division_name', 'LIKE', '%' . $search . '%');
+                    $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('location', function ($query) use ($search) {
                     $query->where('location_name', 'LIKE', '%' . $search . '%');
