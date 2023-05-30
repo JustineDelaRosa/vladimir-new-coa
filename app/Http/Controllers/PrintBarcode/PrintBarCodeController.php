@@ -120,6 +120,7 @@ class PrintBarCodeController extends Controller
 //                });
 //            })
 //            ->orderBy('id', 'ASC');
+
         $fixedAsset = FixedAsset::withTrashed()
             ->where('capex', '-')
             ->where(function ($query) use ($search, $startDate, $endDate) {
@@ -130,13 +131,14 @@ class PrintBarCodeController extends Controller
                     ->orWhere('depreciation_method',$search)
                     ->orWhereBetween('created_at', [$startDate, $endDate]);
                 $query->orWhereHas('majorCategory', function ($query) use ($search) {
-                    $query->where('major_category_name', $search );
+                    //include soft deleted major category
+                    $query->withTrashed()->where('major_category_name', $search );
                 });
                 $query->orWhereHas('minorCategory', function ($query) use ($search) {
-                    $query->where('minor_category_name', $search );
+                    $query->withTrashed()->where('minor_category_name', $search);
                 });
                 $query->orWhereHas('division', function ($query) use ($search) {
-                    $query->where('division_name',$search);
+                    $query->withTrashed()->where('division_name',$search);
                 });
                 $query->orWhereHas('location', function ($query) use ($search) {
                     $query->where('location_name', $search);
