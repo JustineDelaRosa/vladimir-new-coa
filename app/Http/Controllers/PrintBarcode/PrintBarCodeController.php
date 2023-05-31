@@ -122,8 +122,7 @@ class PrintBarCodeController extends Controller
 //            })
 //            ->orderBy('id', 'ASC');
 
-        $fixedAsset = FixedAsset::withTrashed()
-            ->where('capex', '-')
+        $fixedAsset = FixedAsset::where('capex', '-')
             ->where(function ($query) use ($tagNumber, $startDate, $endDate) {
                 $query->Where('vladimir_tag_number', $tagNumber )
                         ->orWhere('tag_number',$tagNumber)
@@ -158,7 +157,7 @@ class PrintBarCodeController extends Controller
             })
             ->orderBy('id', 'ASC');
 
-        //return only the vladimir tag number
+        //return only the vladimir tag number and asset description
         $fixedAsset = $fixedAsset->get([
                 'vladimir_tag_number',
                 //'department_name'
