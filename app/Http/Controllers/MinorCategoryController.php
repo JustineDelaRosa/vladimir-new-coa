@@ -182,20 +182,18 @@ class MinorCategoryController extends Controller
             return response()->json(['error' => 'Minor Category Route Not Found'], 404);
         }
 
-//        $checkFixedAsset = FixedAsset::where('minor_category_id', $id)->exists();
-//        if ($checkFixedAsset) {
-//            return response()->json(['error' => 'Unable to archived , Minor Category is still in use!'], 409);
-//        }
 
-        $checkMajorCategory = MajorCategory::where('id', $MinorCategory->where('id', $id)->first()->major_category_id)->exists();
-        if (!$checkMajorCategory) {
-            return response()->json(['error' => 'Unable to Restore!, Major Category was Archived!'], 409);
-        }
+
+
 
         if ($status == false) {
             if (!MinorCategory::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
+                $checkFixedAsset = FixedAsset::where('minor_category_id', $id)->exists();
+                if ($checkFixedAsset) {
+                    return response()->json(['error' => 'Unable to archived , Minor Category is still in use!'], 409);
+                }
                 $updateStatus = $MinorCategory->where('id', $id)->update(['is_active' => false]);
                 $MinorCategory->where('id', $id)->delete();
                 return response()->json(['message' => 'Successfully Deactivated!'], 200);
@@ -205,6 +203,10 @@ class MinorCategoryController extends Controller
             if (MinorCategory::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
+                $checkMajorCategory = MajorCategory::where('id', $MinorCategory->where('id', $id)->first()->major_category_id)->exists();
+                if (!$checkMajorCategory) {
+                    return response()->json(['error' => 'Unable to Restore!, Major Category was Archived!'], 409);
+                }
                 $restoreUser = $MinorCategory->withTrashed()->where('id', $id)->restore();
                 $updateStatus = $MinorCategory->update(['is_active' => true]);
                 return response()->json(['message' => 'Successfully Activated!'], 200);

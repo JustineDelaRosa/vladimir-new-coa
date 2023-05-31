@@ -472,10 +472,7 @@ class FixedAssetController extends Controller
         if (!$fixedAsset->withTrashed()->where('id', $id)->exists()) {
             return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
         }
-        $checkMinorCategory = MinorCategory::where('id', $fixedAsset->where('id', $id)->first()->minor_category_id)->exists();
-        if(!$checkMinorCategory){
-            return response()->json(['error' => 'Unable to Restore!, Minor Category was Archived!'], 404);
-        }
+
         if ($status == false) {
             if (!FixedAsset::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
@@ -490,6 +487,10 @@ class FixedAssetController extends Controller
             if (FixedAsset::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
+                $checkMinorCategory = MinorCategory::where('id', $fixedAsset->where('id', $id)->first()->minor_category_id)->exists();
+                if(!$checkMinorCategory){
+                    return response()->json(['error' => 'Unable to Restore!, Minor Category was Archived!'], 404);
+                }
                 $fixedAsset->withTrashed()->where('id', $id)->restore();
                 $fixedAsset->update(['is_active' => true]);
                 $formula->where('fixed_asset_id', $id)->restore();

@@ -103,16 +103,16 @@ class DivisionController extends Controller
             return response()->json(['error' => 'Division Route Not Found'], 404);
         }
 
-        //check id Division is tag or not
-        $division_tag_check = MajorCategory::where('division_id', $id)->exists();
-        if ($division_tag_check) {
-            return response()->json(['message' => 'Unable to Archived!, Archive Major Category first!'], 409);
-        }
 
         if ($status == false) {
             if (!Division::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
+                //check id Division is tag or not
+                $division_tag_check = MajorCategory::where('division_id', $id)->exists();
+                if ($division_tag_check) {
+                    return response()->json(['message' => 'Unable to Archived!, Archive Major Category first!'], 409);
+                }
                 $updateStatus = $Division->where('id', $id)->update(['is_active' => false]);
                 $Division->where('id', $id)->delete();
                 return response()->json(['message' => 'Successfully Deactived!'], 200);

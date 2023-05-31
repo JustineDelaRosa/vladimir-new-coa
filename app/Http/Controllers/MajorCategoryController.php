@@ -191,21 +191,19 @@ class MajorCategoryController extends Controller
         //         return response()->json(['message' => 'Unable to Archived!'], 409);
         //     }
         // }
-        $checkMajorCategory = MinorCategory::where('major_category_id', $id)->exists();
-        if ($checkMajorCategory) {
-            return response()->json(['message' => 'Unable to Archived!, Archived Minor Category First'], 409);
-        }
 
 
-        $checkDivision = Division::where('id', $MajorCategory->where('id', $id)->first()->division_id)->exists();
-        if (!$checkDivision) {
-            return response()->json(['message' => 'Unable to Restore!, Division was Archived!'], 409);
-        }
+
+
 
         if ($status == false) {
             if (!MajorCategory::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
+                $checkMajorCategory = MinorCategory::where('major_category_id', $id)->exists();
+                if ($checkMajorCategory) {
+                    return response()->json(['message' => 'Unable to Archived!, Archived Minor Category First'], 409);
+                }
                 if (MajorCategory::where('id', $id)->exists()) {
                     $updateStatus = $MajorCategory->where('id', $id)->update(['is_active' => false]);
                     $MajorCategory->where('id', $id)->delete();
@@ -217,6 +215,10 @@ class MajorCategoryController extends Controller
             if (MajorCategory::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
+                $checkDivision = Division::where('id', $MajorCategory->where('id', $id)->first()->division_id)->exists();
+                if (!$checkDivision) {
+                    return response()->json(['message' => 'Unable to Restore!, Division was Archived!'], 409);
+                }
                 $restoreUser = $MajorCategory->withTrashed()->where('id', $id)->restore();
                 $updateStatus = $MajorCategory->update(['is_active' => true]);
                 return response()->json(['message' => 'Successfully Activated!'], 200);
