@@ -18,7 +18,6 @@ class PrintBarCodeController extends Controller
             return response()->json(['message' => 'No data found'], 404);
         }
 
-
         try {
             // Initialize the WindowsPrintConnector with the COM port and baud rate
             $connector = new WindowsPrintConnector("COM2");
@@ -126,7 +125,7 @@ class PrintBarCodeController extends Controller
         //return only the vladimir tag number and asset description
         $fixedAsset = $fixedAsset->get([
                 'vladimir_tag_number',
-                'asset_description',
+                'asset_description'
             ]);
         return $fixedAsset;
     }

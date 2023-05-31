@@ -184,7 +184,7 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Tag number in row ' . $attribute[0] . ' is not unique'. $duplicate);
                 }
                 //check in database
-                $fixed_asset = FixedAsset::withTrashed()->where('tag_number', $value)->first();
+                $fixed_asset = FixedAsset::withTrashed()->where('tag_number', $value)->where('tag_number', '!=', '-')->first();
                 if ($fixed_asset) {
                     $fail('Tag number already exists');
                 }
@@ -195,7 +195,7 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Tag number old in row '. $attribute[0].' is not unique');
                 }
                 //check in database
-                $fixed_asset = FixedAsset::withTrashed()->where('tag_number_old', $value)->first();
+                $fixed_asset = FixedAsset::withTrashed()->where('tag_number_old', $value)->where('tag_number_old', '!=', '-')->first();
                 if ($fixed_asset) {
                     $fail('Tag number old already exists');
                 }
