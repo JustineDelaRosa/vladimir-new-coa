@@ -88,50 +88,16 @@ class PrintBarCodeController extends Controller
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
 
-//        $oldAsset = $request->get('oldAsset');
-//        $fixedAsset = FixedAsset::withTrashed()->
-//            where('capex','-')->
-//            where(function ($query) use ($tagNumber, $startDate, $endDate)  {
-//                $query->where('vladimir_tag_number', $tagNumber)
-//                        ->orWhere('type_of_request',$tagNumber)
-//                        ->orWhere('accountability',$tagNumber)
-//                        ->orWhere('accountable', $tagNumber)
-//                        ->orWhere('is_old_asset', $tagNumber)
-//                        ->orWhereBetween('created_at', [$startDate, $endDate]);
-//                $query->orWhereHas('majorCategory', function ($query) use ($tagNumber) {
-//                    $query->where('major_category_name', $tagNumber);
-//                });
-//                $query->orWhereHas('minorCategory', function ($query) use ($tagNumber) {
-//                    $query->where('minor_category_name', $tagNumber);
-//                });
-//                $query->orWhereHas('division', function ($query) use ($tagNumber) {
-//                    $query->where('division_name', $tagNumber);
-//                });
-//                $query->orWhereHas('location', function ($query) use ($tagNumber) {
-//                    $query->where('location_name',  $tagNumber);
-//                });
-//                $query->orWhereHas('company', function ($query) use ($tagNumber) {
-//                    $query->where('company_name', $tagNumber);
-//                });
-//                $query->orWhereHas('department', function ($query) use ($tagNumber) {
-//                    $query->where('department_name', $tagNumber);
-//                });
-//                $query->orWhereHas('accountTitle', function ($query) use ($tagNumber) {
-//                    $query->where('account_title_name', $tagNumber);
-//                });
-//            })
-//            ->orderBy('id', 'ASC');
-
         $fixedAsset = FixedAsset::where('capex', '-')
             ->where(function ($query) use ($tagNumber, $startDate, $endDate) {
                 $query->Where('vladimir_tag_number', $tagNumber )
                         ->orWhere('tag_number',$tagNumber)
                         ->orWhere('tag_number_old',$tagNumber)
+                        ->orWhereBetween('created_at', [$startDate, $endDate]);
 //                    ->orWhere('type_of_request',$tagNumber)
 //                    ->orWhere('accountability',$tagNumber)
 //                    ->orWhere('accountable',$tagNumber)
 //                    ->orWhere('depreciation_method',$tagNumber)
-                    ->orWhereBetween('created_at', [$startDate, $endDate]);
 //                $query->orWhereHas('majorCategory', function ($query) use ($tagNumber) {
 //                    //include soft deleted major category
 //                    $query->withTrashed()->where('major_category_name', $tagNumber );
@@ -160,7 +126,6 @@ class PrintBarCodeController extends Controller
         //return only the vladimir tag number and asset description
         $fixedAsset = $fixedAsset->get([
                 'vladimir_tag_number',
-                //'department_name'
                 'asset_description',
             ]);
         return $fixedAsset;
