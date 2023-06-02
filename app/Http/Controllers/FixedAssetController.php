@@ -557,17 +557,22 @@ class FixedAssetController extends Controller
         $page = $request->get('page');
         $status = $request->get('status');
         if ($status == NULL) {
-            $status = 1;
+            //get all statuses other than Disposed
+            $status =  array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
         }
-        if ($status == "active") {
-            $status = 1;
+//        if ($status == "Good" || $status =="For Repair"
+//            || $status =="For Disposal" || $status =="Spare"
+//            || $status =="Sold" || $status == "Write Off") {
+//            $status = $status;
+//        }
+        if ($status == "Disposed") {
+            $status = "Disposed";
         }
-        if ($status == "deactivated") {
-            $status = 0;
-        }
-        if ($status != "active" || $status != "deactivated") {
-            $status = 1;
-        }
+//        if ($status != "Good" || $status != "Disposed" || $status != "For Repair" ||
+//            $status != "For Disposal" || $status != "Spare" || $status != "Sold"||
+//            $status != "Write Off") {
+//            $status = $status;
+//        }
 
         $fixedAsset = FixedAsset::withTrashed()->with(
             [
@@ -586,7 +591,12 @@ class FixedAssetController extends Controller
             ]
         )
             ->where(function ($query) use ($status) {
-                $query->where('is_active', $status);
+                //array of status or not array
+                if (is_array($status)) {
+                    $query->whereIn('status', $status);
+                } else {
+                    $query->where('status', $status);
+                }
             })
             ->where(function ($query) use ($search) {
                 $query->where('capex', 'LIKE', '%' . $search . '%')
@@ -755,7 +765,7 @@ class FixedAssetController extends Controller
             'scrap_value' => $fixedAsset->formula->scrap_value,
             'original_cost' => $fixedAsset->formula->original_cost,
             'accumulated_cost' => $fixedAsset->formula->accumulated_cost,
-            'status' => $fixedAsset->is_active,
+            'status' => $fixedAsset->status,
             'is_old_asset' => $fixedAsset->is_old_asset,
             'care_of' => $fixedAsset->care_of,
             'age' => $fixedAsset->formula->age,
