@@ -5,7 +5,6 @@ namespace App\Http\Controllers\PrintBarcode;
 use App\Http\Controllers\Controller;
 use App\Models\FixedAsset;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 use Mike42\Escpos\Printer;
 
@@ -24,6 +23,8 @@ class PrintBarCodeController extends Controller
 
             // Create a new Printer object and assign the connector to it
             $printer = new Printer($connector);
+
+
 
             foreach($tagNumber as $VDM) {
 
