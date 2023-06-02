@@ -102,7 +102,7 @@ class FixedAssetController extends Controller
             ], 422);
         }
         //Major Category check
-        $majorCategoryCheck = MajorCategory::where('id', $request->major_category_id)
+        $majorCategoryCheck = MajorCategory::withTrashed()->where('id', $request->major_category_id)
             ->where('division_id', $request->division_id)->exists();
         if(!$majorCategoryCheck) {
             return response()->json(
@@ -119,10 +119,27 @@ class FixedAssetController extends Controller
         }
 
         //minor Category check
-        $majorCategory = MajorCategory::where('id', $request->major_category_id)
+        $majorCategory = MajorCategory::withTrashed()->where('id', $request->major_category_id)
             ->where('division_id', $request->division_id)->first()->id;
-        $minorCategoryCheck = MinorCategory::where('id', $request->minor_category_id)
+        $minorCategoryCheck = MinorCategory::withTrashed()->where('id', $request->minor_category_id)
             ->where('major_category_id',$majorCategory)->exists();
+        if ($request->status != 'Disposed') {
+            //check minor catrgory if softDelete
+            if ( MinorCategory::onlyTrashed()->where('id', $request->minor_category_id)
+                ->where('major_category_id',$majorCategory)->exists()) {
+                return response()->json(
+                    [
+                        'message' => 'The given data was invalid.',
+                        'errors' => [
+                            'minor_category' => [
+                                'Conflict with minor category and fixed asset status.'
+                            ]
+                        ]
+                    ],
+                    422
+                );
+            }
+        }
         if(!$minorCategoryCheck) {
             return response()->json(
                 [
@@ -160,7 +177,7 @@ class FixedAssetController extends Controller
                 'est_useful_life' => $request->est_useful_life,
                 'acquisition_date' => $request->acquisition_date, //TODO:
                 'acquisition_cost' => $request->acquisition_cost,
-                'is_active' => $request->status ?? 1,
+                'status' => $request->status,
                 'is_old_asset' => $request->is_old_asset ?? 0,
                 'care_of' => $request->care_of,
                 'company_id' => $request->company_id,
@@ -189,12 +206,25 @@ class FixedAssetController extends Controller
             'start_depreciation' => $request->start_depreciation,
         ]);
 
+        if($request->status == 'Disposed')
+        {
+            $fixedAsset->delete();
+            $fixedAsset->formula()->delete();
+            return response()->json([
+                'message' => 'Fixed Asset created successfully, but disposed immediately.',
+                'data' => $fixedAsset->withTrashed()->with([
+                    'formula' => function($query) {
+                        $query->withTrashed();
+                    }]
+                )->where('id', $fixedAsset->id)->first()
+            ], 201);
+        }
+
         //return the fixed asset and formula
         return response()->json([
             'message' => 'Fixed Asset created successfully.',
             'data' => $fixedAsset->with('formula')->where('id', $fixedAsset->id)->first()
         ], 201);
-
     }
 
     /**
@@ -248,7 +278,7 @@ class FixedAssetController extends Controller
                 'scrap_value' => $fixed_asset->formula->scrap_value,
                 'original_cost' => $fixed_asset->formula->original_cost,
                 'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
-                'status' => $fixed_asset->is_active,
+                'status' => $fixed_asset->status,
                 'is_old_asset' => $fixed_asset->is_old_asset,
                 'care_of' => $fixed_asset->care_of,
                 'age' => $fixed_asset->formula->age,
@@ -293,9 +323,10 @@ class FixedAssetController extends Controller
      */
     public function update(FixedAssetRequest $request, int $id)
     {
+        $request->validated();
 
         //Major Category check
-        $majorCategoryCheck = MajorCategory::where('id', $request->major_category_id)
+        $majorCategoryCheck = MajorCategory::withTrashed()->where('id', $request->major_category_id)
             ->where('division_id', $request->division_id)->exists();
         if(!$majorCategoryCheck) {
             return response()->json(
@@ -312,10 +343,27 @@ class FixedAssetController extends Controller
         }
 
         //minor Category check
-        $majorCategory = MajorCategory::where('id', $request->major_category_id)
+        $majorCategory = MajorCategory::withTrashed()->where('id', $request->major_category_id)
             ->where('division_id', $request->division_id)->first()->id;
-        $minorCategoryCheck = MinorCategory::where('id', $request->minor_category_id)
+        $minorCategoryCheck = MinorCategory::withTrashed()->where('id', $request->minor_category_id)
             ->where('major_category_id',$majorCategory)->exists();
+        if ($request->status != 'Disposed') {
+            //check minor catrgory if softDelete
+            if ( MinorCategory::onlyTrashed()->where('id', $request->minor_category_id)
+                ->where('major_category_id',$majorCategory)->exists()) {
+                return response()->json(
+                    [
+                        'message' => 'The given data was invalid.',
+                        'errors' => [
+                            'minor_category' => [
+                                'Conflict with minor category and fixed asset status.'
+                            ]
+                        ]
+                    ],
+                    422
+                );
+            }
+        }
         if(!$minorCategoryCheck) {
             return response()->json(
                 [
@@ -337,7 +385,7 @@ class FixedAssetController extends Controller
 //            ], 200);
 //        }
 
-        $fixedAsset = FixedAsset::where('id', $id)->where('is_active', true)->first();
+        $fixedAsset = FixedAsset::where('id', $id)->where('status','!=','Disposed' )->first();
         if ($fixedAsset) {
             $fixedAsset->update([
                 'capex' => $request->capex ?? '-',
@@ -362,7 +410,7 @@ class FixedAssetController extends Controller
                 'est_useful_life' => $request->est_useful_life,
                 'acquisition_date' => $request->acquisition_date,
                 'acquisition_cost' => $request->acquisition_cost,
-                'is_active' => $request->status ?? 1,
+                'status' => $request->status ?? $fixedAsset->status,
                 'is_old_asset' => $request->is_old_asset ?? 0,
                 'care_of' => $request->care_of,
                 'company_id' => $request->company_id,
@@ -466,6 +514,9 @@ class FixedAssetController extends Controller
 
     public function archived(FixedAssetRequest $request, $id)
     {
+
+        //TODO: Check for possible way to change status to other than "Disposed"
+        //uppercase first letter of status
         $status = $request->status;
         $fixedAsset = FixedAsset::query();
         $formula = Formula::query();
@@ -473,18 +524,18 @@ class FixedAssetController extends Controller
             return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
         }
 
-        if ($status == false) {
-            if (!FixedAsset::where('id', $id)->where('is_active', true)->exists()) {
+        if ($status == "Disposed") {
+            if (!FixedAsset::where('id', $id)->where('status', "Disposed")->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
-                $fixedAsset->where('id', $id)->update(['is_active' => false]);
+                $fixedAsset->where('id', $id)->update(['status' => "Disposed"]);
                 $fixedAsset->where('id', $id)->delete();
                 $formula->where('fixed_asset_id', $id)->delete();
-                return response()->json(['message' => 'Successfully Deactivated!'], 200);
+                return response()->json(['message' => 'Successfully Disposed!'], 200);
             }
         }
-        if ($status == true) {
-            if (FixedAsset::where('id', $id)->where('is_active', true)->exists()) {
+        if ($status == "Good" || $status == "For Repair" || $status == "For Disposal" || $status == "Spare" || $status == "Sold"|| $status == "Write Off") {
+            if (FixedAsset::where('id', $id)->where('status', $status)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
                 $checkMinorCategory = MinorCategory::where('id', $fixedAsset->where('id', $id)->first()->minor_category_id)->exists();
@@ -492,9 +543,9 @@ class FixedAssetController extends Controller
                     return response()->json(['error' => 'Unable to Restore!, Minor Category was Archived!'], 404);
                 }
                 $fixedAsset->withTrashed()->where('id', $id)->restore();
-                $fixedAsset->update(['is_active' => true]);
+                $fixedAsset->update(['status' => $status]);
                 $formula->where('fixed_asset_id', $id)->restore();
-                return response()->json(['message' => 'Successfully Activated!'], 200);
+                return response()->json(['message' => 'Successfully Change status'], 200);
             }
         }
     }

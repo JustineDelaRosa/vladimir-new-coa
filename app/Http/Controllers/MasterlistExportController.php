@@ -198,7 +198,7 @@ class MasterlistExportController extends Controller
                 'scrap_value' => $fixed_asset->formula->scrap_value,
                 'original_cost' => $fixed_asset->formula->original_cost,
                 'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
-                'status' => $fixed_asset->is_active,
+                'status' => $fixed_asset->status,
                 'care_of' => $fixed_asset->care_of,
                 'age' => $fixed_asset->formula->age,
                 'end_depreciation' => $fixed_asset->formula->end_depreciation,

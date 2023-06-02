@@ -63,12 +63,13 @@ class PrintBarCodeController extends Controller
                     // Cut the paper
                     $printer->cut();
 
-                    // Close the connection to the printer
-                    $printer->close();
+
 
 //                    dd($VDM->vladimir_tag_number, $VDM->asset_description);
 
             }
+            // Close the connection to the printer
+            $printer->close();
 
             return response()->json(
                 ['message' => 'ZPL code printed successfully',
@@ -92,6 +93,7 @@ class PrintBarCodeController extends Controller
                 $query->Where('vladimir_tag_number', $tagNumber )
                         ->orWhere('tag_number',$tagNumber)
                         ->orWhere('tag_number_old',$tagNumber)
+//                        ->orWhere('status',$tagNumber)
                         ->orWhereBetween('created_at', [$startDate, $endDate]);
 //                    ->orWhere('type_of_request',$tagNumber)
 //                    ->orWhere('accountability',$tagNumber)

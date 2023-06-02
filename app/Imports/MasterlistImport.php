@@ -131,7 +131,8 @@ class MasterlistImport extends DefaultValueBinder implements
                 'est_useful_life' => $collection['est_useful_life'],
                 'acquisition_date' => $collection['acquisition_date'],
                 'acquisition_cost' => $collection['acquisition_cost'],
-                'is_active' => MinorCategory::withTrashed()->where('id', $minorCategoryId)->first()->deleted_at == null ? $collection['status'] : false,
+//                'is_active' => !($collection['status'] == 'Disposed'), // 'Disposed' or 'Active
+                'status' => $collection['status'],
                 'is_old_asset' => $collection['tag_number'] != '-' || $collection['tag_number_old'] != '-',
                 'care_of' => strtoupper($collection['care_of']),
                 'company_id' => Company::where('company_name', $collection['company'])->first()->id,
@@ -164,7 +165,11 @@ class MasterlistImport extends DefaultValueBinder implements
                );
 
             //if the is_status is false, delete the fixed asset and formula
-            if (!$fixedAsset->is_active) {
+//            if (!$fixedAsset->is_active) {
+//                $fixedAsset->delete();
+//                $fixedAsset->formula()->delete();
+//            }
+            if($collection['status'] == 'Disposed' || $collection['status'] == 'DISPOSED'){
                 $fixedAsset->delete();
                 $fixedAsset->formula()->delete();
             }
@@ -227,11 +232,18 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.minor_category' => ['required', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $division = $collections[$index]['division'];
+                $status = $collections[$index]['status'];
                 $major_category = $collections[$index]['major_category'];
                 $major_category = MajorCategory::withTrashed()->where('major_category_name', $major_category)
                     ->where('division_id', Division::withTrashed()->where('division_name', $division)->first()->id ?? 0)->first()->id ?? 0;
                 $minor_category = MinorCategory::withTrashed()->where('minor_category_name', $value)
                     ->where('major_category_id', $major_category)->first();
+                //if status is not disposed, check if minor category is softdeleted
+                if ($status != 'Disposed') {
+                    if ($minor_category->trashed()) {
+                        $fail('Conflict with minor category and fixed asset status');
+                    }
+                }
                 if (!$minor_category) {
                     $fail('Minor Category does not exists');
                 }
@@ -246,7 +258,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.scrap_value' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
             '*.original_cost' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
             '*.accumulated_cost' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
-            '*.status' => 'required|boolean',
+            '*.status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
             '*.care_of' => 'required',
             '*.age' => 'required|numeric',
             '*.end_depreciation' => 'required|date_format:Y-m',
@@ -296,6 +308,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.original_cost.required' => 'Original Cost is required',
             '*.accumulated_cost.required' => 'Accumulated Cost is required',
             '*.status.required' => 'Status is required',
+            '*.status.in' => 'The selected status is invalid.',
             '*.care_of.required' => 'Care Of is required',
             '*.age.required' => 'Age is required',
             '*.end_depreciation.required' => 'End Depreciation is required',
@@ -331,11 +344,11 @@ class MasterlistImport extends DefaultValueBinder implements
 
         // Generate a new random value
         do {
-            $random = mt_rand(10, 99) . mt_rand(1000, 9999);
+            $random = mt_rand(1, 9) . mt_rand(1000, 9999);
         } while ($random === $lastRandom);
 
         $lastRandom = $random;
-        $number =  $date . $random;
+        $number =  5 . $date . $random;
         $numbers = (string)$number;
         $legnth = strlen($numbers);
         if($legnth !== 12)

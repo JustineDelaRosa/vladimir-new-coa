@@ -61,6 +61,7 @@ class FixedAssetRequest extends FormRequest
                 'voucher' => 'nullable',
                 'receipt' => 'nullable',
                 'quantity' => 'required',
+                'status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write off',
                 'is_old_asset' => 'boolean',
                 'depreciation_method' => 'required',
                 'est_useful_life' => ['required', 'numeric', 'max:100'],
@@ -121,6 +122,7 @@ class FixedAssetRequest extends FormRequest
                 'receipt' => 'nullable',
                 'quantity' => 'required',
                 'is_old_asset' => 'boolean',
+                'status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write off',
                 'depreciation_method' => 'required',
                 'est_useful_life' => ['required', 'numeric', 'max:100'],
                 'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
@@ -145,7 +147,7 @@ class FixedAssetRequest extends FormRequest
         //Archiving of Fixed Asset
         if ($this->isMethod('patch')) {
             return [
-                'status' => 'required|boolean',
+                'status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
             ];
         }
     }
@@ -194,6 +196,7 @@ class FixedAssetRequest extends FormRequest
             'accumulated_cost.numeric' => 'Accumulated cost must be a number',
             'status.required' => 'Status is required',
             'status.boolean' => 'Status must be a boolean',
+            'status.in' => 'The selected status is invalid.',
             'care_of.required' => 'Care of is required',
             'age.required' => 'Age is required',
             'age.numeric' => 'Age must be a number',
