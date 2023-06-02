@@ -138,7 +138,7 @@ class MasterlistExport implements
             $fixedAsset->formula->scrap_value,
             $fixedAsset->formula->original_cost,
             $fixedAsset->formula->accumulated_cost,
-            $fixedAsset->is_active,
+            $fixedAsset->status,
             $fixedAsset->care_of,
             $fixedAsset->formula->age,
             $fixedAsset->formula->end_depreciation,
