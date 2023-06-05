@@ -20,7 +20,7 @@ class AuthController extends Controller
         }
         $pass_decrypt = Crypt::decryptString($user->password);
 
-        //if Username and password match 
+        //if Username and password match
         // if ($username == $pass_decrypt) {
         //     return response()->json(['message' => 'Successfully Logged In!', 'data' => [
         //         'username' => $username,

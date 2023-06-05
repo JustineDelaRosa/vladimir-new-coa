@@ -1,12 +1,16 @@
 <?php
 
 namespace App\Http\Controllers\PrintBarcode;
-
+//require __DIR__ . '/../../../../vendor/autoload.php';
 use App\Http\Controllers\Controller;
 use App\Models\FixedAsset;
+use Exception;
 use Illuminate\Http\Request;
+use Mike42\Escpos\PrintConnectors\FilePrintConnector;
+use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 use Mike42\Escpos\Printer;
+
 
 class PrintBarCodeController extends Controller
 {
@@ -19,17 +23,17 @@ class PrintBarCodeController extends Controller
 
         try {
             // Initialize the WindowsPrintConnector with the COM port and baud rate
-            $connector = new WindowsPrintConnector("COM2");
-
+//            $connector = new WindowsPrintConnector("COM1");
+//            $connector = new NetworkPrintConnector("10.10.10.11");
+            $printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
+            $connector = new FilePrintConnector($printer);
             // Create a new Printer object and assign the connector to it
             $printer = new Printer($connector);
 
 
-
             foreach($tagNumber as $VDM) {
 
-
-                    $zplCode = "^XA
+                $zplCode = "^XA
                                 ~TA000
                                 ~JSN
                                 ^LT0
@@ -59,24 +63,23 @@ class PrintBarCodeController extends Controller
                                 ^FO2,1^GFA,793,10452,52,:Z64:eJzt2M9q1EAcB/AJAx1PzqGXHsR5BXtS6bLTN/AVfAyFkqwU3It0z158Eg8TVsxFzCvsksNes+yhEcL8mmxYKYp1vj8hxDa/cz7M/P4l7NJKQBGRE/RwzYRqopRtJP0SJcNUD9Bs6crSmoQtUtILYRCjO6P/ZPbRzYGs6KklR0YVqdcLPUfMsnCNMVmw+UZmDZg6nlr6kJht4epXsPlykSPm008TVAM/iW2TUmO+vskDa33LvAw1NPHWC9Oa03yhw8zJwWSnoTW4ZY6DzUdv62RhiiKTweZdZ5ZFdhlsLr1pjFZFNv+raaM1Sy9OKGt2ATe2yPLGbO42SiC73YVhGM8wFdfc+cTvYRlGMYxgGBqwcffMlAzje5o3jkkYhrM/btwFsWSYTU93ixnm0YBrzTFiwHczA95tzuxw8hnyHHDMmA/PnPVk+srn+5B7Osj/akYzmtHcc4MG1zw5x40Fj+Ka5zOGwUiv+aDBNWM+TIORvTEMoxzjHIaZYmScnX8waLRGz3DDmQNOPs96MkPujzjHjQSPYvd01o8xDMOpAafWLOP6MX3tKWD2nx1wF4yIyseteRFu4sZMwe9p3Zh4/04Mvl5U2XTrsXmTJa07E36O3NF2V2L7Izf0Y7dqzSSUCJW7t9cO64/6LCLUHL0+mPDfJdE82l57zCijCTVHiYGNIAubiBLcVBcKrZssKwmbVQX3R65K3KQDNq6MNrCp5MEkNKf3QaZWB0OUUx5kYp3BxhJuDM1ho0nBRtWo6aJf0/b0CjTBj/8X5gas119Y:227E
                                 ^PQ1,0,1,Y
                                 ^XZ";
-                    $printer->textRaw($zplCode);
+                $printer->textRaw($zplCode);
 
-                    // Cut the paper
-                    $printer->cut();
+                // Cut the paper
+                $printer->cut();
 
-
+                // Close the connection to the printer
+                $printer->close();
 
 //                    dd($VDM->vladimir_tag_number, $VDM->asset_description);
 
             }
-            // Close the connection to the printer
-            $printer->close();
 
             return response()->json(
                 ['message' => 'ZPL code printed successfully',
                     'data' => $tagNumber
                 ], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Handle any exceptions that may occur during the printing process
             return response()->json(['message' => 'Error printing ZPL code: ' . $e->getMessage()]);
         }
@@ -92,10 +95,10 @@ class PrintBarCodeController extends Controller
         $fixedAsset = FixedAsset::where('capex', '-')
             ->where(function ($query) use ($tagNumber, $startDate, $endDate) {
                 $query->Where('vladimir_tag_number', $tagNumber )
-                        ->orWhere('tag_number',$tagNumber)
-                        ->orWhere('tag_number_old',$tagNumber)
+                    ->orWhere('tag_number',$tagNumber)
+                    ->orWhere('tag_number_old',$tagNumber)
 //                        ->orWhere('status',$tagNumber)
-                        ->orWhereBetween('created_at', [$startDate, $endDate]);
+                    ->orWhereBetween('created_at', [$startDate, $endDate]);
 //                    ->orWhere('type_of_request',$tagNumber)
 //                    ->orWhere('accountability',$tagNumber)
 //                    ->orWhere('accountable',$tagNumber)
@@ -126,10 +129,9 @@ class PrintBarCodeController extends Controller
             ->orderBy('id', 'ASC');
 
         //return only the vladimir tag number and asset description
-        $fixedAsset = $fixedAsset->get([
-                'vladimir_tag_number',
-                'asset_description'
-            ]);
-        return $fixedAsset;
+        return $fixedAsset->get([
+            'vladimir_tag_number',
+            'asset_description'
+        ]);
     }
 }
