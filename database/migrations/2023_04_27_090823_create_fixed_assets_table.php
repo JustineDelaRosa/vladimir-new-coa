@@ -37,7 +37,8 @@ class CreateFixedAssetsTable extends Migration
             $table->integer('est_useful_life');
             $table->date('acquisition_date');
             $table->Biginteger('acquisition_cost');
-            $table->boolean('is_active'); //->default(1)
+            $table->string('status');
+//            $table->boolean('is_active'); //->default(1)
             $table->boolean('is_old_asset')->default(0);
             $table->string('care_of');
             $table->unsignedInteger('company_id');
