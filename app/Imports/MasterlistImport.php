@@ -199,7 +199,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 if ($duplicate > 1) {
                     $fail('Tag number old in row '. $attribute[0].' is not unique');
                 }
-                //check in database
+                //check in a database
                 $fixed_asset = FixedAsset::withTrashed()->where('tag_number_old', $value)->where('tag_number_old', '!=', '-')->first();
                 if ($fixed_asset) {
                     $fail('Tag number old already exists');
@@ -337,10 +337,62 @@ class MasterlistImport extends DefaultValueBinder implements
 
     }
 
+//    function vladimirTagGenerator()
+//    {
+//        $date = date('ymd');
+//        static $lastRandom = 0;
+//        $generated = [];
+//        // Generate a new random value
+//        do {
+//            $random = mt_rand(1, 9) . mt_rand(1000, 9999);
+//        } while ($random === $lastRandom);
+//
+//        $lastRandom = $random;
+//        $number =  5 . $date . $random;
+//        $numbers = (string)$number;
+//        $length = strlen($numbers);
+//        if($length !== 12)
+//        {
+//            return 'Invalid Number';
+//        }
+//        $evenSum = 0;
+//        for ($i = 1; $i < $length; $i += 2) {
+//            $evenSum += (int)$numbers[$i];
+//        }
+//        $evenSum *= 3;
+//
+//        $oddSum = 0;
+//        for($i = 0; $i < $length; $i += 2) {
+//            $oddSum += (int)$numbers[$i];
+//        }
+//        $totalSum = $evenSum + $oddSum;
+//
+//        $remainder = $totalSum % 10;
+//
+//        $checkDigit = ($remainder === 0) ? 0 : 10 - $remainder;
+//        $ean13Result = $numbers . $checkDigit;
+//        // put the generated number into an array
+//        $generated[] = $ean13Result;
+//        //check if there is a duplicate in the array
+//        foreach (array_count_values($generated) as $val => $c) {
+//            if ($c > 1) {
+//                // if there is a duplicate, regenerate the number
+//                $this->vladimirTagGenerator();
+//            }
+//        }
+//
+//        $check = FixedAsset::where('vladimir_tag_number', $ean13Result)->first();
+//        if ($check) {
+//            $this->vladimirTagGenerator();
+//        }
+//        return $ean13Result;
+//    }
+
     function vladimirTagGenerator()
     {
         $date = date('ymd');
         static $lastRandom = 0;
+        $generated = [];
 
         // Generate a new random value
         do {
@@ -348,33 +400,36 @@ class MasterlistImport extends DefaultValueBinder implements
         } while ($random === $lastRandom);
 
         $lastRandom = $random;
-        $number =  5 . $date . $random;
-        $numbers = (string)$number;
-        $legnth = strlen($numbers);
-        if($legnth !== 12)
-        {
+        $number = "5$date$random";
+
+        if (strlen($number) !== 12) {
             return 'Invalid Number';
         }
+
         $evenSum = 0;
-        for ($i = 1; $i < $legnth; $i += 2) {
-            $evenSum += (int)$numbers[$i];
+        $oddSum = 0;
+
+        for ($i = 1; $i < 12; $i += 2) {
+            $evenSum += (int)$number[$i];
         }
         $evenSum *= 3;
 
-        $oddSum = 0;
-        for($i = 0; $i < $legnth; $i += 2) {
-            $oddSum += (int)$numbers[$i];
+        for ($i = 0; $i < 12; $i += 2) {
+            $oddSum += (int)$number[$i];
         }
+
         $totalSum = $evenSum + $oddSum;
-
         $remainder = $totalSum % 10;
-
         $checkDigit = ($remainder === 0) ? 0 : 10 - $remainder;
-        $ean13Result = $numbers . $checkDigit;
-        $check = FixedAsset::where('vladimir_tag_number', $ean13Result)->first();
-        if ($check) {
-            $this->vladimirTagGenerator();
+
+        $ean13Result = $number . $checkDigit;
+
+        // Check if the generated number is a duplicate or already exists in the database
+        while (in_array($ean13Result, $generated) || FixedAsset::where('vladimir_tag_number', $ean13Result)->exists()) {
+            // Regenerate the number
+            $ean13Result = vladimirTagGenerator();
         }
+
         return $ean13Result;
     }
 
