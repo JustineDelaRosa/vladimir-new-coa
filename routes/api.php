@@ -134,6 +134,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::patch('fixed-asset/archived-fixed-asset/{id}', [FixedAssetController::class, 'archived']);
     Route::get('fixed-assets/search', [FixedAssetController::class, 'search']);
     Route::get('fixed-assets/search-asset-tag', [FixedAssetController::class, 'searchAssetTag']);
+    //Custom asset depreciation calculation
+    Route::post('asset-depreciation/{id}', [FixedAssetController::class, 'assetDepreciation']);
 
     //barcode
     Route::post('fixed-asset/barcode', [PrintBarCodeController::class, 'printBarcode']);
