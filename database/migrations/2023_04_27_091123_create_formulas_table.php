@@ -28,7 +28,7 @@ class CreateFormulasTable extends Migration
             $table->BigInteger('depreciation_per_year');
             $table->BigInteger('depreciation_per_month');
             $table->BigInteger('remaining_book_value');
-            $table->year('start_depreciation'); //year
+            $table->string('start_depreciation'); //date format yyyy-mm
             $table->softDeletes();
             $table->timestamps();
             $table->foreign('fixed_asset_id')

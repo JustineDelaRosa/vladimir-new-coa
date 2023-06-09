@@ -2,10 +2,7 @@
 
 namespace App\Http\Requests\FixedAsset;
 
-use App\Models\Division;
 use App\Models\FixedAsset;
-use App\Models\MajorCategory;
-use App\Models\MinorCategory;
 use Illuminate\Foundation\Http\FormRequest;
 
 class FixedAssetRequest extends FormRequest
@@ -28,7 +25,9 @@ class FixedAssetRequest extends FormRequest
     public function rules()
     {
         //Adding of Fixed Asset
-        if ($this->isMethod('post')) {
+        if ($this->isMethod('post')&&
+            ($this->capex == '-' && $this->project_name == '-') ||
+            ($this->capex == null && $this->project_name == null)) {
             return [
                 'capex' => 'nullable',
                 'project_name' => 'nullable',
@@ -70,19 +69,77 @@ class FixedAssetRequest extends FormRequest
                 'scrap_value' => ['required','numeric'],
                 'original_cost' => ['required','numeric'],
                 'accumulated_cost' => ['required','numeric'],
-                'care_of' => 'required',
+                'care_of' => 'nullable',
                 'age' => 'required|numeric',
                 'end_depreciation' => 'required|date_format:Y-m',
                 'depreciation_per_year' => ['required','numeric'],
                 'depreciation_per_month' => ['required','numeric'],
                 'remaining_book_value' => ['required','numeric'],
-                'start_depreciation' => ['required','numeric'],
+                'start_depreciation' => ['required','date_format:Y-m'],
                 'company_id' => 'required|exists:companies,id',
                 'department_id' => 'required|exists:departments,id',
                 'location_id' => 'required|exists:locations,id',
                 'account_title_id' => 'required|exists:account_titles,id',
             ];
         }
+
+        if ($this->isMethod('post') &&
+            ($this->capex != '-' && $this->project_name != '-') ||
+            ($this->capex != null && $this->project_name != null)) {
+            return [
+                'capex' => 'required|unique:fixed_assets,capex',
+                'project_name' => 'required',
+                'tag_number' => ['nullable', function ($attribute, $value, $fail) {
+                    $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
+                        ->where('tag_number', '!=', '-')
+                        ->exists();
+                    if ($tag_number) {
+                        $fail('Tag number already exists');
+                    }
+                }],
+                'tag_number_old' => ['nullable', function ($attribute, $value, $fail) {
+                    $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)
+                        ->where('tag_number_old', '!=', '-')
+                        ->exists();
+                    if ($tag_number_old) {
+                        $fail('Tag number old already exists');
+                    }
+                }],
+                'asset_description' => 'required',
+                'type_of_request' => 'required',
+                'asset_specification' => 'required',
+                'accountability' => 'required',
+                'accountable' => 'required',
+                'cellphone_number' => 'nullable|numeric|digits:11',
+                'brand' => 'nullable',
+                'division_id' => 'required|exists:divisions,id',
+                'major_category_id' => 'required|exists:major_categories,id',
+                'minor_category_id' => 'required|exists:minor_categories,id',
+                'voucher' => 'nullable',
+                'receipt' => 'nullable',
+                'quantity' => 'required',
+                'is_old_asset' => 'boolean',
+                'depreciation_method' => 'required',
+                'est_useful_life' => ['required', 'numeric', 'max:100'],
+                'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
+                'acquisition_cost' => ['required', 'numeric'],
+                'scrap_value' => ['required','numeric'],
+                'original_cost' => ['required','numeric'],
+                'accumulated_cost' => ['required','numeric'],
+                'care_of' => 'required',
+                'age' => 'required|numeric',
+                'end_depreciation' => 'required|date_format:Y-m',
+                'depreciation_per_year' => ['required','numeric'],
+                'depreciation_per_month' => ['required','numeric'],
+                'remaining_book_value' => ['required','numeric'],
+                'start_depreciation' => ['required','date_format:Y-m'],
+                'company_id' => 'required|exists:companies,id',
+                'department_id' => 'required|exists:departments,id',
+                'location_id' => 'required|exists:locations,id',
+                'account_title_id' => 'required|exists:account_titles,id',
+            ];
+        }
+
 
         //Updating of Fixed Asset
         if ($this->isMethod('put') ) {
@@ -122,7 +179,7 @@ class FixedAssetRequest extends FormRequest
                 'receipt' => 'nullable',
                 'quantity' => 'required',
                 'is_old_asset' => 'boolean',
-                'status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write off',
+                'status' => 'required|in:Good,For Disposal,For Repair,Spare,Sold,Write off',
                 'depreciation_method' => 'required',
                 'est_useful_life' => ['required', 'numeric', 'max:100'],
                 'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
@@ -136,7 +193,7 @@ class FixedAssetRequest extends FormRequest
                 'depreciation_per_year' => ['required','numeric'],
                 'depreciation_per_month' => ['required','numeric'],
                 'remaining_book_value' => ['required','numeric'],
-                'start_depreciation' => ['required','numeric'],
+                'start_depreciation' => ['required','date_format:Y-m'],
                 'company_id' => 'required|exists:companies,id',
                 'department_id' => 'required|exists:departments,id',
                 'location_id' => 'required|exists:locations,id',
@@ -161,6 +218,7 @@ class FixedAssetRequest extends FormRequest
     {
         return [
             'capex.required' => 'Capex is required',
+            'capex.unique' => 'Capex already exists',
             'project_name.required' => 'Project name is required',
             'tag_number.required' => 'Tag number is required',
             'tag_number_old.required' => 'Tag number old is required',

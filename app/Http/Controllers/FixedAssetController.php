@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Exports\MasterlistExport;
@@ -14,86 +13,37 @@ use App\Models\Formula;
 use App\Models\Location;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class FixedAssetController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response
-     */
     public function index()
     {
         $fixed_assets = FixedAsset::with('formula')->get();
-//        //transform collection to array
-//        $fixed_assets_arr = [];
-//        foreach ($fixed_assets as $fixed_asset) {
-//            $fixed_assets_arr[] = [
-//                'id' => $fixed_asset->id,
-//                'capex' => $fixed_asset->capex,
-//                'project_name' => $fixed_asset->project_name,
-//                'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
-//                'tag_number' => $fixed_asset->tag_number,
-//                'tag_number_old' => $fixed_asset->tag_number_old,
-//                'asset_description' => $fixed_asset->asset_description,
-//                'type_of_request' => $fixed_asset->type_of_request,
-//                'asset_specification' => $fixed_asset->asset_specification,
-//                'accountability' => $fixed_asset->accountability,
-//                'accountable' => $fixed_asset->accountable,
-//                'brand' => $fixed_asset->brand,
-//                'division' => $fixed_asset->division->division_name,
-//                'major_category' => $fixed_asset->majorCategory->major_category_name,
-//                'minor_category' => $fixed_asset->minorCategory->minor_category_name,
-//                'voucher' => $fixed_asset->voucher,
-//                'receipt' => $fixed_asset->receipt,
-//                'quantity' => $fixed_asset->quantity,
-//                'depreciation_method' => $fixed_asset->depreciation_method,
-//                'est_useful_life' => $fixed_asset->est_useful_life,
-//                //                    'salvage_value' => $fixed_asset->salvage_value,
-//                'acquisition_date' => $fixed_asset->acquisition_date,
-//                'acquisition_cost' => $fixed_asset->acquisition_cost,
-//                'scrap_value' => $fixed_asset->formula->scrap_value,
-//                'original_cost' => $fixed_asset->formula->original_cost,
-//                'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
-//                'status' => $fixed_asset->is_active,
-//                'care_of' => $fixed_asset->care_of,
-//                'age' => $fixed_asset->formula->age,
-//                'end_depreciation' => $fixed_asset->formula->end_depreciation,
-//                'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year,
-//                'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month,
-//                'remaining_book_value' => $fixed_asset->formula->remaining_book_value,
-//                'start_depreciation' => $fixed_asset->formula->start_depreciation,
-//                'company_code' => $fixed_asset->company->company_code,
-//                'company_name' => $fixed_asset->company->company_name,
-//                'department_code' => $fixed_asset->department->department_code,
-//                'department_name' => $fixed_asset->department->department_name,
-//                'location_code' => $fixed_asset->location->location_code,
-//                'location_name' => $fixed_asset->location->location_name,
-//                'account_title_code' => $fixed_asset->accountTitle->account_title_code,
-//                'account_title_name' => $fixed_asset->accountTitle->account_title_name
-//            ];
-//        }
-//        return response()->json([
-//            'message' => 'Fixed Assets retrieved successfully.',
-//            'data' => $fixed_assets_arr
-//        ], 200);
-
-
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
             'data' => $fixed_assets
         ], 200);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function store(FixedAssetRequest $request)
     {
+        if ($request->depreciation_method !== 'STL'){ //todo: add other depreciation methods
+            return response()->json(
+                [
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                            'depreciation_method' => [
+                                'Only Straight Line Method is allowed for now.'
+                            ]
+                        ]
+
+                ],
+                422
+            );
+        }
         $vladimirTagNumber = (new MasterlistImport())->vladimirTagGenerator();
         if(!is_numeric($vladimirTagNumber) || strlen($vladimirTagNumber) != 13) {
             return response()->json([
@@ -179,7 +129,7 @@ class FixedAssetController extends Controller
                 'acquisition_cost' => $request->acquisition_cost,
                 'status' => $request->status,
                 'is_old_asset' => $request->is_old_asset ?? 0,
-                'care_of' => $request->care_of,
+                'care_of' => $request->care_of ?? '-',
                 'company_id' => $request->company_id,
                 'company_name' => Company::where('id', $request->company_id)->value('company_name'),
                 'department_id' => $request->department_id,
@@ -191,6 +141,7 @@ class FixedAssetController extends Controller
             ]);
 
         $fixedAsset->formula()->create([
+//            $this->assetCalculations($request)
             'depreciation_method' => $request->depreciation_method,
             'est_useful_life' => $request->est_useful_life,
             'acquisition_date' => $request->acquisition_date,
@@ -203,7 +154,7 @@ class FixedAssetController extends Controller
             'depreciation_per_year' => $request->depreciation_per_year,
             'depreciation_per_month' => $request->depreciation_per_month,
             'remaining_book_value' => $request->remaining_book_value,
-            'start_depreciation' => $request->start_depreciation,
+            'start_depreciation' => $request->start_depreciation
         ]);
 
         if($request->status == 'Disposed')
@@ -227,12 +178,6 @@ class FixedAssetController extends Controller
         ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function show(int $id)
     {
         $fixed_asset = FixedAsset::where('id', $id)->first();
@@ -314,16 +259,25 @@ class FixedAssetController extends Controller
         ], 200);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
-     */
+
+    //TODO: Ask on what should and should not be updated on the fixed asset
     public function update(FixedAssetRequest $request, int $id)
     {
         $request->validated();
+        if ($request->depreciation_method !== 'STL'){ //todo: add other depreciation methods
+            return response()->json(
+                [
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'depreciation_method' => [
+                            'Only Straight Line Method is allowed for now.'
+                        ]
+                    ]
+
+                ],
+                422
+            );
+        }
 
         //Major Category check
         $majorCategoryCheck = MajorCategory::withTrashed()->where('id', $request->major_category_id)
@@ -388,8 +342,8 @@ class FixedAssetController extends Controller
         $fixedAsset = FixedAsset::where('id', $id)->where('status','!=','Disposed' )->first();
         if ($fixedAsset) {
             $fixedAsset->update([
-                'capex' => $request->capex ?? '-',
-                'project_name' => $request->project_name ?? '-',
+//                'capex' => $request->capex ?? '-',
+//                'project_name' => $request->project_name ?? '-',
 //                'vladimir_tag_number' => $request->vladimir_tag_number,
                 'tag_number' => $request->tag_number ?? '-',
                 'tag_number_old' => $request->tag_number_old ?? '-',
@@ -412,7 +366,7 @@ class FixedAssetController extends Controller
                 'acquisition_cost' => $request->acquisition_cost,
                 'status' => $request->status ?? $fixedAsset->status,
                 'is_old_asset' => $request->is_old_asset ?? 0,
-                'care_of' => $request->care_of,
+                'care_of' => $request->care_of ?? '-',
                 'company_id' => $request->company_id,
                 'company_name' => Company::where('id', $request->company_id)->value('company_name'),
                 'department_id' => $request->department_id,
@@ -560,20 +514,9 @@ class FixedAssetController extends Controller
             //get all statuses other than Disposed
             $status =  array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
         }
-//        if ($status == "Good" || $status =="For Repair"
-//            || $status =="For Disposal" || $status =="Spare"
-//            || $status =="Sold" || $status == "Write Off") {
-//            $status = $status;
-//        }
         if ($status == "Disposed") {
             $status = "Disposed";
         }
-//        if ($status != "Good" || $status != "Disposed" || $status != "For Repair" ||
-//            $status != "For Disposal" || $status != "Spare" || $status != "Sold"||
-//            $status != "Write Off") {
-//            $status = $status;
-//        }
-
         $fixedAsset = FixedAsset::withTrashed()->with(
             [
                 'formula' => function ($query) {
@@ -802,5 +745,210 @@ class FixedAssetController extends Controller
         ], 200);
 
 
+    }
+
+    public function assetDepreciation(Request $request, $id){
+
+        //validation
+        $validator = Validator::make($request->all(), [
+            'date' => 'required|date_format:Y-m',
+        ],
+            [
+            'date.required' => 'Date is required.',
+            'date.date_format' => 'Date format is invalid.',
+        ]);
+
+        $fixedAsset = FixedAsset::with('formula')->where('id',$id)->first();
+        if(!$fixedAsset){
+            return response()->json([
+                'message' => 'Route not found.'
+            ], 404);
+        }
+        $depreciation_method = $fixedAsset->depreciation_method;
+        $est_useful_life = $fixedAsset->est_useful_life;
+        $start_depreciation = $fixedAsset->formula->start_depreciation;
+        $acquisition_date = $fixedAsset->acquisition_date;
+        $acquisition_cost = $fixedAsset->acquisition_cost;
+        $scrap_value = $fixedAsset->formula->scrap_value;
+        $original_cost = $fixedAsset->formula->original_cost;
+        $custom_end_depreciation = $validator->validated()['date'];
+        $age = $this->getAge($acquisition_date);
+
+        //Calculations
+        $custom_age = $this->getAge($acquisition_date, $custom_end_depreciation);
+        $depreciation_per_year = $this->getDepreciationPerYear($acquisition_cost, $scrap_value, $est_useful_life);
+        $depreciation_per_month = $this->getDepreciationPerMonth($acquisition_cost, $scrap_value, $est_useful_life);
+        $custom_accumulated_cost = $this->getAccumulatedCost($depreciation_per_year, $custom_age);
+        $remaining_book_value = $this->getRemainingBookValue($acquisition_cost, $custom_accumulated_cost);
+        $total_depreciation = $this->getTotalDepreciation($custom_age, $depreciation_per_month);
+        $yearly_depreciation_percent_yearly = $this->getDepreciationPercentYearly($depreciation_per_year, $acquisition_cost);
+        $yearly_depreciation_percent_monthly = $this->getDepreciationPercentMonthly($depreciation_per_month, $acquisition_cost);
+        $yearly_depreciation = $this->getDepreciationPerYearWithYear($depreciation_per_month, $depreciation_per_year, $custom_age, $start_depreciation, $custom_end_depreciation, $acquisition_cost);
+
+        //if the custom end depreciation date is less than the start depreciation date
+        if($custom_end_depreciation < $start_depreciation){
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => [
+                    'selected_end_depreciation' => [
+                        'Invalid End Date Value.'
+                    ]
+                ]
+            ], 422);
+        }
+//        elseif (($custom_age/12) > $est_useful_life){
+//            return response()->json([
+//                'message' => 'The given data was invalid.',
+//                'errors' => [
+//                    'selected_end_depreciation' => [
+//                        'The selected end depreciation must be a date before or equal to the estimated useful life.'
+//                    ]
+//                ]
+//            ], 422);
+//        }
+
+
+
+        $fixedAsset_arr=[
+            'depreciation_method' => $depreciation_method,
+            'est_useful_life' => $est_useful_life,
+            'acquisition_date' => $acquisition_date,
+            'acquisition_cost' => $acquisition_cost,
+            'selected_age' => $custom_age,
+            'scrap_value' => $scrap_value,
+            'original_cost' => $original_cost,
+            'accumulated_cost' => $custom_accumulated_cost,
+            'start_depreciation' => $start_depreciation,
+            'end_date' => $custom_end_depreciation,
+//            'total_depreciation' => $total_depreciation,
+            'depreciation_per_year' => $depreciation_per_year,
+            'depreciation_per_month' => $depreciation_per_month,
+            'remaining_book_value' => $remaining_book_value,
+            'yearly_depreciation_percent' => $yearly_depreciation_percent_yearly.'%',
+            'monthly_depreciation_percent' => $yearly_depreciation_percent_monthly.'%',
+            'yearly_depreciation' => $yearly_depreciation,
+
+
+        ];
+        return response()->json([
+            'message' => 'Fixed Asset Depreciation Calculation.',
+            'data' => $fixedAsset_arr
+        ], 200);
+
+
+    }
+
+    //CALCULATIONS
+    function getTotalDepreciation($custom_age, $depreciation_per_month){
+        return round($custom_age * $depreciation_per_month, 2);
+    }
+    function getDepreciationPerYear($acquisition_cost, $scrap_value, $est_useful_life){
+        //add two decimal places
+        return round(($acquisition_cost - $scrap_value) / $est_useful_life, 2);
+    }
+    function getDepreciationPerMonth($acquisition_cost, $scrap_value, $est_useful_life){
+        return round(($acquisition_cost - $scrap_value) / ($est_useful_life * 12), 2);
+    }
+    function getDepreciationPercentYearly($depreciation_per_year, $acquisition_cost){
+        return round(($depreciation_per_year / $acquisition_cost) * 100, 2);
+    }
+    function getdepreciationPercentMonthly($depreciation_per_month, $acquisition_cost){
+        return round(($depreciation_per_month / $acquisition_cost) * 100, 2);
+    }
+    function getDepreciationPerYearWithYear($depreciation_per_month, $depreciation_per_year , $age, $start_depreciation, $custom_end_depreciation, $acquisition_cost)
+    {
+        $start_depreciation = Carbon::parse($start_depreciation);
+        $end_depreciation = Carbon::parse($custom_end_depreciation);
+        $start_depreciation_year = $start_depreciation->year;
+        $start_depreciation_month = $start_depreciation->month;
+        $custom_end_depreciation_year = $end_depreciation->year;
+        $custom_end_depreciation_month = $end_depreciation->month;
+
+        // Calculate the depreciation for a single month
+        if ($start_depreciation_year == $custom_end_depreciation_year) {
+            $depreciation = round($depreciation_per_month * $age, 2);
+            //add total percentage of depreciation
+//            $total_depreciation = $depreciation + $depreciation_per_year;
+            $percentage = round(($depreciation / $acquisition_cost) * 100, 2);
+            return [
+                'year' => $start_depreciation_year,
+                'depreciation' => $depreciation,
+                'percentage' => $percentage . '%'
+            ];
+        }
+
+        $yearly_depreciation = [];
+        $total_percentage = 0;
+        //get the start depreciation month
+        $start_depreciation_month = 12 - ($start_depreciation_month - 1);
+        $start_depreciation_month = $depreciation_per_month * $start_depreciation_month;
+        $start_depreciation_month = round($start_depreciation_month, 2);
+        $start_depreciation_month_percentage = round(($start_depreciation_month / $acquisition_cost) * 100, 2);
+
+
+        //minus custom end depreciation month to 12
+        $custom_end_depreciation_month = $depreciation_per_month * $custom_end_depreciation_month;
+        $custom_end_depreciation_month = round($custom_end_depreciation_month, 2);
+        $custom_end_depreciation_month_percentage = round(($custom_end_depreciation_month / $acquisition_cost) * 100, 2);
+
+
+        //add the per year depreciation
+        for ($i = $start_depreciation_year; $i <= $custom_end_depreciation_year; $i++) {
+            if ($i == $custom_end_depreciation_year) {
+                $yearly_depreciation[$i] = [
+                    'depreciation' => $custom_end_depreciation_month,
+                    'percentage' => $custom_end_depreciation_month_percentage
+                ];
+            } elseif ($i == $start_depreciation_year) {
+                $yearly_depreciation[$i] = [
+                    'depreciation' => $start_depreciation_month,
+                    'percentage' => $start_depreciation_month_percentage
+
+                ];
+            } else {
+                $yearly_depreciation[$i] = [
+                    'depreciation' => $depreciation_per_year,
+                    'percentage' => $this->getDepreciationPercentYearly($depreciation_per_year, $acquisition_cost)
+                ];
+            }
+            //total percentage of depreciation
+            $total_percentage += $yearly_depreciation[$i]['percentage'];
+        }
+
+        return[
+            'yearly' => $yearly_depreciation,
+            'total_percentage' => round($total_percentage, 2)
+        ];
+    }
+    function getAccumulatedCost($depreciation_per_year, $age){
+        $age = $age / 12;
+        return round($depreciation_per_year * $age, 2);
+    }
+    function getRemainingBookValue($acquisition_cost, $accumulated_cost){
+        return round($acquisition_cost - $accumulated_cost, 2);
+    }
+    function getAge($acquisition_date, $custom_end_depreciation = null){
+        $acquisition_date = Carbon::parse($acquisition_date);
+        if($custom_end_depreciation == null){
+            $custom_end_depreciation = Carbon::now();
+            $age = ($acquisition_date->diffInMonths($custom_end_depreciation));
+            return round($age, 3);
+        }else{
+            $custom_end_depreciation = Carbon::parse($custom_end_depreciation);
+            $age = ($acquisition_date->diffInMonths($custom_end_depreciation));
+            return round($age, 3);
+        }
+    }
+    //Todo: CONCERN
+    function getEndDepreciation($acquisition_date, $est_useful_life){
+        $acquisition_date = Carbon::parse($acquisition_date);
+        $end_depreciation = $acquisition_date->addYears($est_useful_life);
+        return $end_depreciation->format('Y-m');
+    }
+    function getStartDepreciation($acquisition_date)
+    {
+        $acquisition_date = Carbon::parse($acquisition_date);
+        $start_depreciation = $acquisition_date->addMonth(1);
+        return $start_depreciation->format('Y');
     }
 }

@@ -21,6 +21,14 @@ class MasterlistExportController extends Controller
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
+        $status = $request->get('status');
+        if ($status == NULL) {
+            //get all statuses other than Disposed
+            $status =  array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
+        }
+        if ($status == "Disposed") {
+            $status = "Disposed";
+        }
 
         if($startDate != null && $endDate != null){
             $fixed_assets = FixedAsset::withTrashed()->with([
@@ -37,6 +45,14 @@ class MasterlistExportController extends Controller
                         $query->withTrashed()->select('id', 'minor_category_name');
                     },
                 ])
+                ->where(function ($query) use ($status) {
+                    //array of status or not array
+                    if (is_array($status)) {
+                        $query->whereIn('status', $status);
+                    } else {
+                        $query->where('status', $status);
+                    }
+                })
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->get();
             return $this->refactorExport($fixed_assets);
@@ -88,6 +104,14 @@ class MasterlistExportController extends Controller
                 $query->orWhereHas('accountTitle', function ($query) use ($search) {
                     $query->where('account_title_name', 'LIKE', '%'.$search.'%');
                 });
+            })
+            ->where(function ($query) use ($status) {
+                //array of status or not array
+                if (is_array($status)) {
+                    $query->whereIn('status', $status);
+                } else {
+                    $query->where('status', $status);
+                }
             })
             ->orderBy('id', 'ASC')
             ->get();
