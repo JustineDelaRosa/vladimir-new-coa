@@ -37,9 +37,9 @@ class PrintBarCodeController extends Controller
             // Initialize the WindowsPrintConnector with the COM port and baud rate
 //             $connector = new WindowsPrintConnector("COM1");
             // $connector = new NetworkPrintConnector("10.10.10.11" , 8000);
-            $connector = new WindowsPrintConnector("ZDesigner ZD230-203dpi ZPL");
+//            $connector = new WindowsPrintConnector("ZDesigner ZD230-203dpi ZPL");
 //            $printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
-//            $connector = new WindowsPrintConnector("smb://10.10.10.11/ZDesigner ZD230-203dpi ZPL");
+            $connector = new WindowsPrintConnector("smb://10.10.10.11/ZDesigner ZD230-203dpi ZPL");
             //check if the smb://10.10.10.11 is available
 
             // Create a new Printer object and assign the connector to it
@@ -109,13 +109,13 @@ class PrintBarCodeController extends Controller
         $endDate = $request->get('endDate');
         $result = [];
 
-       $fixedAsset = FixedAsset::where('capex', '-')
-            ->where(function ($query) use ($tagNumber, $startDate, $endDate) {
+       $fixedAsset = FixedAsset::where('type_of_request_id', '!=', '2')
+       ->where(function ($query) use ($tagNumber, $startDate, $endDate) {
                 $query->Where('vladimir_tag_number', $tagNumber )
                     ->orWhere('tag_number',$tagNumber)
                     ->orWhere('tag_number_old',$tagNumber)
                     ->orWhereBetween('created_at', [$startDate, $endDate]);
-            })
+       })
             ->orderBy('id', 'ASC')
             ->select('vladimir_tag_number', 'asset_description','id')
             ->chunk(500, function ($assets)use (&$result) {

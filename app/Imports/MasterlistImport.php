@@ -11,6 +11,7 @@ use App\Models\Department;
 use App\Models\Formula;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
+use App\Models\TypeOfRequest;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
@@ -115,7 +116,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 'tag_number' => $collection['tag_number'] ?? '-',
                 'tag_number_old' => $collection['tag_number_old'] ?? '-',
                 'asset_description' => strtoupper($collection['asset_description']) ,
-                'type_of_request' => strtoupper($collection['type_of_request']),
+                'type_of_request_id' => TypeOfRequest::where('type_of_request_name',($collection['type_of_request']))->first()->id,
                 'asset_specification' => strtoupper($collection['asset_specification']),
                 'accountability' =>strtoupper($collection['accountability']) ,
                 'accountable' => strtoupper($collection['accountable']),
@@ -132,7 +133,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 'acquisition_date' => $collection['acquisition_date'],
                 'acquisition_cost' => $collection['acquisition_cost'],
 //                'is_active' => !($collection['status'] == 'Disposed'), // 'Disposed' or 'Active
-                'status' => $collection['status'],
+                'fa_status' => $collection['status'],
                 'is_old_asset' => $collection['tag_number'] != '-' || $collection['tag_number_old'] != '-',
                 'care_of' => strtoupper($collection['care_of']),
                 'company_id' => Company::where('company_name', $collection['company'])->first()->id,
@@ -206,7 +207,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
             }],
             '*.asset_description' => 'required',
-            '*.type_of_request' => 'required',
+            '*.type_of_request' => 'required|in:Asset,CAPEX,Cellular Phone, Major Repair, For Fabrication',
             '*.asset_specification' => 'required',
             '*.accountability' => 'required',
             '*.accountable' => 'required',
@@ -287,6 +288,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.tag_number_old.required' => 'Tag Number Old is required',
             '*.asset_description.required' => 'Description is required',
             '*.type_of_request.required' => 'Type of Request is required',
+            '*.type_of_request.in' => 'Invalid Type of Request',
             '*.asset_specification.required' => 'Additional Description is required',
             '*.accountability.required' => 'Accountability is required',
             '*.accountable.required' => 'accountable is required',

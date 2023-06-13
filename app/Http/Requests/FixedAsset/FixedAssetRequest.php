@@ -48,7 +48,7 @@ class FixedAssetRequest extends FormRequest
                     }
                 }],
                 'asset_description' => 'required',
-                'type_of_request' => 'required',
+                'type_of_request_id' => 'required',
                 'asset_specification' => 'required',
                 'accountability' => 'required',
                 'accountable' => 'required',
@@ -60,7 +60,7 @@ class FixedAssetRequest extends FormRequest
                 'voucher' => 'nullable',
                 'receipt' => 'nullable',
                 'quantity' => 'required',
-                'status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write off',
+                'fa_status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write off',
                 'is_old_asset' => 'boolean',
                 'depreciation_method' => 'required',
                 'est_useful_life' => ['required', 'numeric', 'max:100'],
@@ -106,7 +106,7 @@ class FixedAssetRequest extends FormRequest
                     }
                 }],
                 'asset_description' => 'required',
-                'type_of_request' => 'required',
+                'type_of_request_id' => 'required',
                 'asset_specification' => 'required',
                 'accountability' => 'required',
                 'accountable' => 'required',
@@ -119,67 +119,6 @@ class FixedAssetRequest extends FormRequest
                 'receipt' => 'nullable',
                 'quantity' => 'required',
                 'is_old_asset' => 'boolean',
-                'depreciation_method' => 'required',
-                'est_useful_life' => ['required', 'numeric', 'max:100'],
-                'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
-                'acquisition_cost' => ['required', 'numeric'],
-                'scrap_value' => ['required','numeric'],
-                'original_cost' => ['required','numeric'],
-                'accumulated_cost' => ['required','numeric'],
-                'care_of' => 'required',
-                'age' => 'required|numeric',
-                'end_depreciation' => 'required|date_format:Y-m',
-                'depreciation_per_year' => ['required','numeric'],
-                'depreciation_per_month' => ['required','numeric'],
-                'remaining_book_value' => ['required','numeric'],
-                'start_depreciation' => ['required','date_format:Y-m'],
-                'company_id' => 'required|exists:companies,id',
-                'department_id' => 'required|exists:departments,id',
-                'location_id' => 'required|exists:locations,id',
-                'account_title_id' => 'required|exists:account_titles,id',
-            ];
-        }
-
-
-        //Updating of Fixed Asset
-        if ($this->isMethod('put') ) {
-            $id = $this->route()->parameter('fixed_asset');
-            return [
-                'capex' => 'nullable',
-                'project_name' => 'nullable',
-                'tag_number' => ['nullable', function ($attribute, $value, $fail)use ($id) {
-                    $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
-                        ->where('tag_number', '!=', '-')
-                        ->where('id', '!=', $id)
-                        ->exists();
-                    if ($tag_number) {
-                        $fail('Tag number already exists');
-                    }
-                }],
-                'tag_number_old' => ['nullable', function ($attribute, $value, $fail)use ($id) {
-                    $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)
-                        ->where('tag_number_old', '!=', '-')
-                        ->where('id', '!=', $id)
-                        ->exists();
-                    if ($tag_number_old) {
-                        $fail('Tag number old already exists');
-                    }
-                }],
-                'asset_description' => 'required',
-                'type_of_request' => 'required',
-                'asset_specification' => 'required',
-                'accountability' => 'required',
-                'accountable' => 'required',
-                'cellphone_number' => 'nullable|numeric|digits:11',
-                'brand' => 'nullable',
-                'division_id' => 'required|exists:divisions,id',
-                'major_category_id' => 'required|exists:major_categories,id',
-                'minor_category_id' => 'required|exists:minor_categories,id',
-                'voucher' => 'nullable',
-                'receipt' => 'nullable',
-                'quantity' => 'required',
-                'is_old_asset' => 'boolean',
-                'status' => 'required|in:Good,For Disposal,For Repair,Spare,Sold,Write off',
                 'depreciation_method' => 'required',
                 'est_useful_life' => ['required', 'numeric', 'max:100'],
                 'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
@@ -204,9 +143,71 @@ class FixedAssetRequest extends FormRequest
         //Archiving of Fixed Asset
         if ($this->isMethod('patch')) {
             return [
-                'status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
+                'fa_status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
             ];
         }
+
+        //Updating of Fixed Asset
+        if ($this->isMethod('put')) {
+            $id = $this->route()->parameter('fixed_asset');
+            return [
+                'capex' => 'nullable',
+                'project_name' => 'nullable',
+                'tag_number' => ['nullable', function ($attribute, $value, $fail)use ($id) {
+                    $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
+                        ->where('tag_number', '!=', '-')
+                        ->where('id', '!=', $id)
+                        ->exists();
+                    if ($tag_number) {
+                        $fail('Tag number already exists');
+                    }
+                }],
+                'tag_number_old' => ['nullable', function ($attribute, $value, $fail)use ($id) {
+                    $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)
+                        ->where('tag_number_old', '!=', '-')
+                        ->where('id', '!=', $id)
+                        ->exists();
+                    if ($tag_number_old) {
+                        $fail('Tag number old already exists');
+                    }
+                }],
+                'asset_description' => 'required',
+                'type_of_request_id' => 'required',
+                'asset_specification' => 'required',
+                'accountability' => 'required',
+                'accountable' => 'required',
+                'cellphone_number' => 'nullable|numeric|digits:11',
+                'brand' => 'nullable',
+                'division_id' => 'required|exists:divisions,id',
+                'major_category_id' => 'required|exists:major_categories,id',
+                'minor_category_id' => 'required|exists:minor_categories,id',
+                'voucher' => 'nullable',
+                'receipt' => 'nullable',
+                'quantity' => 'required',
+                'is_old_asset' => 'boolean',
+                'fa_status' => 'required|in:Good,For Disposal,For Repair,Spare,Sold,Write off',
+                'depreciation_method' => 'required',
+                'est_useful_life' => ['required', 'numeric', 'max:100'],
+                'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
+                'acquisition_cost' => ['required', 'numeric'],
+                'scrap_value' => ['required','numeric'],
+                'original_cost' => ['required','numeric'],
+                'accumulated_cost' => ['required','numeric'],
+                'care_of' => 'required',
+                'age' => 'required|numeric',
+                'end_depreciation' => 'required|date_format:Y-m',
+                'depreciation_per_year' => ['required','numeric'],
+                'depreciation_per_month' => ['required','numeric'],
+                'remaining_book_value' => ['required','numeric'],
+                'start_depreciation' => ['required','date_format:Y-m'],
+                'company_id' => 'required|exists:companies,id',
+                'department_id' => 'required|exists:departments,id',
+                'location_id' => 'required|exists:locations,id',
+                'account_title_id' => 'required|exists:account_titles,id',
+            ];
+        }
+
+
     }
 
     /**
@@ -223,7 +224,7 @@ class FixedAssetRequest extends FormRequest
             'tag_number.required' => 'Tag number is required',
             'tag_number_old.required' => 'Tag number old is required',
             'asset_description.required' => 'Asset description is required',
-            'type_of_request.required' => 'Type of request is required',
+            'type_of_request_id.required' => 'Type of request is required',
             'asset_specification.required' => 'Asset specification is required',
             'accountability.required' => 'Accountability is required',
             'accountable.required' => 'Accountable is required',
@@ -252,9 +253,9 @@ class FixedAssetRequest extends FormRequest
             'original_cost.numeric' => 'Original cost must be a number',
             'accumulated_cost.required' => 'Accumulated cost is required',
             'accumulated_cost.numeric' => 'Accumulated cost must be a number',
-            'status.required' => 'Status is required',
-            'status.boolean' => 'Status must be a boolean',
-            'status.in' => 'The selected status is invalid.',
+            'fa_status.required' => 'Status is required',
+            'fa_status.boolean' => 'Status must be a boolean',
+            'fa_status.in' => 'The selected status is invalid.',
             'care_of.required' => 'Care of is required',
             'age.required' => 'Age is required',
             'age.numeric' => 'Age must be a number',

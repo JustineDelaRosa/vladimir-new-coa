@@ -21,13 +21,13 @@ class MasterlistExportController extends Controller
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
-        $status = $request->get('status');
-        if ($status == NULL) {
+        $fa_status = $request->get('fa_status');
+        if ($fa_status == NULL) {
             //get all statuses other than Disposed
-            $status =  array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
+            $fa_status =  array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
         }
-        if ($status == "Disposed") {
-            $status = "Disposed";
+        if ($fa_status == "Disposed") {
+            $fa_status = "Disposed";
         }
 
         if($startDate != null && $endDate != null){
@@ -45,12 +45,12 @@ class MasterlistExportController extends Controller
                         $query->withTrashed()->select('id', 'minor_category_name');
                     },
                 ])
-                ->where(function ($query) use ($status) {
+                ->where(function ($query) use ($fa_status) {
                     //array of status or not array
-                    if (is_array($status)) {
-                        $query->whereIn('status', $status);
+                    if (is_array($fa_status)) {
+                        $query->whereIn('fa_status', $fa_status);
                     } else {
-                        $query->where('status', $status);
+                        $query->where('fa_status', $fa_status);
                     }
                 })
                 ->whereBetween('created_at', [$startDate, $endDate])
@@ -78,7 +78,6 @@ class MasterlistExportController extends Controller
                     ->orWhere('vladimir_tag_number', 'LIKE', '%'.$search.'%')
                     ->orWhere('tag_number', 'LIKE', '%'.$search.'%')
                     ->orWhere('tag_number_old', 'LIKE', '%'.$search.'%')
-                    ->orWhere('type_of_request', 'LIKE', '%'.$search.'%')
                     ->orWhere('accountability', 'LIKE', '%'.$search.'%')
                     ->orWhere('accountable', 'LIKE', '%'.$search.'%')
                     ->orWhere('brand', 'LIKE', '%'.$search.'%')
@@ -104,13 +103,16 @@ class MasterlistExportController extends Controller
                 $query->orWhereHas('accountTitle', function ($query) use ($search) {
                     $query->where('account_title_name', 'LIKE', '%'.$search.'%');
                 });
+                $query->orWhereHas('typeOfRequest', function ($query) use ($search) {
+                    $query->where('type_of_request_name', 'LIKE', '%'.$search.'%');
+                });
             })
-            ->where(function ($query) use ($status) {
+            ->where(function ($query) use ($fa_status) {
                 //array of status or not array
-                if (is_array($status)) {
-                    $query->whereIn('status', $status);
+                if (is_array($fa_status)) {
+                    $query->whereIn('fa_status', $fa_status);
                 } else {
-                    $query->where('status', $status);
+                    $query->where('fa_status', $fa_status);
                 }
             })
             ->orderBy('id', 'ASC')
@@ -203,7 +205,7 @@ class MasterlistExportController extends Controller
                 'tag_number' => $fixed_asset->tag_number,
                 'tag_number_old' => $fixed_asset->tag_number_old,
                 'asset_description' => $fixed_asset->asset_description,
-                'type_of_request' => $fixed_asset->type_of_request,
+                'type_of_request' => $fixed_asset->typeOfRequest->type_of_request_name,
                 'asset_specification' => $fixed_asset->asset_specification,
                 'accountability' => $fixed_asset->accountability,
                 'accountable' => $fixed_asset->accountable,
@@ -222,7 +224,7 @@ class MasterlistExportController extends Controller
                 'scrap_value' => $fixed_asset->formula->scrap_value,
                 'original_cost' => $fixed_asset->formula->original_cost,
                 'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
-                'status' => $fixed_asset->status,
+                'fa_status' => $fixed_asset->fa_status,
                 'care_of' => $fixed_asset->care_of,
                 'age' => $fixed_asset->formula->age,
                 'end_depreciation' => $fixed_asset->formula->end_depreciation,

@@ -21,7 +21,7 @@ class CreateFixedAssetsTable extends Migration
             $table->string('tag_number');
             $table->string('tag_number_old');
             $table->string('asset_description');
-            $table->string('type_of_request');
+            $table->unsignedInteger('type_of_request_id');
             $table->string('asset_specification');
             $table->string('accountability');
             $table->string('accountable');
@@ -37,7 +37,7 @@ class CreateFixedAssetsTable extends Migration
             $table->integer('est_useful_life');
             $table->date('acquisition_date');
             $table->Biginteger('acquisition_cost');
-            $table->string('status');
+            $table->string('fa_status');
 //            $table->boolean('is_active'); //->default(1)
             $table->boolean('is_old_asset')->default(0);
             $table->string('care_of');
@@ -51,10 +51,10 @@ class CreateFixedAssetsTable extends Migration
             $table->string('account_title');
             $table->softDeletes();
             $table->timestamps();
-            // $table->foreign('type_of_request_id')
-            //     ->references('id')
-            //     ->on('type_of_requests')
-            //     ->onDelete('cascade');
+             $table->foreign('type_of_request_id')
+                 ->references('id')
+                 ->on('type_of_requests')
+                 ->onDelete('cascade');
             $table->foreign('major_category_id')
                 ->references('id')
                 ->on('major_categories')

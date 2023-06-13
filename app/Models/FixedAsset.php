@@ -21,10 +21,10 @@ class FixedAsset extends Model
         return $this->hasOne(Formula::class, 'fixed_asset_id', 'id');
     }
 
-    // public function typeOfRequest()
-    // {
-    //     return $this->belongsTo(TypeOfRequest::class, 'type_of_request_id', 'id');
-    // }
+     public function typeOfRequest()
+     {
+         return $this->belongsTo(TypeOfRequest::class, 'type_of_request_id', 'id');
+     }
 
     public function majorCategory()
     {

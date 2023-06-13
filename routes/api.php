@@ -3,6 +3,7 @@
 use App\Http\Controllers\FixedAssetController;
 use App\Http\Controllers\MasterlistExportController;
 use App\Http\Controllers\PrintBarcode\PrintBarCodeController;
+use App\Http\Controllers\TypeOfRequestController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -139,4 +140,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //barcode
     Route::post('fixed-asset/barcode', [PrintBarCodeController::class, 'printBarcode']);
+
+    //type of request
+    Route::resource('type-of-request', TypeOfRequestController::class);
 });
