@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Exports\MasterlistExport;
@@ -30,22 +31,22 @@ class FixedAssetController extends Controller
 
     public function store(FixedAssetRequest $request)
     {
-        if ($request->depreciation_method !== 'STL'){ //todo: add other depreciation methods
+        if ($request->depreciation_method !== 'STL') { //todo: add other depreciation methods
             return response()->json(
                 [
                     'message' => 'The given data was invalid.',
                     'errors' => [
-                            'depreciation_method' => [
-                                'Only Straight Line Method is allowed for now.'
-                            ]
+                        'depreciation_method' => [
+                            'Only Straight Line Method is allowed for now.'
                         ]
+                    ]
 
                 ],
                 422
             );
         }
         $vladimirTagNumber = (new MasterlistImport())->vladimirTagGenerator();
-        if(!is_numeric($vladimirTagNumber) || strlen($vladimirTagNumber) != 13) {
+        if (!is_numeric($vladimirTagNumber) || strlen($vladimirTagNumber) != 13) {
             return response()->json([
                 'message' => 'The given data was invalid.',
                 'errors' => ['Wrong vladimir tag number format. Please try again.']
@@ -54,7 +55,7 @@ class FixedAssetController extends Controller
         //Major Category check
         $majorCategoryCheck = MajorCategory::withTrashed()->where('id', $request->major_category_id)
             ->where('division_id', $request->division_id)->exists();
-        if(!$majorCategoryCheck) {
+        if (!$majorCategoryCheck) {
             return response()->json(
                 [
                     'message' => 'The given data was invalid.',
@@ -72,11 +73,11 @@ class FixedAssetController extends Controller
         $majorCategory = MajorCategory::withTrashed()->where('id', $request->major_category_id)
             ->where('division_id', $request->division_id)->first()->id;
         $minorCategoryCheck = MinorCategory::withTrashed()->where('id', $request->minor_category_id)
-            ->where('major_category_id',$majorCategory)->exists();
+            ->where('major_category_id', $majorCategory)->exists();
         if ($request->fa_status != 'Disposed') {
             //check minor catrgory if softDelete
-            if ( MinorCategory::onlyTrashed()->where('id', $request->minor_category_id)
-                ->where('major_category_id',$majorCategory)->exists()) {
+            if (MinorCategory::onlyTrashed()->where('id', $request->minor_category_id)
+                ->where('major_category_id', $majorCategory)->exists()) {
                 return response()->json(
                     [
                         'message' => 'The given data was invalid.',
@@ -90,7 +91,7 @@ class FixedAssetController extends Controller
                 );
             }
         }
-        if(!$minorCategoryCheck) {
+        if (!$minorCategoryCheck) {
             return response()->json(
                 [
                     'message' => 'The given data was invalid.',
@@ -105,40 +106,40 @@ class FixedAssetController extends Controller
         }
 
         $fixedAsset = FixedAsset::create([
-                'capex' => $request->capex ?? '-',
-                'project_name' => $request->project_name ?? '-',
-                'vladimir_tag_number' => $vladimirTagNumber,
-                'tag_number' => $request->tag_number ?? '-',
-                'tag_number_old' => $request->tag_number_old ?? '-',
-                'asset_description' => $request->asset_description,
-                'type_of_request_id' => $request->type_of_request_id,
-                'asset_specification' => $request->asset_specification,
-                'accountability' => $request->accountability,
-                'accountable' => $request->accountable,
-                'cellphone_number' => $request->cellphone_number ?? '-',
-                'brand' => $request->brand ?? '-',
-                'division_id' => $request->division_id,
-                'major_category_id' => $request->major_category_id,
-                'minor_category_id' => $request->minor_category_id,
-                'voucher' => $request->voucher ?? '-',
-                'receipt' => $request->receipt ?? '-',
-                'quantity' => $request->quantity,
-                'depreciation_method' => $request->depreciation_method,
-                'est_useful_life' => $request->est_useful_life,
-                'acquisition_date' => $request->acquisition_date, //TODO:
-                'acquisition_cost' => $request->acquisition_cost,
-                'fa_status' => $request->fa_status,
-                'is_old_asset' => $request->is_old_asset ?? 0,
-                'care_of' => $request->care_of ?? '-',
-                'company_id' => $request->company_id,
-                'company_name' => Company::where('id', $request->company_id)->value('company_name'),
-                'department_id' => $request->department_id,
-                'department_name' => Department::where('id', $request->department_id)->value('department_name'),
-                'location_id' => $request->location_id,
-                'location_name' => Location::where('id', $request->location_id)->value('location_name'),
-                'account_id' => $request->account_title_id,
-                'account_title' => AccountTitle::where('id', $request->account_title_id)->value('account_title_name'),
-            ]);
+            'capex' => $request->capex ?? '-',
+            'project_name' => $request->project_name ?? '-',
+            'vladimir_tag_number' => $vladimirTagNumber,
+            'tag_number' => $request->tag_number ?? '-',
+            'tag_number_old' => $request->tag_number_old ?? '-',
+            'asset_description' => $request->asset_description,
+            'type_of_request_id' => $request->type_of_request_id,
+            'asset_specification' => $request->asset_specification,
+            'accountability' => $request->accountability,
+            'accountable' => $request->accountable,
+            'cellphone_number' => $request->cellphone_number ?? '-',
+            'brand' => $request->brand ?? '-',
+            'division_id' => $request->division_id,
+            'major_category_id' => $request->major_category_id,
+            'minor_category_id' => $request->minor_category_id,
+            'voucher' => $request->voucher ?? '-',
+            'receipt' => $request->receipt ?? '-',
+            'quantity' => $request->quantity,
+            'depreciation_method' => $request->depreciation_method,
+            'est_useful_life' => $request->est_useful_life,
+            'acquisition_date' => $request->acquisition_date, //TODO:
+            'acquisition_cost' => $request->acquisition_cost,
+            'fa_status' => $request->fa_status,
+            'is_old_asset' => $request->is_old_asset ?? 0,
+            'care_of' => $request->care_of ?? '-',
+            'company_id' => $request->company_id,
+            'company_name' => Company::where('id', $request->company_id)->value('company_name'),
+            'department_id' => $request->department_id,
+            'department_name' => Department::where('id', $request->department_id)->value('department_name'),
+            'location_id' => $request->location_id,
+            'location_name' => Location::where('id', $request->location_id)->value('location_name'),
+            'account_id' => $request->account_title_id,
+            'account_title' => AccountTitle::where('id', $request->account_title_id)->value('account_title_name'),
+        ]);
 
         $fixedAsset->formula()->create([
 //            $this->assetCalculations($request)
@@ -157,16 +158,15 @@ class FixedAssetController extends Controller
             'start_depreciation' => $request->start_depreciation
         ]);
 
-        if($request->fa_status == 'Disposed')
-        {
+        if ($request->fa_status == 'Disposed') {
             $fixedAsset->delete();
             $fixedAsset->formula()->delete();
             return response()->json([
                 'message' => 'Fixed Asset created successfully, but disposed immediately.',
                 'data' => $fixedAsset->withTrashed()->with([
-                    'formula' => function($query) {
-                        $query->withTrashed();
-                    }]
+                        'formula' => function ($query) {
+                            $query->withTrashed();
+                        }]
                 )->where('id', $fixedAsset->id)->first()
             ], 201);
         }
@@ -187,71 +187,71 @@ class FixedAssetController extends Controller
         }
         $fixed_asset->with('formula')->where('id', $id)->first();
         $fixed_asset_arr = [
-                'id' => $fixed_asset->id,
-                'capex' => $fixed_asset->capex,
-                'project_name' => $fixed_asset->project_name,
-                'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
-                'tag_number' => $fixed_asset->tag_number,
-                'tag_number_old' => $fixed_asset->tag_number_old,
-                'asset_description' => $fixed_asset->asset_description,
-                'type_of_request_id' => $fixed_asset->type_of_request_id,
-                'asset_specification' => $fixed_asset->asset_specification,
-                'accountability' => $fixed_asset->accountability,
-                'accountable' => $fixed_asset->accountable,
-                'cellphone_number' => $fixed_asset->cellphone_number,
-                'brand' => $fixed_asset->brand,
-                'division' => [
-                    'id' => $fixed_asset->division->id,
-                    'division_name' => $fixed_asset->division->division_name,
-                ],
-                'major_category' => [
-                    'id' => $fixed_asset->majorCategory->id,
-                    'major_category_name' => $fixed_asset->majorCategory->major_category_name,
-                ],
-                'minor_category' => [
-                    'id' => $fixed_asset->minorCategory->id,
-                    'minor_category_name' => $fixed_asset->minorCategory->minor_category_name,
-                ],
-                'voucher' => $fixed_asset->voucher,
-                'receipt' => $fixed_asset->receipt,
-                'quantity' => $fixed_asset->quantity,
-                'depreciation_method' => $fixed_asset->depreciation_method,
-                'est_useful_life' => $fixed_asset->est_useful_life,
-                //                    'salvage_value' => $fixed_asset->salvage_value,
-                'acquisition_date' => $fixed_asset->acquisition_date,
-                'acquisition_cost' => $fixed_asset->acquisition_cost,
-                'scrap_value' => $fixed_asset->formula->scrap_value,
-                'original_cost' => $fixed_asset->formula->original_cost,
-                'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
-                'fa_status' => $fixed_asset->fa_status,
-                'is_old_asset' => $fixed_asset->is_old_asset,
-                'care_of' => $fixed_asset->care_of,
-                'age' => $fixed_asset->formula->age,
-                'end_depreciation' => $fixed_asset->formula->end_depreciation,
-                'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year,
-                'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month,
-                'remaining_book_value' => $fixed_asset->formula->remaining_book_value,
-                'start_depreciation' => $fixed_asset->formula->start_depreciation,
-                'company' => [
-                    'id' => $fixed_asset->company->id,
-                    'company_code' => $fixed_asset->company->company_code,
-                    'company_name' => $fixed_asset->company->company_name,
-                ],
-                'department' => [
-                    'id' => $fixed_asset->department->id,
-                    'department_code' => $fixed_asset->department->department_code,
-                    'department_name' => $fixed_asset->department->department_name,
-                ],
-                'location' => [
-                    'id' => $fixed_asset->location->id,
-                    'location_code' => $fixed_asset->location->location_code,
-                    'location_name' => $fixed_asset->location->location_name,
-                ],
-                'account_title' => [
-                    'id' => $fixed_asset->accountTitle->id,
-                    'account_title_code' => $fixed_asset->accountTitle->account_title_code,
-                    'account_title_name' => $fixed_asset->accountTitle->account_title_name,
-                ],
+            'id' => $fixed_asset->id,
+            'capex' => $fixed_asset->capex,
+            'project_name' => $fixed_asset->project_name,
+            'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
+            'tag_number' => $fixed_asset->tag_number,
+            'tag_number_old' => $fixed_asset->tag_number_old,
+            'asset_description' => $fixed_asset->asset_description,
+            'type_of_request_id' => $fixed_asset->type_of_request_id,
+            'asset_specification' => $fixed_asset->asset_specification,
+            'accountability' => $fixed_asset->accountability,
+            'accountable' => $fixed_asset->accountable,
+            'cellphone_number' => $fixed_asset->cellphone_number,
+            'brand' => $fixed_asset->brand,
+            'division' => [
+                'id' => $fixed_asset->division->id,
+                'division_name' => $fixed_asset->division->division_name,
+            ],
+            'major_category' => [
+                'id' => $fixed_asset->majorCategory->id,
+                'major_category_name' => $fixed_asset->majorCategory->major_category_name,
+            ],
+            'minor_category' => [
+                'id' => $fixed_asset->minorCategory->id,
+                'minor_category_name' => $fixed_asset->minorCategory->minor_category_name,
+            ],
+            'voucher' => $fixed_asset->voucher,
+            'receipt' => $fixed_asset->receipt,
+            'quantity' => $fixed_asset->quantity,
+            'depreciation_method' => $fixed_asset->depreciation_method,
+            'est_useful_life' => $fixed_asset->est_useful_life,
+            //                    'salvage_value' => $fixed_asset->salvage_value,
+            'acquisition_date' => $fixed_asset->acquisition_date,
+            'acquisition_cost' => $fixed_asset->acquisition_cost,
+            'scrap_value' => $fixed_asset->formula->scrap_value,
+            'original_cost' => $fixed_asset->formula->original_cost,
+            'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
+            'fa_status' => $fixed_asset->fa_status,
+            'is_old_asset' => $fixed_asset->is_old_asset,
+            'care_of' => $fixed_asset->care_of,
+            'age' => $fixed_asset->formula->age,
+            'end_depreciation' => $fixed_asset->formula->end_depreciation,
+            'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year,
+            'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month,
+            'remaining_book_value' => $fixed_asset->formula->remaining_book_value,
+            'start_depreciation' => $fixed_asset->formula->start_depreciation,
+            'company' => [
+                'id' => $fixed_asset->company->id,
+                'company_code' => $fixed_asset->company->company_code,
+                'company_name' => $fixed_asset->company->company_name,
+            ],
+            'department' => [
+                'id' => $fixed_asset->department->id,
+                'department_code' => $fixed_asset->department->department_code,
+                'department_name' => $fixed_asset->department->department_name,
+            ],
+            'location' => [
+                'id' => $fixed_asset->location->id,
+                'location_code' => $fixed_asset->location->location_code,
+                'location_name' => $fixed_asset->location->location_name,
+            ],
+            'account_title' => [
+                'id' => $fixed_asset->accountTitle->id,
+                'account_title_code' => $fixed_asset->accountTitle->account_title_code,
+                'account_title_name' => $fixed_asset->accountTitle->account_title_name,
+            ],
         ];
         return response()->json([
             'message' => 'Fixed Asset retrieved successfully.',
@@ -264,7 +264,7 @@ class FixedAssetController extends Controller
     public function update(FixedAssetRequest $request, int $id)
     {
         $request->validated();
-        if ($request->depreciation_method !== 'STL'){ //todo: add other depreciation methods
+        if ($request->depreciation_method !== 'STL') { //todo: add other depreciation methods
             return response()->json(
                 [
                     'message' => 'The given data was invalid.',
@@ -282,7 +282,7 @@ class FixedAssetController extends Controller
         //Major Category check
         $majorCategoryCheck = MajorCategory::withTrashed()->where('id', $request->major_category_id)
             ->where('division_id', $request->division_id)->exists();
-        if(!$majorCategoryCheck) {
+        if (!$majorCategoryCheck) {
             return response()->json(
                 [
                     'message' => 'The given data was invalid.',
@@ -300,11 +300,11 @@ class FixedAssetController extends Controller
         $majorCategory = MajorCategory::withTrashed()->where('id', $request->major_category_id)
             ->where('division_id', $request->division_id)->first()->id;
         $minorCategoryCheck = MinorCategory::withTrashed()->where('id', $request->minor_category_id)
-            ->where('major_category_id',$majorCategory)->exists();
+            ->where('major_category_id', $majorCategory)->exists();
         if ($request->fa_status != 'Disposed') {
             //check minor catrgory if softDelete
-            if ( MinorCategory::onlyTrashed()->where('id', $request->minor_category_id)
-                ->where('major_category_id',$majorCategory)->exists()) {
+            if (MinorCategory::onlyTrashed()->where('id', $request->minor_category_id)
+                ->where('major_category_id', $majorCategory)->exists()) {
                 return response()->json(
                     [
                         'message' => 'The given data was invalid.',
@@ -318,7 +318,7 @@ class FixedAssetController extends Controller
                 );
             }
         }
-        if(!$minorCategoryCheck) {
+        if (!$minorCategoryCheck) {
             return response()->json(
                 [
                     'message' => 'The given data was invalid.',
@@ -339,7 +339,7 @@ class FixedAssetController extends Controller
 //            ], 200);
 //        }
 
-        $fixedAsset = FixedAsset::where('id', $id)->where('fa_status','!=','Disposed' )->first();
+        $fixedAsset = FixedAsset::where('id', $id)->where('fa_status', '!=', 'Disposed')->first();
         if ($fixedAsset) {
             $fixedAsset->update([
 //                'capex' => $request->capex ?? '-',
@@ -397,7 +397,7 @@ class FixedAssetController extends Controller
                 'message' => 'Fixed Asset updated successfully',
                 'data' => $fixedAsset->load('formula')
             ], 200);
-        }else{
+        } else {
             return response()->json([
                 'message' => 'Fixed Asset Route Not Found.'
             ], 404);
@@ -472,9 +472,9 @@ class FixedAssetController extends Controller
             'fa_status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
         ],
             [
-            'fa_status.required' => 'Status is required.',
-            'fa_status.in' => 'Status must be Good, For Disposal, Disposed, For Repair, Spare, Sold, Write Off.',
-        ]);
+                'fa_status.required' => 'Status is required.',
+                'fa_status.in' => 'Status must be Good, For Disposal, Disposed, For Repair, Spare, Sold, Write Off.',
+            ]);
 
         //TODO: Check for possible way to change status to other than "Disposed"
         //uppercase first letter of status
@@ -487,7 +487,7 @@ class FixedAssetController extends Controller
         }
 
         if ($fa_status === "Disposed") {
-            if (!FixedAsset::where('id', $id)->WhereIn('fa_status', ['Good','For Disposal','For Repair', 'Spare', 'Sold', 'Write Off'])->exists()) {
+            if (!FixedAsset::where('id', $id)->WhereIn('fa_status', ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off'])->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
                 $fixedAsset->where('id', $id)->update(['fa_status' => "Disposed"]);
@@ -496,12 +496,12 @@ class FixedAssetController extends Controller
                 return response()->json(['message' => 'Successfully Disposed!'], 200);
             }
         }
-        if ($fa_status === "Good" || $fa_status === "For Repair" || $fa_status === "For Disposal" || $fa_status === "Spare" || $fa_status === "Sold"|| $fa_status === "Write Off") {
+        if ($fa_status === "Good" || $fa_status === "For Repair" || $fa_status === "For Disposal" || $fa_status === "Spare" || $fa_status === "Sold" || $fa_status === "Write Off") {
             if (FixedAsset::where('id', $id)->where('fa_status', $fa_status)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
                 $checkMinorCategory = MinorCategory::where('id', $fixedAsset->where('id', $id)->first()->minor_category_id)->exists();
-                if(!$checkMinorCategory){
+                if (!$checkMinorCategory) {
                     return response()->json(['error' => 'Unable to Restore!, Minor Category was Archived!'], 404);
                 }
                 $fixedAsset->withTrashed()->where('id', $id)->restore();
@@ -520,7 +520,7 @@ class FixedAssetController extends Controller
         $fa_status = $request->get('fa_status');
         if ($fa_status == NULL) {
             //get all statuses other than Disposed
-            $fa_status =  array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
+            $fa_status = array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
         }
         if ($fa_status == "Disposed") {
             $fa_status = "Disposed";
@@ -660,24 +660,25 @@ class FixedAssetController extends Controller
         return $fixedAsset;
     }
 
-    public function searchAssetTag(Request $request){
+    public function searchAssetTag(Request $request)
+    {
         $search = $request->get('search');
-        if($search == null){
+        if ($search == null) {
             return response()->json([
                 'message' => 'No data found'
             ], 404);
         }
         $fixedAsset = FixedAsset::withTrashed()
-            ->with('division',function ($query){
+            ->with('division', function ($query) {
                 $query->withTrashed();
             })
-            ->with('majorCategory',function ($query){
+            ->with('majorCategory', function ($query) {
                 $query->withTrashed();
             })
-            ->with('minorCategory',function ($query){
+            ->with('minorCategory', function ($query) {
                 $query->withTrashed();
             })
-            ->with('formula',function ($query){
+            ->with('formula', function ($query) {
                 $query->withTrashed();
             })
             ->where('vladimir_tag_number', $search)->first();
@@ -761,19 +762,20 @@ class FixedAssetController extends Controller
 
     }
 
-    public function assetDepreciation(Request $request, $id){
+    public function assetDepreciation(Request $request, $id)
+    {
 
         //validation
         $validator = Validator::make($request->all(), [
             'date' => 'required|date_format:Y-m',
         ],
             [
-            'date.required' => 'Date is required.',
-            'date.date_format' => 'Date format is invalid.',
-        ]);
+                'date.required' => 'Date is required.',
+                'date.date_format' => 'Date format is invalid.',
+            ]);
 
-        $fixedAsset = FixedAsset::with('formula')->where('id',$id)->first();
-        if(!$fixedAsset){
+        $fixedAsset = FixedAsset::with('formula')->where('id', $id)->first();
+        if (!$fixedAsset) {
             return response()->json([
                 'message' => 'Route not found.'
             ], 404);
@@ -800,7 +802,7 @@ class FixedAssetController extends Controller
         $yearly_depreciation = $this->getDepreciationPerYearWithYear($depreciation_per_month, $depreciation_per_year, $custom_age, $start_depreciation, $custom_end_depreciation, $acquisition_cost);
 
         //if the custom end depreciation date is less than the start depreciation date
-        if($custom_end_depreciation < $start_depreciation){
+        if ($custom_end_depreciation < $start_depreciation) {
             return response()->json([
                 'message' => 'The given data was invalid.',
                 'errors' => [
@@ -822,8 +824,7 @@ class FixedAssetController extends Controller
 //        }
 
 
-
-        $fixedAsset_arr=[
+        $fixedAsset_arr = [
             'depreciation_method' => $depreciation_method,
             'est_useful_life' => $est_useful_life,
             'acquisition_date' => $acquisition_date,
@@ -838,8 +839,8 @@ class FixedAssetController extends Controller
             'depreciation_per_year' => $depreciation_per_year,
             'depreciation_per_month' => $depreciation_per_month,
             'remaining_book_value' => $remaining_book_value,
-            'yearly_depreciation_percent' => $yearly_depreciation_percent_yearly.'%',
-            'monthly_depreciation_percent' => $yearly_depreciation_percent_monthly.'%',
+            'yearly_depreciation_percent' => $yearly_depreciation_percent_yearly . '%',
+            'monthly_depreciation_percent' => $yearly_depreciation_percent_monthly . '%',
             'yearly_depreciation' => $yearly_depreciation,
 
 
@@ -853,23 +854,33 @@ class FixedAssetController extends Controller
     }
 
     //CALCULATIONS
-    function getTotalDepreciation($custom_age, $depreciation_per_month){
+    function getTotalDepreciation($custom_age, $depreciation_per_month)
+    {
         return round($custom_age * $depreciation_per_month, 2);
     }
-    function getDepreciationPerYear($acquisition_cost, $scrap_value, $est_useful_life){
+
+    function getDepreciationPerYear($acquisition_cost, $scrap_value, $est_useful_life)
+    {
         //add two decimal places
         return round(($acquisition_cost - $scrap_value) / $est_useful_life, 2);
     }
-    function getDepreciationPerMonth($acquisition_cost, $scrap_value, $est_useful_life){
+
+    function getDepreciationPerMonth($acquisition_cost, $scrap_value, $est_useful_life)
+    {
         return round(($acquisition_cost - $scrap_value) / ($est_useful_life * 12), 2);
     }
-    function getDepreciationPercentYearly($depreciation_per_year, $acquisition_cost){
+
+    function getDepreciationPercentYearly($depreciation_per_year, $acquisition_cost)
+    {
         return round(($depreciation_per_year / $acquisition_cost) * 100, 2);
     }
-    function getdepreciationPercentMonthly($depreciation_per_month, $acquisition_cost){
+
+    function getdepreciationPercentMonthly($depreciation_per_month, $acquisition_cost)
+    {
         return round(($depreciation_per_month / $acquisition_cost) * 100, 2);
     }
-    function getDepreciationPerYearWithYear($depreciation_per_month, $depreciation_per_year , $age, $start_depreciation, $custom_end_depreciation, $acquisition_cost)
+
+    function getDepreciationPerYearWithYear($depreciation_per_month, $depreciation_per_year, $age, $start_depreciation, $custom_end_depreciation, $acquisition_cost)
     {
         $start_depreciation = Carbon::parse($start_depreciation);
         $end_depreciation = Carbon::parse($custom_end_depreciation);
@@ -929,36 +940,45 @@ class FixedAssetController extends Controller
             $total_percentage += $yearly_depreciation[$i]['percentage'];
         }
 
-        return[
+        return [
             'yearly' => $yearly_depreciation,
             'total_percentage' => round($total_percentage, 2)
         ];
     }
-    function getAccumulatedCost($depreciation_per_year, $age){
+
+    function getAccumulatedCost($depreciation_per_year, $age)
+    {
         $age = $age / 12;
         return round($depreciation_per_year * $age, 2);
     }
-    function getRemainingBookValue($acquisition_cost, $accumulated_cost){
+
+    function getRemainingBookValue($acquisition_cost, $accumulated_cost)
+    {
         return round($acquisition_cost - $accumulated_cost, 2);
     }
-    function getAge($acquisition_date, $custom_end_depreciation = null){
+
+    function getAge($acquisition_date, $custom_end_depreciation = null)
+    {
         $acquisition_date = Carbon::parse($acquisition_date);
-        if($custom_end_depreciation == null){
+        if ($custom_end_depreciation == null) {
             $custom_end_depreciation = Carbon::now();
             $age = ($acquisition_date->diffInMonths($custom_end_depreciation));
             return round($age, 3);
-        }else{
+        } else {
             $custom_end_depreciation = Carbon::parse($custom_end_depreciation);
             $age = ($acquisition_date->diffInMonths($custom_end_depreciation));
             return round($age, 3);
         }
     }
+
     //Todo: CONCERN
-    function getEndDepreciation($acquisition_date, $est_useful_life){
+    function getEndDepreciation($acquisition_date, $est_useful_life)
+    {
         $acquisition_date = Carbon::parse($acquisition_date);
         $end_depreciation = $acquisition_date->addYears($est_useful_life);
         return $end_depreciation->format('Y-m');
     }
+
     function getStartDepreciation($acquisition_date)
     {
         $acquisition_date = Carbon::parse($acquisition_date);

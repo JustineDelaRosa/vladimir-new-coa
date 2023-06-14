@@ -25,24 +25,24 @@ class FixedAssetRequest extends FormRequest
     public function rules()
     {
         //Adding of Fixed Asset
-        if ($this->isMethod('post')&&
+        if ($this->isMethod('post') &&
             ($this->capex == '-' && $this->project_name == '-') ||
             ($this->capex == null && $this->project_name == null)) {
             return [
                 'capex' => 'nullable',
                 'project_name' => 'nullable',
                 'tag_number' => ['nullable', function ($attribute, $value, $fail) {
-                $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
-                    ->where('tag_number', '!=', '-')
-                    ->exists();
+                    $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
+                        ->where('tag_number', '!=', '-')
+                        ->exists();
                     if ($tag_number) {
                         $fail('Tag number already exists');
                     }
                 }],
                 'tag_number_old' => ['nullable', function ($attribute, $value, $fail) {
-                $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)
-                    ->where('tag_number_old', '!=', '-')
-                    ->exists();
+                    $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)
+                        ->where('tag_number_old', '!=', '-')
+                        ->exists();
                     if ($tag_number_old) {
                         $fail('Tag number old already exists');
                     }
@@ -66,16 +66,16 @@ class FixedAssetRequest extends FormRequest
                 'est_useful_life' => ['required', 'numeric', 'max:100'],
                 'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
                 'acquisition_cost' => ['required', 'numeric'],
-                'scrap_value' => ['required','numeric'],
-                'original_cost' => ['required','numeric'],
-                'accumulated_cost' => ['required','numeric'],
+                'scrap_value' => ['required', 'numeric'],
+                'original_cost' => ['required', 'numeric'],
+                'accumulated_cost' => ['required', 'numeric'],
                 'care_of' => 'nullable',
                 'age' => 'required|numeric',
                 'end_depreciation' => 'required|date_format:Y-m',
-                'depreciation_per_year' => ['required','numeric'],
-                'depreciation_per_month' => ['required','numeric'],
-                'remaining_book_value' => ['required','numeric'],
-                'start_depreciation' => ['required','date_format:Y-m'],
+                'depreciation_per_year' => ['required', 'numeric'],
+                'depreciation_per_month' => ['required', 'numeric'],
+                'remaining_book_value' => ['required', 'numeric'],
+                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'company_id' => 'required|exists:companies,id',
                 'department_id' => 'required|exists:departments,id',
                 'location_id' => 'required|exists:locations,id',
@@ -123,16 +123,16 @@ class FixedAssetRequest extends FormRequest
                 'est_useful_life' => ['required', 'numeric', 'max:100'],
                 'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
                 'acquisition_cost' => ['required', 'numeric'],
-                'scrap_value' => ['required','numeric'],
-                'original_cost' => ['required','numeric'],
-                'accumulated_cost' => ['required','numeric'],
+                'scrap_value' => ['required', 'numeric'],
+                'original_cost' => ['required', 'numeric'],
+                'accumulated_cost' => ['required', 'numeric'],
                 'care_of' => 'required',
                 'age' => 'required|numeric',
                 'end_depreciation' => 'required|date_format:Y-m',
-                'depreciation_per_year' => ['required','numeric'],
-                'depreciation_per_month' => ['required','numeric'],
-                'remaining_book_value' => ['required','numeric'],
-                'start_depreciation' => ['required','date_format:Y-m'],
+                'depreciation_per_year' => ['required', 'numeric'],
+                'depreciation_per_month' => ['required', 'numeric'],
+                'remaining_book_value' => ['required', 'numeric'],
+                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'company_id' => 'required|exists:companies,id',
                 'department_id' => 'required|exists:departments,id',
                 'location_id' => 'required|exists:locations,id',
@@ -153,7 +153,7 @@ class FixedAssetRequest extends FormRequest
             return [
                 'capex' => 'nullable',
                 'project_name' => 'nullable',
-                'tag_number' => ['nullable', function ($attribute, $value, $fail)use ($id) {
+                'tag_number' => ['nullable', function ($attribute, $value, $fail) use ($id) {
                     $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
                         ->where('tag_number', '!=', '-')
                         ->where('id', '!=', $id)
@@ -162,7 +162,7 @@ class FixedAssetRequest extends FormRequest
                         $fail('Tag number already exists');
                     }
                 }],
-                'tag_number_old' => ['nullable', function ($attribute, $value, $fail)use ($id) {
+                'tag_number_old' => ['nullable', function ($attribute, $value, $fail) use ($id) {
                     $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)
                         ->where('tag_number_old', '!=', '-')
                         ->where('id', '!=', $id)
@@ -190,16 +190,16 @@ class FixedAssetRequest extends FormRequest
                 'est_useful_life' => ['required', 'numeric', 'max:100'],
                 'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
                 'acquisition_cost' => ['required', 'numeric'],
-                'scrap_value' => ['required','numeric'],
-                'original_cost' => ['required','numeric'],
-                'accumulated_cost' => ['required','numeric'],
+                'scrap_value' => ['required', 'numeric'],
+                'original_cost' => ['required', 'numeric'],
+                'accumulated_cost' => ['required', 'numeric'],
                 'care_of' => 'required',
                 'age' => 'required|numeric',
                 'end_depreciation' => 'required|date_format:Y-m',
-                'depreciation_per_year' => ['required','numeric'],
-                'depreciation_per_month' => ['required','numeric'],
-                'remaining_book_value' => ['required','numeric'],
-                'start_depreciation' => ['required','date_format:Y-m'],
+                'depreciation_per_year' => ['required', 'numeric'],
+                'depreciation_per_month' => ['required', 'numeric'],
+                'remaining_book_value' => ['required', 'numeric'],
+                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'company_id' => 'required|exists:companies,id',
                 'department_id' => 'required|exists:departments,id',
                 'location_id' => 'required|exists:locations,id',

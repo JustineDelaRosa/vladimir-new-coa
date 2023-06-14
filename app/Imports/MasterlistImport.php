@@ -67,10 +67,10 @@ class MasterlistImport extends DefaultValueBinder implements
         if ($cell->getColumn() == 'U') {
             $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y-m-d'), DataType::TYPE_STRING);
             return true;
-        }elseif ($cell->getColumn() == 'AC') {
+        } elseif ($cell->getColumn() == 'AC') {
             $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y-m'), DataType::TYPE_STRING);
             return true;
-        }elseif($cell->getColumn() == 'AG') {
+        } elseif ($cell->getColumn() == 'AG') {
             $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y'), DataType::TYPE_STRING);
             return true;
         }
@@ -82,7 +82,7 @@ class MasterlistImport extends DefaultValueBinder implements
     public function collection(Collection $collections)
     {
 
-         Validator::make($collections->toArray(),$this->rules($collections->toArray()),$this->messages())->validate();
+        Validator::make($collections->toArray(), $this->rules($collections->toArray()), $this->messages())->validate();
 
 
         foreach ($collections as $collection) {
@@ -109,16 +109,16 @@ class MasterlistImport extends DefaultValueBinder implements
             }
 
             // Create the Masterlist with the obtained ids
-            $fixedAsset =FixedAsset::create([
-                'capex' => strtoupper($collection['capex']) ,
+            $fixedAsset = FixedAsset::create([
+                'capex' => strtoupper($collection['capex']),
                 'project_name' => strtoupper($collection['project_name']),
                 'vladimir_tag_number' => $collection['capex'] != '-' ? $collection['vladimir_tag_number'] : $this->vladimirTagGenerator(),
                 'tag_number' => $collection['tag_number'] ?? '-',
                 'tag_number_old' => $collection['tag_number_old'] ?? '-',
-                'asset_description' => strtoupper($collection['asset_description']) ,
-                'type_of_request_id' => TypeOfRequest::where('type_of_request_name',($collection['type_of_request']))->first()->id,
+                'asset_description' => strtoupper($collection['asset_description']),
+                'type_of_request_id' => TypeOfRequest::where('type_of_request_name', ($collection['type_of_request']))->first()->id,
                 'asset_specification' => strtoupper($collection['asset_specification']),
-                'accountability' =>strtoupper($collection['accountability']) ,
+                'accountability' => strtoupper($collection['accountability']),
                 'accountable' => strtoupper($collection['accountable']),
                 'cellphone_number' => $collection['cellphone_number'],
                 'brand' => strtoupper($collection['brand']),
@@ -147,47 +147,47 @@ class MasterlistImport extends DefaultValueBinder implements
             ]);
 
             $fixedAsset->formula()->create(
-                    [
-                       'depreciation_method' => $collection['depreciation_method'],
-                       'est_useful_life' => $collection['est_useful_life'],
-                       'acquisition_date' => $collection['acquisition_date'],
-                       'acquisition_cost' => $collection['acquisition_cost'],
-                       'scrap_value' => $collection['scrap_value'],
-                       'original_cost' => $collection['original_cost'],
-                       'accumulated_cost' => $collection['accumulated_cost'],
-                       'age' => $collection['age'],
-                       'end_depreciation' => $collection['end_depreciation'],
-                       'depreciation_per_year' => $collection['depreciation_per_year'],
-                       'depreciation_per_month' => $collection['depreciation_per_month'],
-                       'remaining_book_value' => $collection['remaining_book_value'],
-                       'start_depreciation' => $collection['start_depreciation'],
+                [
+                    'depreciation_method' => $collection['depreciation_method'],
+                    'est_useful_life' => $collection['est_useful_life'],
+                    'acquisition_date' => $collection['acquisition_date'],
+                    'acquisition_cost' => $collection['acquisition_cost'],
+                    'scrap_value' => $collection['scrap_value'],
+                    'original_cost' => $collection['original_cost'],
+                    'accumulated_cost' => $collection['accumulated_cost'],
+                    'age' => $collection['age'],
+                    'end_depreciation' => $collection['end_depreciation'],
+                    'depreciation_per_year' => $collection['depreciation_per_year'],
+                    'depreciation_per_month' => $collection['depreciation_per_month'],
+                    'remaining_book_value' => $collection['remaining_book_value'],
+                    'start_depreciation' => $collection['start_depreciation'],
 
-                   ]
-               );
+                ]
+            );
 
             //if the is_status is false, delete the fixed asset and formula
 //            if (!$fixedAsset->is_active) {
 //                $fixedAsset->delete();
 //                $fixedAsset->formula()->delete();
 //            }
-            if($collection['status'] == 'Disposed' || $collection['status'] == 'DISPOSED'){
+            if ($collection['status'] == 'Disposed' || $collection['status'] == 'DISPOSED') {
                 $fixedAsset->delete();
                 $fixedAsset->formula()->delete();
             }
         }
     }
 
-    function rules($collection) :array
+    function rules($collection): array
     {
         $collections = collect($collection);
         return [
-            '*.capex' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|\d+-\d+|)$/'],
+            '*.capex' => ['required', 'regex:/^(?:-|\d+(?:\.\d{2})?|\d+-\d+|)$/'],
             '*.project_name' => 'required',
             '*.vladimir_tag_number' => 'required',
-            '*.tag_number' => ['required','regex:/^([0-9-]{6,13}|-)$/', function ($attribute, $value, $fail)use($collections) {
+            '*.tag_number' => ['required', 'regex:/^([0-9-]{6,13}|-)$/', function ($attribute, $value, $fail) use ($collections) {
                 $duplicate = $collections->where('tag_number', $value)->where('tag_number', '!=', '-')->count();
                 if ($duplicate > 1) {
-                    $fail('Tag number in row ' . $attribute[0] . ' is not unique'. $duplicate);
+                    $fail('Tag number in row ' . $attribute[0] . ' is not unique' . $duplicate);
                 }
                 //check in database
                 $fixed_asset = FixedAsset::withTrashed()->where('tag_number', $value)->where('tag_number', '!=', '-')->first();
@@ -195,10 +195,10 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Tag number already exists');
                 }
             }],
-            '*.tag_number_old' => ['required','regex:/^([0-9-]{6,13}|-)$/', function ($attribute, $value, $fail) use ($collections) {
+            '*.tag_number_old' => ['required', 'regex:/^([0-9-]{6,13}|-)$/', function ($attribute, $value, $fail) use ($collections) {
                 $duplicate = $collections->where('tag_number_old', $value)->where('tag_number_old', '!=', '-')->count();
                 if ($duplicate > 1) {
-                    $fail('Tag number old in row '. $attribute[0].' is not unique');
+                    $fail('Tag number old in row ' . $attribute[0] . ' is not unique');
                 }
                 //check in a database
                 $fixed_asset = FixedAsset::withTrashed()->where('tag_number_old', $value)->where('tag_number_old', '!=', '-')->first();
@@ -253,19 +253,19 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.receipt' => 'required',
             '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required',
-            '*.est_useful_life' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+            '*.est_useful_life' => ['required', 'regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
             '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date'],
-            '*.acquisition_cost' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
-            '*.scrap_value' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
-            '*.original_cost' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
-            '*.accumulated_cost' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+            '*.acquisition_cost' => ['required', 'regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+            '*.scrap_value' => ['required', 'regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+            '*.original_cost' => ['required', 'regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+            '*.accumulated_cost' => ['required', 'regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
             '*.status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
             '*.care_of' => 'required',
             '*.age' => 'required|numeric',
             '*.end_depreciation' => 'required|date_format:Y-m',
-            '*.depreciation_per_year' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
-            '*.depreciation_per_month' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
-            '*.remaining_book_value' => ['required','regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+            '*.depreciation_per_year' => ['required', 'regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+            '*.depreciation_per_month' => ['required', 'regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
+            '*.remaining_book_value' => ['required', 'regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
             '*.start_depreciation' => ['required', 'date_format:Y-m'],
             '*.company_code' => 'required|exists:companies,company_code',
             '*.company' => 'required|exists:companies,company_name',
