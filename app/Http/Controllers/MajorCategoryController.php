@@ -26,13 +26,13 @@ class MajorCategoryController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(MajorCategoryRequest $request)
     {
         $division_id = $request->division_id;
-        $major_category_name = strtoupper($request->major_category_name);
+        $major_category_name = ucwords(strtolower($request->major_category_name));
         // $major_category_name_check = str_replace(' ', '', $major_category_name);
 
         $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name)
@@ -64,7 +64,7 @@ class MajorCategoryController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function show(MajorCategoryRequest $request, $id)
@@ -96,14 +96,14 @@ class MajorCategoryController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(MajorCategoryRequest $request, $id)
     {
         $division_id = $request->division_id;
-        $major_category_name = strtoupper($request->major_category_name);
+        $major_category_name = ucwords(strtolower($request->major_category_name));
         $major_category_name_check = str_replace(' ', '', $major_category_name);
 
 
@@ -166,7 +166,7 @@ class MajorCategoryController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function destroy($id)
@@ -191,9 +191,6 @@ class MajorCategoryController extends Controller
         //         return response()->json(['message' => 'Unable to Archived!'], 409);
         //     }
         // }
-
-
-
 
 
         if ($status == false) {

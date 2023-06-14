@@ -27,14 +27,14 @@ class MinorCategoryController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(MinorCategoryRequest $request)
     {
         // $division_id = $request->division_id;
         $major_cat_id = $request->major_category_id;
-        $minor_cat_name = strtoupper($request->minor_category_name);
+        $minor_cat_name = ucwords(strtolower($request->minor_category_name));
         // $minor_category_name_check = str_replace(' ', '', $minor_cat_name);
 
 
@@ -78,7 +78,7 @@ class MinorCategoryController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
@@ -117,14 +117,14 @@ class MinorCategoryController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(MinorCategoryRequest $request, $id)
     {
         $major_category_id = $request->major_category_id;
-        $minor_category_name = strtoupper($request->minor_category_name);
+        $minor_category_name = ucwords(strtolower($request->minor_category_name));
         // $minor_category_name_check = str_replace(' ', '', $minor_category_name);
 
         // if (!MinorCategory::where('id', $id)->exists()) {
@@ -181,9 +181,6 @@ class MinorCategoryController extends Controller
         if (!$MinorCategory->withTrashed()->where('id', $id)->exists()) {
             return response()->json(['error' => 'Minor Category Route Not Found'], 404);
         }
-
-
-
 
 
         if ($status == false) {

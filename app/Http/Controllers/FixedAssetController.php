@@ -126,7 +126,7 @@ class FixedAssetController extends Controller
             'quantity' => $request->quantity,
             'depreciation_method' => $request->depreciation_method,
             'est_useful_life' => $request->est_useful_life,
-            'acquisition_date' => $request->acquisition_date, //TODO:
+            'acquisition_date' => $request->acquisition_date,
             'acquisition_cost' => $request->acquisition_cost,
             'fa_status' => $request->fa_status,
             'is_old_asset' => $request->is_old_asset ?? 0,
@@ -149,12 +149,12 @@ class FixedAssetController extends Controller
             'acquisition_cost' => $request->acquisition_cost,
             'scrap_value' => $request->scrap_value,
             'original_cost' => $request->original_cost,
-            'accumulated_cost' => $request->accumulated_cost,
+            'accumulated_cost' => $request->accumulated_cost ?? 0,
             'age' => $request->age,
             'end_depreciation' => $request->end_depreciation,
-            'depreciation_per_year' => $request->depreciation_per_year,
-            'depreciation_per_month' => $request->depreciation_per_month,
-            'remaining_book_value' => $request->remaining_book_value,
+            'depreciation_per_year' => $request->depreciation_per_year ?? 0,
+            'depreciation_per_month' => $request->depreciation_per_month ?? 0,
+            'remaining_book_value' => $request->remaining_book_value ?? 0,
             'start_depreciation' => $request->start_depreciation
         ]);
 
@@ -384,12 +384,12 @@ class FixedAssetController extends Controller
                 'acquisition_cost' => $request->acquisition_cost,
                 'scrap_value' => $request->scrap_value,
                 'original_cost' => $request->original_cost,
-                'accumulated_cost' => $request->accumulated_cost,
+                'accumulated_cost' => $request->accumulated_cost ?? 0,
                 'age' => $request->age,
                 'end_depreciation' => $request->end_depreciation,
-                'depreciation_per_year' => $request->depreciation_per_year,
-                'depreciation_per_month' => $request->depreciation_per_month,
-                'remaining_book_value' => $request->remaining_book_value,
+                'depreciation_per_year' => $request->depreciation_per_year ?? 0,
+                'depreciation_per_month' => $request->depreciation_per_month ?? 0,
+                'remaining_book_value' => $request->remaining_book_value ?? 0,
                 'start_depreciation' => $request->start_depreciation,
             ]);
 

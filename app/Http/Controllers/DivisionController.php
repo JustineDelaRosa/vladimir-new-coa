@@ -31,7 +31,8 @@ class DivisionController extends Controller
      */
     public function store(DivisionRequest $request)
     {
-        $division_name = strtoupper($request->division_name);
+        //capitalized
+        $division_name = ucwords(strtolower($request->division_name));
 
         Division::create([
             'division_name' => $division_name,
@@ -67,7 +68,8 @@ class DivisionController extends Controller
      */
     public function update(DivisionRequest $request, $id)
     {
-        $division_name = strtoupper($request->division_name);
+        //capitalized first letter per word doesnt allow capitalization of all letters
+        $division_name = ucwords(strtolower($request->division_name));
 
         if (!Division::where('id', $id)->exists()) {
             return response()->json(['error' => 'Division Route Not Found'], 404);
