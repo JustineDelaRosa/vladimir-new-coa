@@ -75,7 +75,7 @@ class FixedAssetController extends Controller
             ->where('division_id', $request->division_id)->first()->id;
         $minorCategoryCheck = MinorCategory::withTrashed()->where('id', $request->minor_category_id)
             ->where('major_category_id', $majorCategory)->exists();
-        if ($request->fa_status != 'Disposed') {
+        if ($request->FaStatus != 'Disposed') {
             //check minor catrgory if softDelete
             if (MinorCategory::onlyTrashed()->where('id', $request->minor_category_id)
                 ->where('major_category_id', $majorCategory)->exists()) {
@@ -130,7 +130,7 @@ class FixedAssetController extends Controller
             'est_useful_life' => $request->est_useful_life,
             'acquisition_date' => $request->acquisition_date,
             'acquisition_cost' => $request->acquisition_cost,
-            'fa_status' => $request->fa_status,
+            'FaStatus' => $request->FaStatus,
             'is_old_asset' => $request->is_old_asset ?? 0,
             'care_of' => $request->care_of ?? '-',
             'company_id' => $request->company_id,
@@ -160,7 +160,7 @@ class FixedAssetController extends Controller
             'start_depreciation' => $request->start_depreciation
         ]);
 
-        if ($request->fa_status == 'Disposed') {
+        if ($request->FaStatus == 'Disposed') {
             $fixedAsset->delete();
             $fixedAsset->formula()->delete();
             return response()->json([
@@ -225,7 +225,7 @@ class FixedAssetController extends Controller
             'scrap_value' => $fixed_asset->formula->scrap_value,
             'original_cost' => $fixed_asset->formula->original_cost,
             'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
-            'fa_status' => $fixed_asset->fa_status,
+            'FaStatus' => $fixed_asset->FaStatus,
             'is_old_asset' => $fixed_asset->is_old_asset,
             'care_of' => $fixed_asset->care_of,
             'age' => $fixed_asset->formula->age,
@@ -303,7 +303,7 @@ class FixedAssetController extends Controller
             ->where('division_id', $request->division_id)->first()->id;
         $minorCategoryCheck = MinorCategory::withTrashed()->where('id', $request->minor_category_id)
             ->where('major_category_id', $majorCategory)->exists();
-        if ($request->fa_status != 'Disposed') {
+        if ($request->FaStatus != 'Disposed') {
             //check minor catrgory if softDelete
             if (MinorCategory::onlyTrashed()->where('id', $request->minor_category_id)
                 ->where('major_category_id', $majorCategory)->exists()) {
@@ -341,7 +341,7 @@ class FixedAssetController extends Controller
 //            ], 200);
 //        }
 
-        $fixedAsset = FixedAsset::where('id', $id)->where('fa_status', '!=', 'Disposed')->first();
+        $fixedAsset = FixedAsset::where('id', $id)->where('FaStatus', '!=', 'Disposed')->first();
         if ($fixedAsset) {
             $fixedAsset->update([
 //                'capex' => $request->capex ?? '-',
@@ -366,7 +366,7 @@ class FixedAssetController extends Controller
                 'est_useful_life' => $request->est_useful_life,
                 'acquisition_date' => $request->acquisition_date,
                 'acquisition_cost' => $request->acquisition_cost,
-                'fa_status' => $request->fa_status ?? $fixedAsset->fa_status,
+                'FaStatus' => $request->FaStatus ?? $fixedAsset->FaStatus,
                 'is_old_asset' => $request->is_old_asset ?? 0,
                 'care_of' => $request->care_of ?? '-',
                 'company_id' => $request->company_id,
@@ -472,35 +472,35 @@ class FixedAssetController extends Controller
     public function archived(Request $request, $id)
     {
         $request->validate([
-            'fa_status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
+            'FaStatus' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
         ],
             [
-                'fa_status.required' => 'Status is required.',
-                'fa_status.in' => 'Status must be Good, For Disposal, Disposed, For Repair, Spare, Sold, Write Off.',
+                'FaStatus.required' => 'Status is required.',
+                'FaStatus.in' => 'Status must be Good, For Disposal, Disposed, For Repair, Spare, Sold, Write Off.',
             ]);
 
         //TODO: Check for possible way to change status to other than "Disposed"
         //uppercase first letter of status
-        $fa_status = $request->fa_status;
-        $fa_status = ucwords($fa_status);
+        $FaStatus = $request->FaStatus;
+        $FaStatus = ucwords($FaStatus);
         $fixedAsset = FixedAsset::query();
         $formula = Formula::query();
         if (!$fixedAsset->withTrashed()->where('id', $id)->exists()) {
             return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
         }
 
-        if ($fa_status === "Disposed") {
-            if (!FixedAsset::where('id', $id)->WhereIn('fa_status', ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off'])->exists()) {
+        if ($FaStatus === "Disposed") {
+            if (!FixedAsset::where('id', $id)->WhereIn('FaStatus', ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off'])->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
-                $fixedAsset->where('id', $id)->update(['fa_status' => "Disposed"]);
+                $fixedAsset->where('id', $id)->update(['FaStatus' => "Disposed"]);
                 $fixedAsset->where('id', $id)->delete();
                 $formula->where('fixed_asset_id', $id)->delete();
                 return response()->json(['message' => 'Successfully Disposed!'], 200);
             }
         }
-        if ($fa_status === "Good" || $fa_status === "For Repair" || $fa_status === "For Disposal" || $fa_status === "Spare" || $fa_status === "Sold" || $fa_status === "Write Off") {
-            if (FixedAsset::where('id', $id)->where('fa_status', $fa_status)->exists()) {
+        if ($FaStatus === "Good" || $FaStatus === "For Repair" || $FaStatus === "For Disposal" || $FaStatus === "Spare" || $FaStatus === "Sold" || $FaStatus === "Write Off") {
+            if (FixedAsset::where('id', $id)->where('FaStatus', $FaStatus)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
                 $checkMinorCategory = MinorCategory::where('id', $fixedAsset->where('id', $id)->first()->minor_category_id)->exists();
@@ -508,7 +508,7 @@ class FixedAssetController extends Controller
                     return response()->json(['error' => 'Unable to Restore!, Minor Category was Archived!'], 404);
                 }
                 $fixedAsset->withTrashed()->where('id', $id)->restore();
-                $fixedAsset->update(['fa_status' => $fa_status]);
+                $fixedAsset->update(['FaStatus' => $FaStatus]);
                 $formula->where('fixed_asset_id', $id)->restore();
                 return response()->json(['message' => 'Successfully Change status'], 200);
             }
@@ -520,13 +520,13 @@ class FixedAssetController extends Controller
         $search = $request->get('search');
         $limit = $request->get('limit');
         $page = $request->get('page');
-        $fa_status = $request->get('fa_status');
-        if ($fa_status == NULL) {
+        $FaStatus = $request->get('FaStatus');
+        if ($FaStatus == NULL) {
             //get all statuses other than Disposed
-            $fa_status = array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
+            $FaStatus = array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
         }
-        if ($fa_status == "Disposed") {
-            $fa_status = "Disposed";
+        if ($FaStatus == "Disposed") {
+            $FaStatus = "Disposed";
         }
         $fixedAsset = FixedAsset::withTrashed()->with(
             [
@@ -544,12 +544,12 @@ class FixedAssetController extends Controller
                 },
             ]
         )
-            ->where(function ($query) use ($fa_status) {
+            ->where(function ($query) use ($FaStatus) {
                 //array of status or not array
-                if (is_array($fa_status)) {
-                    $query->whereIn('fa_status', $fa_status);
+                if (is_array($FaStatus)) {
+                    $query->whereIn('FaStatus', $FaStatus);
                 } else {
-                    $query->where('fa_status', $fa_status);
+                    $query->where('FaStatus', $FaStatus);
                 }
             })
             ->where(function ($query) use ($search) {
@@ -629,7 +629,7 @@ class FixedAssetController extends Controller
                 'scrap_value' => $item->formula->scrap_value,
                 'original_cost' => $item->formula->original_cost,
                 'accumulated_cost' => $item->formula->accumulated_cost,
-                'fa_status' => $item->fa_status,
+                'FaStatus' => $item->FaStatus,
                 'is_old_asset' => $item->is_old_asset,
                 'care_of' => $item->care_of,
                 'age' => $item->formula->age,
@@ -726,7 +726,7 @@ class FixedAssetController extends Controller
             'scrap_value' => $fixedAsset->formula->scrap_value,
             'original_cost' => $fixedAsset->formula->original_cost,
             'accumulated_cost' => $fixedAsset->formula->accumulated_cost,
-            'fa_status' => $fixedAsset->fa_status,
+            'FaStatus' => $fixedAsset->FaStatus,
             'is_old_asset' => $fixedAsset->is_old_asset,
             'care_of' => $fixedAsset->care_of,
             'age' => $fixedAsset->formula->age,

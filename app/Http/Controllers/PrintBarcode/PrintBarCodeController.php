@@ -17,16 +17,6 @@ class PrintBarCodeController extends Controller
     public function printBarcode(Request $request)
     {
         $tagNumber = $this->search($request);
-//        $result = [];
-//        foreach ($tagNumber as $asset) {
-//                $tagnumber = $asset['vladimir_tag_number'];
-//            $description =  $asset['asset_description'];
-//            $result[] = [
-//                'tagnumber' => $tagnumber,
-//                'description' => $description,
-//            ];
-//        }
-//        return $result;
 
         if (!$tagNumber) {
             return response()->json(['message' => 'No data found'], 404);
@@ -34,18 +24,17 @@ class PrintBarCodeController extends Controller
 
 
         try {
+
             // Initialize the WindowsPrintConnector with the COM port and baud rate
-//             $connector = new WindowsPrintConnector("COM1");
+            //$connector = new WindowsPrintConnector("COM1");
             // $connector = new NetworkPrintConnector("10.10.10.11" , 8000);
-//            $connector = new WindowsPrintConnector("ZDesigner ZD230-203dpi ZPL");
-//            $printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
-            $connector = new WindowsPrintConnector("smb://10.10.10.11/ZDesigner ZD230-203dpi ZPL");
+            $connector = new WindowsPrintConnector("ZDesigner ZD230-203dpi ZPL");
+            //$printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
+            //$connector = new WindowsPrintConnector("smb://10.10.10.11/ZDesigner ZD230-203dpi ZPL");
             //check if the smb://10.10.10.11 is available
 
             // Create a new Printer object and assign the connector to it
             $printer = new Printer($connector);
-
-
 
             foreach($tagNumber as $VDM) {
 
@@ -128,47 +117,5 @@ class PrintBarCodeController extends Controller
            });
 
         return $result;
-
-//        return $fixedAsset->map(function ($asset) {
-//            return [
-//                'vladimir_tag_number' => $asset->vladimir_tag_number,
-//                'asset_description' => $asset->asset_description
-//            ];
-//        });
-
-//        //return only the vladimir tag number and asset description
-//        return $fixedAsset->get([
-//            'vladimir_tag_number',
-//            'asset_description'
-//        ]);
     }
-//                    ->orWhereBetween('created_at', [$startDate, $endDate]);
-//                        ->orWhere('status',$tagNumber)
-//                    ->orWhere('type_of_request',$tagNumber)
-//                    ->orWhere('accountability',$tagNumber)
-//                    ->orWhere('accountable',$tagNumber)
-//                    ->orWhere('depreciation_method',$tagNumber)
-//                $query->orWhereHas('majorCategory', function ($query) use ($tagNumber) {
-//                    //include soft deleted major category
-//                    $query->withTrashed()->where('major_category_name', $tagNumber );
-//                });
-//                $query->orWhereHas('minorCategory', function ($query) use ($tagNumber) {
-//                    $query->withTrashed()->where('minor_category_name', $tagNumber);
-//                });
-//                $query->orWhereHas('division', function ($query) use ($tagNumber) {
-//                    $query->withTrashed()->where('division_name',$tagNumber);
-//                });
-//                $query->orWhereHas('location', function ($query) use ($tagNumber) {
-//                    $query->where('location_name', $tagNumber);
-//                });
-//                $query->orWhereHas('company', function ($query) use ($tagNumber) {
-//                    $query->where('company_name', $tagNumber);
-//                });
-//                $query->orWhereHas('department', function ($query) use ($tagNumber) {
-//                    $query->where('department_name', $tagNumber );
-//                });
-//                $query->orWhereHas('accountTitle', function ($query) use ($tagNumber) {
-//                    $query->where('account_title_name', $tagNumber );
-//                });
-
 }
