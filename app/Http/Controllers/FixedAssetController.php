@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\MasterlistExport;
 use App\Http\Requests\FixedAsset\FixedAssetRequest;
+use App\Http\Requests\FixedAsset\FixedAssetUpdateRequest;
 use App\Imports\MasterlistImport;
 use App\Models\AccountTitle;
 use App\Models\Company;
@@ -97,7 +98,8 @@ class FixedAssetController extends Controller
                     'message' => 'The given data was invalid.',
                     'errors' => [
                         'minor_category' => [
-                            'The minor category does not match the major category.'
+                            'The minor category does not match the major category.',
+                            $minorCategoryCheck
                         ]
                     ]
                 ],
@@ -261,7 +263,7 @@ class FixedAssetController extends Controller
 
 
     //TODO: Ask on what should and should not be updated on the fixed asset
-    public function update(FixedAssetRequest $request, int $id)
+    public function update(FixedAssetUpdateRequest $request, int $id)
     {
         $request->validated();
         if ($request->depreciation_method !== 'STL') { //todo: add other depreciation methods
@@ -395,7 +397,8 @@ class FixedAssetController extends Controller
 
             return response()->json([
                 'message' => 'Fixed Asset updated successfully',
-                'data' => $fixedAsset->load('formula')
+                'data' => $fixedAsset->load('formula'),
+                //return what method is used
             ], 200);
         } else {
             return response()->json([
