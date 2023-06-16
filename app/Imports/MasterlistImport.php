@@ -133,7 +133,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 'acquisition_date' => $collection['acquisition_date'],
                 'acquisition_cost' => $collection['acquisition_cost'],
 //                'is_active' => !($collection['status'] == 'Disposed'), // 'Disposed' or 'Active
-                'FaStatus' => $collection['status'],
+                'faStatus' => $collection['status'],
                 'is_old_asset' => $collection['tag_number'] != '-' || $collection['tag_number_old'] != '-',
                 'care_of' => ucwords(strtolower($collection['care_of'])),
                 'company_id' => Company::where('company_name', $collection['company'])->first()->id,

@@ -21,13 +21,13 @@ class MasterlistExportController extends Controller
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
-        $fa_status = $request->get('fa_status');
-        if ($fa_status == NULL) {
+        $faStatus = $request->get('faStatus');
+        if ($faStatus == NULL) {
             //get all statuses other than Disposed
-            $fa_status =  array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
+            $faStatus =  array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
         }
-        if ($fa_status == "Disposed") {
-            $fa_status = "Disposed";
+        if ($faStatus == "Disposed") {
+            $faStatus = "Disposed";
         }
 
         if($startDate != null && $endDate != null){
@@ -45,12 +45,12 @@ class MasterlistExportController extends Controller
                         $query->withTrashed()->select('id', 'minor_category_name');
                     },
                 ])
-                ->where(function ($query) use ($fa_status) {
+                ->where(function ($query) use ($faStatus) {
                     //array of status or not array
-                    if (is_array($fa_status)) {
-                        $query->whereIn('fa_status', $fa_status);
+                    if (is_array($faStatus)) {
+                        $query->whereIn('faStatus', $faStatus);
                     } else {
-                        $query->where('fa_status', $fa_status);
+                        $query->where('faStatus', $faStatus);
                     }
                 })
                 ->whereBetween('created_at', [$startDate, $endDate])
@@ -107,12 +107,12 @@ class MasterlistExportController extends Controller
                     $query->where('type_of_request_name', 'LIKE', '%'.$search.'%');
                 });
             })
-            ->where(function ($query) use ($fa_status) {
+            ->where(function ($query) use ($faStatus) {
                 //array of status or not array
-                if (is_array($fa_status)) {
-                    $query->whereIn('fa_status', $fa_status);
+                if (is_array($faStatus)) {
+                    $query->whereIn('faStatus', $faStatus);
                 } else {
-                    $query->where('fa_status', $fa_status);
+                    $query->where('faStatus', $faStatus);
                 }
             })
             ->orderBy('id', 'ASC')
@@ -224,7 +224,7 @@ class MasterlistExportController extends Controller
                 'scrap_value' => $fixed_asset->formula->scrap_value,
                 'original_cost' => $fixed_asset->formula->original_cost,
                 'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
-                'fa_status' => $fixed_asset->fa_status,
+                'faStatus' => $fixed_asset->faStatus,
                 'care_of' => $fixed_asset->care_of,
                 'age' => $fixed_asset->formula->age,
                 'end_depreciation' => $fixed_asset->formula->end_depreciation,
