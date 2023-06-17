@@ -521,13 +521,27 @@ class FixedAssetController extends Controller
         $limit = $request->get('limit');
         $page = $request->get('page');
         $faStatus = $request->get('faStatus');
+
+
+        //if not null, convert to array
+        if($faStatus !== NULL && $faStatus !== "Disposed"){
+            $faStatusArr = [];
+            $faStatusTest = explode(',', $faStatus);
+            $faStatus = $faStatusArr;
+            $faStatus = array_map('trim', $faStatus);
+            $faStatus = array_map('ucwords', $faStatus);
+        }
+
         if ($faStatus == NULL) {
             //get all statuses other than Disposed
             $faStatus = array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
         }
+
         if ($faStatus == "Disposed") {
             $faStatus = "Disposed";
         }
+
+
         $fixedAsset = FixedAsset::withTrashed()->with(
             [
                 'formula' => function ($query) {
