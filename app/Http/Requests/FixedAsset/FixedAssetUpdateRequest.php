@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\FixedAsset;
 
+use App\Models\FixedAsset;
 use Illuminate\Foundation\Http\FormRequest;
 
 class FixedAssetUpdateRequest extends FormRequest

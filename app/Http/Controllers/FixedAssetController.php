@@ -344,8 +344,8 @@ class FixedAssetController extends Controller
         $fixedAsset = FixedAsset::where('id', $id)->where('faStatus', '!=', 'Disposed')->first();
         if ($fixedAsset) {
             $fixedAsset->update([
-//                'capex' => $request->capex ?? '-',
-//                'project_name' => $request->project_name ?? '-',
+                'capex' => $request->capex ?? '-',
+                'project_name' => $request->project_name ?? '-',
 //                'vladimir_tag_number' => $request->vladimir_tag_number,
                 'tag_number' => $request->tag_number ?? '-',
                 'tag_number_old' => $request->tag_number_old ?? '-',
