@@ -390,7 +390,7 @@ class MasterlistImport extends DefaultValueBinder implements
 //        return $ean13Result;
 //    }
 
-    function vladimirTagGenerator()
+    public function vladimirTagGenerator()
     {
         $date = date('ymd');
         static $lastRandom = 0;
@@ -429,7 +429,7 @@ class MasterlistImport extends DefaultValueBinder implements
         // Check if the generated number is a duplicate or already exists in the database
         while (in_array($ean13Result, $generated) || FixedAsset::where('vladimir_tag_number', $ean13Result)->exists()) {
             // Regenerate the number
-            $ean13Result = vladimirTagGenerator();
+            $ean13Result = $this->vladimirTagGenerator();
         }
 
         return $ean13Result;

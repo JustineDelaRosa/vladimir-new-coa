@@ -182,12 +182,18 @@ class FixedAssetController extends Controller
 
     public function show(int $id)
     {
-        $fixed_asset = FixedAsset::where('id', $id)->first();
+        $fixed_asset = FixedAsset::withTrashed()->with('formula', function ($query){
+            $query->withTrashed();
+        })
+        ->where('id', $id)->first();
         //        return $fixed_asset->majorCategory->major_category_name;
         if (!$fixed_asset) {
             return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
         }
-        $fixed_asset->with('formula')->where('id', $id)->first();
+//        $fixed_asset->with('formula', function ($query){
+//            $query->withTrashed();
+//        })->where('id', $id)->first();
+
         $fixed_asset_arr = [
             'id' => $fixed_asset->id,
             'capex' => $fixed_asset->capex,
@@ -196,7 +202,10 @@ class FixedAssetController extends Controller
             'tag_number' => $fixed_asset->tag_number,
             'tag_number_old' => $fixed_asset->tag_number_old,
             'asset_description' => $fixed_asset->asset_description,
-            'type_of_request_id' => $fixed_asset->type_of_request_id,
+            'type_of_request' => [
+                'id' => $fixed_asset->typeOfRequest->id,
+                'type_of_request_name' => $fixed_asset->typeOfRequest->type_of_request_name,
+            ],
             'asset_specification' => $fixed_asset->asset_specification,
             'accountability' => $fixed_asset->accountability,
             'accountable' => $fixed_asset->accountable,
@@ -522,28 +531,18 @@ class FixedAssetController extends Controller
         $page = $request->get('page');
         $faStatus = $request->get('faStatus');
 
-
-        //if not null, convert to array
-        if($faStatus !== NULL && $faStatus !== "Disposed"){
-            $faStatusArr = [];
-            $faStatusTest = explode(',', $faStatus);
-            $faStatus = $faStatusArr;
-            $faStatus = array_map('trim', $faStatus);
-            $faStatus = array_map('ucwords', $faStatus);
+        if ($faStatus === null) {
+            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off'];
+        } elseif($faStatus == "Disposed"){
+            $faStatus = ['Disposed'];
+        }else {
+            $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
+                return $status !== 'Disposed';
+            });
         }
 
-        if ($faStatus == NULL) {
-            //get all statuses other than Disposed
-            $faStatus = array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
-        }
-
-        if ($faStatus == "Disposed") {
-            $faStatus = "Disposed";
-        }
-
-
-        $fixedAsset = FixedAsset::withTrashed()->with(
-            [
+        $fixedAsset = FixedAsset::withTrashed()
+            ->with([
                 'formula' => function ($query) {
                     $query->withTrashed();
                 },
@@ -556,17 +555,10 @@ class FixedAssetController extends Controller
                 'minorCategory' => function ($query) {
                     $query->withTrashed()->select('id', 'minor_category_name');
                 },
-            ]
-        )
+            ])
             ->where(function ($query) use ($faStatus) {
-                //array of status or not array
-                if (is_array($faStatus)) {
-                    $query->whereIn('faStatus', $faStatus);
-                } else {
-                    $query->where('faStatus', $faStatus);
-                }
-            })
-            ->where(function ($query) use ($search) {
+                $query->whereIn('faStatus', $faStatus);
+            })->where(function ($query) use ($search) {
                 $query->where('capex', 'LIKE', '%' . $search . '%')
                     ->orWhere('project_name', 'LIKE', '%' . $search . '%')
                     ->orWhere('vladimir_tag_number', 'LIKE', '%' . $search . '%')
@@ -575,6 +567,7 @@ class FixedAssetController extends Controller
                     ->orWhere('type_of_request_id', 'LIKE', '%' . $search . '%')
                     ->orWhere('accountability', 'LIKE', '%' . $search . '%')
                     ->orWhere('accountable', 'LIKE', '%' . $search . '%')
+                    ->orWhere('faStatus', 'LIKE', '%' . $search . '%')
                     ->orWhere('brand', 'LIKE', '%' . $search . '%')
                     ->orWhere('depreciation_method', 'LIKE', '%' . $search . '%');
                 $query->orWhereHas('majorCategory', function ($query) use ($search) {
@@ -599,8 +592,9 @@ class FixedAssetController extends Controller
                     $query->where('account_title_name', 'LIKE', '%' . $search . '%');
                 });
             })
-            ->orderBy('created_at', 'DESC')
+            ->orderBy('id', 'ASC')
             ->paginate($limit);
+
 
         $fixedAsset->getCollection()->transform(function ($item) {
             return [
@@ -808,7 +802,7 @@ class FixedAssetController extends Controller
         $age = $this->getAge($acquisition_date);
 
         //Calculations
-        $custom_age = $this->getAge($acquisition_date, $custom_end_depreciation);
+        $custom_age = $this->getAge($start_depreciation, $custom_end_depreciation);
         $depreciation_per_year = $this->getDepreciationPerYear($acquisition_cost, $scrap_value, $est_useful_life);
         $depreciation_per_month = $this->getDepreciationPerMonth($acquisition_cost, $scrap_value, $est_useful_life);
         $custom_accumulated_cost = $this->getAccumulatedCost($depreciation_per_year, $custom_age);

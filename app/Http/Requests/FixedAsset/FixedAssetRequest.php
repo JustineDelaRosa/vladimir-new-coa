@@ -32,6 +32,10 @@ class FixedAssetRequest extends FormRequest
                 'capex' => 'nullable',
                 'project_name' => 'nullable',
                 'tag_number' => ['nullable', function ($attribute, $value, $fail) {
+                    //if the value id "-" and the is_old_asset is true return fail error
+                    if($value == "-" && $this->is_old_asset){
+                        $fail('This is required for old asset');
+                    }
                     $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
                         ->where('tag_number', '!=', '-')
                         ->exists();
@@ -61,7 +65,13 @@ class FixedAssetRequest extends FormRequest
                 'receipt' => 'nullable',
                 'quantity' => 'required',
                 'faStatus' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
-                'is_old_asset' => 'boolean',
+                'is_old_asset' =>  ['required','boolean', function ($attribute, $value, $fail) {
+                    if ($value == 1) {
+                        if (request()->tag_number == null && request()->tag_number_old == null) {
+                            $fail('Either tag number or tag number old is required');
+                        }
+                    }
+                }],
                 'depreciation_method' => 'required',
                 'est_useful_life' => ['required', 'numeric', 'max:100'],
                 'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
@@ -90,6 +100,10 @@ class FixedAssetRequest extends FormRequest
                 'capex' => 'required|unique:fixed_assets,capex',
                 'project_name' => 'required',
                 'tag_number' => ['nullable', function ($attribute, $value, $fail) {
+                    //if the value id "-" and the is_old_asset is true return fail error
+                    if($value == "-" && $this->is_old_asset){
+                        $fail('This is required for old asset');
+                    }
                     $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
                         ->where('tag_number', '!=', '-')
                         ->exists();
@@ -119,7 +133,13 @@ class FixedAssetRequest extends FormRequest
                 'receipt' => 'nullable',
                 'quantity' => 'required',
                 'faStatus' => 'required|in:Good,For Disposal,For Repair,Spare,Sold,Write Off',
-                'is_old_asset' => 'boolean',
+                'is_old_asset' =>  ['required','boolean', function ($attribute, $value, $fail) {
+                    if ($value == 1) {
+                        if (request()->tag_number == null && request()->tag_number_old == null) {
+                            $fail('Either tag number or tag number old is required');
+                        }
+                    }
+                }],
                 'depreciation_method' => 'required',
                 'est_useful_life' => ['required', 'numeric', 'max:100'],
                 'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
