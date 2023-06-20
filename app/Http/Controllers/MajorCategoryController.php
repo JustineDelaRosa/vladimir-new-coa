@@ -27,38 +27,47 @@ class MajorCategoryController extends Controller
      * Store a newly created resource in storage.
      *
      * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return float|\Illuminate\Http\JsonResponse|int
      */
     public function store(MajorCategoryRequest $request)
     {
         $division_id = $request->division_id;
+        //explode the array or division_id
+//        return explode(',', $division_id);
         $major_category_name = ucwords(strtolower($request->major_category_name));
+        $est_useful_life = $request->est_useful_life;
         // $major_category_name_check = str_replace(' ', '', $major_category_name);
 
-        $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name)
-            ->where('division_id', $division_id)
-            ->exists();
-        if ($majorCategory) {
-            return response()->json(
-                [
-                    'message' => 'The given data was invalid.',
-                    'errors' => [
-                        'major_category_name' => [
-                            'The major category name has already been taken.'
+        $successDivision = [];
+        foreach ($division_id as $division){
+            $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name)
+                ->where('division_id', $division)
+                ->exists();
+            if ($majorCategory) {
+                return response()->json(
+                    [
+                        'message' => 'The given data was invalid.',
+                        'errors' => [
+                            'major_category_name' => [
+                                'The major category name has already been taken.'
+                            ]
                         ]
-                    ]
-                ],
-                422
-            );
+                    ],
+                    422
+                );
+            }
+
+
+            $create = MajorCategory::create([
+                'division_id' => $division,
+                'major_category_name' => $major_category_name,
+                'est_useful_life'=> $est_useful_life,
+                'is_active' => true
+            ]);
+            array_push($successDivision, $create);
         }
+        return response()->json(['message' => 'Successfully Created!', 'data' => $successDivision], 201);
 
-
-        $create = MajorCategory::create([
-            'division_id' => $division_id,
-            'major_category_name' => $major_category_name,
-            'is_active' => true
-        ]);
-        return response()->json(['message' => 'Successfully Created!', 'data' => $create]);
     }
 
     /**

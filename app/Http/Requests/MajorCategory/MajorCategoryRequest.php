@@ -38,8 +38,11 @@ class MajorCategoryRequest extends FormRequest
         if ($this->isMethod('post')) {
 
             return [
+                //array of division_id is required and must exists in divisions table
                 'division_id' => 'required|exists:divisions,id,deleted_at,NULL',
+//                'division_id' => 'required|exists:divisions,id,deleted_at,NULL',
                 'major_category_name' => ['required'],
+                'est_useful_life'=> 'required|numeric|max:100',
                 // , Rule::unique('major_categories', 'major_category_name')->where(function ($query) {
                 //     return $query->where('division_id', $this->division_id)->whereNull('deleted_at');
                 // }),

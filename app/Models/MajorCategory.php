@@ -12,6 +12,7 @@ class MajorCategory extends Model
     protected $fillable = [
         'division_id',
         'major_category_name',
+        'est_useful_life',
         'is_active',
     ];
     protected $casts = [
