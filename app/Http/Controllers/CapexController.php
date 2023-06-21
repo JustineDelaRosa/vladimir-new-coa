@@ -18,6 +18,7 @@ class CapexController extends Controller
      */
     public function index(Request $request)
     {
+
         $search = $request->search;
         $status = $request->status;
         $limit = $request->limit;
@@ -30,8 +31,8 @@ class CapexController extends Controller
             ->when($status === "deactivated", function ($query) {
                 $query->onlyTrashed();
             })
-            ->orderByDesc("updated_at")
-            ->paginate($limit);
+            ->orderByDesc("updated_at");
+        $capex = $limit ? $capex->paginate($limit) : $capex->get();
 
 
         return response()->json([
@@ -172,41 +173,6 @@ class CapexController extends Controller
         }
     }
 
-//    public function search(Request $request)
-//    {
-//        $search = $request->query('search');
-//        $limit = $request->query('limit');
-//        $page = $request->get('page');
-//        $status = $request->query('status');
-//        if ($status == NULL) {
-//            $status = 1;
-//        }
-//        if ($status == "active") {
-//            $status = 1;
-//        }
-//        if ($status == "deactivated") {
-//            $status = 0;
-//        }
-//        if ($status != "active" || $status != "deactivated") {
-//            $status = 1;
-//        }
-//
-//        $capex = Capex::withTrashed()
-//            ->where(function ($query) use ($status) {
-//                $query->where('is_active', $status);
-//            })
-//            ->where(function ($query) use ($search) {
-//                $query->where('capex', 'LIKE', "%{$search}%")
-//                    ->orWhere('project_name', 'LIKE', "%{$search}%");
-//            })
-//            ->orderBy('created_at', 'DESC')
-//            ->paginate($limit);
-//
-//        return response()->json([
-//            'message' => 'Successfully retrieved capex.',
-//            'data' => CapexResource::collection($capex)
-//        ], 200);
-//    }
 
 
 
