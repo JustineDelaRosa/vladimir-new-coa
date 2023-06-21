@@ -532,9 +532,9 @@ class FixedAssetController extends Controller
         $faStatus = $request->get('faStatus');
 
         if ($faStatus === null) {
-            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off'];
-        } elseif($faStatus == "Disposed"){
-            $faStatus = ['Disposed'];
+            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off', 'Disposed'];
+        } elseif($faStatus == 'Disposed, Sold'){
+            $faStatus = ['Disposed', 'Sold'];
         }else {
             $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
                 return $status !== 'Disposed';

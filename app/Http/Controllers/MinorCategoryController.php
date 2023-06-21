@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Division;
 use App\Models\FixedAsset;
 use Illuminate\Http\Request;
 use App\Models\MajorCategory;
@@ -92,14 +91,10 @@ class MinorCategoryController extends Controller
                 404
             );
         }
-        $minorCategory = MinorCategory::with('majorCategory.division')->where('id', $id)->first();
+        $minorCategory = MinorCategory::with('majorCategory')->where('id', $id)->first();
         return response()->json([
             'data' => [
                 'id' => $minorCategory->id,
-                'division' => [
-                    'id' => $minorCategory->majorCategory->division->id,
-                    'division_name' => $minorCategory->majorCategory->division->division_name,
-                ],
                 'major_category' => [
                     'id' => $minorCategory->majorCategory->id,
                     'major_category_name' => $minorCategory->majorCategory->major_category_name,
@@ -232,9 +227,7 @@ class MinorCategoryController extends Controller
 
 
         $MinorCategory = MinorCategory::withTrashed()->with(['majorCategory' => function ($query) {
-            $query->withTrashed()->with(['division' => function ($query) {
                 $query->withTrashed();
-            }]);
         }])
             ->where(function ($query) use ($status) {
                 $query->where('is_active', $status);
@@ -244,9 +237,6 @@ class MinorCategoryController extends Controller
                 $query->orWhereHas('majorCategory', function ($query) use ($search) {
                     $query->where('major_category_name', 'LIKE', "%{$search}%");
                 });
-                $query->orWhereHas('majorCategory.division', function ($query) use ($search) {
-                    $query->withTrashed()->where('division_name', 'LIKE', "%{$search}%");
-                });
             })
             ->orderBy('created_at', 'DESC')
             ->paginate($limit);
@@ -254,10 +244,6 @@ class MinorCategoryController extends Controller
         $MinorCategory->getCollection()->transform(function ($item) {
             return [
                 'id' => $item->id,
-                'division' => [
-                    'id' => $item->majorCategory->division->id,
-                    'division_name' => $item->majorCategory->division->division_name,
-                ],
                 'major_category' => [
                     'id' => $item->majorCategory->id,
                     'major_category_name' => $item->majorCategory->major_category_name,
@@ -269,9 +255,6 @@ class MinorCategoryController extends Controller
                 'deleted_at' => $item->deleted_at
             ];
         });
-
         return $MinorCategory;
-
-
     }
 }

@@ -31,17 +31,10 @@ class MajorCategoryController extends Controller
      */
     public function store(MajorCategoryRequest $request)
     {
-        $division_id = $request->division_id;
-        //explode the array or division_id
-//        return explode(',', $division_id);
         $major_category_name = ucwords(strtolower($request->major_category_name));
         $est_useful_life = $request->est_useful_life;
-        // $major_category_name_check = str_replace(' ', '', $major_category_name);
 
-        $successDivision = [];
-        foreach ($division_id as $division){
             $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name)
-                ->where('division_id', $division)
                 ->exists();
             if ($majorCategory) {
                 return response()->json(
@@ -58,15 +51,14 @@ class MajorCategoryController extends Controller
             }
 
 
-            $create = MajorCategory::create([
-                'division_id' => $division,
+            $majorCategory = MajorCategory::create([
                 'major_category_name' => $major_category_name,
                 'est_useful_life'=> $est_useful_life,
                 'is_active' => true
             ]);
-            array_push($successDivision, $create);
-        }
-        return response()->json(['message' => 'Successfully Created!', 'data' => $successDivision], 201);
+
+
+        return response()->json(['message' => 'Successfully Created!', 'data' => $majorCategory], 201);
 
     }
 
@@ -74,7 +66,7 @@ class MajorCategoryController extends Controller
      * Display the specified resource.
      *
      * @param int $id
-     * @return \Illuminate\Http\JsonResponse
+     * @return \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Model|\Illuminate\Http\JsonResponse|object
      */
     public function show(MajorCategoryRequest $request, $id)
     {
@@ -83,7 +75,7 @@ class MajorCategoryController extends Controller
             return response()->json(['error' => 'Major Category Route Not Found'], 404);
         }
 
-        return $MajorCategory->with('division')->where('id', $id)->first();
+        return $MajorCategory->with('minorCategory')->where('id', $id)->first();
 
         // $MajorCategory =  MajorCategory::with('division')->where('id', $id)->first();
         // return response()->json([
@@ -111,9 +103,8 @@ class MajorCategoryController extends Controller
      */
     public function update(MajorCategoryRequest $request, $id)
     {
-        $division_id = $request->division_id;
         $major_category_name = ucwords(strtolower($request->major_category_name));
-        $major_category_name_check = str_replace(' ', '', $major_category_name);
+        $est_useful_life = $request->est_useful_life;
 
 
         // $major_category = MajorCategory::find($id);
@@ -127,14 +118,13 @@ class MajorCategoryController extends Controller
         // }
 
         if (MajorCategory::where('id', $id)
-            ->where(['major_category_name' => $major_category_name, 'division_id' => $division_id])
+            ->where('major_category_name' , $major_category_name)
             ->exists()
         ) {
             return response()->json(['message' => 'No Changes'], 200);
         }
         $majorCategory = MajorCategory::withTrashed()
             ->where('major_category_name', $major_category_name)
-            ->where('division_id', $division_id)
             ->where('id', '!=', $id)
             ->exists();
         if ($majorCategory) {
@@ -153,8 +143,8 @@ class MajorCategoryController extends Controller
 
         if (MajorCategory::where('id', $id)->exists()) {
             $update = MajorCategory::where('id', $id)->update([
-                'division_id' => $division_id,
                 'major_category_name' => $major_category_name,
+                'est_useful_life'=> $est_useful_life,
                 // 'is_active' => true
             ]);
             return response()->json(['message' => 'Successfully Updated!'], 200);
@@ -170,17 +160,6 @@ class MajorCategoryController extends Controller
         // ]);
         // // return $major_category_name;
         // return response()->json(['message' => 'Successfully Updated!'], 200);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param int $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
     }
 
 
@@ -206,8 +185,8 @@ class MajorCategoryController extends Controller
             if (!MajorCategory::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
-                $checkMajorCategory = MinorCategory::where('major_category_id', $id)->exists();
-                if ($checkMajorCategory) {
+                $checkMinorCategory = MinorCategory::where('major_category_id', $id)->exists();
+                if ($checkMinorCategory) {
                     return response()->json(['message' => 'Unable to Archived!, Archived Minor Category First'], 409);
                 }
                 if (MajorCategory::where('id', $id)->exists()) {
@@ -221,10 +200,6 @@ class MajorCategoryController extends Controller
             if (MajorCategory::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
-                $checkDivision = Division::where('id', $MajorCategory->where('id', $id)->first()->division_id)->exists();
-                if (!$checkDivision) {
-                    return response()->json(['message' => 'Unable to Restore!, Division was Archived!'], 409);
-                }
                 $restoreUser = $MajorCategory->withTrashed()->where('id', $id)->restore();
                 $updateStatus = $MajorCategory->update(['is_active' => true]);
                 return response()->json(['message' => 'Successfully Activated!'], 200);
@@ -251,18 +226,13 @@ class MajorCategoryController extends Controller
             $status = 1;
         }
 
-        $MajorCategory = MajorCategory::withTrashed()->with('division', function ($query) use ($status) {
-            $query->where('is_active', $status);
-            $query->withTrashed();
-        })
+        $MajorCategory = MajorCategory::withTrashed()
             ->where(function ($query) use ($status) {
                 $query->where('is_active', $status);
             })
             ->where(function ($query) use ($search) {
-                $query->where('major_category_name', 'LIKE', "%{$search}%");
-                $query->orWhereHas('division', function ($query) use ($search) {
-                    $query->where('division_name', 'LIKE', "%{$search}%");
-                });
+                $query->where('major_category_name', 'LIKE', "%{$search}%")
+                        ->orWhere('est_useful_life', 'LIKE', "%{$search}%");
             })
             ->orderBy('created_at', 'DESC')
             ->paginate($limit);
@@ -273,12 +243,8 @@ class MajorCategoryController extends Controller
         $MajorCategory->getCollection()->transform(function ($item) {
             return [
                 'id' => $item->id,
-
-                'division' => [
-                    'id' => $item->division->id ?? null,
-                    'division_name' => $item->division->division_name ?? null,
-                ],
                 'major_category_name' => $item->major_category_name,
+                'est_useful_life' => $item->est_useful_life,
                 'is_active' => $item->is_active,
                 'created_at' => $item->created_at,
                 'updated_at' => $item->updated_at,

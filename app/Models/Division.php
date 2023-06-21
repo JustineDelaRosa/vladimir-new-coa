@@ -15,10 +15,6 @@ class Division extends Model
         'division_name',
         'is_active',
     ];
-    public function major_category()
-    {
-        return $this->hasMany(MajorCategory::class, 'division_id', 'id');
-    }
 
     public function fixedAsset()
     {

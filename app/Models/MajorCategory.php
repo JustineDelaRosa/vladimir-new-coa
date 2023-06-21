@@ -10,7 +10,6 @@ class MajorCategory extends Model
 {
     use HasFactory, SoftDeletes;
     protected $fillable = [
-        'division_id',
         'major_category_name',
         'est_useful_life',
         'is_active',
@@ -24,10 +23,6 @@ class MajorCategory extends Model
     //     return $this->attributes['division_id'] = Division::find($value);
     // }
 
-    public function division()
-    {
-        return $this->belongsTo(Division::class, 'division_id', 'id');
-    }
 
     public function minorCategory()
     {

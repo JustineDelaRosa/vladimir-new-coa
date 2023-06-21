@@ -17,9 +17,6 @@ class CreateMinorCategoriesTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('major_category_id');
             $table->string('minor_category_name');
-            // $table->enum('urgency_level', ['LOW', 'MEDIUM', 'HIGH']);
-            // $table->boolean('personally_assign');
-            // $table->boolean('evaluate_in_every_movement');
             $table->boolean('is_active');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
