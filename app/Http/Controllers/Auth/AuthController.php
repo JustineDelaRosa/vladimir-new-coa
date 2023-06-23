@@ -64,6 +64,10 @@ class AuthController extends Controller
         $new_password = $request->new_password;
         $auth_id = auth('sanctum')->user()->id;
         $user = User::where('id', $auth_id)->first();
+
+        if($old_password == $new_password){
+            return response()->json(['message' => 'Old and New Password Match'], 422);
+        }
         $decryptedPassword = Crypt::decryptString($user->password);
         if ($old_password != $decryptedPassword) {
             return response()->json(['message' => 'Password not match!!'], 422);

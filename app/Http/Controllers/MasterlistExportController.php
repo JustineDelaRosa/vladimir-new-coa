@@ -22,12 +22,14 @@ class MasterlistExportController extends Controller
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
         $faStatus = $request->get('faStatus');
-        if ($faStatus == NULL) {
-            //get all statuses other than Disposed
-            $faStatus =  array("Good", "For Repair", "For Disposal", "Spare", "Sold", "Write Off");
-        }
-        if ($faStatus == "Disposed") {
-            $faStatus = "Disposed";
+        if ($faStatus === null) {
+            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off'];
+        } elseif($faStatus == 'Disposed, Sold'){
+            $faStatus = ['Disposed', 'Sold'];
+        }else {
+            $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
+                return $status !== 'Disposed';
+            });
         }
 
         if($startDate != null && $endDate != null){
@@ -46,12 +48,7 @@ class MasterlistExportController extends Controller
                     },
                 ])
                 ->where(function ($query) use ($faStatus) {
-                    //array of status or not array
-                    if (is_array($faStatus)) {
-                        $query->whereIn('faStatus', $faStatus);
-                    } else {
-                        $query->where('faStatus', $faStatus);
-                    }
+                    $query->whereIn('faStatus', $faStatus);
                 })
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->get();
@@ -73,8 +70,7 @@ class MasterlistExportController extends Controller
                 },
             ])
             ->Where(function ($query) use ($search, $startDate, $endDate) {
-                $query->Where('capex', 'LIKE', '%'.$search.'%')
-                    ->orWhere('project_name', 'LIKE', '%'.$search.'%')
+                $query->Where('project_name', 'LIKE', '%'.$search.'%')
                     ->orWhere('vladimir_tag_number', 'LIKE', '%'.$search.'%')
                     ->orWhere('tag_number', 'LIKE', '%'.$search.'%')
                     ->orWhere('tag_number_old', 'LIKE', '%'.$search.'%')
@@ -199,7 +195,7 @@ class MasterlistExportController extends Controller
         foreach ($fixedAssets as $fixed_asset) {
             $fixed_assets_arr[] = [
                 'id' => $fixed_asset->id,
-                'capex' => $fixed_asset->capex,
+                'capex' => $fixed_asset->capex->capex ?? '-',
                 'project_name' => $fixed_asset->project_name,
                 'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
                 'tag_number' => $fixed_asset->tag_number,
@@ -213,6 +209,7 @@ class MasterlistExportController extends Controller
                 'division' => $fixed_asset->division->division_name,
                 'major_category' => $fixed_asset->majorCategory->major_category_name,
                 'minor_category' => $fixed_asset->minorCategory->minor_category_name,
+                'capitalized' => $fixed_asset->capitalized,
                 'voucher' => $fixed_asset->voucher,
                 'receipt' => $fixed_asset->receipt,
                 'quantity' => $fixed_asset->quantity,
@@ -231,6 +228,7 @@ class MasterlistExportController extends Controller
                 'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year,
                 'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month,
                 'remaining_book_value' => $fixed_asset->formula->remaining_book_value,
+                'released_date' => $fixed_asset->formula->released_date,
                 'start_depreciation' => $fixed_asset->formula->start_depreciation,
                 'company_code' => $fixed_asset->company->company_code,
                 'company_name' => $fixed_asset->company->company_name,

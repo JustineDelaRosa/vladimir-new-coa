@@ -26,8 +26,13 @@ class FixedAssetUpdateRequest extends FormRequest
     {
         $id = $this->route()->parameter('fixed_asset');
         return [
-            'capex' => 'nullable',
-            'project_name' => 'nullable',
+            'capex_id' => 'nullable|exists:capexes,id',
+            'project_name' => ['nullable', function ($attribute, $value, $fail) {
+                $capex = \App\Models\Capex::find(request()->capex_id);
+                if ($capex->project_name != $value) {
+                    $fail('Invalid project name');
+                }
+            }],
             'tag_number' => ['nullable', function ($attribute, $value, $fail) use ($id) {
                 //if the value id "-" and the is_old_asset is true return fail error
                 if($value == "-" && $this->is_old_asset){
@@ -54,7 +59,17 @@ class FixedAssetUpdateRequest extends FormRequest
             'type_of_request_id' => 'required',
             'asset_specification' => 'required',
             'accountability' => 'required',
-            'accountable' => 'required',
+            'accountable' => ['required',function ($attribute, $value, $fail) {
+                $accountability = request()->input('accountable');
+                $fullIdNumber = $accountability['general_info']['full_id_number'];
+                //change the value of accountable to full id number
+                request()->merge(['accountable' => $fullIdNumber]);
+
+                // Example validation:
+                if (!$fullIdNumber) {
+                    $fail('Full ID number is required');
+                }
+            }],
             'cellphone_number' => 'nullable|numeric|digits:11',
             'brand' => 'required',
             'division_id' => 'required|exists:divisions,id',
@@ -71,7 +86,7 @@ class FixedAssetUpdateRequest extends FormRequest
                     }
                 }
             }],
-            'faStatus' => 'required|in:Good,For Disposal,For Repair,Spare,Sold,Write off',
+            'faStatus' => 'required|in:Good,For Disposal,For Repair,Spare,Sold,Write Off',
             'depreciation_method' => 'required',
             'est_useful_life' => ['required', 'numeric', 'max:100'],
             'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
@@ -85,6 +100,7 @@ class FixedAssetUpdateRequest extends FormRequest
             'depreciation_per_year' => ['nullable', 'numeric'],
             'depreciation_per_month' => ['nullable', 'numeric'],
             'remaining_book_value' => ['nullable', 'numeric'],
+            'release_date' => ['required', 'date_format:Y-m'],
             'start_depreciation' => ['required', 'date_format:Y-m'],
             'company_id' => 'required|exists:companies,id',
             'department_id' => 'required|exists:departments,id',
@@ -146,6 +162,7 @@ class FixedAssetUpdateRequest extends FormRequest
             'depreciation_per_month.numeric' => 'Depreciation per month must be a number',
             'remaining_book_value.required' => 'Remaining book value is required',
             'remaining_book_value.numeric' => 'Remaining book value must be a number',
+            'release_date.required' => 'Released date is required',
             'start_depreciation.required' => 'Start depreciation is required',
             'start_depreciation.numeric' => 'Start depreciation must be a number',
             'company_code.required' => 'Company code is required',

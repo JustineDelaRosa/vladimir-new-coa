@@ -15,7 +15,7 @@ class CreateFixedAssetsTable extends Migration
     {
         Schema::create('fixed_assets', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('capex')->nullable();
+            $table->unsignedInteger('capex_id')->nullable();
             $table->string('project_name');
             $table->string('vladimir_tag_number');
             $table->string('tag_number');
@@ -25,6 +25,7 @@ class CreateFixedAssetsTable extends Migration
             $table->string('asset_specification');
             $table->string('accountability');
             $table->string('accountable');
+            $table->string('capitalized')->default('Capitalized');
             $table->string('cellphone_number');
             $table->string('brand');
             $table->unsignedInteger('major_category_id');
@@ -51,6 +52,10 @@ class CreateFixedAssetsTable extends Migration
             $table->string('account_title');
             $table->softDeletes();
             $table->timestamps();
+            $table->foreign('capex_id')
+                ->references('id')
+                ->on('capexes')
+                ->onDelete('cascade');
              $table->foreign('type_of_request_id')
                  ->references('id')
                  ->on('type_of_requests')

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\FixedAsset;
 
+use App\Models\Capex;
 use App\Models\FixedAsset;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -26,10 +27,9 @@ class FixedAssetRequest extends FormRequest
     {
         //Adding of Fixed Asset
         if ($this->isMethod('post') &&
-            ($this->capex == '-' && $this->project_name == '-') ||
             ($this->capex == null && $this->project_name == null)) {
             return [
-                'capex' => 'nullable',
+                'capex_id' => 'nullable',
                 'project_name' => 'nullable',
                 'tag_number' => ['nullable', function ($attribute, $value, $fail) {
                     //if the value id "-" and the is_old_asset is true return fail error
@@ -55,7 +55,17 @@ class FixedAssetRequest extends FormRequest
                 'type_of_request_id' => 'required',
                 'asset_specification' => 'required',
                 'accountability' => 'required',
-                'accountable' => 'required',
+                'accountable' => ['required',function ($attribute, $value, $fail) {
+                    $accountability = request()->input('accountable');
+                    $fullIdNumber = $accountability['general_info']['full_id_number'];
+                    //change the value of accountable to full id number
+                    request()->merge(['accountable' => $fullIdNumber]);
+
+                    // Example validation:
+                    if (!$fullIdNumber) {
+                        $fail('Full ID number is required');
+                    }
+                }],
                 'cellphone_number' => 'nullable|numeric|digits:11',
                 'brand' => 'nullable',
                 'division_id' => 'required|exists:divisions,id',
@@ -85,6 +95,7 @@ class FixedAssetRequest extends FormRequest
                 'depreciation_per_year' => ['nullable', 'numeric'],
                 'depreciation_per_month' => ['nullable', 'numeric'],
                 'remaining_book_value' => ['nullable', 'numeric'],
+                'release_date' => ['required', 'date_format:Y-m'],
                 'start_depreciation' => ['required', 'date_format:Y-m'],
                 'company_id' => 'required|exists:companies,id',
                 'department_id' => 'required|exists:departments,id',
@@ -93,12 +104,20 @@ class FixedAssetRequest extends FormRequest
             ];
         }
 
-        if ($this->isMethod('post') &&
-            ($this->capex != '-' && $this->project_name != '-') ||
-            ($this->capex != null && $this->project_name != null)) {
+        if ($this->isMethod('post')){
             return [
-                'capex' => 'required|unique:fixed_assets,capex',
-                'project_name' => 'required',
+                'capex_id' => 'required|exists:capexes,id',
+                //check if this is the project name of selected capex_id
+                'project_name' => ['required', function ($attribute, $value, $fail) {
+                    $capex = Capex::find(request()->capex_id);
+                    if (!$capex) {
+                        $fail('Invalid capex selected');
+                        return;
+                    }
+                    if ($value != $capex->project_name) {
+                        $fail('Project                                                                                                                                                                                                                     name is not the same as the selected capex');
+                    }
+                }],
                 'tag_number' => ['nullable', function ($attribute, $value, $fail) {
                     //if the value id "-" and the is_old_asset is true return fail error
                     if($value == "-" && $this->is_old_asset){
@@ -123,7 +142,17 @@ class FixedAssetRequest extends FormRequest
                 'type_of_request_id' => 'required',
                 'asset_specification' => 'required',
                 'accountability' => 'required',
-                'accountable' => 'required',
+                'accountable' => ['required',function ($attribute, $value, $fail) {
+                    $accountability = request()->input('accountable');
+                    $fullIdNumber = $accountability['general_info']['full_id_number'];
+                    //change the value of accountable to full id number
+                    request()->merge(['accountable' => $fullIdNumber]);
+
+                    // Example validation:
+                    if (!$fullIdNumber) {
+                        $fail('Full ID number is required');
+                    }
+                }],
                 'cellphone_number' => 'nullable|numeric|digits:11',
                 'brand' => 'nullable',
                 'division_id' => 'required|exists:divisions,id',
@@ -153,6 +182,7 @@ class FixedAssetRequest extends FormRequest
                 'depreciation_per_year' => ['nullable', 'numeric'],
                 'depreciation_per_month' => ['nullable', 'numeric'],
                 'remaining_book_value' => ['nullable', 'numeric'],
+                'release_date' => ['required', 'date_format:Y-m'],
                 'start_depreciation' => ['required', 'date_format:Y-m'],
                 'company_id' => 'required|exists:companies,id',
                 'department_id' => 'required|exists:departments,id',
@@ -170,9 +200,10 @@ class FixedAssetRequest extends FormRequest
     function messages(): array
     {
         return [
-            'capex.required' => 'Capex is required',
-            'capex.unique' => 'Capex already exists',
+            'capex_id.required' => 'Capex is required',
+            'capex_id.exists' => 'Capex does not exist',
             'project_name.required' => 'Project name is required',
+            'project_name.exists' => 'Project name does not exist',
             'tag_number.required' => 'Tag number is required',
             'tag_number_old.required' => 'Tag number old is required',
             'asset_description.required' => 'Asset description is required',
@@ -219,6 +250,7 @@ class FixedAssetRequest extends FormRequest
             'depreciation_per_month.numeric' => 'Depreciation per month must be a number',
             'remaining_book_value.required' => 'Remaining book value is required',
             'remaining_book_value.numeric' => 'Remaining book value must be a number',
+            'release_date.required' => 'Release date is required',
             'start_depreciation.required' => 'Start depreciation is required',
             'start_depreciation.numeric' => 'Start depreciation must be a number',
             'company_code.required' => 'Company code is required',

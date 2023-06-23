@@ -18,9 +18,13 @@ class MasterlistImportController extends Controller
         $file = $request->file('file')->store('import');
 
         Excel::import(new MasterlistImport, $file);
+
+        //put into an array the data from the excel file
+        $data = Excel::toArray(new MasterlistImport, $file);
         return response()->json(
             [
                 'message' => 'Masterlist imported successfully.',
+                'data' => $data
             ],
             200
         );

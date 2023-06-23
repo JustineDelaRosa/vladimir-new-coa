@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CapexController;
 use App\Http\Controllers\FixedAssetController;
 use App\Http\Controllers\MasterlistExportController;
 use App\Http\Controllers\PrintBarcode\PrintBarCodeController;
@@ -125,6 +126,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::put('division/archived-division/{id}', [DivisionController::class, 'archived']);
     Route::get('divisions/search', [DivisionController::class, 'search']);
 
+    //Capex
+    Route::resource('capex', CapexController::class);
+    Route::patch('capex/archived-capex/{id}', [CapexController::class, 'archived']);
+
     //materlist import
     Route::post('/import-masterlist', [MasterlistImportController::class, 'masterlistImport']);
     //materlist export
@@ -143,4 +148,5 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //type of request
     Route::resource('type-of-request', TypeOfRequestController::class);
+    Route::patch('type-of-request/archived-tor/{id}', [TypeOfRequestController::class, 'archived']);
 });

@@ -17,7 +17,7 @@ class DivisionController extends Controller
     public function index()
     {
         //user division model then get major category and minor catery using major category
-        $division = Division::with('major_category')->get();
+        $division = Division::get();
         return response()->json([
             'data' => $division
         ], 200);
@@ -56,7 +56,7 @@ class DivisionController extends Controller
         if (!$division->where('id', $id)->exists()) {
             return response()->json(['error' => 'Division Route Not Found'], 404);
         }
-        return $division->where('id', $id)->with('major_category')->first();
+        return $division->where('id', $id)->first();
     }
 
     /**

@@ -107,7 +107,7 @@ class PrintBarCodeController extends Controller
        })
             ->orderBy('id', 'ASC')
             ->select('vladimir_tag_number', 'asset_description','id')
-            ->chunk(500, function ($assets)use (&$result) {
+            ->chunk(500, function ($assets) use (&$result) {
                foreach ($assets as $asset) {
                      $result[] = [
                           'vladimir_tag_number' => $asset->vladimir_tag_number,

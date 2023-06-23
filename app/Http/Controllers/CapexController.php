@@ -139,10 +139,10 @@ class CapexController extends Controller
                     'message' => 'No Changes.'
                 ], 200);
             }else{
-//                $checkFixedAsset = FixedAsset::where('capex_id', $id)->exists();
-//                if ($checkFixedAsset) {
-//                    return response()->json(['error' => 'Unable to archived , Capex is still in use!'], 409);
-//                }
+                $checkFixedAsset = FixedAsset::where('capex_id', $id)->exists();
+                if ($checkFixedAsset) {
+                    return response()->json(['error' => 'Unable to archived , Capex is still in use!'], 409);
+                }
                 if(Capex::where('id', $id)->exists()){
                     $updateCapex = Capex::Where('id', $id)->update([
                         'is_active' => false,

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\Capex;
+namespace App\Http\Requests\TypeOfRequest;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class CapexRequest extends FormRequest
+class TypeOfRequestRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,16 +25,14 @@ class CapexRequest extends FormRequest
     {
         if($this->isMethod('post')){
             return [
-              'capex' => 'required|unique:capexes,capex',
-                'project_name' => 'required|unique:capexes,project_name',
+                'type_of_request_name' => 'required|unique:type_of_requests,type_of_request_name',
             ];
         }
-        if($this->isMethod('put') && ($this->route()->parameter('capex'))){
-            $id = $this->route()->parameter('capex');
+        if($this->isMethod('put') && ($this->route()->parameter('type_of_request'))){
+            $id = $this->route()->parameter('type_of_request');
             return [
                 //unique ignore his own id
-                'capex' => 'required|unique:capexes,capex,'.$id,
-                'project_name' => 'required|unique:capexes,project_name,'.$id,
+                'type_of_request_name' => 'required|unique:type_of_requests,type_of_request_name,'.$id,
             ];
         }
 
@@ -44,8 +42,4 @@ class CapexRequest extends FormRequest
             ];
         }
     }
-
-
-
-
 }
