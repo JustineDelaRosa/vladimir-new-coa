@@ -64,13 +64,11 @@ class MasterlistExport implements
                 },
             ])
             ->when($search, function ($query, $search) {
-                return  $query->where('capex',$search)
-                    ->orWhere('project_name',$search)
+                return  $query->Where('project_name',$search)
                     ->orWhere('vladimir_tag_number',$search)
                     ->orWhere('tag_number',$search)
                     ->orWhere('tag_number_old',$search)
                     //->orWhere('asset_description',$search)
-                    ->orWhere('type_of_request',$search)
                     ->orWhere('accountability',$search)
                     ->orWhere('accountable',$search)
                     ->orWhere('brand',$search)
@@ -113,13 +111,13 @@ class MasterlistExport implements
     public function map($fixedAsset): array
     {
         return [
-            $fixedAsset->capex,
+            $fixedAsset->capex->capex ?? '-',
             $fixedAsset->project_name,
             $fixedAsset->vladimir_tag_number,
             $fixedAsset->tag_number,
             $fixedAsset->tag_number_old,
             $fixedAsset->asset_description,
-            $fixedAsset->type_of_request,
+            $fixedAsset->typeOfRequest->type_of_request_name,
             $fixedAsset->asset_specification,
             $fixedAsset->accountability,
             $fixedAsset->accountable,
@@ -145,6 +143,7 @@ class MasterlistExport implements
             $fixedAsset->formula->depreciation_per_year,
             $fixedAsset->formula->depreciation_per_month,
             $fixedAsset->formula->remaining_book_value,
+            $fixedAsset->formula->released_date,
             $fixedAsset->formula->start_depreciation,
             $fixedAsset->company->company_code,
             $fixedAsset->company->company_name,
@@ -192,6 +191,7 @@ class MasterlistExport implements
             'DEPRECIATION PER YEAR',
             'DEPRECIATION PER MONTH',
             'REMAINING BOOK VALUE',
+            'RELEASE DATE',
             'START DEPRECIATION',
             'COMPANY CODE',
             'COMPANY',
@@ -227,7 +227,7 @@ class MasterlistExport implements
 
         return[
           AfterSheet::class => function(AfterSheet $event){
-              $event->sheet->getStyle('A1:AO1')->applyFromArray([
+              $event->sheet->getStyle('A1:AP1')->applyFromArray([
                   //capitalized all header
                   'font' => [
                       'bold' => true,
@@ -239,7 +239,6 @@ class MasterlistExport implements
                   'fill' => [
                       'fillType' => Fill::FILL_SOLID,
                       'startColor' => [
-                          //color yellow
                           'rgb' => 'FFFF00'
                       ],
                   ],

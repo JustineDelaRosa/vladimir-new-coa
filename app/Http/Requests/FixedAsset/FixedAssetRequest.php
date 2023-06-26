@@ -31,7 +31,7 @@ class FixedAssetRequest extends FormRequest
             return [
                 'capex_id' => 'nullable',
                 'project_name' => 'nullable',
-                'tag_number' => ['nullable', function ($attribute, $value, $fail) {
+                'tag_number' => ['nullable', 'max:13', function ($attribute, $value, $fail) {
                     //if the value id "-" and the is_old_asset is true return fail error
                     if($value == "-" && $this->is_old_asset){
                         $fail('This is required for old asset');
@@ -43,7 +43,7 @@ class FixedAssetRequest extends FormRequest
                         $fail('Tag number already exists');
                     }
                 }],
-                'tag_number_old' => ['nullable', function ($attribute, $value, $fail) {
+                'tag_number_old' => ['nullable', 'max:13', function ($attribute, $value, $fail) {
                     $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)
                         ->where('tag_number_old', '!=', '-')
                         ->exists();
@@ -108,7 +108,7 @@ class FixedAssetRequest extends FormRequest
             return [
                 'capex_id' => 'required|exists:capexes,id',
                 //check if this is the project name of selected capex_id
-                'project_name' => ['required', function ($attribute, $value, $fail) {
+                'project_name' => ['required' , function ($attribute, $value, $fail) {
                     $capex = Capex::find(request()->capex_id);
                     if (!$capex) {
                         $fail('Invalid capex selected');
@@ -118,7 +118,7 @@ class FixedAssetRequest extends FormRequest
                         $fail('Project                                                                                                                                                                                                                     name is not the same as the selected capex');
                     }
                 }],
-                'tag_number' => ['nullable', function ($attribute, $value, $fail) {
+                'tag_number' => ['nullable',  'max:13', function ($attribute, $value, $fail) {
                     //if the value id "-" and the is_old_asset is true return fail error
                     if($value == "-" && $this->is_old_asset){
                         $fail('This is required for old asset');
@@ -130,7 +130,7 @@ class FixedAssetRequest extends FormRequest
                         $fail('Tag number already exists');
                     }
                 }],
-                'tag_number_old' => ['nullable', function ($attribute, $value, $fail) {
+                'tag_number_old' => ['nullable', 'max:13', function ($attribute, $value, $fail) {
                     $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)
                         ->where('tag_number_old', '!=', '-')
                         ->exists();
@@ -205,6 +205,8 @@ class FixedAssetRequest extends FormRequest
             'project_name.required' => 'Project name is required',
             'project_name.exists' => 'Project name does not exist',
             'tag_number.required' => 'Tag number is required',
+            'tag_number.max' => 'Tag number must not exceed 13 characters',
+            'tag_number_old.max' => 'Tag number old must not exceed 13 characters',
             'tag_number_old.required' => 'Tag number old is required',
             'asset_description.required' => 'Asset description is required',
             'type_of_request_id.required' => 'Type of request is required',

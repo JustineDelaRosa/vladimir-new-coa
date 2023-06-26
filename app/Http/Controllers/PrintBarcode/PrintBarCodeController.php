@@ -17,7 +17,7 @@ class PrintBarCodeController extends Controller
     public function printBarcode(Request $request)
     {
         $tagNumber = $this->search($request);
-
+//        return $tagNumber;
         if (!$tagNumber) {
             return response()->json(['message' => 'No data found'], 404);
         }
@@ -98,12 +98,50 @@ class PrintBarCodeController extends Controller
         $endDate = $request->get('endDate');
         $result = [];
 
-       $fixedAsset = FixedAsset::where('type_of_request_id', '!=', '2')
-       ->where(function ($query) use ($tagNumber, $startDate, $endDate) {
-                $query->Where('vladimir_tag_number', $tagNumber )
-                    ->orWhere('tag_number',$tagNumber)
-                    ->orWhere('tag_number_old',$tagNumber)
-                    ->orWhereBetween('created_at', [$startDate, $endDate]);
+
+
+        if($startDate != null && $endDate != null && $tagNumber == null){
+            $fixed_assets = FixedAsset::whereBetween('created_at', [$startDate, $endDate])
+                ->orderBy('id', 'ASC')
+                ->select('vladimir_tag_number', 'asset_description','id')
+                ->chunk(500, function ($assets) use (&$result) {
+                    foreach ($assets as $asset) {
+                        $result[] = [
+                            'vladimir_tag_number' => $asset->vladimir_tag_number,
+                            'asset_description' => $asset->asset_description,
+                        ];
+                    }
+                });
+            return $result;
+        }
+
+
+
+        //check if the $tagNumber is an array like 1,2,3,4 and 2 or not like 5728391928321
+        if (strpos($tagNumber, ',') !== false || strlen($tagNumber) < 2) {
+            $tagNumber = explode(',', $tagNumber);
+            $fixed_assets = FixedAsset::whereIn('type_of_request_id', $tagNumber)
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->orderBy('id', 'ASC')
+                ->select('vladimir_tag_number', 'asset_description','id','type_of_request_id')
+                ->chunk(500, function ($assets) use (&$result) {
+                    foreach ($assets as $asset) {
+                        $result[] = [
+                            'vladimir_tag_number' => $asset->vladimir_tag_number,
+                            'asset_description' => $asset->asset_description,
+                            'id' => $asset->id,
+                            'type_of_request_id' => $asset->type_of_request_id,
+                        ];
+                    }
+                });
+            return $result;
+        }
+
+
+       $fixedAsset = FixedAsset::where(function ($query) use ($tagNumber) {
+           $query->Where('vladimir_tag_number', $tagNumber )
+               ->orWhere('tag_number', $tagNumber);
+//               ->orWhereIn('tag_number_old', $tagNumberArray);
        })
             ->orderBy('id', 'ASC')
             ->select('vladimir_tag_number', 'asset_description','id')
@@ -118,4 +156,5 @@ class PrintBarCodeController extends Controller
 
         return $result;
     }
+
 }

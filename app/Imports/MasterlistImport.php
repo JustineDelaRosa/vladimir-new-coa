@@ -122,7 +122,8 @@ class MasterlistImport extends DefaultValueBinder implements
                 'major_category_id' => $majorCategoryId,
                 'minor_category_id' => $minorCategoryId,
                 'voucher' => ucwords(strtolower($collection['voucher'])),
-                'receipt' => ucwords(strtolower($collection['receipt'])),
+                //check for unnecessary spaces and trim them to one space only
+                'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
                 'quantity' => $collection['quantity'],
                 'depreciation_method' => strtoupper($collection['depreciation_method']),
                 'est_useful_life' => $collection['est_useful_life'],
@@ -156,10 +157,9 @@ class MasterlistImport extends DefaultValueBinder implements
                     'depreciation_per_year' => $collection['depreciation_per_year'],
                     'depreciation_per_month' => $collection['depreciation_per_month'],
                     'remaining_book_value' => $collection['remaining_book_value'],
-                    //minus a month to the start depreciation add put it in the released date
-                    'release_date' => Carbon::parse($collection['start_depreciation'])->subMonth()->format('Y-m'),
+                    //minus 1 month to the start depreciation add put it in the released date
+                    'release_date' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->subMonth()->format('Y-m'),
                     'start_depreciation' => substr_replace($collection['start_depreciation'], '-', 4, 0),
-
                 ]
             );
 

@@ -51,7 +51,7 @@ Route::post('/auth/login', [AuthController::class, 'Login']);
 // Route::resource('user', UserController::class);
 
 
-
+Route::get('/export-masterlist', [MasterlistExportController::class, 'export']);
 
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
@@ -133,7 +133,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //materlist import
     Route::post('/import-masterlist', [MasterlistImportController::class, 'masterlistImport']);
     //materlist export
-    Route::get('/export-masterlist', [MasterlistExportController::class, 'export']);
+
 
     //fixed asset
     Route::resource('fixed-asset', FixedAssetController::class);

@@ -430,8 +430,6 @@ class FixedAssetController extends Controller
                 'faStatus.in' => 'Status must be Good, For Disposal, Disposed, For Repair, Spare, Sold, Write Off.',
             ]);
 
-        //TODO: Check for possible way to change status to other than "Disposed"
-        //uppercase first letter of status
         $faStatus = $request->faStatus;
         $faStatus = ucwords($faStatus);
         $fixedAsset = FixedAsset::query();
@@ -475,8 +473,14 @@ class FixedAssetController extends Controller
 
         if ($faStatus === null) {
             $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off'];
-        } elseif ($faStatus == 'Disposed, Sold') {
-            $faStatus = ['Disposed', 'Sold'];
+        } elseif ($faStatus == 'Disposed, Sold' || $faStatus == 'Disposed' || $faStatus == 'Sold') {
+            if($faStatus == 'Disposed, Sold'){
+                $faStatus = ['Disposed', 'Sold'];
+            }elseif($faStatus == 'Sold'){
+                $faStatus = ['Sold'];
+            }elseif($faStatus == 'Disposed'){
+                $faStatus = ['Disposed'];
+            }
         } else {
             $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
                 return $status !== 'Disposed';
@@ -536,7 +540,7 @@ class FixedAssetController extends Controller
                     $query->where('account_title_name', 'LIKE', '%' . $search . '%');
                 });
             })
-            ->orderBy('id', 'ASC')
+            ->orderBy('id', 'DESC')
             ->paginate($limit);
 
 
@@ -768,7 +772,6 @@ class FixedAssetController extends Controller
         $remaining_book_value = $this->getRemainingBookValue($original_cost, $accumulated_cost);
 
 
-        //if depreciation method is one time, it only depreciates once and will not depreciate again
         if ($fixedAsset->depreciation_method == 'One Time') {
             $age = 0.083333333333333;
             $monthly_depreciation = $this->getMonthlyDepreciation($original_cost, $scrap_value, $age);
@@ -779,7 +782,12 @@ class FixedAssetController extends Controller
                     'original_cost' => $original_cost,
                     'start_depreciation' => $start_depreciation,
                     'end_depreciation' => $end_depreciation,
-                    'depreciation' => $monthly_depreciation
+                    'depreciation' => $monthly_depreciation,
+                    'depreciation_per_month' => 0,
+                    'depreciation_per_year' => 0,
+                    'accumulated_cost' => 0,
+                    'remaining_book_value' => 0,
+
                 ]
             ], 200);
         }
@@ -797,7 +805,6 @@ class FixedAssetController extends Controller
                 'depreciation_per_year' => $yearly_depreciation,
                 'accumulated_cost' => $accumulated_cost,
                 'remaining_book_value' => $remaining_book_value,
-
             ]
         ], 200);
 
@@ -810,18 +817,18 @@ class FixedAssetController extends Controller
         return $start_depreciation->diffInMonths($custom_end_depreciation->addMonth(1));
     }
 
-    private function getYearlyDepreciation($original_cost, $scrap_value, $est_useful_life)
+    private function getYearlyDepreciation($original_cost, $scrap_value, $est_useful_life): float
     {
         return round(($original_cost - $scrap_value) / $est_useful_life, 2);
     }
 
-    private function getMonthlyDepreciation($original_cost, $scrap_value, $est_useful_life)
+    private function getMonthlyDepreciation($original_cost, $scrap_value, $est_useful_life): float
     {
         $yearly = ($original_cost - $scrap_value) / $est_useful_life;
         return round($yearly / 12, 2);
     }
 
-    private function dateValidation($date, $start_depreciation, $end_depreciation)
+    private function dateValidation($date, $start_depreciation, $end_depreciation): bool
     {
         $date = Carbon::parse($date);
         $start_depreciation = Carbon::parse($start_depreciation);
@@ -833,13 +840,13 @@ class FixedAssetController extends Controller
         }
     }
 
-    private function getAccumulatedCost($monthly_depreciation, float $custom_age)
+    private function getAccumulatedCost($monthly_depreciation, float $custom_age): float
     {
         $accumulated_cost = $monthly_depreciation * $custom_age;
-        return round($accumulated_cost, 2);
+        return round($accumulated_cost);
     }
 
-    private function getRemainingBookValue($original_cost, float $accumulated_cost)
+    private function getRemainingBookValue($original_cost, float $accumulated_cost): float
     {
         $remaining_book_value = $original_cost - $accumulated_cost;
         return round($remaining_book_value);
