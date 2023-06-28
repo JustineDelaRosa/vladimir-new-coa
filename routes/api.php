@@ -4,6 +4,7 @@ use App\Http\Controllers\CapexController;
 use App\Http\Controllers\FixedAssetController;
 use App\Http\Controllers\MasterlistExportController;
 use App\Http\Controllers\PrintBarcode\PrintBarCodeController;
+use App\Http\Controllers\PrinterIPController;
 use App\Http\Controllers\TypeOfRequestController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -51,7 +52,7 @@ Route::post('/auth/login', [AuthController::class, 'Login']);
 // Route::resource('user', UserController::class);
 
 
-Route::get('/export-masterlist', [MasterlistExportController::class, 'export']);
+
 
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
@@ -133,7 +134,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //materlist import
     Route::post('/import-masterlist', [MasterlistImportController::class, 'masterlistImport']);
     //materlist export
-
+    Route::get('/export-masterlist', [MasterlistExportController::class, 'export']);
 
     //fixed asset
     Route::resource('fixed-asset', FixedAssetController::class);
@@ -149,4 +150,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //type of request
     Route::resource('type-of-request', TypeOfRequestController::class);
     Route::patch('type-of-request/archived-tor/{id}', [TypeOfRequestController::class, 'archived']);
+
+    //PrinterIp
+    Route::resource('printer-ip', PrinterIpController::class);
+    Route::patch('activateIp', [PrinterIpController::class, 'activateIP']);
 });

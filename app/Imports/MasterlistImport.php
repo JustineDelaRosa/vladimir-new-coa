@@ -153,15 +153,16 @@ class MasterlistImport extends DefaultValueBinder implements
                     'original_cost' => $collection['original_cost'],
                     'accumulated_cost' => $collection['accumulated_cost'],
                     'age' => $collection['age'],
-                    'end_depreciation' => substr_replace($collection['end_depreciation'], '-', 4, 0),
+                    'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears($collection['est_useful_life'])->subMonth(1)->format('Y-m'),
                     'depreciation_per_year' => $collection['depreciation_per_year'],
                     'depreciation_per_month' => $collection['depreciation_per_month'],
                     'remaining_book_value' => $collection['remaining_book_value'],
-                    //minus 1 month to the start depreciation add put it in the released date
                     'release_date' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->subMonth()->format('Y-m'),
                     'start_depreciation' => substr_replace($collection['start_depreciation'], '-', 4, 0),
                 ]
             );
+
+
 
 //            if the is_status is false, delete the fixed asset and formula
 //            if (!$fixedAsset->is_active) {
@@ -210,7 +211,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.tag_number' => ['required', 'regex:/^([0-9-]{6,13}|-)$/', function ($attribute, $value, $fail) use ($collections) {
                 $duplicate = $collections->where('tag_number', $value)->where('tag_number', '!=', '-')->count();
                 if ($duplicate > 1) {
-                    $fail('Tag number in row ' . $attribute[0] . ' is not unique' . $duplicate);
+                    $fail('Tag number in row ' . $attribute[0] . ' is not unique');
                 }
                 //check in a database
                 $fixed_asset = FixedAsset::withTrashed()->where('tag_number', $value)->where('tag_number', '!=', '-')->first();
@@ -272,7 +273,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.voucher' => 'required',
             '*.receipt' => 'required',
             '*.quantity' => 'required|numeric',
-            '*.depreciation_method' => 'required',
+            '*.depreciation_method' => 'required|in:STL,One Time',
             '*.est_useful_life' => ['required'],
             '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date'],
             '*.acquisition_cost' => ['required', 'regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
@@ -309,7 +310,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.asset_description.required' => 'Description is required',
             '*.type_of_request.required' => 'Type of Request is required',
             '*.type_of_request.in' => 'Invalid Type of Request',
-            '*.asset_specification.required' => 'Additional Description is required',
+            '*.additional_description.required' => 'Additional Description is required',
             '*.accountability.required' => 'Accountability is required',
             '*.accountable.required' => 'accountable is required',
             '*.cellphone_number.required' => 'Cellphone Number is required',
@@ -323,6 +324,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.quantity.required' => 'Quantity is required',
             '*.quantity.numeric' => 'Quantity must be a number',
             '*.depreciation_method.required' => 'Depreciation Method is required',
+            '*.depreciation_method.in' => 'The selected depreciation method is invalid.',
             '*.est_useful_life.required' => 'Est Useful Life is required',
             '*.acquisition_date.required' => 'Acquisition Date is required',
             '*.acquisition_cost.required' => 'Acquisition Cost is required',

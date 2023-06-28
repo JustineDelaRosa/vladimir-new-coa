@@ -33,7 +33,7 @@ class FixedAssetUpdateRequest extends FormRequest
                     $fail('Invalid project name');
                 }
             }],
-            'tag_number' => ['nullable', function ($attribute, $value, $fail) use ($id) {
+            'tag_number' => ['nullable', 'max:13', function ($attribute, $value, $fail) use ($id) {
                 //if the value id "-" and the is_old_asset is true return fail error
                 if($value == "-" && $this->is_old_asset){
                     $fail('This is required for old asset');
@@ -46,7 +46,7 @@ class FixedAssetUpdateRequest extends FormRequest
                     $fail('Tag number already exists');
                 }
             }],
-            'tag_number_old' => ['nullable', function ($attribute, $value, $fail) use ($id) {
+            'tag_number_old' => ['nullable', 'max:13', function ($attribute, $value, $fail) use ($id) {
                 $tag_number_old = FixedAsset::withTrashed()->where('tag_number_old', $value)
                     ->where('tag_number_old', '!=', '-')
                     ->where('id', '!=', $id)

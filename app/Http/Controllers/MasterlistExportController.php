@@ -7,6 +7,7 @@ use App\Models\FixedAsset;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
+
 class MasterlistExportController extends Controller
 {
     public function export(Request $request)

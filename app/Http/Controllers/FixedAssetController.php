@@ -124,7 +124,7 @@ class FixedAssetController extends Controller
             'original_cost' => $request->original_cost,
             'accumulated_cost' => $request->accumulated_cost ?? 0,
             'age' => $request->age,
-            'end_depreciation' => $request->end_depreciation,
+            'end_depreciation' => $this->getEndDepreciation($request->start_depreciation, $request->est_useful_life),
             'depreciation_per_year' => $request->depreciation_per_year ?? 0,
             'depreciation_per_month' => $request->depreciation_per_month ?? 0,
             'remaining_book_value' => $request->remaining_book_value ?? 0,
@@ -338,7 +338,7 @@ class FixedAssetController extends Controller
                 'original_cost' => $request->original_cost,
                 'accumulated_cost' => $request->accumulated_cost ?? 0,
                 'age' => $request->age,
-                'end_depreciation' => $request->end_depreciation,
+                'end_depreciation' => $this->getEndDepreciation($request->start_depreciation, $request->est_useful_life),
                 'depreciation_per_year' => $request->depreciation_per_year ?? 0,
                 'depreciation_per_month' => $request->depreciation_per_month ?? 0,
                 'remaining_book_value' => $request->remaining_book_value ?? 0,
@@ -752,6 +752,7 @@ class FixedAssetController extends Controller
         $original_cost = $fixedAsset->formula->original_cost;
         $scrap_value = $fixedAsset->formula->scrap_value;
         $end_depreciation = $fixedAsset->formula->end_depreciation;
+        $release_date = $fixedAsset->formula->release_date;
         $custom_end_depreciation = $validator->validated()['date'];
 
         if ($custom_end_depreciation == date('Y-m')) {
@@ -852,4 +853,9 @@ class FixedAssetController extends Controller
         return round($remaining_book_value);
     }
 
+    public function getEndDepreciation($start_depreciation, $est_useful_life)
+    {
+        $start_depreciation = Carbon::parse($start_depreciation);
+        return $start_depreciation->addYears($est_useful_life)->subMonth(1)->format('Y-m');
+    }
 }

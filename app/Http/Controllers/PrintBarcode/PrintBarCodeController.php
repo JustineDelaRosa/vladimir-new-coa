@@ -4,6 +4,7 @@ namespace App\Http\Controllers\PrintBarcode;
 //require __DIR__ . '/../../../../vendor/autoload.php';
 use App\Http\Controllers\Controller;
 use App\Models\FixedAsset;
+use App\Models\PrinterIP;
 use Exception;
 use Illuminate\Http\Request;
 use Mike42\Escpos\PrintConnectors\FilePrintConnector;
@@ -23,14 +24,17 @@ class PrintBarCodeController extends Controller
         }
 
 
-        try {
 
+
+        try {
+            //get the ip from ative printerIP table in a database
+            $printerIP = PrinterIP::where('is_active', true)->first()->ip;
             // Initialize the WindowsPrintConnector with the COM port and baud rate
             //$connector = new WindowsPrintConnector("COM1");
             // $connector = new NetworkPrintConnector("10.10.10.11" , 8000);
-            $connector = new WindowsPrintConnector("ZDesigner ZD230-203dpi ZPL");
+//            $connector = new WindowsPrintConnector("ZDesigner ZD230-203dpi ZPL");
             //$printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
-            //$connector = new WindowsPrintConnector("smb://10.10.10.11/ZDesigner ZD230-203dpi ZPL");
+            $connector = new WindowsPrintConnector("smb://{$printerIP}/ZDesigner ZD230-203dpi ZPL");
             //check if the smb://10.10.10.11 is available
 
             // Create a new Printer object and assign the connector to it
@@ -98,62 +102,46 @@ class PrintBarCodeController extends Controller
         $endDate = $request->get('endDate');
         $result = [];
 
+        // Use a single query builder instance to apply different conditions
+        $fixedAsset = FixedAsset::orderBy('id', 'ASC')
+            ->select('vladimir_tag_number', 'asset_description','id','type_of_request_id');
 
-
-        if($startDate != null && $endDate != null && $tagNumber == null){
-            $fixed_assets = FixedAsset::whereBetween('created_at', [$startDate, $endDate])
-                ->orderBy('id', 'ASC')
-                ->select('vladimir_tag_number', 'asset_description','id')
-                ->chunk(500, function ($assets) use (&$result) {
-                    foreach ($assets as $asset) {
-                        $result[] = [
-                            'vladimir_tag_number' => $asset->vladimir_tag_number,
-                            'asset_description' => $asset->asset_description,
-                        ];
-                    }
+        // Use a switch statement to handle different cases based on the input parameters
+        switch (true) {
+            case ($startDate != null && $endDate != null && $tagNumber == null):
+                // Filter by date range only
+                $fixedAsset->whereBetween('created_at', [$startDate, $endDate]);
+                break;
+            case (strpos($tagNumber, ',') !== false || strlen($tagNumber) < 2):
+                // Split the tag number by comma and filter by type of request id
+                $tagNumber = explode(',', $tagNumber);
+                $fixedAsset->whereIn('type_of_request_id', $tagNumber);
+                // Optional filter by date range if provided
+                if ($startDate != null && $endDate != null) {
+                    $fixedAsset->whereBetween('created_at', [$startDate, $endDate]);
+                }
+                break;
+            default:
+                // Filter by vladimir tag number or tag number
+                $fixedAsset->where(function ($query) use ($tagNumber) {
+                    $query->where('vladimir_tag_number', $tagNumber)
+                        ->orWhere('tag_number', $tagNumber);
                 });
-            return $result;
         }
 
+        // Chunk the results and populate the result array
+        $fixedAsset->chunk(500, function ($assets) use (&$result) {
+            foreach ($assets as $asset) {
+                $result[] = [
+                    'vladimir_tag_number' => $asset->vladimir_tag_number,
+                    'asset_description' => $asset->asset_description,
+                    'id' => $asset->id,
+                    'type_of_request_id' => $asset->type_of_request_id ?? null,
+                ];
+            }
+        });
 
-
-        //check if the $tagNumber is an array like 1,2,3,4 and 2 or not like 5728391928321
-        if (strpos($tagNumber, ',') !== false || strlen($tagNumber) < 2) {
-            $tagNumber = explode(',', $tagNumber);
-            $fixed_assets = FixedAsset::whereIn('type_of_request_id', $tagNumber)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->orderBy('id', 'ASC')
-                ->select('vladimir_tag_number', 'asset_description','id','type_of_request_id')
-                ->chunk(500, function ($assets) use (&$result) {
-                    foreach ($assets as $asset) {
-                        $result[] = [
-                            'vladimir_tag_number' => $asset->vladimir_tag_number,
-                            'asset_description' => $asset->asset_description,
-                            'id' => $asset->id,
-                            'type_of_request_id' => $asset->type_of_request_id,
-                        ];
-                    }
-                });
-            return $result;
-        }
-
-
-       $fixedAsset = FixedAsset::where(function ($query) use ($tagNumber) {
-           $query->Where('vladimir_tag_number', $tagNumber )
-               ->orWhere('tag_number', $tagNumber);
-//               ->orWhereIn('tag_number_old', $tagNumberArray);
-       })
-            ->orderBy('id', 'ASC')
-            ->select('vladimir_tag_number', 'asset_description','id')
-            ->chunk(500, function ($assets) use (&$result) {
-               foreach ($assets as $asset) {
-                     $result[] = [
-                          'vladimir_tag_number' => $asset->vladimir_tag_number,
-                          'asset_description' => $asset->asset_description,
-                     ];
-               }
-           });
-
+        // Return the result array
         return $result;
     }
 
