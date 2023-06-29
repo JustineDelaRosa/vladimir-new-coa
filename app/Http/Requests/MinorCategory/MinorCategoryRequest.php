@@ -43,8 +43,11 @@ class MinorCategoryRequest extends FormRequest
         if ($this->isMethod('put') &&  ($this->route()->parameter('minor_category'))) {
             $id = $this->route()->parameter('minor_category');
             return [
-                'major_category_id' => 'required|exists:major_categories,id,deleted_at,NULL',
-                'minor_category_name' => 'required',
+//                'major_category_id' => 'required|exists:major_categories,id,deleted_at,NULL',
+            //based on the id of the minor category, if the minor category name and major category id has duplicate
+                    'minor_category_name' => ['required', Rule::unique('minor_categories')->where(function ($query) use ($id) {
+                        return $query->where('id', '!=', $id);
+                    })],
             ];
         }
 
@@ -68,7 +71,9 @@ class MinorCategoryRequest extends FormRequest
             'major_category_id.required' => 'Major Category is required',
             'major_category_id.exists' => 'Major Category does not exist',
             'minor_category_name.required' => 'Minor Category Name is required',
-            'minor_category_name.unique' => 'Minor Category Name already exists for this major category',
+            'minor_category_name.unique' => 'Minor Category Name already been taken',
+            'minor_category_name.exists' => 'Minor Category does not exist',
+            'minor_category_id.exists' => 'Minor Category does not exist',
             'status.required' => 'Status is required',
             'status.boolean' => 'Status must be boolean',
         ];

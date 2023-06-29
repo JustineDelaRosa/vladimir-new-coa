@@ -16,7 +16,7 @@ class CreateMajorCategoriesTable extends Migration
         Schema::create('major_categories', function (Blueprint $table) {
             $table->increments('id');
             $table->string('major_category_name');
-            $table->integer('est_useful_life');
+            $table->decimal('est_useful_life', 10, 1);
             $table->boolean('is_active');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));

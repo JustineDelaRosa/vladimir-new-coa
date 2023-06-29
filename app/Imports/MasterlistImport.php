@@ -125,11 +125,10 @@ class MasterlistImport extends DefaultValueBinder implements
                 //check for unnecessary spaces and trim them to one space only
                 'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
                 'quantity' => $collection['quantity'],
-                'depreciation_method' => strtoupper($collection['depreciation_method']),
-                'est_useful_life' => $collection['est_useful_life'],
+                'depreciation_method' => ucwords(strtolower($collection['depreciation_method'])),
+                'est_useful_life' => $majorCategory->est_useful_life ?? $collection['est_useful_life'],
                 'acquisition_date' => $collection['acquisition_date'],
                 'acquisition_cost' => $collection['acquisition_cost'],
-//                'is_active' => !($collection['status'] == 'Disposed'), // 'Disposed' or 'Active
                 'faStatus' => $collection['status'],
                 'is_old_asset' => $collection['tag_number'] != '-' || $collection['tag_number_old'] != '-',
                 'care_of' => ucwords(strtolower($collection['care_of'])),
@@ -145,15 +144,16 @@ class MasterlistImport extends DefaultValueBinder implements
 
             $fixedAsset->formula()->create(
                 [
-                    'depreciation_method' => $collection['depreciation_method'],
-                    'est_useful_life' => $collection['est_useful_life'],
+                    'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
+                    'est_useful_life' => $majorCategory->est_useful_life ?? $collection['est_useful_life'],
                     'acquisition_date' => $collection['acquisition_date'],
                     'acquisition_cost' => $collection['acquisition_cost'],
                     'scrap_value' => $collection['scrap_value'],
                     'original_cost' => $collection['original_cost'],
                     'accumulated_cost' => $collection['accumulated_cost'],
                     'age' => $collection['age'],
-                    'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears($collection['est_useful_life'])->subMonth(1)->format('Y-m'),
+                    //est_useful_life is in years with decimal places for months
+                    'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($majorCategory->est_useful_life))->addMonths(floor(($majorCategory->est_useful_life - floor($majorCategory->est_useful_life)) * 12) - 1)->format('Y-m'),
                     'depreciation_per_year' => $collection['depreciation_per_year'],
                     'depreciation_per_month' => $collection['depreciation_per_month'],
                     'remaining_book_value' => $collection['remaining_book_value'],

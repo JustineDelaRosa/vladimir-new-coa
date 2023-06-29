@@ -103,7 +103,8 @@ class PrintBarCodeController extends Controller
         $result = [];
 
         // Use a single query builder instance to apply different conditions
-        $fixedAsset = FixedAsset::orderBy('id', 'ASC')
+        $fixedAsset = FixedAsset::where('type_of_request_id', '!=', '2')
+            ->orderBy('id', 'ASC')
             ->select('vladimir_tag_number', 'asset_description','id','type_of_request_id');
 
         // Use a switch statement to handle different cases based on the input parameters

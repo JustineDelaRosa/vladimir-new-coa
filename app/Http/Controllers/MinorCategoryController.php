@@ -118,47 +118,20 @@ class MinorCategoryController extends Controller
      */
     public function update(MinorCategoryRequest $request, $id)
     {
-        $major_category_id = $request->major_category_id;
         $minor_category_name = ucwords(strtolower($request->minor_category_name));
         // $minor_category_name_check = str_replace(' ', '', $minor_category_name);
 
-        // if (!MinorCategory::where('id', $id)->exists()) {
-        //     return response()->json(['error' => 'Minor Category Route Not Found'], 404);
-        // }
-        // if (!MinorCategory::where('id', $id)->where('major_category_id', $major_category_id)->exists()) {
-        //     return response()->json(['error' => 'Minor Category Route Not Found'], 404);
-        // }
 
         if (MinorCategory::where('id', $id)
-            ->where(['minor_category_name' => $minor_category_name, 'major_category_id' => $major_category_id])
+            ->where(['minor_category_name' => $minor_category_name])
             ->exists()
         ) {
             return response()->json(['message' => 'No Changes'], 200);
         }
 
-        $minorCategory = MinorCategory::withTrashed()
-            ->where('minor_category_name', $minor_category_name)
-            ->where('major_category_id', $major_category_id)
-            ->where('id', '!=', $id)
-            ->exists();
-        if ($minorCategory) {
-            return response()->json(
-                [
-                    'message' => 'The given data was invalid.',
-                    'errors' => [
-                        'minor_category_name' => [
-                            'The minor category name has already been taken.'
-                        ]
-                    ]
-                ],
-                422
-            );
-        }
-
         if (MinorCategory::where('id', $id)->exists()) {
             $update = MinorCategory::where('id', $id)
                 ->update([
-                    'major_category_id' => $major_category_id,
                     'minor_category_name' => $minor_category_name,
                 ]);
             return response()->json(['message' => 'Successfully Updated!'], 200);
@@ -184,7 +157,7 @@ class MinorCategoryController extends Controller
             } else {
                 $checkFixedAsset = FixedAsset::where('minor_category_id', $id)->exists();
                 if ($checkFixedAsset) {
-                    return response()->json(['error' => 'Unable to archived , Minor Category is still in use!'], 409);
+                    return response()->json(['error' => 'Unable to archived , Minor Category is still in use!'], 422);
                 }
                 $updateStatus = $MinorCategory->where('id', $id)->update(['is_active' => false]);
                 $MinorCategory->where('id', $id)->delete();
@@ -197,7 +170,7 @@ class MinorCategoryController extends Controller
             } else {
                 $checkMajorCategory = MajorCategory::where('id', $MinorCategory->where('id', $id)->first()->major_category_id)->exists();
                 if (!$checkMajorCategory) {
-                    return response()->json(['error' => 'Unable to Restore!, Major Category was Archived!'], 409);
+                    return response()->json(['error' => 'Unable to Restore!, Major Category was Archived!'], 422);
                 }
                 $restoreUser = $MinorCategory->withTrashed()->where('id', $id)->restore();
                 $updateStatus = $MinorCategory->update(['is_active' => true]);

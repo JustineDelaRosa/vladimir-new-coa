@@ -35,7 +35,7 @@ class CreateFixedAssetsTable extends Migration
             $table->string('receipt');
             $table->string('quantity');
             $table->string('depreciation_method');
-            $table->integer('est_useful_life');
+            $table->decimal('est_useful_life',18,1);
             $table->date('acquisition_date');
             $table->Biginteger('acquisition_cost');
             $table->string('faStatus');

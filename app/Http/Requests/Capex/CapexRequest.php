@@ -26,15 +26,14 @@ class CapexRequest extends FormRequest
         if($this->isMethod('post')){
             return [
               'capex' => 'required|unique:capexes,capex',
-                'project_name' => 'required|unique:capexes,project_name',
+                'project_name' => 'required',
             ];
         }
         if($this->isMethod('put') && ($this->route()->parameter('capex'))){
             $id = $this->route()->parameter('capex');
             return [
                 //unique ignore his own id
-                'capex' => 'required|unique:capexes,capex,'.$id,
-                'project_name' => 'required|unique:capexes,project_name,'.$id,
+                'project_name' => 'required',
             ];
         }
 

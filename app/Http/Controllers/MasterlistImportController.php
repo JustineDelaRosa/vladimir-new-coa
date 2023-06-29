@@ -15,7 +15,7 @@ class MasterlistImportController extends Controller
             'file' => 'required|mimes:csv,txt,xlx,xls,pdf,xlsx'
         ]);
 
-        $file = $request->file('file')->store('import');
+        $file = $request->file('file');
 
         Excel::import(new MasterlistImport, $file);
 

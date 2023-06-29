@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Division;
+use App\Models\FixedAsset;
 use Illuminate\Http\Request;
 use App\Http\Requests\Division\DivisionRequest;
 use App\Models\MajorCategory;
@@ -110,6 +111,11 @@ class DivisionController extends Controller
             if (!Division::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
+                $checkFixedAsset = FixedAsset::where('division_id', $id)->exists();
+                if ($checkFixedAsset) {
+                    return response()->json(['error' => 'Unable to archived , Division is still in use!'], 422);
+                }
+
                 $updateStatus = $Division->where('id', $id)->update(['is_active' => false]);
                 $Division->where('id', $id)->delete();
                 return response()->json(['message' => 'Successfully Deactived!'], 200);

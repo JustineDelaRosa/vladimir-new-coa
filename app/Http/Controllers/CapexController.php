@@ -93,11 +93,9 @@ class CapexController extends Controller
      */
     public function update(CapexRequest $request, $id)
     {
-        $capex = $request->capex;
         $project_name = ucwords(strtolower($request->project_name));
 
         if(Capex::where('id',$id)->where([
-            'capex' => $capex,
             'project_name' => $project_name
         ])->exists()){
             return response()->json([
@@ -108,7 +106,6 @@ class CapexController extends Controller
 
         if(Capex::where('id', $id)->exists()){
             $updateCapex = Capex::Where('id', $id)->update([
-                'capex' => $capex,
                 'project_name' => $project_name,
             ]);
             return response()->json([

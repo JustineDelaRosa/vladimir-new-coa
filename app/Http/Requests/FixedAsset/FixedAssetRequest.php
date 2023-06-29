@@ -91,12 +91,12 @@ class FixedAssetRequest extends FormRequest
                 'accumulated_cost' => ['nullable', 'numeric'],
                 'care_of' => 'nullable',
                 'age' => 'required|numeric',
-                'end_depreciation' => 'required|date_format:Y-m',
+//                'end_depreciation' => 'required|date_format:Y-m',
                 'depreciation_per_year' => ['nullable', 'numeric'],
                 'depreciation_per_month' => ['nullable', 'numeric'],
                 'remaining_book_value' => ['nullable', 'numeric'],
                 'release_date' => ['required', 'date_format:Y-m'],
-                'start_depreciation' => ['required', 'date_format:Y-m'],
+//                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'company_id' => 'required|exists:companies,id',
                 'department_id' => 'required|exists:departments,id',
                 'location_id' => 'required|exists:locations,id',
@@ -142,17 +142,7 @@ class FixedAssetRequest extends FormRequest
                 'type_of_request_id' => 'required',
                 'asset_specification' => 'required',
                 'accountability' => 'required',
-                'accountable' => ['required',function ($attribute, $value, $fail) {
-                    $accountability = request()->input('accountable');
-                    $fullIdNumber = $accountability['general_info']['full_id_number'];
-                    //change the value of accountable to full id number
-                    request()->merge(['accountable' => $fullIdNumber]);
-
-                    // Example validation:
-                    if (!$fullIdNumber) {
-                        $fail('Full ID number is required');
-                    }
-                }],
+                'accountable' => ['required'],
                 'cellphone_number' => 'nullable|numeric|digits:11',
                 'brand' => 'nullable',
                 'division_id' => 'required|exists:divisions,id',
@@ -178,12 +168,12 @@ class FixedAssetRequest extends FormRequest
                 'accumulated_cost' => ['nullable', 'numeric'],
                 'care_of' => 'nullable',
                 'age' => 'required|numeric',
-                'end_depreciation' => 'required|date_format:Y-m',
+//                'end_depreciation' => 'required|date_format:Y-m',
                 'depreciation_per_year' => ['nullable', 'numeric'],
                 'depreciation_per_month' => ['nullable', 'numeric'],
                 'remaining_book_value' => ['nullable', 'numeric'],
                 'release_date' => ['required', 'date_format:Y-m'],
-                'start_depreciation' => ['required', 'date_format:Y-m'],
+//                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'company_id' => 'required|exists:companies,id',
                 'department_id' => 'required|exists:departments,id',
                 'location_id' => 'required|exists:locations,id',

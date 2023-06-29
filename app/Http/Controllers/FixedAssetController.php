@@ -7,6 +7,7 @@ use App\Http\Requests\FixedAsset\FixedAssetRequest;
 use App\Http\Requests\FixedAsset\FixedAssetUpdateRequest;
 use App\Imports\MasterlistImport;
 use App\Models\AccountTitle;
+use App\Models\Capex;
 use App\Models\Company;
 use App\Models\Department;
 use App\Models\Division;
@@ -15,6 +16,7 @@ use App\Models\Formula;
 use App\Models\Location;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
+use App\Models\TypeOfRequest;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -80,30 +82,30 @@ class FixedAssetController extends Controller
 
         $fixedAsset = FixedAsset::create([
             'capex_id' => $request->capex_id ?? null,
-            'project_name' => $request->project_name ?? '-',
+            'project_name' =>($request->project_name) ?? '-',
             'vladimir_tag_number' => $vladimirTagNumber,
             'tag_number' => $request->tag_number ?? '-',
             'tag_number_old' => $request->tag_number_old ?? '-',
-            'asset_description' => $request->asset_description,
+            'asset_description' =>($request->asset_description),
             'type_of_request_id' => $request->type_of_request_id,
-            'asset_specification' => $request->asset_specification,
-            'accountability' => ucwords(strtolower($request->accountability)),
-            'accountable' => $request->accountable,
+            'asset_specification' =>($request->asset_specification),
+            'accountability' =>($request->accountability),
+            'accountable' =>($request->accountable),
             'cellphone_number' => $request->cellphone_number ?? '-',
-            'brand' => $request->brand ?? '-',
+            'brand' => ucwords(strtolower($request->brand))?? '-',
             'division_id' => $request->division_id,
             'major_category_id' => $request->major_category_id,
             'minor_category_id' => $request->minor_category_id,
             'voucher' => $request->voucher ?? '-',
             'receipt' => $request->receipt ?? '-',
             'quantity' => $request->quantity,
-            'depreciation_method' => $request->depreciation_method,
+            'depreciation_method' =>$request->depreciation_method,
             'est_useful_life' => $request->est_useful_life,
             'acquisition_date' => $request->acquisition_date,
             'acquisition_cost' => $request->acquisition_cost,
-            'faStatus' => $request->faStatus,
+            'faStatus' =>$request->faStatus,
             'is_old_asset' => $request->is_old_asset ?? 0,
-            'care_of' => $request->care_of ?? '-',
+            'care_of' =>ucwords(strtolower($request->care_of)) ?? '-',
             'company_id' => $request->company_id,
             'company_name' => Company::where('id', $request->company_id)->value('company_name'),
             'department_id' => $request->department_id,
@@ -116,7 +118,7 @@ class FixedAssetController extends Controller
 
         $fixedAsset->formula()->create([
 //            $this->assetCalculations($request)
-            'depreciation_method' => $request->depreciation_method,
+            'depreciation_method' =>$request->depreciation_method,
             'est_useful_life' => $request->est_useful_life,
             'acquisition_date' => $request->acquisition_date,
             'acquisition_cost' => $request->acquisition_cost,
@@ -129,7 +131,7 @@ class FixedAssetController extends Controller
             'depreciation_per_month' => $request->depreciation_per_month ?? 0,
             'remaining_book_value' => $request->remaining_book_value ?? 0,
             'release_date' => $request->release_date,
-            'start_depreciation' => $request->start_depreciation
+            'start_depreciation' => $this->getStartDepreciation($request->release_date)
         ]);
 
         if ($request->faStatus == 'Disposed') {
@@ -343,7 +345,7 @@ class FixedAssetController extends Controller
                 'depreciation_per_month' => $request->depreciation_per_month ?? 0,
                 'remaining_book_value' => $request->remaining_book_value ?? 0,
                 'release_date' => $request->release_date,
-                'start_depreciation' => $request->start_depreciation,
+                'start_depreciation' => $this->getStartDepreciation($request->release_date),
             ]);
 
             return response()->json([
@@ -456,6 +458,22 @@ class FixedAssetController extends Controller
                 if (!$checkMinorCategory) {
                     return response()->json(['error' => 'Unable to Restore!, Minor Category was Archived!'], 404);
                 }
+                //division
+                $checkDivision = Division::where('id', $fixedAsset->where('id', $id)->first()->division_id)->exists();
+                if (!$checkDivision) {
+                    return response()->json(['error' => 'Unable to Restore!, Division was Archived!'], 404);
+                }
+                //capex
+                $checkCapex = Capex::where('id', $fixedAsset->where('id', $id)->first()->capex_id)->exists();
+                if (!$checkCapex) {
+                    return response()->json(['error' => 'Unable to Restore!, Capex was Archived!'], 404);
+                }
+                //typeofrequest
+                $checkTypeOfRequest = TypeOfRequest::where('id', $fixedAsset->where('id', $id)->first()->type_of_request_id)->exists();
+                if (!$checkTypeOfRequest) {
+                    return response()->json(['error' => 'Unable to Restore!, Type of Request was Archived!'], 404);
+                }
+
                 $fixedAsset->withTrashed()->where('id', $id)->restore();
                 $fixedAsset->update(['faStatus' => $faStatus]);
                 $formula->where('fixed_asset_id', $id)->restore();
@@ -856,6 +874,104 @@ class FixedAssetController extends Controller
     public function getEndDepreciation($start_depreciation, $est_useful_life)
     {
         $start_depreciation = Carbon::parse($start_depreciation);
-        return $start_depreciation->addYears($est_useful_life)->subMonth(1)->format('Y-m');
+        return $start_depreciation->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12))->subMonth(1)->format('Y-m');
     }
+
+    private function getStartDepreciation($release_date)
+    {
+        $release_date = Carbon::parse($release_date);
+        return $release_date->addMonth(1)->format('Y-m');
+    }
+
+    public function showTagNumber(int $tagNumber)
+    {
+        $fixed_asset = FixedAsset::withTrashed()->with('formula', function ($query) {
+            $query->withTrashed();
+        })
+            ->where('vladimir_tag_number', $tagNumber)->first();
+        //        return $fixed_asset->majorCategory->major_category_name;
+        if (!$fixed_asset) {
+            return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
+        }
+//        $fixed_asset->with('formula', function ($query){
+//            $query->withTrashed();
+//        })->where('id', $id)->first();
+
+        $fixed_asset_arr = [
+            'id' => $fixed_asset->id,
+            'capex' => $fixed_asset->capex,
+            'project_name' => $fixed_asset->project_name,
+            'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
+            'tag_number' => $fixed_asset->tag_number,
+            'tag_number_old' => $fixed_asset->tag_number_old,
+            'asset_description' => $fixed_asset->asset_description,
+            'type_of_request' => [
+                'id' => $fixed_asset->typeOfRequest->id,
+                'type_of_request_name' => $fixed_asset->typeOfRequest->type_of_request_name,
+            ],
+            'asset_specification' => $fixed_asset->asset_specification,
+            'accountability' => $fixed_asset->accountability,
+            'accountable' => $fixed_asset->accountable,
+            'cellphone_number' => $fixed_asset->cellphone_number,
+            'brand' => $fixed_asset->brand,
+            'division' => [
+                'id' => $fixed_asset->division->id,
+                'division_name' => $fixed_asset->division->division_name,
+            ],
+            'major_category' => [
+                'id' => $fixed_asset->majorCategory->id,
+                'major_category_name' => $fixed_asset->majorCategory->major_category_name,
+            ],
+            'minor_category' => [
+                'id' => $fixed_asset->minorCategory->id,
+                'minor_category_name' => $fixed_asset->minorCategory->minor_category_name,
+            ],
+            'voucher' => $fixed_asset->voucher,
+            'receipt' => $fixed_asset->receipt,
+            'quantity' => $fixed_asset->quantity,
+            'depreciation_method' => $fixed_asset->depreciation_method,
+            'est_useful_life' => $fixed_asset->est_useful_life,
+            //                    'salvage_value' => $fixed_asset->salvage_value,
+            'acquisition_date' => $fixed_asset->acquisition_date,
+            'acquisition_cost' => $fixed_asset->acquisition_cost,
+            'scrap_value' => $fixed_asset->formula->scrap_value,
+            'original_cost' => $fixed_asset->formula->original_cost,
+            'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
+            'faStatus' => $fixed_asset->faStatus,
+            'is_old_asset' => $fixed_asset->is_old_asset,
+            'care_of' => $fixed_asset->care_of,
+            'age' => $fixed_asset->formula->age,
+            'end_depreciation' => $fixed_asset->formula->end_depreciation,
+            'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year,
+            'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month,
+            'remaining_book_value' => $fixed_asset->formula->remaining_book_value,
+            'release_date' => $fixed_asset->formula->release_date,
+            'start_depreciation' => $fixed_asset->formula->start_depreciation,
+            'company' => [
+                'id' => $fixed_asset->company->id,
+                'company_code' => $fixed_asset->company->company_code,
+                'company_name' => $fixed_asset->company->company_name,
+            ],
+            'department' => [
+                'id' => $fixed_asset->department->id,
+                'department_code' => $fixed_asset->department->department_code,
+                'department_name' => $fixed_asset->department->department_name,
+            ],
+            'location' => [
+                'id' => $fixed_asset->location->id,
+                'location_code' => $fixed_asset->location->location_code,
+                'location_name' => $fixed_asset->location->location_name,
+            ],
+            'account_title' => [
+                'id' => $fixed_asset->accountTitle->id,
+                'account_title_code' => $fixed_asset->accountTitle->account_title_code,
+                'account_title_name' => $fixed_asset->accountTitle->account_title_name,
+            ],
+        ];
+        return response()->json([
+            'message' => 'Fixed Asset retrieved successfully.',
+            'data' => $fixed_asset_arr
+        ], 200);
+    }
+
 }

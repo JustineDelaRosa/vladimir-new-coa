@@ -12,191 +12,159 @@ class MasterlistExportController extends Controller
 {
     public function export(Request $request)
     {
-//        $validated = $request->validate([
-//            'startDate' => 'nullable|date',
-//            'endDate' => 'nullable|date',
-//        ]);
-//        $filename = $request->get('filename');
-//        //ternary if empty the default filename is Fixed_Asset_Date
-//        $filename = $filename == null ? 'Fixed_Asset'. '_' . date('Y-m-d') :
-//            str_replace(' ', '_', $filename) . '_' . date('Y-m-d');
+////        $validated = $request->validate([
+////            'startDate' => 'nullable|date',
+////            'endDate' => 'nullable|date',
+////        ]);
+////        $filename = $request->get('filename');
+////        //ternary if empty the default filename is Fixed_Asset_Date
+////        $filename = $filename == null ? 'Fixed_Asset'. '_' . date('Y-m-d') :
+////            str_replace(' ', '_', $filename) . '_' . date('Y-m-d');
+////        $search = $request->get('search');
+////        $startDate = $request->get('startDate');
+////        $endDate = $request->get('endDate');
+////
+////        //directly download the Excel file to the frontend without saving it to the storage folder
+////        return Excel::download(new MasterlistExport($search, $startDate, $endDate), $filename . '.xlsx');
+////        return Excel::download(new MasterlistExport($search, $startDate, $endDate), $filename . '.xlsx');
+////        return (new MasterlistExport($search, $startDate, $endDate))->download($filename . '.xlsx');
+//
+//
 //        $search = $request->get('search');
 //        $startDate = $request->get('startDate');
 //        $endDate = $request->get('endDate');
+////      $result = [];
 //
-//        //directly download the Excel file to the frontend without saving it to the storage folder
-//        return Excel::download(new MasterlistExport($search, $startDate, $endDate), $filename . '.xlsx');
-//        return Excel::download(new MasterlistExport($search, $startDate, $endDate), $filename . '.xlsx');
-//        return (new MasterlistExport($search, $startDate, $endDate))->download($filename . '.xlsx');
-
+//
+//
+//        if($startDate != null && $endDate != null && $search == null){
+//            $fixedAsset = FixedAsset::whereBetween('created_at', [$startDate, $endDate])
+//                ->orderBy('id', 'ASC')->get();
+////                ->select('vladimir_tag_number', 'asset_description','id')
+////                ->chunk(500, function ($assets) use (&$result) {
+////                    foreach ($assets as $asset) {
+////                        $result[] = [
+////                            'vladimir_tag_number' => $asset->vladimir_tag_number,
+////                            'asset_description' => $asset->asset_description,
+////                        ];
+////                    }
+////                });
+//            return $this->refactorExport($fixedAsset);
+//        }
+//
+//        if (strpos($search, ',') !== false || strlen($search) < 2) {
+//            $search = explode(',', $search);
+//            $fixedAsset = FixedAsset::whereIn('type_of_request_id', $search)
+//                ->whereBetween('created_at', [$startDate, $endDate])
+//                ->orderBy('id', 'ASC')->get();
+////                ->select('vladimir_tag_number', 'asset_description','id','type_of_request_id')
+////                ->chunk(500, function ($assets) use (&$result) {
+////                    foreach ($assets as $asset) {
+////                        $result[] = [
+////                            'vladimir_tag_number' => $asset->vladimir_tag_number,
+////                            'asset_description' => $asset->asset_description,
+////                            'id' => $asset->id,
+////                            'type_of_request_id' => $asset->type_of_request_id,
+////                        ];
+////                    }
+////                });
+//            return $this->refactorExport($fixedAsset);
+//        }
+//
+//
+//        $fixedAsset = FixedAsset::where(function ($query) use ($search) {
+//            $query->Where('vladimir_tag_number', $search )
+//                ->orWhere('tag_number', $search);
+//        })->orderBy('id', 'ASC')->get();
+////            ->select('vladimir_tag_number', 'asset_description','id')
+////            ->chunk(500, function ($assets) use (&$result) {
+////                foreach ($assets as $asset) {
+////                    $result[] = [
+////                        'vladimir_tag_number' => $asset->vladimir_tag_number,
+////                        'asset_description' => $asset->asset_description,
+////                    ];
+////                }
+////            });
+//
+//        return $this->refactorExport($fixedAsset);
+//    }
+//        $filename = $request->get('filename');
+//        //ternary if empty, the default filename is Fixed_Asset_Date
+//        $filename = $filename == null ? 'Fixed_Asset'. '_' . date('Y-m-d') :
+//                    str_replace(' ', '_', $filename) . '_' . date('Y-m-d');
 
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
-//      $result = [];
-
-
-
-        if($startDate != null && $endDate != null && $search == null){
-            $fixedAsset = FixedAsset::whereBetween('created_at', [$startDate, $endDate])
-                ->orderBy('id', 'ASC')->get();
-//                ->select('vladimir_tag_number', 'asset_description','id')
-//                ->chunk(500, function ($assets) use (&$result) {
-//                    foreach ($assets as $asset) {
-//                        $result[] = [
-//                            'vladimir_tag_number' => $asset->vladimir_tag_number,
-//                            'asset_description' => $asset->asset_description,
-//                        ];
-//                    }
-//                });
-            return $this->refactorExport($fixedAsset);
+        $faStatus = $request->get('faStatus');
+        // Simplify the logic for faStatus
+        if ($faStatus == null) {
+            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off', 'Disposed'];
+        } else if ($faStatus == 'Disposed, Sold') {
+            $faStatus = ['Disposed', 'Sold'];
+        } else if ($faStatus == 'Disposed' || $faStatus == 'Sold') {
+            $faStatus = [$faStatus];
+        } else {
+            $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
+                return $status !== 'Disposed';
+            });
         }
 
-        if (strpos($search, ',') !== false || strlen($search) < 2) {
-            $search = explode(',', $search);
-            $fixedAsset = FixedAsset::whereIn('type_of_request_id', $search)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->orderBy('id', 'ASC')->get();
-//                ->select('vladimir_tag_number', 'asset_description','id','type_of_request_id')
-//                ->chunk(500, function ($assets) use (&$result) {
-//                    foreach ($assets as $asset) {
-//                        $result[] = [
-//                            'vladimir_tag_number' => $asset->vladimir_tag_number,
-//                            'asset_description' => $asset->asset_description,
-//                            'id' => $asset->id,
-//                            'type_of_request_id' => $asset->type_of_request_id,
-//                        ];
-//                    }
-//                });
-            return $this->refactorExport($fixedAsset);
+// Define the common query for fixed assets
+        $fixedAssetQuery = FixedAsset::withTrashed()->with([
+            'formula' => function ($query) {
+                $query->withTrashed();
+            },
+            'division:id,division_name',
+            'majorCategory:id,major_category_name',
+            'minorCategory:id,minor_category_name',
+        ])->whereIn('faStatus', $faStatus);
+
+// Add date filter if both startDate and endDate are given
+        if ($startDate && $endDate){
+            $fixedAssetQuery->whereBetween('created_at', [$startDate, $endDate]);
         }
 
+// Add search filter if search is given
+        if ($search) {
+            $fixedAssetQuery->where(function ($query) use ($search) {
+                $query->where('project_name', 'LIKE', "%$search%")
+                    ->orWhere('vladimir_tag_number', 'LIKE', "%$search%")
+                    ->orWhere('tag_number', 'LIKE', "%$search%")
+                    ->orWhere('tag_number_old', 'LIKE', "%$search%")
+                    ->orWhere('accountability', 'LIKE', "%$search%")
+                    ->orWhere('accountable', 'LIKE', "%$search%")
+                    ->orWhere('faStatus', 'LIKE', "%$search%")
+                    ->orWhere('brand', 'LIKE', "%$search%")
+                    ->orWhere('depreciation_method', 'LIKE', "%$search%");
+                $query->orWhereHas('majorCategory', function ($query) use ($search) {
+                    $query->where('major_category_name', 'LIKE', "%$search%");
+                });
+                $query->orWhereHas('minorCategory', function ($query) use ($search) {
+                    $query->where('minor_category_name', 'LIKE', "%$search%");
+                });
+                $query->orWhereHas('division', function ($query) use ($search) {
+                    $query->where('division_name', 'LIKE', "%$search%");
+                });
+                $query->orWhereHas('location', function ($query) use ($search) {
+                    $query->where('location_name', 'LIKE', "%$search%");
+                });
+            });
+        }
 
-        $fixedAsset = FixedAsset::where(function ($query) use ($search) {
-            $query->Where('vladimir_tag_number', $search )
-                ->orWhere('tag_number', $search);
-        })->orderBy('id', 'ASC')->get();
-//            ->select('vladimir_tag_number', 'asset_description','id')
-//            ->chunk(500, function ($assets) use (&$result) {
-//                foreach ($assets as $asset) {
-//                    $result[] = [
-//                        'vladimir_tag_number' => $asset->vladimir_tag_number,
-//                        'asset_description' => $asset->asset_description,
-//                    ];
-//                }
-//            });
+// Get the fixed assets and refactor them for export
+        $fixedAssets = $fixedAssetQuery->get();
 
-        return $this->refactorExport($fixedAsset);
+        //if the fixed assets is empty, return error message
+        if ($fixedAssets->isEmpty()) {
+            return response()->json([
+                'message' => 'No data found',
+            ], 422);
+        }
+        return response()->json([
+            'data' => $this->refactorExport($fixedAssets),
+        ]);
     }
-
-
-////        $filename = $request->get('filename');
-////        //ternary if empty, the default filename is Fixed_Asset_Date
-////        $filename = $filename == null ? 'Fixed_Asset'. '_' . date('Y-m-d') :
-////                    str_replace(' ', '_', $filename) . '_' . date('Y-m-d');
-//        $search = $request->get('search');
-//        $startDate = $request->get('startDate');
-//        $endDate = $request->get('endDate');
-//        $faStatus = $request->get('faStatus');
-//        if ($faStatus === null) {
-//            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off'];
-//        } elseif($faStatus == 'Disposed, Sold'){
-//            $faStatus = ['Disposed', 'Sold'];
-//        }else {
-//            $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
-//                return $status !== 'Disposed';
-//            });
-//        }
-//
-//        if($startDate != null && $endDate != null){
-//            $fixed_assets = FixedAsset::withTrashed()->with([
-//                    'formula' => function ($query) {
-//                        $query->withTrashed();
-//                    },
-//                    'division' => function ($query) {
-//                        $query->withTrashed()->select('id', 'division_name');
-//                    },
-//                    'majorCategory' => function ($query) {
-//                        $query->withTrashed()->select('id', 'major_category_name');
-//                    },
-//                    'minorCategory' => function ($query) {
-//                        $query->withTrashed()->select('id', 'minor_category_name');
-//                    },
-//                ])
-//                ->where(function ($query) use ($faStatus) {
-//                    $query->whereIn('faStatus', $faStatus);
-//                })
-//                ->whereBetween('created_at', [$startDate, $endDate])
-//                ->get();
-//            return $this->refactorExport($fixed_assets);
-//        }
-//
-//        $fixedAsset = FixedAsset::withTrashed()->with([
-//                'formula' => function ($query) {
-//                    $query->withTrashed();
-//                },
-//                'division' => function ($query) {
-//                    $query->withTrashed()->select('id', 'division_name');
-//                },
-//                'majorCategory' => function ($query) {
-//                    $query->withTrashed()->select('id', 'major_category_name');
-//                },
-//                'minorCategory' => function ($query) {
-//                    $query->withTrashed()->select('id', 'minor_category_name');
-//                },
-//            ])
-//            ->Where(function ($query) use ($search, $startDate, $endDate) {
-//                $query->Where('project_name', 'LIKE', '%'.$search.'%')
-//                    ->orWhere('vladimir_tag_number', 'LIKE', '%'.$search.'%')
-//                    ->orWhere('tag_number', 'LIKE', '%'.$search.'%')
-//                    ->orWhere('tag_number_old', 'LIKE', '%'.$search.'%')
-//                    ->orWhere('accountability', 'LIKE', '%'.$search.'%')
-//                    ->orWhere('accountable', 'LIKE', '%'.$search.'%')
-//                    ->orWhere('brand', 'LIKE', '%'.$search.'%')
-//                    ->orWhere('depreciation_method', 'LIKE', '%'.$search.'%');
-//                $query->orWhereHas('majorCategory', function ($query) use ($search) {
-//                    $query->where('major_category_name', 'LIKE', '%'.$search.'%');
-//                });
-//                $query->orWhereHas('minorCategory', function ($query) use ($search) {
-//                    $query->where('minor_category_name', 'LIKE','%'.$search.'%');
-//                });
-//                $query->orWhereHas('division', function ($query) use ($search) {
-//                    $query->where('division_name', 'LIKE', '%{$search}%');
-//                });
-//                $query->orWhereHas('location', function ($query) use ($search) {
-//                    $query->where('location_name', 'LIKE', '%'.$search.'%');
-//                });
-//                $query->orWhereHas('company', function ($query) use ($search) {
-//                    $query->where('company_name', 'LIKE', '%'.$search.'%');
-//                });
-//                $query->orWhereHas('department', function ($query) use ($search) {
-//                    $query->where('department_name', 'LIKE', '%'.$search.'%');
-//                });
-//                $query->orWhereHas('accountTitle', function ($query) use ($search) {
-//                    $query->where('account_title_name', 'LIKE', '%'.$search.'%');
-//                });
-//                $query->orWhereHas('typeOfRequest', function ($query) use ($search) {
-//                    $query->where('type_of_request_name', 'LIKE', '%'.$search.'%');
-//                });
-//            })
-//            ->where(function ($query) use ($faStatus) {
-//                //array of status or not array
-//                if (is_array($faStatus)) {
-//                    $query->whereIn('faStatus', $faStatus);
-//                } else {
-//                    $query->where('faStatus', $faStatus);
-//                }
-//            })
-//            ->orderBy('id', 'ASC')
-//            ->get();
-//
-//        if($fixedAsset->count() == 0){
-//            return response()->json([
-//                'message' => 'No data found',
-//            ], 404);
-//        }
-//        return $this->refactorExport($fixedAsset);
-
 
     public function refactorExport($fixedAssets): array
     {
@@ -219,6 +187,7 @@ class MasterlistExportController extends Controller
                 'major_category' => $fixed_asset->majorCategory->major_category_name,
                 'minor_category' => $fixed_asset->minorCategory->minor_category_name,
                 'capitalized' => $fixed_asset->capitalized,
+                'cellphone_number' => $fixed_asset->cellphone_number,
                 'voucher' => $fixed_asset->voucher,
                 'receipt' => $fixed_asset->receipt,
                 'quantity' => $fixed_asset->quantity,
@@ -237,7 +206,7 @@ class MasterlistExportController extends Controller
                 'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year,
                 'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month,
                 'remaining_book_value' => $fixed_asset->formula->remaining_book_value,
-                'released_date' => $fixed_asset->formula->released_date,
+                'release_date' => $fixed_asset->formula->release_date,
                 'start_depreciation' => $fixed_asset->formula->start_depreciation,
                 'company_code' => $fixed_asset->company->company_code,
                 'company_name' => $fixed_asset->company->company_name,
