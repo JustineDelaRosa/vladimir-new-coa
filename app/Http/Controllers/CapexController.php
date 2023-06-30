@@ -138,7 +138,7 @@ class CapexController extends Controller
             }else{
                 $checkFixedAsset = FixedAsset::where('capex_id', $id)->exists();
                 if ($checkFixedAsset) {
-                    return response()->json(['error' => 'Unable to archived , Capex is still in use!'], 409);
+                    return response()->json(['error' => 'Unable to archived , Capex is still in use!'], 422);
                 }
                 if(Capex::where('id', $id)->exists()){
                     $updateCapex = Capex::Where('id', $id)->update([

@@ -18,6 +18,7 @@ class PrintBarCodeController extends Controller
     public function printBarcode(Request $request)
     {
         $tagNumber = $this->search($request);
+
 //        return $tagNumber;
         if (!$tagNumber) {
             return response()->json(['message' => 'No data found'], 404);
@@ -105,7 +106,7 @@ class PrintBarCodeController extends Controller
         // Use a single query builder instance to apply different conditions
         $fixedAsset = FixedAsset::where('type_of_request_id', '!=', '2')
             ->orderBy('id', 'ASC')
-            ->select('vladimir_tag_number', 'asset_description','id','type_of_request_id');
+            ->select('vladimir_tag_number', 'asset_description','id','type_of_request_id', 'location_name', 'department_name');
 
         // Use a switch statement to handle different cases based on the input parameters
         switch (true) {
@@ -134,10 +135,12 @@ class PrintBarCodeController extends Controller
         $fixedAsset->chunk(500, function ($assets) use (&$result) {
             foreach ($assets as $asset) {
                 $result[] = [
+                    'id' => $asset->id,
                     'vladimir_tag_number' => $asset->vladimir_tag_number,
                     'asset_description' => $asset->asset_description,
-                    'id' => $asset->id,
-                    'type_of_request_id' => $asset->type_of_request_id ?? null,
+                    'location_name' => $asset->location_name,
+                    //if the department has 10 characters or more, then make it an acronym
+                    'department_name' => strlen($asset->department_name) > 10 ? $this->acronym($asset->department_name) : $asset->department_name
                 ];
             }
         });
@@ -146,4 +149,21 @@ class PrintBarCodeController extends Controller
         return $result;
     }
 
+    private function acronym($department_name): string
+    {
+        $words = explode(" ", $department_name);
+        $acronym = "";
+        foreach ($words as $word) {
+            $word = preg_replace('/[^A-Za-z0-9\-]/', '', $word);
+            if (strtoupper($word) == $word) {
+                $acronym .= $word;
+            } else {
+                $word = trim($word);
+                if ($word !== "and" && $word !== "of" && $word !== "the") {
+                    $acronym .= $word[0];
+                }
+            }
+        }
+        return $acronym;
+    }
 }

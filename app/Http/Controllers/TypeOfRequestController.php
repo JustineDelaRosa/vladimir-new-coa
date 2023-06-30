@@ -123,7 +123,7 @@ class TypeOfRequestController extends Controller
             }else{
                 $checkFixedAsset = FixedAsset::where('type_of_request_id', $id)->exists();
                 if ($checkFixedAsset) {
-                    return response()->json(['error' => 'Unable to archived , Type Of Request is still in use!'], 409);
+                    return response()->json(['error' => 'Unable to archived , Type Of Request is still in use!'], 422);
                 }
                 if(TypeOfRequest::where('id', $id)->exists()){
                     $updateStatus= TypeOfRequest::Where('id', $id)->update([

@@ -71,7 +71,7 @@ class FixedAssetUpdateRequest extends FormRequest
                 }
             }],
             'cellphone_number' => 'nullable|numeric|digits:11',
-            'brand' => 'required',
+            'brand' => 'nullable',
             'division_id' => 'required|exists:divisions,id',
             'major_category_id' => 'required|exists:major_categories,id',
             'minor_category_id' => 'required|exists:minor_categories,id',
@@ -94,7 +94,7 @@ class FixedAssetUpdateRequest extends FormRequest
             'scrap_value' => ['required', 'numeric'],
             'original_cost' => ['required', 'numeric'],
             'accumulated_cost' => ['nullable', 'numeric'],
-            'care_of' => 'required',
+            'care_of' => 'nullable',
             'age' => 'required|numeric',
 //            'end_depreciation' => 'required|date_format:Y-m',
             'depreciation_per_year' => ['nullable', 'numeric'],

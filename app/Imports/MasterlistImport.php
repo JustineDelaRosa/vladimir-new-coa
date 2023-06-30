@@ -152,7 +152,6 @@ class MasterlistImport extends DefaultValueBinder implements
                     'original_cost' => $collection['original_cost'],
                     'accumulated_cost' => $collection['accumulated_cost'],
                     'age' => $collection['age'],
-                    //est_useful_life is in years with decimal places for months
                     'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($majorCategory->est_useful_life))->addMonths(floor(($majorCategory->est_useful_life - floor($majorCategory->est_useful_life)) * 12) - 1)->format('Y-m'),
                     'depreciation_per_year' => $collection['depreciation_per_year'],
                     'depreciation_per_month' => $collection['depreciation_per_month'],
@@ -276,17 +275,30 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.depreciation_method' => 'required|in:STL,One Time',
             '*.est_useful_life' => ['required'],
             '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date'],
-            '*.acquisition_cost' => ['required', 'regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
-            '*.scrap_value' => ['required', 'regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
-            '*.original_cost' => ['required', 'regex:/^(?:-|\d+(?:\.\d{2})?|)$/'],
-            '*.accumulated_cost' => ['required'],
+            //do not allow negative value in acquisition cost
+            '*.acquisition_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+                if ($value < 0) {
+                    $fail('Acquisition cost must not be negative');
+                }
+            }],
+            '*.scrap_value' => ['required', ],
+            '*.original_cost' => ['required','regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+                if ($value < 0) {
+                    $fail('Original cost must not be negative');
+                }
+            }],
+            '*.accumulated_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+                if ($value < 0) {
+                    $fail('Accumulated cost must not be negative');
+                }
+            }],
             '*.status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
             '*.care_of' => 'required',
             '*.age' => 'nullable',
             '*.end_depreciation' => 'required',
             '*.depreciation_per_year' => ['required'],
             '*.depreciation_per_month' => ['required'],
-            '*.remaining_book_value' => ['required'],
+            '*.remaining_book_value' => ['required', ],
             '*.start_depreciation' => ['required'],
             '*.company_code' => 'required|exists:companies,company_code',
             '*.company' => 'required|exists:companies,company_name',
