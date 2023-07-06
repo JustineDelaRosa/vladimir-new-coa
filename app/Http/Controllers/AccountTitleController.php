@@ -22,7 +22,7 @@ class AccountTitleController extends Controller
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
     {
@@ -40,6 +40,13 @@ class AccountTitleController extends Controller
                     $name = $accountTitle['name'];
                     $is_active = $accountTitle['status'];
 
+                    $accountTitle = AccountTitle::where('sync_id', $sync_id)->first();
+                    if ($accountTitle) {
+                        if ($accountTitle->is_active == 0) {
+                            $is_active = 0;
+                        }
+                    }
+
                     $sync = AccountTitle::updateOrCreate(
                         [
                             'sync_id' => $sync_id,
@@ -48,7 +55,10 @@ class AccountTitleController extends Controller
                             'account_title_code' => $code, 'account_title_name' => $name, 'is_active' => $is_active
                         ],
                     );
-                    // $sync = Company::upsert([
+
+
+
+                    // $sync = AccountTitle::upsert([
                     //     ['company_code' => $code, 'company_name' => $name,  'is_active' => $is_active]
                     //     ], ['company_code'], ['is_active']);
 
@@ -120,5 +130,34 @@ class AccountTitleController extends Controller
             ->orderby('created_at', 'DESC')
             ->paginate($limit);
         return $AccountTitle;
+    }
+
+    public function archived(Request $request, $id)
+    {
+        $status = $request->status;
+        $accountTitle = AccountTitle::query();
+        if (!$accountTitle->where('id', $id)->exists()) {
+            return response()->json(['error' => 'Account Title Route Not Found'], 404);
+        }
+
+
+        if ($status == false) {
+            if (!AccountTitle::where('id', $id)->where('is_active', true)->exists()) {
+                return response()->json(['message' => 'No Changes'], 200);
+            } else {
+                $updateStatus = $accountTitle->where('id', $id)->update(['is_active' => false]);
+//                $accountTitle->where('id', $id)->delete();
+                return response()->json(['message' => 'Successfully Deactivated!'], 200);
+            }
+        }
+        if ($status == true) {
+            if (AccountTitle::where('id', $id)->where('is_active', true)->exists()) {
+                return response()->json(['message' => 'No Changes'], 200);
+            } else {
+//              $restoreUser = $accountTitle->withTrashd()-e>where('id', $id)->restore();
+                $updateStatus = $accountTitle->update(['is_active' => true]);
+                return response()->json(['message' => 'Successfully Activated!'], 200);
+            }
+        }
     }
 }

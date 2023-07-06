@@ -25,7 +25,8 @@ class PrinterIPRequest extends FormRequest
     {
         if($this->isMethod('post')){
             return [
-                'printer_ip' => 'required|unique:printer_i_p_s,ip',
+                //only allow ip with 10.10.x.x format
+                'printer_ip' => 'required|unique:printer_i_p_s,ip|ip|regex:/^10\.10\.\d{1,3}\.\d{1,3}$/',
                 'name' => 'required|unique:printer_i_p_s,name',
             ];
         }
@@ -33,7 +34,7 @@ class PrinterIPRequest extends FormRequest
             $id = $this->route()->parameter('printer-ip');
             return [
                 //unique ignore his own id
-                'printer_ip' => 'required|unique:printer_i_p_s,ip,'.$id,
+                'printer_ip' => 'required|ip|unique:printer_i_p_s,ip,'.$id,
                 'name' => 'required|unique:printer_i_p_s,name,'.$id,
             ];
         }

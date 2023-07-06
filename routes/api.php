@@ -130,6 +130,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //Capex
     Route::resource('capex', CapexController::class);
     Route::patch('capex/archived-capex/{id}', [CapexController::class, 'archived']);
+    Route::post('sub_capex/{id}', [CapexController::class, 'storeSubCapex']);
 
     //materlist import
     Route::post('/import-masterlist', [MasterlistImportController::class, 'masterlistImport']);
@@ -155,4 +156,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //PrinterIp
     Route::resource('printer-ip', PrinterIpController::class);
     Route::patch('activateIp', [PrinterIpController::class, 'activateIP']);
+    Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
+
+    //COA Archive
+    Route::patch('account-title/archived-account-title/{id}', [AccountTitleController::class, 'archived']);
 });

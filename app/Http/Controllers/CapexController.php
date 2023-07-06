@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Capex\CapexRequest;
+use App\Http\Requests\Capex\SubCapexRequest;
 use App\Http\Resources\Capex\CapexResource;
 use App\Models\Capex;
 use App\Models\FixedAsset;
@@ -51,9 +52,13 @@ class CapexController extends Controller
     {
         $capex = $request->capex;
         $project_name = ucwords(strtolower($request->project_name));
+        $sub_capex = $request->sub_capex ?? $capex;
+        $sub_project = ucwords(strtolower($request->sub_project ?? $project_name));
         $capex = Capex::create([
             'capex' => $capex,
             'project_name' => $project_name,
+            'sub_capex' => $sub_capex,
+            'sub_project' => $sub_project,
             'is_active' => true
         ]);
         return response()->json([
@@ -61,6 +66,42 @@ class CapexController extends Controller
             'data' => $capex
         ], 201);
 
+    }
+
+    public function storeSubCapex(SubCapexRequest $request,$id){
+        $sub_capex = strtoupper($request->sub_capex);
+        $sub_project = ucwords(strtolower($request->sub_project));
+        $capex = Capex::where('id',$id)->first();
+        //check if this sub capex is already exist
+        $check = Capex::where('sub_capex',$capex->capex . ' - ' . $sub_capex)->first();
+        if($check){
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => [
+                    'sub_capex' => [
+                        'The sub capex has already been taken.'
+                    ]
+                ]
+            ], 422);
+        }
+
+
+        if($capex){
+            $capex = Capex::create([
+                'capex' => $capex->capex,
+                'project_name' => $capex->project_name,
+                'sub_capex' => $capex->capex . '-' . $sub_capex,
+                'sub_project' => $sub_project,
+                'is_active' => true
+            ]);
+            return response()->json([
+                'message' => 'Successfully created sub capex.',
+                'data' => $capex
+            ], 201);
+        }
+        return response()->json([
+            'message' => 'Capex Route Not Found.'
+        ], 404);
     }
 
     /**
@@ -94,24 +135,27 @@ class CapexController extends Controller
     public function update(CapexRequest $request, $id)
     {
         $project_name = ucwords(strtolower($request->project_name));
+        $sub_project = $request->sub_project;
 
         if(Capex::where('id',$id)->where([
-            'project_name' => $project_name
+            'project_name' => $project_name,
+             'sub_project' => $sub_project
         ])->exists()){
             return response()->json([
                 'message' => 'No changes.',
             ], 200);
         }
 
-
-        if(Capex::where('id', $id)->exists()){
+        $capex = Capex::where('id', $id)->first();
+        if ($capex) {
             $updateCapex = Capex::Where('id', $id)->update([
                 'project_name' => $project_name,
+                'sub_project' => ($capex->capex == $capex->sub_capex) ? $project_name : $sub_project,
             ]);
             return response()->json([
                 'message' => 'Successfully updated capex.',
             ], 200);
-        }else{
+        } else {
             return response()->json([
                 'message' => 'Capex Route Not Found.'
             ], 404);

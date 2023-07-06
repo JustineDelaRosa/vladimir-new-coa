@@ -13,13 +13,35 @@ class PrinterIPController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index()
+    public function index(Request $request)
     {
-        $printerIP = PrinterIP::get();
+        $search = $request->search;
+        $status = $request->status;
+        $limit = $request->limit;
+
+        $printerIP = PrinterIP::where(function ($query) use ($search) {
+            $query
+                ->where("ip", "like", "%" . $search . "%")
+                ->orWhere("name", "like", "%" . $search . "%");
+        })
+            ->when($status === "deactivated", function ($query) {
+                $query->where("is_active", false);
+            })
+            ->orderByDesc("updated_at");
+        $printerIP = $limit ? $printerIP->paginate($limit) : $printerIP->get();
+
+
         return response()->json([
-            'message' => 'Successfully retrieved printer ip.',
+            'message' => 'Successfully retrieved IP\'s.',
             'data' => $printerIP
         ], 200);
+
+
+//        $printerIP = PrinterIP::get();
+//        return response()->json([
+//            'message' => 'Successfully retrieved printer ip.',
+//            'data' => $printerIP
+//        ], 200);
     }
 
     /**
@@ -32,6 +54,14 @@ class PrinterIPController extends Controller
     {
         $printerIP = $request->printer_ip;
         $name = $request->name;
+        //only allow ip with 10.10.x.x format
+        if(!preg_match('/^10\.10\.\d{1,3}\.\d{1,3}$/', $printerIP)){
+            return response()->json([
+                'message' => 'Invalid IP format.',
+                'data' => null
+            ], 400);
+        }
+
         $printerIP = PrinterIP::create([
             'ip' => $printerIP,
             'name' => $name,
@@ -52,10 +82,17 @@ class PrinterIPController extends Controller
     public function show($id)
     {
         $printerIP = PrinterIP::find($id);
+        if(!$printerIP){
+            return response()->json([
+                'message' => 'Printer ip not found.',
+                'data' => null
+            ], 404);
+        }
         return response()->json([
             'message' => 'Successfully retrieved printer ip.',
             'data' => $printerIP
         ], 200);
+
     }
 
     /**
@@ -68,6 +105,12 @@ class PrinterIPController extends Controller
     public function update(PrinterIPRequest $request, $id)
     {
         $printerIP = PrinterIP::find($id);
+        if(!$printerIP){
+            return response()->json([
+                'message' => 'Printer ip not found.',
+                'data' => null
+            ], 404);
+        }
         $printerIP->ip = $request->printer_ip;
         $printerIP->name = $request->name;
         $printerIP->save();
@@ -86,6 +129,12 @@ class PrinterIPController extends Controller
     public function destroy($id)
     {
         $printerIP = PrinterIP::find($id);
+        if(!$printerIP){
+            return response()->json([
+                'message' => 'Printer ip not found.',
+                'data' => null
+            ], 404);
+        }
         $printerIP->delete();
         return response()->json([
             'message' => 'Successfully deleted printer ip.',
@@ -99,6 +148,12 @@ class PrinterIPController extends Controller
         $printerID = $request->printer_id;
         //activate printer ip and deactivate other printer ip only one printer ip can be active
         $printer = PrinterIP::find($printerID);
+        if (!$printer) {
+            return response()->json([
+                'message' => 'Printer ip not found.',
+                'data' => null
+            ], 404);
+        }
         $printer->is_active = true;
         $printer->save();
 
@@ -110,6 +165,14 @@ class PrinterIPController extends Controller
         return response()->json([
             'message' => 'Successfully activated printer ip.',
             'data' => $printer
+        ], 200);
+    }
+
+    public function getClientIP(){
+        $ip = $_SERVER['REMOTE_ADDR'];
+        return response()->json([
+            'message' => 'Successfully retrieved client ip.',
+            'data' => $ip
         ], 200);
     }
 }

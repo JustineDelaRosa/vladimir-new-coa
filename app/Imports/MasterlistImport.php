@@ -125,7 +125,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 //check for unnecessary spaces and trim them to one space only
                 'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
                 'quantity' => $collection['quantity'],
-                'depreciation_method' => ucwords(strtolower($collection['depreciation_method'])),
+                'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
                 'est_useful_life' => $majorCategory->est_useful_life ?? $collection['est_useful_life'],
                 'acquisition_date' => $collection['acquisition_date'],
                 'acquisition_cost' => $collection['acquisition_cost'],
@@ -168,10 +168,10 @@ class MasterlistImport extends DefaultValueBinder implements
 //                $fixedAsset->delete();
 //                $fixedAsset->formula()->delete();
 //            }
-            if ($collection['status'] == 'Disposed' || $collection['status'] == 'DISPOSED') {
-                $fixedAsset->delete();
-                $fixedAsset->formula()->delete();
-            }
+//            if ($collection['status'] == 'Disposed' || $collection['status'] == 'DISPOSED') {
+//                $fixedAsset->delete();
+//                $fixedAsset->formula()->delete();
+//            }
         }
     }
 
@@ -298,7 +298,11 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.end_depreciation' => 'required',
             '*.depreciation_per_year' => ['required'],
             '*.depreciation_per_month' => ['required'],
-            '*.remaining_book_value' => ['required', ],
+            '*.remaining_book_value' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+                if ($value < 0) {
+                    $fail('Remaining book value must not be negative');
+                }
+            }],
             '*.start_depreciation' => ['required'],
             '*.company_code' => 'required|exists:companies,company_code',
             '*.company' => 'required|exists:companies,company_name',
@@ -373,56 +377,6 @@ class MasterlistImport extends DefaultValueBinder implements
 
     }
 
-//    function vladimirTagGenerator()
-//    {
-//        $date = date('ymd');
-//        static $lastRandom = 0;
-//        $generated = [];
-//        // Generate a new random value
-//        do {
-//            $random = mt_rand(1, 9) . mt_rand(1000, 9999);
-//        } while ($random === $lastRandom);
-//
-//        $lastRandom = $random;
-//        $number =  5 . $date . $random;
-//        $numbers = (string)$number;
-//        $length = strlen($numbers);
-//        if($length !== 12)
-//        {
-//            return 'Invalid Number';
-//        }
-//        $evenSum = 0;
-//        for ($i = 1; $i < $length; $i += 2) {
-//            $evenSum += (int)$numbers[$i];
-//        }
-//        $evenSum *= 3;
-//
-//        $oddSum = 0;
-//        for($i = 0; $i < $length; $i += 2) {
-//            $oddSum += (int)$numbers[$i];
-//        }
-//        $totalSum = $evenSum + $oddSum;
-//
-//        $remainder = $totalSum % 10;
-//
-//        $checkDigit = ($remainder === 0) ? 0 : 10 - $remainder;
-//        $ean13Result = $numbers . $checkDigit;
-//        // put the generated number into an array
-//        $generated[] = $ean13Result;
-//        //check if there is a duplicate in the array
-//        foreach (array_count_values($generated) as $val => $c) {
-//            if ($c > 1) {
-//                // if there is a duplicate, regenerate the number
-//                $this->vladimirTagGenerator();
-//            }
-//        }
-//
-//        $check = FixedAsset::where('vladimir_tag_number', $ean13Result)->first();
-//        if ($check) {
-//            $this->vladimirTagGenerator();
-//        }
-//        return $ean13Result;
-//    }
 
     public function vladimirTagGenerator()
     {

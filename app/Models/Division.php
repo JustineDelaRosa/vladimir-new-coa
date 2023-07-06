@@ -20,4 +20,9 @@ class Division extends Model
     {
         return $this->hasMany(FixedAsset::class, 'division_id', 'id');
     }
+
+    public function department()
+    {
+        return $this->hasMany(Department::class, 'division_id', 'id');
+    }
 }

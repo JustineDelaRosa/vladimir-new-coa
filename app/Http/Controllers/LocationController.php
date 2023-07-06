@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\Location\LocationResource;
+use App\Models\Department;
 use App\Models\Location;
 use Illuminate\Http\Request;
 
@@ -10,20 +12,55 @@ class LocationController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index()
     {
-        $location = Location::get();
-        return $location;
+        $location = Location::with('locationDepartment')->get();
+//        return $location;
+        return response()->json([
+            'message' => 'Fixed Assets retrieved successfully.',
+            'data' => $location
+        ], 200);
     }
 
     /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
+
+//    public function store(Request $request)
+//    {
+//        $sync_all = $request->all();
+//
+//
+//        foreach ($sync_all as $location) {
+//            $sync_id = $location["sync_id"];
+//            $code = $location["code"];
+//            $name = $location["name"];
+//            $is_active = $location["is_active"];
+//
+//            $locations = Location::updateOrCreate(
+//                [
+//                    "sync_id" => $sync_id,
+//                ],
+//                [
+//                    "sync_id" => $sync_id,
+//                    "location_code" => $code,
+//                    "location_name" => $name,
+//                    "is_active" => $is_active,
+//                ]
+//            );
+//
+//            $locations->departments()->sync($location["departments"]);
+//        }
+//
+//        return response()->json(['message' => 'Successfully Synced!']);
+//    }
+
+
     public function store(Request $request)
     {
         $location_request = $request->all('result.locations');
@@ -39,19 +76,32 @@ class LocationController extends Controller
 //                    $name = strtoupper($loc['name']);
                     $name = $loc['name'];
                     $is_active = $loc['status'];
+                    //one location has many departments
+                    $departments = [];
+                    foreach ($loc['departments'] as $department) {
+                        $departments[] = $department['id'];
+                    }
 
                     $sync = Location::updateOrCreate(
                         [
                             'sync_id' => $sync_id,
                         ],
                         [
-                            'location_code' => $code, 'location_name' => $name, 'is_active' => $is_active
+                            'location_code' => $code,
+                            'location_name' => $name,
+                            'is_active' => $is_active
                         ],
                     );
+
+                    //if sync is successful, insert this location_sync_id to department table as a foreign key
+                    if ($sync) {
+                        Department::WhereIn('sync_id', $departments)->update(['location_sync_id' => $sync_id]);
+                    }
+
                 }
             }
         }
-        return response()->json(['message' => 'Successfully Synched!']);
+        return response()->json(['message' => 'Successfully Synced!']);
     }
 
     /**
@@ -118,4 +168,34 @@ class LocationController extends Controller
             ->paginate($limit);
         return $Location;
     }
+
+//    public function archived(Request $request, $id)
+//    {
+//        $status = $request->status;
+//        $location = Location::query();
+//        if (!$location->where('id', $id)->exists()) {
+//            return response()->json(['error' => 'Location Route Not Found'], 404);
+//        }
+//
+//
+//        if ($status == false) {
+//            if (!Location::where('id', $id)->where('is_active', true)->exists()) {
+//                return response()->json(['message' => 'No Changes'], 200);
+//            } else {
+//                $updateStatus = $location->where('id', $id)->update(['is_active' => false]);
+////                $location->where('id', $id)->delete();
+//                return response()->json(['message' => 'Successfully Deactived!'], 200);
+//            }
+//        }
+//        if ($status == true) {
+//            if (Location::where('id', $id)->where('is_active', true)->exists()) {
+//                return response()->json(['message' => 'No Changes'], 200);
+//            } else {
+//                //$restoreUser = $location->withTrashed()->where('id', $id)->restore();
+//                $updateStatus = $location->update(['is_active' => true]);
+//                return response()->json(['message' => 'Successfully Activated!'], 200);
+//            }
+//        }
+//    }
+
 }

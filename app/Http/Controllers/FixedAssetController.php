@@ -126,7 +126,7 @@ class FixedAssetController extends Controller
             'original_cost' => $request->original_cost,
             'accumulated_cost' => $request->accumulated_cost ?? 0,
             'age' => $request->age,
-            'end_depreciation' => $this->getEndDepreciation($request->start_depreciation, $request->est_useful_life),
+            'end_depreciation' => $this->getEndDepreciation($this->getStartDepreciation($request->release_date), $request->est_useful_life),
             'depreciation_per_year' => $request->depreciation_per_year ?? 0,
             'depreciation_per_month' => $request->depreciation_per_month ?? 0,
             'remaining_book_value' => $request->remaining_book_value ?? 0,
@@ -134,18 +134,18 @@ class FixedAssetController extends Controller
             'start_depreciation' => $this->getStartDepreciation($request->release_date)
         ]);
 
-        if ($request->faStatus == 'Disposed') {
-            $fixedAsset->delete();
-            $fixedAsset->formula()->delete();
-            return response()->json([
-                'message' => 'Fixed Asset created successfully, but disposed immediately.',
-                'data' => $fixedAsset->withTrashed()->with([
-                        'formula' => function ($query) {
-                            $query->withTrashed();
-                        }]
-                )->where('id', $fixedAsset->id)->first()
-            ], 201);
-        }
+//        if ($request->faStatus == 'Disposed') {
+//            $fixedAsset->delete();
+//            $fixedAsset->formula()->delete();
+//            return response()->json([
+//                'message' => 'Fixed Asset created successfully, but disposed immediately.',
+//                'data' => $fixedAsset->withTrashed()->with([
+//                        'formula' => function ($query) {
+//                            $query->withTrashed();
+//                        }]
+//                )->where('id', $fixedAsset->id)->first()
+//            ], 201);
+//        }
 
         //return the fixed asset and formula
         return response()->json([
@@ -298,7 +298,6 @@ class FixedAssetController extends Controller
             $fixedAsset->update([
                 'capex_id' => $request->capex_id ?? null,
                 'project_name' => $request->project_name ?? '-',
-//                'vladimir_tag_number' => $request->vladimir_tag_number,
                 'tag_number' => $request->tag_number ?? '-',
                 'tag_number_old' => $request->tag_number_old ?? '-',
                 'asset_description' => $request->asset_description,
@@ -351,75 +350,12 @@ class FixedAssetController extends Controller
             return response()->json([
                 'message' => 'Fixed Asset updated successfully',
                 'data' => $fixedAsset->load('formula'),
-                //return what method is used
             ], 200);
         } else {
             return response()->json([
                 'message' => 'Fixed Asset Route Not Found.'
             ], 404);
         }
-
-//        if(FixedAsset::where('id', $id)->where('is_active', true)->exists()){
-//            $fixedAsset = FixedAsset::where('id', $id)->update([
-//                'capex' => $request->capex ?? '-',
-//                'project_name' => $request->project_name,
-//                'vladimir_tag_number' => (new MasterlistImport())->vladimirTagGenerator(),
-//                'tag_number' => $request->tag_number,
-//                'tag_number_old' => $request->tag_number_old,
-//                'asset_description' => $request->asset_description,
-//                'type_of_request_id' => $request->type_of_request_id,
-//                'asset_specification' => $request->asset_specification,
-//                'accountability' => $request->accountability,
-//                'accountable' => $request->accountable,
-//                'cellphone_number' => $request->cellphone_number ?? '-',
-//                'brand' => $request->brand ?? '-',
-//                'division_id' => Division::where('division_name', $request->division)->first()->id,
-//                'major_category_id' => MajorCategory::where('major_category_name', $request->major_category)->first()->id,
-//                'minor_category_id' => MinorCategory::where('minor_category_name', $request->minor_category)->first()->id,
-//                'voucher' => $request->voucher ?? '-',
-//                'receipt' => $request->receipt ?? '-',
-//                'quantity' => $request->quantity,
-//                'depreciation_method' => $request->depreciation_method,
-//                'est_useful_life' => $request->est_useful_life,
-//                'acquisition_date' => $request->acquisition_date, //TODO:
-//                'acquisition_cost' => $request->acquisition_cost,
-//                'is_active' => $request->status ?? 1,
-//                'care_of' => $request->care_of,
-//                'company_id' => Company::where('company_code', $request->company_code)->first()->id,
-//                'company_name' => $request->company,
-//                'department_id' => Department::where('department_code', $request->department_code)->first()->id,
-//                'department_name' => $request->department,
-//                'location_id' => Location::where('location_code', $request->location_code)->first()->id,
-//                'location_name' => $request->location,
-//                'account_id' => AccountTitle::where('account_title_code', $request->account_code)->first()->id,
-//                'account_title' => $request->account_title,
-//            ]);
-//
-//            $formula = Formula::where('fixed_asset_id', $id)->update([
-//                'depreciation_method' => $request->depreciation_method,
-//                'est_useful_life' => $request->est_useful_life,
-//                'acquisition_date' => $request->acquisition_date,
-//                'acquisition_cost' => $request->acquisition_cost,
-//                'scrap_value' => $request->scrap_value,
-//                'original_cost' => $request->original_cost,
-//                'accumulated_cost' => $request->accumulated_cost,
-//                'age' => $request->age,
-//                'end_depreciation' => $request->end_depreciation,
-//                'depreciation_per_year' => $request->depreciation_per_year,
-//                'depreciation_per_month' => $request->depreciation_per_month,
-//                'remaining_book_value' => $request->remaining_book_value,
-//                'start_depreciation' => $request->start_depreciation,
-//            ]);
-//
-//
-//
-//            return response()->json([
-//                'message' => 'Fixed Asset updated successfully.',
-//                'data' => $fixedAsset = FixedAsset::where('id', $id)->with('formula')->first()
-//            ], 200);
-//        }else{
-//            return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
-//        }
     }
 
     public function archived(Request $request, $id)
@@ -490,7 +426,7 @@ class FixedAssetController extends Controller
         $faStatus = $request->get('faStatus');
 
         if ($faStatus === null) {
-            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off'];
+            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off', 'Disposed'];
         } elseif ($faStatus == 'Disposed, Sold' || $faStatus == 'Disposed' || $faStatus == 'Sold') {
             if($faStatus == 'Disposed, Sold'){
                 $faStatus = ['Disposed', 'Sold'];
@@ -642,8 +578,6 @@ class FixedAssetController extends Controller
         return $fixedAsset;
     }
 
-
-
     function assetDepreciation(Request $request, $id)
     {
         //validation
@@ -692,7 +626,7 @@ class FixedAssetController extends Controller
 
         if ($fixedAsset->depreciation_method == 'One Time') {
             $age = 0.083333333333333;
-            $monthly_depreciation = $this->getMonthlyDepreciation($original_cost, $scrap_value, $age);
+            $monthly_depreciation = $this->getMonthlyDepreciation($original_cost, $age);
             return response()->json([
                 'message' => 'Depreciation retrieved successfully.',
                 'data' => [
@@ -786,15 +720,11 @@ class FixedAssetController extends Controller
     {
         $fixed_asset = FixedAsset::withTrashed()->with('formula', function ($query) {
             $query->withTrashed();
-        })
-            ->where('vladimir_tag_number', $tagNumber)->first();
-        //        return $fixed_asset->majorCategory->major_category_name;
+        })->where('vladimir_tag_number', $tagNumber)->first();
+
         if (!$fixed_asset) {
             return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
         }
-//        $fixed_asset->with('formula', function ($query){
-//            $query->withTrashed();
-//        })->where('id', $id)->first();
 
         $fixed_asset_arr = [
             'id' => $fixed_asset->id,
@@ -872,5 +802,4 @@ class FixedAssetController extends Controller
             'data' => $fixed_asset_arr
         ], 200);
     }
-
 }

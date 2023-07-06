@@ -17,6 +17,8 @@ class CreateCapexesTable extends Migration
             $table->increments('id');
             $table->string('capex');
             $table->string('project_name');
+            $table->string('sub_capex');
+            $table->string('sub_project');
             $table->boolean('is_active')->default(true);
             $table->softDeletes($column = 'deleted_at', $precision = 0);
             $table->timestamps();

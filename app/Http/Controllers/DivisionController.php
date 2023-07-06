@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
 use App\Models\Division;
 use App\Models\FixedAsset;
 use Illuminate\Http\Request;
 use App\Http\Requests\Division\DivisionRequest;
 use App\Models\MajorCategory;
+use Illuminate\Support\Facades\DB;
 
 class DivisionController extends Controller
 {
@@ -17,7 +19,6 @@ class DivisionController extends Controller
      */
     public function index()
     {
-        //user division model then get major category and minor catery using major category
         $division = Division::get();
         return response()->json([
             'data' => $division
@@ -34,11 +35,25 @@ class DivisionController extends Controller
     {
         //capitalized
         $division_name = ucwords(strtolower($request->division_name));
+        //get the array of department ids
+        $department_sync_id = $request->department_sync_id;
+
 
         Division::create([
             'division_name' => $division_name,
             'is_active' => 1
         ]);
+        $division_id = Division::where('division_name', $division_name)->first()->id;
+        if($division_id){
+            foreach ($department_sync_id as $id) {
+                //add the division id to department table with the division id column
+                Department::where('sync_id', $id)->update([
+                    'division_id' => $division_id
+                ]);
+            }
+        }else{
+            return response()->json(['error' => 'Division Route Not Found'], 404);
+        }
         return response()->json([
             'message' => 'Successfully Created!',
             'data' => Division::where('division_name', $division_name)->first()
@@ -71,19 +86,54 @@ class DivisionController extends Controller
     {
         //capitalized first letter per word doesnt allow capitalization of all letters
         $division_name = ucwords(strtolower($request->division_name));
+        $department_sync_id = $request->department_id;
 
         if (!Division::where('id', $id)->exists()) {
             return response()->json(['error' => 'Division Route Not Found'], 404);
         }
-        if (Division::where('id', $id)->where([
-            'division_name' => $division_name,
-        ])->exists()) {
-            return response()->json(['message' => 'No Changes'], 200);
+
+//        $department = Department::where('division_id', $id)->get();
+//        $department_sync_id_array = [];
+//        foreach ($department as $dept) {
+//            array_push($department_sync_id_array, $dept->sync_id);
+//        }
+//        //check also if division name doesnt change
+//        if (Division::where('id', $id)->where('division_name', $division_name)->exists() && $department_sync_id == $department_sync_id_array) {
+//            return response()->json(['message' => 'No Changes Made'], 200);
+//        }
+
+        //use pluck method to get an array of sync_id values
+        $department_sync_id_array = Department::where('division_id', $id)->pluck('sync_id')->toArray();
+        //use firstWhere method to get the division with the given id and name
+        $division = Division::firstWhere(['id' => $id, 'division_name' => $division_name]);
+        //check if division exists and department_id matches the array
+        if ($division && $department_sync_id == $department_sync_id_array) {
+            return response()->json(['message' => 'No Changes Made'], 200);
         }
+
         $update = Division::where('id', $id)->update([
             'division_name' => $division_name,
         ]);
-        return response()->json(['message' => 'Successfully Updated!', 'data' => Division::where('id', $id)->first()], 200);
+
+//        //null the division id in department table then update the department id with the new division id
+//        Department::where('division_id', $id)->update([
+//            'division_id' => null
+//        ]);
+//        foreach ($department_sync_id as $dept_id) {
+//            Department::where('id', $dept_id)->update([
+//                'division_id' => $id
+//            ]);
+//        }
+
+        if($update){
+            Department::where('division_id', $id)->whereNotIn('sync_id', $department_sync_id)->update([
+                'division_id' => null
+            ]);
+            Department::whereIn('sync_id', $department_sync_id)->update([
+                'division_id' => $id
+            ]);
+            return response()->json(['message' => 'Successfully Updated!', 'data' => Division::where('id', $id)->first()], 200);
+        }
     }
 
     /**

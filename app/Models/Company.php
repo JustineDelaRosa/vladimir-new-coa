@@ -23,4 +23,10 @@ class Company extends Model
     {
         return $this->hasMany(FixedAsset::class, 'company_sync_id', 'sync_id');
     }
+
+    public function department()
+    {
+        return $this->hasMany(Department::class, 'company_sync_id', 'sync_id');
+    }
+
 }

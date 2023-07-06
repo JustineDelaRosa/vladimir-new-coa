@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Division;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class DivisionRequest extends FormRequest
 {
@@ -23,9 +24,17 @@ class DivisionRequest extends FormRequest
      */
     public function rules()
     {
-        return [
-            "division_name" => ["unique:divisions,division_name", "required"]
+        if ($this->isMethod('post')) {
+            return [
+                "division_name" => ["unique:divisions,division_name", "required"]
+            ];
+        }
 
-        ];
+        if ($this->isMethod('put') && ($this->route()->parameter('division'))) {
+            $id = $this->route()->parameter('division');
+            return [
+                "division_name" => ["required", Rule::unique('divisions', 'division_name')->ignore($id)]
+            ];
+        }
     }
 }

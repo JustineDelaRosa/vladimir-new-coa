@@ -23,12 +23,14 @@ class CapexRequest extends FormRequest
      */
     public function rules()
     {
+
         if($this->isMethod('post')){
             return [
               'capex' => 'required|unique:capexes,capex',
                 'project_name' => 'required',
             ];
         }
+
         if($this->isMethod('put') && ($this->route()->parameter('capex'))){
             $id = $this->route()->parameter('capex');
             return [

@@ -18,24 +18,36 @@ class PrintBarCodeController extends Controller
     public function printBarcode(Request $request)
     {
         $tagNumber = $this->search($request);
-
+         $clientIP = $request->ip();
+//        //accept only the ip address with 10.10.x.x
+//        if (substr($clientIP, 0, 7) === "10.10.1") {
+//            // print the barcode
+//            return $this->print($tagNumber);
+//        } else {
+//            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
+//        }
 //        return $tagNumber;
         if (!$tagNumber) {
             return response()->json(['message' => 'No data found'], 404);
         }
 
+        $printerIP = PrinterIP::where('ip' , $clientIP)->first();
+        //check status on printerIP table
+        if (!$printerIP->is_active) {
+            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
+        }
 
 
 
         try {
             //get the ip from ative printerIP table in a database
-            $printerIP = PrinterIP::where('is_active', true)->first()->ip;
+//$printerIP = PrinterIP::where('is_active', true)->first()->ip;
             // Initialize the WindowsPrintConnector with the COM port and baud rate
             //$connector = new WindowsPrintConnector("COM1");
             // $connector = new NetworkPrintConnector("10.10.10.11" , 8000);
-//            $connector = new WindowsPrintConnector("ZDesigner ZD230-203dpi ZPL");
+//$connector = new WindowsPrintConnector("ZDesigner ZD230-203dpi ZPL");
             //$printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
-            $connector = new WindowsPrintConnector("smb://{$printerIP}/ZDesigner ZD230-203dpi ZPL");
+            $connector = new WindowsPrintConnector("smb://{$printerIP->ip}/ZDesigner ZD230-203dpi ZPL");
             //check if the smb://10.10.10.11 is available
 
             // Create a new Printer object and assign the connector to it
@@ -97,42 +109,69 @@ class PrintBarCodeController extends Controller
 
     public function search(Request $request)
     {
-//      //  $id = $request->get('id');
-        $tagNumber = $request->get('tagNumber');
+        //  $id = $request->get('id');
+        $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
-        $result = [];
+        $faStatus = $request->get('faStatus');
 
-        // Use a single query builder instance to apply different conditions
-        $fixedAsset = FixedAsset::where('type_of_request_id', '!=', '2')
-            ->orderBy('id', 'ASC')
-            ->select('vladimir_tag_number', 'asset_description','id','type_of_request_id', 'location_name', 'department_name');
+        // Simplify the logic for faStatus
+        if ($faStatus == null) {
+            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off', 'Disposed'];
+        } else if ($faStatus == 'Disposed, Sold') {
+            $faStatus = ['Disposed', 'Sold'];
+        } else if ($faStatus == 'Disposed' || $faStatus == 'Sold') {
+            $faStatus = [$faStatus];
+        } else {
+            $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
+                return $status !== 'Disposed';
+            });
+        }
 
-        // Use a switch statement to handle different cases based on the input parameters
-        switch (true) {
-            case ($startDate != null && $endDate != null && $tagNumber == null):
-                // Filter by date range only
-                $fixedAsset->whereBetween('created_at', [$startDate, $endDate]);
-                break;
-            case (strpos($tagNumber, ',') !== false || strlen($tagNumber) < 2):
-                // Split the tag number by comma and filter by type of request id
-                $tagNumber = explode(',', $tagNumber);
-                $fixedAsset->whereIn('type_of_request_id', $tagNumber);
-                // Optional filter by date range if provided
-                if ($startDate != null && $endDate != null) {
-                    $fixedAsset->whereBetween('created_at', [$startDate, $endDate]);
-                }
-                break;
-            default:
-                // Filter by vladimir tag number or tag number
-                $fixedAsset->where(function ($query) use ($tagNumber) {
-                    $query->where('vladimir_tag_number', $tagNumber)
-                        ->orWhere('tag_number', $tagNumber);
+        // Define the common query for fixed assets
+        $fixedAssetQuery = FixedAsset::with([
+            'formula',
+            'division:id,division_name',
+            'majorCategory:id,major_category_name',
+            'minorCategory:id,minor_category_name',
+        ])
+            ->where('type_of_request_id', '!=', 2)
+            ->whereIn('faStatus', $faStatus);
+
+        // Add date filter if both startDate and endDate are given
+        if ($startDate && $endDate){
+            $fixedAssetQuery->whereBetween('created_at', [$startDate, $endDate]);
+        }
+
+        // Add search filter if search is given
+        if ($search) {
+            $fixedAssetQuery->where(function ($query) use ($search) {
+                $query->where('project_name', 'LIKE', "%$search%")
+                    ->orWhere('vladimir_tag_number', 'LIKE', "%$search%")
+                    ->orWhere('tag_number', 'LIKE', "%$search%")
+                    ->orWhere('tag_number_old', 'LIKE', "%$search%")
+                    ->orWhere('accountability', 'LIKE', "%$search%")
+                    ->orWhere('accountable', 'LIKE', "%$search%")
+                    ->orWhere('faStatus', 'LIKE', "%$search%")
+                    ->orWhere('brand', 'LIKE', "%$search%")
+                    ->orWhere('depreciation_method', 'LIKE', "%$search%");
+                $query->orWhereHas('majorCategory', function ($query) use ($search) {
+                    $query->where('major_category_name', 'LIKE', "%$search%");
                 });
+                $query->orWhereHas('minorCategory', function ($query) use ($search) {
+                    $query->where('minor_category_name', 'LIKE', "%$search%");
+                });
+                $query->orWhereHas('division', function ($query) use ($search) {
+                    $query->where('division_name', 'LIKE', "%$search%");
+                });
+                $query->orWhereHas('location', function ($query) use ($search) {
+                    $query->where('location_name', 'LIKE', "%$search%");
+                });
+            });
         }
 
         // Chunk the results and populate the result array
-        $fixedAsset->chunk(500, function ($assets) use (&$result) {
+        $fixedAssetQuery->chunk(500, function ($assets) use (&$result) {
             foreach ($assets as $asset) {
                 $result[] = [
                     'id' => $asset->id,

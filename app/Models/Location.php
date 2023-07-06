@@ -22,4 +22,22 @@ class Location extends Model
     {
         return $this->hasMany(FixedAsset::class, 'location_sync_id', 'sync_id');
     }
+
+    public function departments()
+    {
+        return $this->hasMany(Department::class, 'location_sync_id', 'sync_id');
+    }
+
+
+//    public function departments()
+//    {
+//        return $this->belongsToMany(
+//            Department::class,
+//            "location_department",
+//            "location_id",
+//            "department_id",
+//            "sync_id",
+//            "sync_id"
+//        );
+//    }
 }

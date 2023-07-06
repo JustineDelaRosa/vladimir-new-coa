@@ -152,7 +152,7 @@ class MasterlistExportController extends Controller
             });
         }
 
-// Get the fixed assets and refactor them for export
+        // Get the fixed assets and refactor them for export
         $fixedAssets = $fixedAssetQuery->get();
 
         //if the fixed assets is empty, return error message
