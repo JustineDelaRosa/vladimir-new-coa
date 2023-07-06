@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\PrinterIP\PrinterIPRequest;
 use App\Models\PrinterIP;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class PrinterIPController extends Controller
 {
@@ -15,6 +16,7 @@ class PrinterIPController extends Controller
      */
     public function index(Request $request)
     {
+
         $search = $request->search;
         $status = $request->status;
         $limit = $request->limit;
@@ -52,7 +54,7 @@ class PrinterIPController extends Controller
      */
     public function store(PrinterIPRequest $request)
     {
-        $printerIP = $request->printer_ip;
+        $printerIP = $request->ip;
         $name = $request->name;
         //only allow ip with 10.10.x.x format
         if(!preg_match('/^10\.10\.\d{1,3}\.\d{1,3}$/', $printerIP)){
@@ -168,7 +170,7 @@ class PrinterIPController extends Controller
         ], 200);
     }
 
-    public function getClientIP(){
+    public function getClientIP(Request $request){
         $ip = $_SERVER['REMOTE_ADDR'];
         return response()->json([
             'message' => 'Successfully retrieved client ip.',
