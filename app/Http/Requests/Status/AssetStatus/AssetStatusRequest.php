@@ -28,5 +28,18 @@ class AssetStatusRequest extends FormRequest
                 'asset_status_name' => 'required|unique:asset_statuses,asset_status_name',
             ];
         }
+
+        if($this->isMethod('put') && ($this->route()->parameter('asset_status'))){
+            $id = $this->route()->parameter('asset_status');
+            return[
+                'asset_status_name' => 'required|unique:asset_statuses,asset_status_name,'.$id,
+            ];
+        }
+
+        if($this->isMethod('patch') && ($this->route()->parameter('id'))){
+            return[
+                'status' => 'required|boolean',
+            ];
+        }
     }
 }

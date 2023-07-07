@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Masterlist\Status;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Status\AssetStatus\AssetStatusRequest;
+use App\Models\FixedAsset;
 use App\Models\Status\AssetStatus;
 use Illuminate\Http\Request;
 
@@ -58,11 +59,19 @@ class AssetStatusController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
-        //
+        $assetStatus = AssetStatus::find($id);
+        if(!$assetStatus) return response()->json([
+            'message' => 'Asset status route not found.'
+        ], 404);
+
+        return response()->json([
+            'message' => 'Successfully retrieved asset status.',
+            'data' => $assetStatus
+        ], 200);
     }
 
     /**
@@ -70,11 +79,25 @@ class AssetStatusController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function update(AssetStatusRequest $request, $id)
     {
-        //
+        $assetStatus = AssetStatus::find($id);
+        if(!$assetStatus) return response()->json([
+            'error' => 'Asset status route not found.'
+        ], 404);
+
+        $asset_status_name = ucwords(strtolower($request->asset_status_name));
+
+        $assetStatus->update([
+            'asset_status_name' => $asset_status_name
+        ]);
+
+        return response()->json([
+            'message' => 'Successfully updated asset status.',
+            'data' => $assetStatus
+        ], 200);
     }
 
     /**
@@ -86,5 +109,59 @@ class AssetStatusController extends Controller
     public function destroy($id)
     {
         //
+    }
+
+
+
+    public function archived(AssetStatusRequest $request, $id)
+    {
+
+        $status = $request->status;
+
+        $assetStatus = AssetStatus::query();
+        if(!$assetStatus->withTrashed()->where('id', $id)->exists()){
+            return response()->json([
+                'message' => 'Asset Status Route Not Found.'
+            ], 404);
+        }
+
+        if($status == false){
+            if(!AssetStatus::where('id', $id)->where('is_active', true)->exists()){
+                return response()->json([
+                    'message' => 'No Changes.'
+                ], 200);
+            }else{
+//                $checkFixedAsset = FixedAsset::where('asset_status_id', $id)->exists();
+//                if ($checkFixedAsset) {
+//                    return response()->json(['error' => 'Unable to archived , Asset Status is still in use!'], 422);
+//                }
+                if(AssetStatus::where('id', $id)->exists()){
+                    $updateCapex = AssetStatus::Where('id', $id)->update([
+                        'is_active' => false,
+                    ]);
+                    $archiveCapex = AssetStatus::where('id', $id)->delete();
+                    return response()->json([
+                        'message' => 'Successfully archived Asset Status.',
+                    ], 200);
+                }
+
+            }
+        }
+
+        if($status == true){
+            if(AssetStatus::where('id', $id)->where('is_active', true)->exists()){
+                return response()->json([
+                    'message' => 'No Changes.'
+                ], 200);
+            }else{
+                $restoreCapex = AssetStatus::withTrashed()->where('id', $id)->restore();
+                $updateStatus = AssetStatus::where('id', $id)->update([
+                    'is_active' => true,
+                ]);
+                return response()->json([
+                    'message' => 'Successfully restored Asset Status.',
+                ], 200);
+            }
+        }
     }
 }

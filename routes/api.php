@@ -165,4 +165,5 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //Asset Status
     Route::resource('asset-status', AssetStatusController::class);
+    Route::patch('asset-status/archived-asset-status/{id}', [AssetStatusController::class, 'archived']);
 });
