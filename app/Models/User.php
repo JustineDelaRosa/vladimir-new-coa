@@ -25,7 +25,7 @@ class User extends Authenticatable
         'username',
         'password',
         'is_active',
-        'role_id'
+        'role_id',
     ];
 
     /**
@@ -66,5 +66,22 @@ class User extends Authenticatable
         return $this->belongsTo(RoleManagement::class, 'role_id','id');
     }
 
-
+    public function requestor(){
+        return $this->hasMany(ApproverLayer::class, 'user_id', 'id');
+    }
+    public function layer1(){
+        return $this->hasMany(ApproverLayer::class, 'layer1', 'id');
+    }
+    public function layer2(){
+        return $this->hasMany(ApproverLayer::class, 'layer2', 'id');
+    }
+    public function layer3(){
+        return $this->hasMany(ApproverLayer::class, 'layer3', 'id');
+    }
+    public function layer4(){
+        return $this->hasMany(ApproverLayer::class, 'layer4', 'id');
+    }
+    public function layer5(){
+        return $this->hasMany(ApproverLayer::class, 'layer5', 'id');
+    }
 }

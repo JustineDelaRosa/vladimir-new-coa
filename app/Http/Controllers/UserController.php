@@ -51,9 +51,11 @@ class UserController extends Controller
             'username' => $username,
             'password' => Crypt::encryptString($username),
             'is_active' => 1,
-            'role_id' => $role_id
-            // 'role_id'=> $role_id
+            'role_id' => $role_id,
         ]);
+
+
+
         return response()->json(['message' => 'Successfully Created!', 'data' => $createUser], 201);
 
         // $userid = $createUser->id;
@@ -131,30 +133,22 @@ class UserController extends Controller
 
     //    $username = $request->username;
     //    $accessPermission = $request->access_permission;
-
     //    $user = User::where('id', $id);
     //    $check_user =  User::where('username', $username)->exists();
-
     //    if(!$check_user){
     //     $user_update = $user->update([
     //      "username" => $username
     //     ]);
     //     // $user_changed = $user_update->username->first();
     //     $user_changed = $username;
-
-
     // }
     // else{
     //  $user_changed = 'Nothing has Changed';
     // }
-
-
-
     //    $access_permission = Access_Permission::query();
     // //    $user_update = $user->update([
     // //     "username" => $username
     // //    ]);
-
     //     $moduleNotExist =[];
     //     $moduleUpdated =[];
     //     $not_included = $access_permission->where('user_id', $id)->get();
@@ -163,7 +157,6 @@ class UserController extends Controller
     //      if(!in_array($module_id_not_exist_in_array, $accessPermission)){
     //         Access_Permission::where('user_id', $id)->where('module_id', $module_id_not_exist_in_array)->delete();
     //      }
-
     //     }
     //     foreach($accessPermission as $permission_id){
     //         if(!Module::where('id', $permission_id)->exists()){
@@ -179,12 +172,9 @@ class UserController extends Controller
     //             }
     //         }
     //     }
-
     //     if(empty($moduleUpdated)){
     //         $moduleUpdated ='Nothing has Changed!';
     //     }
-
-
     //     // 'message' => 'Successfully Updated!',
     //     //     'username' => $user->first()->username,
     //     //     'module_added' => $moduleUpdated
