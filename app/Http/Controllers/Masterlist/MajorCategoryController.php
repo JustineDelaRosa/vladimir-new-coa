@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Masterlist;
 
-use App\Models\Division;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\MajorCategory\MajorCategoryRequest;
 use App\Models\FixedAsset;
-use Illuminate\Http\Request;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
-use App\Http\Requests\MajorCategory\MajorCategoryRequest;
+use Illuminate\Http\Request;
 
 class MajorCategoryController extends Controller
 {

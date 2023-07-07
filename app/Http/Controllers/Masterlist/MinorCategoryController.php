@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Masterlist;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\MinorCategory\MinorCategoryRequest;
 use App\Models\FixedAsset;
-use Illuminate\Http\Request;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
-use App\Http\Requests\MinorCategory\MinorCategoryRequest;
+use Illuminate\Http\Request;
 
 class MinorCategoryController extends Controller
 {

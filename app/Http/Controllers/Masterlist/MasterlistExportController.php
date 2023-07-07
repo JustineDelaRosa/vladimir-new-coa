@@ -1,11 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Masterlist;
 
-use App\Exports\MasterlistExport;
+use App\Http\Controllers\Controller;
 use App\Models\FixedAsset;
 use Illuminate\Http\Request;
-use Maatwebsite\Excel\Facades\Excel;
 
 
 class MasterlistExportController extends Controller

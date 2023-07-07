@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Masterlist;
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use App\Imports\MasterlistImport;
+use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
-use Illuminate\Http\JsonResponse;
 
 class MasterlistImportController extends Controller
 {

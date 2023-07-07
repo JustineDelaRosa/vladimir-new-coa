@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Setup;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\PrinterIP\PrinterIPRequest;
 use App\Models\PrinterIP;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 
 class PrinterIPController extends Controller
 {

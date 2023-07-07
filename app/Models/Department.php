@@ -26,17 +26,17 @@ class Department extends Model
 //        return $this->hasMany(FixedAsset::class, 'department_sync_id', 'sync_id');
 //    }
 
-    public function division()
+    public function division(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsToMany(Division::class, 'division_id', 'id');
+        return $this->belongsTo(Division::class, 'division_id', 'id');
     }
 
-    public function company()
+    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Company::class, 'company_sync_id', 'sync_id');
     }
 
-    public function location()
+    public function location(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Location::class, 'location_sync_id', 'sync_id');
     }

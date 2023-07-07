@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Masterlist;
 
-use App\Exports\MasterlistExport;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\FixedAsset\FixedAssetRequest;
 use App\Http\Requests\FixedAsset\FixedAssetUpdateRequest;
 use App\Imports\MasterlistImport;

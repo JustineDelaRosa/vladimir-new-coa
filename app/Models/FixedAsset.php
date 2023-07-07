@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Status\AssetStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -64,5 +65,10 @@ class FixedAsset extends Model
     public function accountTitle()
     {
         return $this->belongsTo(AccountTitle::class, 'account_id', 'id');
+    }
+
+    public function assetStatus()
+    {
+        return $this->belongsTo(AssetStatus::class, 'asset_status_id', 'id');
     }
 }

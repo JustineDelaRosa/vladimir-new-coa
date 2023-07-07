@@ -14,6 +14,7 @@ use App\Models\MinorCategory;
 use App\Models\TypeOfRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Http;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;

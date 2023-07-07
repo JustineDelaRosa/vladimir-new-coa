@@ -1,28 +1,28 @@
 <?php
 
-use App\Http\Controllers\CapexController;
-use App\Http\Controllers\FixedAssetController;
-use App\Http\Controllers\MasterlistExportController;
-use App\Http\Controllers\PrintBarcode\PrintBarCodeController;
-use App\Http\Controllers\PrinterIPController;
-use App\Http\Controllers\TypeOfRequestController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\CompanyController;
-use App\Http\Controllers\DivisionController;
-use App\Http\Controllers\LocationController;
-use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\DepartmentController;
-use App\Http\Controllers\Setup\SetupController;
-use App\Http\Controllers\AccountTitleController;
 use App\Http\Controllers\CategoryListController;
-use App\Http\Controllers\MajorCategoryController;
-use App\Http\Controllers\MasterlistImportController;
-use App\Http\Controllers\MinorCategoryController;
+use App\Http\Controllers\Masterlist\CapexController;
+use App\Http\Controllers\Masterlist\COA\AccountTitleController;
+use App\Http\Controllers\Masterlist\COA\CompanyController;
+use App\Http\Controllers\Masterlist\COA\DepartmentController;
+use App\Http\Controllers\Masterlist\COA\LocationController;
+use App\Http\Controllers\Masterlist\DivisionController;
+use App\Http\Controllers\Masterlist\FixedAssetController;
+use App\Http\Controllers\Masterlist\MajorCategoryController;
+use App\Http\Controllers\Masterlist\MasterlistExportController;
+use App\Http\Controllers\Masterlist\MasterlistImportController;
+use App\Http\Controllers\Masterlist\MinorCategoryController;
+use App\Http\Controllers\Masterlist\PrintBarcode\PrintBarCodeController;
+use App\Http\Controllers\Masterlist\Status\AssetStatusController;
 use App\Http\Controllers\ServiceProviderController;
+use App\Http\Controllers\Setup\PrinterIPController;
 use App\Http\Controllers\Setup\RoleManagementController;
+use App\Http\Controllers\Setup\SetupController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\TypeOfRequestController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Route;
 
 
 /*
@@ -160,4 +160,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //COA Archive
     Route::patch('account-title/archived-account-title/{id}', [AccountTitleController::class, 'archived']);
+
+    //STATUS
+
+    //Asset Status
+    Route::resource('asset-status', AssetStatusController::class);
 });

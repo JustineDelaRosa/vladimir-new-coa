@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Masterlist\COA;
 
+use App\Http\Controllers\Controller;
 use App\Models\AccountTitle;
 use Illuminate\Http\Request;
 

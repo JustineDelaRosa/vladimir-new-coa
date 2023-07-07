@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Masterlist\COA;
 
-use App\Http\Resources\Location\LocationResource;
+use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Location;
 use Illuminate\Http\Request;
@@ -166,7 +166,7 @@ class LocationController extends Controller
             })
             ->orderby('created_at', 'DESC')
             ->paginate($limit);
-        return $Location;
+        return $Location; //Todo: Add all the departments tagged to this location
     }
 
 //    public function archived(Request $request, $id)

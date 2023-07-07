@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Masterlist;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Division\DivisionRequest;
 use App\Models\Department;
 use App\Models\Division;
 use App\Models\FixedAsset;
+use http\Env\Response;
 use Illuminate\Http\Request;
-use App\Http\Requests\Division\DivisionRequest;
-use App\Models\MajorCategory;
-use Illuminate\Support\Facades\DB;
 
 class DivisionController extends Controller
 {
@@ -36,28 +36,28 @@ class DivisionController extends Controller
         //capitalized
         $division_name = ucwords(strtolower($request->division_name));
         //get the array of department ids
-        $department_sync_id = $request->department_sync_id;
+        $department_sync_id = $request->sync_id;
 
-
-        Division::create([
+        $addDivision = Division::create([
             'division_name' => $division_name,
             'is_active' => 1
         ]);
-        $division_id = Division::where('division_name', $division_name)->first()->id;
-        if($division_id){
-            foreach ($department_sync_id as $id) {
-                //add the division id to department table with the division id column
-                Department::where('sync_id', $id)->update([
-                    'division_id' => $division_id
-                ]);
+        if($addDivision) {
+            $division_id = Division::where('division_name', $division_name)->first()->id;
+            if ($division_id) {
+                foreach ($department_sync_id as $id) {
+                    Department::where('sync_id', $id)->update([
+                        'division_id' => $division_id
+                    ]);
+                }
+            } else {
+                return response()->json(['error' => 'Division Route Not Found'], 404);
             }
-        }else{
-            return response()->json(['error' => 'Division Route Not Found'], 404);
+            return response()->json([
+                'message' => 'Successfully Created!',
+                'data' => Division::where('division_name', $division_name)->first()
+            ], 201);
         }
-        return response()->json([
-            'message' => 'Successfully Created!',
-            'data' => Division::where('division_name', $division_name)->first()
-        ], 201);
     }
 
     /**
@@ -68,11 +68,28 @@ class DivisionController extends Controller
      */
     public function show($id)
     {
-        $division = Division::query();
+        $division = Division::with('department')->where('id', $id)->first();
         if (!$division->where('id', $id)->exists()) {
             return response()->json(['error' => 'Division Route Not Found'], 404);
         }
-        return $division->where('id', $id)->first();
+        return response()->json([
+            'data' => [
+                'id' => $division->id,
+                'division_name' => $division->division_name,
+                'is_active' => $division->is_active,
+                //get all departments sync_id push to array
+                'sync_id' => $division->department->pluck('sync_id')
+            ]
+        ], 200);
+//        return response()->json([
+//            'data' => [
+//                'id' => $division->id,
+//                'division_name' => $division->division_name,
+//                'is_active' => $division->is_active,
+//                'departments' => [
+//                ]
+//            ]
+//        ], 200);
     }
 
     /**
@@ -86,7 +103,7 @@ class DivisionController extends Controller
     {
         //capitalized first letter per word doesnt allow capitalization of all letters
         $division_name = ucwords(strtolower($request->division_name));
-        $department_sync_id = $request->department_id;
+        $department_sync_id = $request->sync_id;
 
         if (!Division::where('id', $id)->exists()) {
             return response()->json(['error' => 'Division Route Not Found'], 404);
@@ -209,6 +226,20 @@ class DivisionController extends Controller
             })
             ->orderby('created_at', 'DESC')
             ->paginate($limit);
+
+        $Division->getCollection()->transform(function ($division) {
+            return[
+                'id' => $division->id,
+                'division_name' => $division->division_name,
+                'is_active' => $division->is_active,
+                'sync_id' => $division->department->map(function ($department) {
+                    return [
+                        'department_name' => $department->department_name,
+                        'sync_id' => $department->sync_id,
+                    ];
+                }),
+            ];
+        });
         return $Division;
     }
 }

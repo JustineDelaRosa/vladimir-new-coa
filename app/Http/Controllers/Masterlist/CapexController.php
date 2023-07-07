@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Masterlist;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Capex\CapexRequest;
 use App\Http\Requests\Capex\SubCapexRequest;
-use App\Http\Resources\Capex\CapexResource;
 use App\Models\Capex;
 use App\Models\FixedAsset;
-use App\Models\MajorCategory;
 use Illuminate\Http\Request;
 
 class CapexController extends Controller
@@ -34,7 +33,6 @@ class CapexController extends Controller
             })
             ->orderByDesc("updated_at");
         $capex = $limit ? $capex->paginate($limit) : $capex->get();
-
 
         return response()->json([
             'message' => 'Successfully retrieved capex.',
@@ -73,7 +71,7 @@ class CapexController extends Controller
         $sub_project = ucwords(strtolower($request->sub_project));
         $capex = Capex::where('id',$id)->first();
         //check if this sub capex is already exist
-        $check = Capex::where('sub_capex',$capex->capex . ' - ' . $sub_capex)->first();
+        $check = Capex::where('sub_capex',$capex->capex . '-' . $sub_capex)->first();
         if($check){
             return response()->json([
                 'message' => 'The given data was invalid.',

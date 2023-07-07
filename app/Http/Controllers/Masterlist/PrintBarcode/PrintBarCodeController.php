@@ -1,16 +1,16 @@
 <?php
 
-namespace App\Http\Controllers\PrintBarcode;
+namespace App\Http\Controllers\Masterlist\PrintBarcode;
 //require __DIR__ . '/../../../../vendor/autoload.php';
 use App\Http\Controllers\Controller;
 use App\Models\FixedAsset;
 use App\Models\PrinterIP;
 use Exception;
 use Illuminate\Http\Request;
-use Mike42\Escpos\PrintConnectors\FilePrintConnector;
-//use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 use Mike42\Escpos\Printer;
+
+//use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 
 
 class PrintBarCodeController extends Controller

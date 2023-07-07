@@ -1,9 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Masterlist\COA;
 
-use App\Http\Resources\Department\DepartmentResource;
-use App\Models\Company;
+use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\LocationDepartment;
 use Illuminate\Http\Request;
@@ -17,6 +16,14 @@ class DepartmentController extends Controller
      */
     public function index()
     {
+//        $token = "9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4";
+//        $response = Http::withHeaders([
+//            'Authorization' => 'Bearer '.$token,
+//        ])->get('http://rdfsedar.com/api/data/employees');
+//        $data = json_decode($response->body(), true);
+//        $department = $data['data']['general_info']['full_id_number'];
+//        return $department;
+
         $department = Department::get();
         return $department;
     }
@@ -130,6 +137,8 @@ class DepartmentController extends Controller
         if ($status != "active" || $status != "deactivated") {
             $status = 1;
         }
+
+        //if the division_id column is null, it will not be included in the search query to avoid error
         $Department = Department::where(function ($query) use ($status) {
             $query->where('is_active', $status);
         })
@@ -140,10 +149,13 @@ class DepartmentController extends Controller
                     $query->where('company_name', 'LIKE', "%{$search}%")
                         ->orWhere('company_code', 'LIKE', "%{$search}%");
                 });
-//                $query->orWhereHas('locations', function ($query) use ($search) {
-//                    $query->where('location_name', 'LIKE', "%{$search}%")
-//                        ->orWhere('location_code', 'LIKE', "%{$search}%");
-//                });
+                $query->orWhereHas('location', function ($query) use ($search) {
+                    $query->where('location_name', 'LIKE', "%{$search}%")
+                        ->orWhere('location_code', 'LIKE', "%{$search}%");
+                });
+                $query->orWhereHas('division', function ($query) use ($search) {
+                    $query->where('division_name', 'LIKE', "%{$search}%");
+                });
             })
             ->orderby('created_at', 'DESC')
             ->paginate($limit);
@@ -153,20 +165,20 @@ class DepartmentController extends Controller
                     'id' =>$department->id,
                     'sync_id' =>$department->sync_id,
                     'company' =>[
-                        'id' =>$department->company->id,
-                        'sync_id' =>$department->company->sync_id,
+                        'company_id' =>$department->company->id,
+                        'company_sync_id' =>$department->company->sync_id,
                         'company_code' =>$department->company->company_code,
                         'company_name' =>$department->company->company_name,
                     ],
-                    'locations' =>[
-                        'id' =>$department->location->id ?? "-",
-                        'sync_id' =>$department->location->sync_id ?? "-",
+                    'location' =>[
+                        'location_id' =>$department->location->id ?? "-",
+                        'location_sync_id' => $department->location->sync_id ?? "-",
                         'location_code' =>$department->location->location_code ?? "-",
                         'location_name' =>$department->location->location_name ?? "-",
                     ],
                     'division' => [
-                        'id' =>$department->divsision->id ?? "-",
-                        'division_name' =>$department->divsision->division_name ?? "-",
+                        'division_id' =>$department->division->id ?? "-",
+                        'division_name' =>$department->division->division_name ?? "-",
                     ],
                     'department_code' =>$department->department_code,
                     'department_name' =>$department->department_name,
