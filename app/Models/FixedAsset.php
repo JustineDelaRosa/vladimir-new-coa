@@ -17,9 +17,14 @@ class FixedAsset extends Model
 
     // ]
 
-    public function capex()
+//    public function capex()
+//    {
+//        return $this->belongsTo(Capex::class, 'capex_id', 'id');
+//    }
+
+    public function subCapex()
     {
-        return $this->belongsTo(Capex::class, 'capex_id', 'id');
+        return $this->belongsTo(SubCapex::class, 'capex_id', 'id');
     }
 
     public function formula()

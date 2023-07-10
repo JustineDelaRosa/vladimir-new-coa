@@ -7,6 +7,7 @@ use App\Http\Requests\Capex\CapexRequest;
 use App\Http\Requests\Capex\SubCapexRequest;
 use App\Models\Capex;
 use App\Models\FixedAsset;
+use App\Models\SubCapex;
 use Illuminate\Http\Request;
 
 class CapexController extends Controller
@@ -18,12 +19,17 @@ class CapexController extends Controller
      */
     public function index(Request $request)
     {
-
         $search = $request->search;
         $status = $request->status;
         $limit = $request->limit;
 
-        $capex = Capex::where(function ($query) use ($search) {
+        $capex = Capex::with([
+                'subCapex' => function ($query) {
+                    $query->withTrashed();
+                },
+            ]
+        )
+            ->where(function ($query) use ($search) {
             $query
                 ->where("capex", "like", "%" . $search . "%")
                 ->orWhere("project_name", "like", "%" . $search . "%");
@@ -66,42 +72,6 @@ class CapexController extends Controller
 
     }
 
-    public function storeSubCapex(SubCapexRequest $request,$id){
-        $sub_capex = strtoupper($request->sub_capex);
-        $sub_project = ucwords(strtolower($request->sub_project));
-        $capex = Capex::where('id',$id)->first();
-        //check if this sub capex is already exist
-        $check = Capex::where('sub_capex',$capex->capex . '-' . $sub_capex)->first();
-        if($check){
-            return response()->json([
-                'message' => 'The given data was invalid.',
-                'errors' => [
-                    'sub_capex' => [
-                        'The sub capex has already been taken.'
-                    ]
-                ]
-            ], 422);
-        }
-
-
-        if($capex){
-            $capex = Capex::create([
-                'capex' => $capex->capex,
-                'project_name' => $capex->project_name,
-                'sub_capex' => $capex->capex . '-' . $sub_capex,
-                'sub_project' => $sub_project,
-                'is_active' => true
-            ]);
-            return response()->json([
-                'message' => 'Successfully created sub capex.',
-                'data' => $capex
-            ], 201);
-        }
-        return response()->json([
-            'message' => 'Capex Route Not Found.'
-        ], 404);
-    }
-
     /**
      * Display the specified resource.
      *
@@ -113,7 +83,7 @@ class CapexController extends Controller
         $capex = Capex::query();
         if(!$capex->where('id', $id)->exists()){
             return response()->json([
-                'message' => 'Capex Route Not Found.'
+                'error' => 'Capex Route Not Found.'
             ], 404);
         }
         $capex = $capex->where('id', $id)->first();
@@ -155,7 +125,7 @@ class CapexController extends Controller
             ], 200);
         } else {
             return response()->json([
-                'message' => 'Capex Route Not Found.'
+                'error' => 'Capex Route Not Found.'
             ], 404);
         }
     }
@@ -168,7 +138,7 @@ class CapexController extends Controller
         $capex = Capex::query();
         if(!$capex->withTrashed()->where('id', $id)->exists()){
             return response()->json([
-                'message' => 'Capex Route Not Found.'
+                'error' => 'Capex Route Not Found.'
             ], 404);
         }
 
@@ -183,10 +153,23 @@ class CapexController extends Controller
                     return response()->json(['error' => 'Unable to archived , Capex is still in use!'], 422);
                 }
                 if(Capex::where('id', $id)->exists()){
+
+                    $sub_capex_check = SubCapex::where('capex_id', $id)->get('id');
+                    //check if any of the sub capex is in use by fixed asset
+                    $checkFixedAsset = FixedAsset::whereIn('capex_id',$sub_capex_check)->exists();
+                    if ($checkFixedAsset) {
+                        return response()->json(['error' => 'Unable to archive, Sub Capex is still in use!'], 422);
+                    }
+
                     $updateCapex = Capex::Where('id', $id)->update([
                         'is_active' => false,
                     ]);
+                    //change also the status of sub capex
+                    $updateSubCapex = SubCapex::whereIn('id', $sub_capex_check)->update([
+                        'is_active' => false,
+                    ]);
                     $archiveCapex = Capex::where('id', $id)->delete();
+                    $archiveSubCapex = SubCapex::whereIn('id', $sub_capex_check)->delete();
                     return response()->json([
                         'message' => 'Successfully archived capex.',
                     ], 200);
@@ -211,8 +194,4 @@ class CapexController extends Controller
             }
         }
     }
-
-
-
-
 }

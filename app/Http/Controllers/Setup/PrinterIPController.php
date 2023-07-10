@@ -29,7 +29,7 @@ class PrinterIPController extends Controller
             ->when($status === "deactivated", function ($query) {
                 $query->where("is_active", false);
             })
-            ->orderByDesc("updated_at");
+            ->orderBy("is_active", "desc");
         $printerIP = $limit ? $printerIP->paginate($limit) : $printerIP->get();
 
 
@@ -144,29 +144,29 @@ class PrinterIPController extends Controller
         ], 200);
     }
 
-    public function activateIP(PrinterIPRequest $request)
+    public function activateIP(Request $request,$id)
     {
 
-        $printerID = $request->printer_id;
+//        $printerID = $request->printer_id;
         //activate printer ip and deactivate other printer ip only one printer ip can be active
-        $printer = PrinterIP::find($printerID);
+        $printer = PrinterIP::find($id);
+
         if (!$printer) {
             return response()->json([
-                'message' => 'Printer ip not found.',
-                'data' => null
+                'message' => 'Printer ip not found.'
             ], 404);
         }
         $printer->is_active = true;
         $printer->save();
 
-        $printer = PrinterIP::where('id', '!=', $printerID)->get();
+       $printer = PrinterIP::where('id', '!=', $id)->get();
         foreach ($printer as $print) {
             $print->is_active = false;
             $print->save();
         }
+
         return response()->json([
             'message' => 'Successfully activated printer ip.',
-            'data' => $printer
         ], 200);
     }
 

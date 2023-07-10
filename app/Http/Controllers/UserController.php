@@ -189,20 +189,6 @@ class UserController extends Controller
 
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
-    }
-
-
-
-
     public function search(Request $request){
 
         $search = $request->query('search');
@@ -237,14 +223,7 @@ class UserController extends Controller
         ->orderby('created_at', 'DESC')
         ->paginate($limit);
         return $User;
-
-
-
-
     }
-
-
-
 
     public function archived(UserRequest $request, $id){
         $auth_id = auth('sanctum')->user()->id;
@@ -288,11 +267,5 @@ class UserController extends Controller
             return "not exist";
         }
     }
-
-
-
-
-
-
 }
 

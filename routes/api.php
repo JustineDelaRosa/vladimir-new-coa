@@ -15,6 +15,7 @@ use App\Http\Controllers\Masterlist\MasterlistImportController;
 use App\Http\Controllers\Masterlist\MinorCategoryController;
 use App\Http\Controllers\Masterlist\PrintBarcode\PrintBarCodeController;
 use App\Http\Controllers\Masterlist\Status\AssetStatusController;
+use App\Http\Controllers\Masterlist\SubCapexController;
 use App\Http\Controllers\ServiceProviderController;
 use App\Http\Controllers\Setup\PrinterIPController;
 use App\Http\Controllers\Setup\RoleManagementController;
@@ -131,6 +132,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('capex', CapexController::class);
     Route::patch('capex/archived-capex/{id}', [CapexController::class, 'archived']);
     Route::post('sub_capex/{id}', [CapexController::class, 'storeSubCapex']);
+    //sub capex
+    Route::resource('sub-capex', SubCapexController::class);
+    Route::patch('sub-capex/archived-sub-capex/{id}', [SubCapexController::class, 'archived']);
 
     //materlist import
     Route::post('/import-masterlist', [MasterlistImportController::class, 'masterlistImport']);
@@ -155,7 +159,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //PrinterIp
     Route::resource('printer-ip', PrinterIpController::class);
-    Route::patch('activateIp', [PrinterIpController::class, 'activateIP']);
+    Route::patch('activateIp/{id}', [PrinterIpController::class, 'activateIP']);
     Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
 
     //COA Archive

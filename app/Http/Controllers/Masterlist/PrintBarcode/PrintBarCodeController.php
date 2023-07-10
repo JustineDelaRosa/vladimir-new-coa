@@ -147,7 +147,7 @@ class PrintBarCodeController extends Controller
         if ($search) {
             $fixedAssetQuery->where(function ($query) use ($search) {
                 $query->where('project_name', 'LIKE', "%$search%")
-                    ->orWhere('vladimir_tag_number', 'LIKE', "%$search%")
+                    ->orWhere('vladimir_tag_number', '=' ,$search)
                     ->orWhere('tag_number', 'LIKE', "%$search%")
                     ->orWhere('tag_number_old', 'LIKE', "%$search%")
                     ->orWhere('accountability', 'LIKE', "%$search%")
@@ -166,6 +166,9 @@ class PrintBarCodeController extends Controller
                 });
                 $query->orWhereHas('location', function ($query) use ($search) {
                     $query->where('location_name', 'LIKE', "%$search%");
+                });
+                $query->orWhereHas('typeOfRequest', function ($query) use ($search) {
+                    $query->where('type_of_request_name', 'LIKE', "%$search%");
                 });
             });
         }

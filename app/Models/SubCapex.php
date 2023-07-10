@@ -6,18 +6,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Capex extends Model
+class SubCapex extends Model
 {
     use HasFactory, SoftDeletes;
+
     protected $guarded = [];
 
-//    public function fixedAsset()
-//    {
-//        return $this->hasMany(FixedAsset::class, 'capex_id', 'id');
-//    }
 
-    public function subCapex()
+    public function capex()
     {
-        return $this->hasMany(SubCapex::class, 'capex_id', 'id');
+        return $this->belongsTo(Capex::class , 'capex_id' , 'id');
+    }
+
+    public function fixedAsset()
+    {
+        return $this->hasMany(FixedAsset::class, 'capex_id', 'id');
     }
 }

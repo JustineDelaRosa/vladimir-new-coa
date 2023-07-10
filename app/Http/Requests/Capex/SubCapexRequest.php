@@ -25,18 +25,33 @@ class SubCapexRequest extends FormRequest
     public function rules()
     {
         if($this->isMethod('post')){
-            $id = $this->route()->parameter('id');
             return [
-                //get the capex number from id and check if the sub capex is unique in the capex
+                'capex_id' => 'required|exists:capexes,id',
                 'sub_capex' => ['required', 'max:3'],
                 'sub_project' => 'required',
             ];
         }
+
+        if($this->isMethod('put') && $this->route()->parameter('sub_capex')){
+            $id = $this->route()->parameter('sub_capex');
+            return [
+                'sub_project' => 'required',
+            ];
+        }
+
+        if($this->isMethod('patch') && ($this->route()->parameter('id'))){
+            return [
+                'status' => 'required|boolean'
+            ];
+        }
+
     }
 
     function messages()
     {
         return [
+            'capex_id.required' => 'Capex is required',
+            'capex_id.exists' => 'Capex does not exists',
             'sub_capex.required' => 'Sub Capex is required',
             'sub_capex.max' => 'Max length of Sub Capex is 3 characters',
             'sub_project.required' => 'Sub Project is required',

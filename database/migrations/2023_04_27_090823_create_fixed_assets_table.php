@@ -54,7 +54,7 @@ class CreateFixedAssetsTable extends Migration
             $table->timestamps();
             $table->foreign('capex_id')
                 ->references('id')
-                ->on('capexes')
+                ->on('sub_capexes')
                 ->onDelete('cascade');
              $table->foreign('type_of_request_id')
                  ->references('id')

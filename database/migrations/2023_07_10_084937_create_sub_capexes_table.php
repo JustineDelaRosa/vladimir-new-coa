@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateCapexesTable extends Migration
+class CreateSubCapexesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,12 +13,17 @@ class CreateCapexesTable extends Migration
      */
     public function up()
     {
-        Schema::create('capexes', function (Blueprint $table) {
+        Schema::create('sub_capexes', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('capex');
-            $table->string('project_name');
+            $table->string('sub_capex');
+            $table->unsignedInteger('capex_id');
+            $table->foreign('capex_id')
+                ->references('id')
+                ->on('capexes')
+                ->onDelete('cascade');
+            $table->string('sub_project');
             $table->boolean('is_active')->default(true);
-            $table->softDeletes($column = 'deleted_at', $precision = 0);
+            $table->softDeletes();
             $table->timestamps();
         });
     }
@@ -30,6 +35,6 @@ class CreateCapexesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('capexes');
+        Schema::dropIfExists('sub_capexes');
     }
 }

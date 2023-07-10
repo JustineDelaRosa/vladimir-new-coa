@@ -11,6 +11,7 @@ use App\Models\Location;
 use App\Models\Department;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
+use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -107,7 +108,7 @@ class MasterlistImport extends DefaultValueBinder implements
 
             // Create the Masterlist with the obtained ids
             $fixedAsset = FixedAsset::create([
-                'capex_id' => Capex::where('capex', $collection['capex'])->first()->id ?? null,
+                'capex_id' => SubCapex::where('sub_capex', $collection['capex'])->first()->id ?? null,
                 'project_name' => ucwords(strtolower($collection['project_name'])) ?? '-',
                 'vladimir_tag_number' => $this->vladimirTagGenerator(),
                 'tag_number' => $collection['tag_number'] ?? '-',
@@ -187,7 +188,7 @@ class MasterlistImport extends DefaultValueBinder implements
                     return true;
                 }
                 //check if the value of capex exists in the database
-                $capex = Capex::where('capex', $value)->first();
+                $capex = SubCapex::where('sub_capex', $value)->first();
                 if (!$capex) {
                     $fail('Capex does not exist');
                 }
@@ -199,9 +200,9 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
                 //check in the capex table if the project name is the same with the capex
                 $index = array_search($attribute, array_keys($collections->toArray()));
-                $capex = Capex::where('capex', $collections[$index]['capex'])->first();
+                $capex = SubCapex::where('sub_capex', $collections[$index]['capex'])->first();
                 if ($capex) {
-                    $project = $capex->where('project_name', $value)->first();
+                    $project = $capex->where('sub_project', $value)->first();
                     if (!$project) {
                         $fail('Project name does not exist in the capex');
                     }

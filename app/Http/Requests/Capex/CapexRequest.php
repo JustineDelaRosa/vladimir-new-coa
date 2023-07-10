@@ -46,7 +46,4 @@ class CapexRequest extends FormRequest
         }
     }
 
-
-
-
 }

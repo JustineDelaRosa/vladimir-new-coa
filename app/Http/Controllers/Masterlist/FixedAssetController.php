@@ -469,8 +469,8 @@ class FixedAssetController extends Controller
                     ->orWhere('faStatus', 'LIKE', '%' . $search . '%')
                     ->orWhere('brand', 'LIKE', '%' . $search . '%')
                     ->orWhere('depreciation_method', 'LIKE', '%' . $search . '%');
-                $query->orWhereHas('capex', function ($query) use ($search) {
-                    $query->where('capex', 'LIKE', '%' . $search . '%');
+                $query->orWhereHas('subCapex', function ($query) use ($search) {
+                    $query->where('sub_capex', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('majorCategory', function ($query) use ($search) {
                     $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
@@ -502,9 +502,9 @@ class FixedAssetController extends Controller
             return [
                 'id' => $item->id,
                 'capex' => [
-                    'id' => $item->capex->id ?? '-',
-                    'capex' => $item->capex->capex ?? '-',
-                    'project_name' => $item->capex->project_name ?? '-',
+                    'id' => $item->subCapex->id ?? '-',
+                    'capex' => $item->subCapex->sub_capex ?? '-',
+                    'project_name' => $item->subCapex->sub_project ?? '-',
                 ],
                 'project_name' => $item->project_name,
                 'vladimir_tag_number' => $item->vladimir_tag_number,
@@ -728,7 +728,7 @@ class FixedAssetController extends Controller
 
         $fixed_asset_arr = [
             'id' => $fixed_asset->id,
-            'capex' => $fixed_asset->capex,
+            'capex' => $fixed_asset->subCapex->sub_capex,
             'project_name' => $fixed_asset->project_name,
             'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
             'tag_number' => $fixed_asset->tag_number,
