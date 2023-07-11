@@ -728,7 +728,7 @@ class FixedAssetController extends Controller
 
         $fixed_asset_arr = [
             'id' => $fixed_asset->id,
-            'capex' => $fixed_asset->subCapex->sub_capex,
+            'capex' => $fixed_asset->subCapex->sub_capex ?? "-",
             'project_name' => $fixed_asset->project_name,
             'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
             'tag_number' => $fixed_asset->tag_number,

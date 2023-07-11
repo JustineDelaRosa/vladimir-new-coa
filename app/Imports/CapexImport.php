@@ -35,12 +35,15 @@ class CapexImport implements ToCollection, WithHeadingRow, WithStartRow
                     'is_active' => true,
                 ]);
             }else{
-                $capex = Capex::where('capex', $row['capex'])->first();
+                $capex = Capex::withTrashed()->where('capex', $row['capex'])->first();
                 $subCapex = $capex->subCapex()->create([
                     'sub_capex' => $row['sub_capex'],
                     'sub_project' => $row['sub_project'],
-                    'is_active' => true,
+                    'is_active' => !$capex->deleted_at,
                 ]);
+                if($capex->deleted_at) {
+                    $subCapex->delete();
+                }
             }
         }
     }
@@ -52,12 +55,12 @@ class CapexImport implements ToCollection, WithHeadingRow, WithStartRow
                     $index = array_search($value, array_column($collection, 'capex'));
                     $subCapex = $collection[$index]['sub_capex'];
                 if($value == $subCapex) {
-                    $capex = Capex::where('capex', $value)->first();
+                    $capex = Capex::withTrashed()->where('capex', $value)->first();
                     if ($capex) {
                         $fail('Capex already exists');
                     }
                 }else{
-                    $capex = Capex::where('capex', $value)->first();
+                    $capex = Capex::withTrashed()->where('capex', $value)->first();
                     if (!$capex) {
                         $fail('Capex does not exist');
                     }

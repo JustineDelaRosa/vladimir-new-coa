@@ -363,49 +363,120 @@ class MasterlistImport extends DefaultValueBinder implements
     }
 
 
+
+//    GENERATING VLADIMIR TAG NUMBER
+//    public function vladimirTagGenerator()
+//    {
+//        $date = date('ymd');
+//        static $lastRandom = 0;
+//        $generated = [];
+//
+//        // Generate a new random value
+//        do {
+//            $random = mt_rand(1, 9) . mt_rand(1000, 9999);
+//        } while ($random === $lastRandom);
+//
+//        $lastRandom = $random;
+//        $number = "5$date$random";
+//
+//        if (strlen($number) !== 12) {
+//            return 'Invalid Number';
+//        }
+//
+//        $evenSum = 0;
+//        $oddSum = 0;
+//
+//        for ($i = 1; $i < 12; $i += 2) {
+//            $evenSum += (int)$number[$i];
+//        }
+//        $evenSum *= 3;
+//
+//        for ($i = 0; $i < 12; $i += 2) {
+//            $oddSum += (int)$number[$i];
+//        }
+//
+//        $totalSum = $evenSum + $oddSum;
+//        $remainder = $totalSum % 10;
+//        $checkDigit = ($remainder === 0) ? 0 : 10 - $remainder;
+//
+//        $ean13Result = $number . $checkDigit;
+//
+//        // Check if the generated number is a duplicate or already exists in the database
+//        while (in_array($ean13Result, $generated) || FixedAsset::where('vladimir_tag_number', $ean13Result)->exists()) {
+//            // Regenerate the number
+//            $ean13Result = $this->vladimirTagGenerator();
+//        }
+//        return $ean13Result;
+//    }
+
     public function vladimirTagGenerator()
+    {
+        $generatedEan13Result = $this->generateEan13();
+        // Check if the generated number is a duplicate or already exists in the database
+        while ($this->checkDuplicateEan13($generatedEan13Result)) {
+            $generatedEan13Result = $this->generateEan13();
+        }
+
+        return $generatedEan13Result;
+    }
+
+    public function generateEan13(): string
     {
         $date = date('ymd');
         static $lastRandom = 0;
-        $generated = [];
-
-        // Generate a new random value
         do {
             $random = mt_rand(1, 9) . mt_rand(1000, 9999);
         } while ($random === $lastRandom);
-
         $lastRandom = $random;
+
         $number = "5$date$random";
 
         if (strlen($number) !== 12) {
             return 'Invalid Number';
         }
 
-        $evenSum = 0;
-        $oddSum = 0;
+        //Calculate checkDigit
+        $checkDigit = $this->calculateCheckDigit($number);
 
-        for ($i = 1; $i < 12; $i += 2) {
-            $evenSum += (int)$number[$i];
-        }
-        $evenSum *= 3;
+        $ean13Result = $number . $checkDigit;
 
-        for ($i = 0; $i < 12; $i += 2) {
-            $oddSum += (int)$number[$i];
-        }
+        return $ean13Result;
+    }
+
+    public function calculateCheckDigit(string $number): int
+    {
+        $evenSum = $this->calculateEvenSum($number);
+        $oddSum = $this->calculateOddSum($number);
 
         $totalSum = $evenSum + $oddSum;
         $remainder = $totalSum % 10;
         $checkDigit = ($remainder === 0) ? 0 : 10 - $remainder;
 
-        $ean13Result = $number . $checkDigit;
+        return $checkDigit;
+    }
 
-        // Check if the generated number is a duplicate or already exists in the database
-        while (in_array($ean13Result, $generated) || FixedAsset::where('vladimir_tag_number', $ean13Result)->exists()) {
-            // Regenerate the number
-            $ean13Result = $this->vladimirTagGenerator();
+    public function calculateEvenSum(string $number): int
+    {
+        $evenSum = 0;
+        for ($i = 1; $i < 12; $i += 2) {
+            $evenSum += (int)$number[$i];
         }
+        return $evenSum * 3;
+    }
 
-        return $ean13Result;
+    public function calculateOddSum(string $number): int
+    {
+        $oddSum = 0;
+        for ($i = 0; $i < 12; $i += 2) {
+            $oddSum += (int)$number[$i];
+        }
+        return $oddSum;
+    }
+
+    public function checkDuplicateEan13(string $ean13Result): bool
+    {
+        $generated = [];
+        return in_array($ean13Result, $generated) || FixedAsset::where('vladimir_tag_number', $ean13Result)->exists();
     }
 
 }
