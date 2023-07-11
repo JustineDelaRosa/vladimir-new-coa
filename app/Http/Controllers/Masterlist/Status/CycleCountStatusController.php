@@ -151,13 +151,6 @@ class CycleCountStatusController extends Controller
 //    }
 
 
-    /**
-     * Archived a cycle count status.
-     *
-     * @param CycleCountStatusRequest $request The request object.
-     * @param int $id The ID of the cycle count status.
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function archived(CycleCountStatusRequest $request, $id)
     {
         $status = $request->status;
@@ -178,29 +171,22 @@ class CycleCountStatusController extends Controller
             ], 200);
         }
 
-        try {
-            // Perform changes based on requested status.
-            if (!$status){
-                $cycleCount->is_active = false;
-                $cycleCount->delete();
-                return response()->json([
-                    'message' => 'Successfully archived Cycle Count Status.',
-                ], 204); // Use status code 204 for successful deletion
-
-            } else {
-                $cycleCount->restore();
-                $cycleCount->is_active = true;
-                $cycleCount->save();
-                return response()->json([
-                    'message' => 'Successfully restored Cycle Count Status.',
-                ], 200);
-            }
-        } catch (\Exception $e) {
-            // Handle any exceptions that are thrown
+        // Perform changes based on requested status.
+        if (!$status){
+            $cycleCount->is_active = false;
+            $cycleCount->save();
+            $cycleCount->delete();
             return response()->json([
-                'message' => 'Unexpected error occurred.',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Successfully archived Cycle Count Status.',
+            ], 200);
+
+        } else {
+            $cycleCount->restore();
+            $cycleCount->is_active = true;
+            $cycleCount->save();
+            return response()->json([
+                'message' => 'Successfully restored Cycle Count Status.',
+            ], 200);
         }
     }
 }
