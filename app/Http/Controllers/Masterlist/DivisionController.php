@@ -182,6 +182,10 @@ class DivisionController extends Controller
                 if ($checkFixedAsset) {
                     return response()->json(['error' => 'Unable to archived , Division is still in use!'], 422);
                 }
+                $checkDepartment = Department::where('division_id', $id)->exists();
+                if ($checkDepartment) {
+                    return response()->json(['error' => 'Unable to archived , Division is still in use!'], 422);
+                }
 
                 $updateStatus = $Division->where('id', $id)->update(['is_active' => false]);
                 $Division->where('id', $id)->delete();

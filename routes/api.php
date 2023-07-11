@@ -15,6 +15,7 @@ use App\Http\Controllers\Masterlist\MasterlistImportController;
 use App\Http\Controllers\Masterlist\MinorCategoryController;
 use App\Http\Controllers\Masterlist\PrintBarcode\PrintBarCodeController;
 use App\Http\Controllers\Masterlist\Status\AssetStatusController;
+use App\Http\Controllers\Masterlist\Status\CycleCountStatusController;
 use App\Http\Controllers\Masterlist\SubCapexController;
 use App\Http\Controllers\ServiceProviderController;
 use App\Http\Controllers\Setup\PrinterIPController;
@@ -137,9 +138,11 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::patch('sub-capex/archived-sub-capex/{id}', [SubCapexController::class, 'archived']);
 
     //materlist import
-    Route::post('/import-masterlist', [MasterlistImportController::class, 'masterlistImport']);
+    Route::post('import-masterlist', [MasterlistImportController::class, 'masterlistImport']);
+    //capex import
+    Route::post('import-capex', [CapexController::class, 'capexImport']);
     //materlist export
-    Route::get('/export-masterlist', [MasterlistExportController::class, 'export']);
+    Route::get('export-masterlist', [MasterlistExportController::class, 'export']);
 
     //fixed asset
     Route::resource('fixed-asset', FixedAssetController::class);
@@ -166,8 +169,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::patch('account-title/archived-account-title/{id}', [AccountTitleController::class, 'archived']);
 
     //STATUS
-
     //Asset Status
     Route::resource('asset-status', AssetStatusController::class);
     Route::patch('asset-status/archived-asset-status/{id}', [AssetStatusController::class, 'archived']);
+    //Cycle Count Status
+    Route::resource('cycle-count-status', CycleCountStatusController::class);
+    Route::patch('cycle-count-status/archived-cycle-count-status/{id}', [CycleCountStatusController::class, 'archived']);
 });

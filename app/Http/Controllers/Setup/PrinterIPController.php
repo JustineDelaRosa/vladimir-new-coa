@@ -16,7 +16,6 @@ class PrinterIPController extends Controller
      */
     public function index(Request $request)
     {
-
         $search = $request->search;
         $status = $request->status;
         $limit = $request->limit;
@@ -146,9 +145,6 @@ class PrinterIPController extends Controller
 
     public function activateIP(Request $request,$id)
     {
-
-//        $printerID = $request->printer_id;
-        //activate printer ip and deactivate other printer ip only one printer ip can be active
         $printer = PrinterIP::find($id);
 
         if (!$printer) {
@@ -158,13 +154,12 @@ class PrinterIPController extends Controller
         }
         $printer->is_active = true;
         $printer->save();
-
-       $printer = PrinterIP::where('id', '!=', $id)->get();
-        foreach ($printer as $print) {
-            $print->is_active = false;
-            $print->save();
-        }
-
+        PrinterIP::where('id', '!=', $id)->update(['is_active' => false]);
+//       $printer = PrinterIP::where('id', '!=', $id)->get();
+//        foreach ($printer as $print) {
+//            $print->is_active = false;
+//            $print->save();
+//        }
         return response()->json([
             'message' => 'Successfully activated printer ip.',
         ], 200);

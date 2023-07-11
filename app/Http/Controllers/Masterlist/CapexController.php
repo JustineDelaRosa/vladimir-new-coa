@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Masterlist;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Capex\CapexRequest;
 use App\Http\Requests\Capex\SubCapexRequest;
+use App\Imports\CapexImport;
 use App\Models\Capex;
 use App\Models\FixedAsset;
 use App\Models\SubCapex;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CapexController extends Controller
 {
@@ -37,7 +39,7 @@ class CapexController extends Controller
             ->when($status === "deactivated", function ($query) {
                 $query->onlyTrashed();
             })
-            ->orderByDesc("updated_at");
+            ->orderByDesc("created_at");
         $capex = $limit ? $capex->paginate($limit) : $capex->get();
 
         return response()->json([
@@ -193,5 +195,21 @@ class CapexController extends Controller
                 ], 200);
             }
         }
+    }
+
+    public function capexImport(Request $request){
+        $request->validate([
+            'file' => 'required|mimes:csv,txt,xlx,xls,pdf,xlsx'
+        ]);
+
+        $file = $request->file('file');
+
+        Excel::import(new CapexImport, $file);
+
+        $data = Excel::toArray(new CapexImport, $file);
+        return response()->json([
+            'message' => 'Successfully imported capex.',
+            'data' => $data
+        ], 200);
     }
 }

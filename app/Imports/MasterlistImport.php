@@ -34,9 +34,6 @@ class MasterlistImport extends DefaultValueBinder implements
     WithCustomValueBinder,
     WithStartRow,
     WithCalculatedFormulas
-//    WithChunkReading,
-//    ShouldQueue,
-//    WithBatchInserts
 {
     use Importable;
 
@@ -44,19 +41,6 @@ class MasterlistImport extends DefaultValueBinder implements
     {
         return 1;
     }
-
-//    public function batchSize(): int
-//    {
-//        return 500;
-//    }
-
-//    public function chunkSize(): int
-//    {
-//
-//        return 500;
-//    }
-
-
 
     public function startRow(): int
     {
@@ -277,7 +261,6 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.depreciation_method' => 'required|in:STL,One Time',
             '*.est_useful_life' => ['required'],
             '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date'],
-            //do not allow negative value in acquisition cost
             '*.acquisition_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Acquisition cost must not be negative');
