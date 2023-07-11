@@ -58,13 +58,9 @@ class CapexController extends Controller
     {
         $capex = $request->capex;
         $project_name = ucwords(strtolower($request->project_name));
-        $sub_capex = $request->sub_capex ?? $capex;
-        $sub_project = ucwords(strtolower($request->sub_project ?? $project_name));
         $capex = Capex::create([
             'capex' => $capex,
             'project_name' => $project_name,
-            'sub_capex' => $sub_capex,
-            'sub_project' => $sub_project,
             'is_active' => true
         ]);
         return response()->json([
@@ -105,31 +101,26 @@ class CapexController extends Controller
     public function update(CapexRequest $request, $id)
     {
         $project_name = ucwords(strtolower($request->project_name));
-        $sub_project = $request->sub_project;
+        $capex = Capex::find($id);
 
-        if(Capex::where('id',$id)->where([
-            'project_name' => $project_name,
-             'sub_project' => $sub_project
-        ])->exists()){
+        if(!$capex) {
+            return response()->json([
+                'error' => 'Capex Route Not Found.'
+            ], 404);
+        }
+
+        if($capex->project_name === $project_name){
             return response()->json([
                 'message' => 'No changes.',
             ], 200);
         }
 
-        $capex = Capex::where('id', $id)->first();
-        if ($capex) {
-            $updateCapex = Capex::Where('id', $id)->update([
-                'project_name' => $project_name,
-                'sub_project' => ($capex->capex == $capex->sub_capex) ? $project_name : $sub_project,
-            ]);
-            return response()->json([
-                'message' => 'Successfully updated capex.',
-            ], 200);
-        } else {
-            return response()->json([
-                'error' => 'Capex Route Not Found.'
-            ], 404);
-        }
+        $capex->update(['project_name' => $project_name]);
+
+        return response()->json([
+            'message' => 'Successfully updated capex.',
+        ], 200);
+
     }
 
     public function archived(CapexRequest $request, $id)
