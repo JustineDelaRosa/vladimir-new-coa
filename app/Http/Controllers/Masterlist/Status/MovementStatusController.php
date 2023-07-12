@@ -144,6 +144,5 @@ class MovementStatusController extends Controller
                 'message' => 'Successfully restored Movement Status.',
             ], 200);
         }
-
     }
 }

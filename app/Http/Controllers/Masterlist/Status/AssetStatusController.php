@@ -25,11 +25,19 @@ class AssetStatusController extends Controller
             $query
                 ->where("asset_status_name", "like", "%" . $search . "%");
         })
-            ->when($status === "deactivated", function ($query) {
-                $query->onlyTrashed();
+            ->when($request->status === 'deactivated', function ($query) {
+                return $query->onlyTrashed();
             })
-            ->orderByDesc("updated_at");
-        $assetStatus = $limit ? $assetStatus->paginate($limit) : $assetStatus->get();
+            ->when($request->status === 'active', function ($query) {
+                return $query->whereNull('deleted_at');
+            })
+            ->orderByDesc('created_at')
+            ->when($request->limit, function ($query) use ($request) {
+                return $query->paginate($request->limit);
+            }, function ($query) {
+                return $query->get();
+            });
+
 
         return $assetStatus;
     }
