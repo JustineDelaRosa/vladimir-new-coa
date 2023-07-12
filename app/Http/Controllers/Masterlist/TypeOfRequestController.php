@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Masterlist;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\TypeOfRequest\TypeOfRequestRequest;
 use App\Models\FixedAsset;
 use App\Models\TypeOfRequest;

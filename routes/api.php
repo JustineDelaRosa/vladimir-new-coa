@@ -17,12 +17,12 @@ use App\Http\Controllers\Masterlist\PrintBarcode\PrintBarCodeController;
 use App\Http\Controllers\Masterlist\Status\AssetStatusController;
 use App\Http\Controllers\Masterlist\Status\CycleCountStatusController;
 use App\Http\Controllers\Masterlist\SubCapexController;
+use App\Http\Controllers\Masterlist\TypeOfRequestController;
 use App\Http\Controllers\ServiceProviderController;
 use App\Http\Controllers\Setup\PrinterIPController;
 use App\Http\Controllers\Setup\RoleManagementController;
 use App\Http\Controllers\Setup\SetupController;
 use App\Http\Controllers\SupplierController;
-use App\Http\Controllers\TypeOfRequestController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
