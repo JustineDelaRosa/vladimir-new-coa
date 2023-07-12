@@ -165,10 +165,10 @@ class DepartmentController extends Controller
                     'id' =>$department->id,
                     'sync_id' =>$department->sync_id,
                     'company' =>[
-                        'company_id' =>$department->company->id,
-                        'company_sync_id' =>$department->company->sync_id,
-                        'company_code' =>$department->company->company_code,
-                        'company_name' =>$department->company->company_name,
+                        'company_id' =>$department->company->id ?? "-",
+                        'company_sync_id' =>$department->company->sync_id ?? "-",
+                        'company_code' =>$department->company->company_code ?? "-",
+                        'company_name' =>$department->company->company_name ?? "-",
                     ],
                     'location' =>[
                         'location_id' =>$department->location->id ?? "-",
