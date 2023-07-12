@@ -409,7 +409,7 @@ class MasterlistImport extends DefaultValueBinder implements
 //        return $ean13Result;
 //    }
 
-    public function vladimirTagGenerator()
+    public function vladimirTagGenerator(): string
     {
         $generatedEan13Result = $this->generateEan13();
         // Check if the generated number is a duplicate or already exists in the database
