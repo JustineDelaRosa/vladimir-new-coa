@@ -14,12 +14,15 @@ use App\Models\MinorCategory;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
 use Carbon\Carbon;
+use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\Exception;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -47,6 +50,9 @@ class MasterlistImport extends DefaultValueBinder implements
         return 2;
     }
 
+    /**
+     * @throws Exception
+     */
     public function bindValue(Cell $cell, $value): bool
     {
 
@@ -66,6 +72,9 @@ class MasterlistImport extends DefaultValueBinder implements
         return parent::bindValue($cell, $value);
     }
 
+    /**
+     * @throws ValidationException
+     */
     public function collection(Collection $collections)
     {
 
@@ -73,24 +82,48 @@ class MasterlistImport extends DefaultValueBinder implements
 
 
         foreach ($collections as $collection) {
+//SEDAR API
+//            $client = new Client();
+//            $token = '9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4';
+//            $response = $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
+//                'headers' => [
+//                    'Authorization' => 'Bearer ' . $token,
+//                    'Accept' => 'application/json',
+//                ],
+//            ]);
+//
+//            // Get the body content from the response
+//            $body = $response->getBody()->getContents();
+//
+//            // Decode the JSON response into an associative array
+//            $data = json_decode($body, true);
+//            $nameToCheck = $collection['accountable'];
+//
+//            if (!empty($data['data']) && is_array($data['data'])) {
+//                foreach ($data['data'] as $employee) {
+//                    if (!empty($employee['general_info']) && stripos($employee['general_info']['full_id_number'], $nameToCheck) !== false) {
+//                        echo $employee['general_info']['full_name'] . PHP_EOL;
+//                        break;
+//                    }
+//                }
+//            }
 
-                // Check if the major category exists in this division
-                $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $collection['major_category'])
+            $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $collection['major_category'])
+                ->first();
+            if ($majorCategory) {
+                $majorCategoryId = $majorCategory->id;
+                // Check if the minor category exists in this major category and division
+                $minorCategory = MinorCategory::withTrashed()->where('minor_category_name', $collection['minor_category'])
+                    ->where('major_category_id', $majorCategoryId)
                     ->first();
-                if ($majorCategory) {
-                    $majorCategoryId = $majorCategory->id;
-
-                    // Check if the minor category exists in this major category and division
-                    $minorCategory = MinorCategory::withTrashed()->where('minor_category_name', $collection['minor_category'])
-                        ->where('major_category_id', $majorCategoryId)
-                        ->first();
-                    if ($minorCategory) {
-                        $minorCategoryId = $minorCategory->id;
-                    }
+                if ($minorCategory) {
+                    $minorCategoryId = $minorCategory->id;
                 }
+            }
 
 
             // Create the Masterlist with the obtained ids
+
             $fixedAsset = FixedAsset::create([
                 'capex_id' => SubCapex::where('sub_capex', $collection['capex'])->first()->id ?? null,
                 'project_name' => ucwords(strtolower($collection['project_name'])) ?? '-',

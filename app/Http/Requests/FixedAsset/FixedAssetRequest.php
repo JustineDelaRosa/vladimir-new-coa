@@ -57,7 +57,7 @@ class FixedAssetRequest extends FormRequest
                 'accountability' => 'required',
                 'accountable' => ['required',function ($attribute, $value, $fail) {
                     $accountability = request()->input('accountable');
-                    $fullIdNumber = $accountability['general_info']['full_id_number'];
+                    $fullIdNumber = $accountability['general_info']['full_id_number']; //todo: should be full name of accountable
                     //change the value of accountable to full id number
                     request()->merge(['accountable' => $fullIdNumber]);
 

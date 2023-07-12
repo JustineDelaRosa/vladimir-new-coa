@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\LocationDepartment;
 use Illuminate\Http\Request;
+use GuzzleHttp\Client;
 
 class DepartmentController extends Controller
 {
@@ -16,13 +17,31 @@ class DepartmentController extends Controller
      */
     public function index()
     {
-//        $token = "9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4";
-//        $response = Http::withHeaders([
-//            'Authorization' => 'Bearer '.$token,
-//        ])->get('http://rdfsedar.com/api/data/employees');
-//        $data = json_decode($response->body(), true);
-//        $department = $data['data']['general_info']['full_id_number'];
-//        return $department;
+
+//        $client = new Client();
+//        $token = '9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4';
+//        $response = $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
+//            'headers' => [
+//                'Authorization' => 'Bearer ' . $token,
+//                'Accept' => 'application/json',
+//            ],
+//        ]);
+//
+//// Get the body content from the response
+//        $body = $response->getBody()->getContents();
+//
+//// Decode the JSON response into an associative array
+//        $data = json_decode($body, true);
+//        $nameToCheck = 'Perona, jerome';
+//
+//        if (!empty($data['data']) && is_array($data['data'])) {
+//            foreach ($data['data'] as $employee) {
+//                if (!empty($employee['general_info']) && stripos($employee['general_info']['full_name'], $nameToCheck) !== false) {
+//                    echo $employee['general_info']['full_id_number'] . PHP_EOL;
+//                    break;
+//                }
+//            }
+//        }
 
         $department = Department::get();
         return $department;
