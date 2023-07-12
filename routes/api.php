@@ -16,6 +16,8 @@ use App\Http\Controllers\Masterlist\MinorCategoryController;
 use App\Http\Controllers\Masterlist\PrintBarcode\PrintBarCodeController;
 use App\Http\Controllers\Masterlist\Status\AssetStatusController;
 use App\Http\Controllers\Masterlist\Status\CycleCountStatusController;
+use App\Http\Controllers\Masterlist\Status\DepreciationStatusController;
+use App\Http\Controllers\Masterlist\Status\MovementStatusController;
 use App\Http\Controllers\Masterlist\SubCapexController;
 use App\Http\Controllers\Masterlist\TypeOfRequestController;
 use App\Http\Controllers\ServiceProviderController;
@@ -175,4 +177,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //Cycle Count Status
     Route::resource('cycle-count-status', CycleCountStatusController::class);
     Route::patch('cycle-count-status/archived-cycle-count-status/{id}', [CycleCountStatusController::class, 'archived']);
+    //Depreciation Status
+    Route::resource('depreciation-status', DepreciationStatusController::class);
+    Route::patch('depreciation-status/archived-depreciation-status/{id}', [DepreciationStatusController::class, 'archived']);
+    //Movement Status
+    Route::resource('movement-status', MovementStatusController::class);
+    Route::patch('movement-status/archived-movement-status/{id}', [MovementStatusController::class, 'archived']);
 });
