@@ -109,16 +109,6 @@ class DivisionController extends Controller
             return response()->json(['error' => 'Division Route Not Found'], 404);
         }
 
-//        $department = Department::where('division_id', $id)->get();
-//        $department_sync_id_array = [];
-//        foreach ($department as $dept) {
-//            array_push($department_sync_id_array, $dept->sync_id);
-//        }
-//        //check also if division name doesnt change
-//        if (Division::where('id', $id)->where('division_name', $division_name)->exists() && $department_sync_id == $department_sync_id_array) {
-//            return response()->json(['message' => 'No Changes Made'], 200);
-//        }
-
         //use pluck method to get an array of sync_id values
         $department_sync_id_array = Department::where('division_id', $id)->pluck('sync_id')->toArray();
         //use firstWhere method to get the division with the given id and name
@@ -132,16 +122,6 @@ class DivisionController extends Controller
             'division_name' => $division_name,
         ]);
 
-//        //null the division id in department table then update the department id with the new division id
-//        Department::where('division_id', $id)->update([
-//            'division_id' => null
-//        ]);
-//        foreach ($department_sync_id as $dept_id) {
-//            Department::where('id', $dept_id)->update([
-//                'division_id' => $id
-//            ]);
-//        }
-
         if($update){
             Department::where('division_id', $id)->whereNotIn('sync_id', $department_sync_id)->update([
                 'division_id' => null
@@ -152,7 +132,7 @@ class DivisionController extends Controller
             return response()->json(['message' => 'Successfully Updated!', 'data' => Division::where('id', $id)->first()], 200);
         }
     }
-
+    //! as of 10/12/2020 this function is not yet used
     /**
      * Remove the specified resource from storage.
      *

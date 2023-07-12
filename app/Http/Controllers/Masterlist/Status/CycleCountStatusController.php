@@ -24,11 +24,18 @@ class CycleCountStatusController extends Controller
             $query
                 ->where("cycle_count_status_name", "like", "%" . $search . "%");
         })
-            ->when($status === "deactivated", function ($query) {
-                $query->onlyTrashed();
+            ->when($request->status === 'deactivated', function ($query) {
+                return $query->onlyTrashed();
             })
-            ->orderByDesc("created_at");
-        $cycleCountStatus = $limit ? $cycleCountStatus->paginate($limit) : $cycleCountStatus->get();
+            ->when($request->status === 'active', function ($query) {
+                return $query->whereNull('deleted_at');
+            })
+            ->orderByDesc('created_at')
+            ->when($request->limit, function ($query) use ($request) {
+                return $query->paginate($request->limit);
+            }, function ($query) {
+                return $query->get();
+            });
 
         return $cycleCountStatus;
     }
