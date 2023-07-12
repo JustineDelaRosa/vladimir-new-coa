@@ -18,24 +18,30 @@ class SubCapexController extends Controller
      */
     public function index(Request $request)
     {
-        $search = $request->search;
-        $status = $request->status;
-        $limit = $request->limit;
-
-        $sub_capex = SubCapex::with('capex')->where(function ($query) use ($search) {
-            $query
-                ->where("sub_capex", "like", "%" . $search . "%")
-                ->orWhere("sub_project", "like", "%" . $search . "%");
-        })
-            ->when($status === "deactivated", function ($query) {
-                $query->onlyTrashed();
+        $subCapex = SubCapex::withTrashed()
+            ->with(['capex' => function ($query) {
+                return $query->withTrashed();
+            }])
+            ->where(function ($query) use ($request) {
+                $query->where('sub_capex', 'like', '%'.$request->search.'%')
+                    ->orWhere('sub_project', 'like', '%'.$request->search.'%');
             })
-            ->orderByDesc("updated_at");
-        $sub_capex = $limit ? $sub_capex->paginate($limit) : $sub_capex->get();
+            ->when($request->status === 'deactivated', function ($query) {
+                return $query->onlyTrashed();
+            })
+            ->when($request->status === 'active', function ($query) {
+                return $query->whereNull('deleted_at');
+            })
+            ->orderByDesc('created_at')
+            ->when($request->limit, function ($query) use ($request) {
+                return $query->paginate($request->limit);
+            }, function ($query) {
+                return $query->get();
+            });
 
         return response()->json([
             'message' => 'Successfully retrieved sub capex.',
-            'data' => $sub_capex
+            'data' => $subCapex,
         ], 200);
     }
 

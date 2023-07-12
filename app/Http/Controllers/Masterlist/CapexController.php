@@ -25,7 +25,7 @@ class CapexController extends Controller
         $status = $request->status;
         $limit = $request->limit;
 
-        $capex = Capex::with([
+        $capex = Capex::withTrashed()->with([
                 'subCapex' => function ($query) {
                     $query->withTrashed();
                 },
@@ -39,8 +39,15 @@ class CapexController extends Controller
             ->when($status === "deactivated", function ($query) {
                 $query->onlyTrashed();
             })
-            ->orderByDesc("created_at");
-        $capex = $limit ? $capex->paginate($limit) : $capex->get();
+            ->when($request->status === 'active', function ($query) {
+                return $query->whereNull('deleted_at');
+            })
+            ->orderByDesc('created_at')
+            ->when($request->limit, function ($query) use ($request) {
+                return $query->paginate($request->limit);
+            }, function ($query) {
+                return $query->get();
+            });
 
         return response()->json([
             'message' => 'Successfully retrieved capex.',
