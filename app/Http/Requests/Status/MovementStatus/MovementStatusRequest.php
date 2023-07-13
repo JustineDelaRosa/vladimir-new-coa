@@ -28,12 +28,13 @@ class MovementStatusRequest extends FormRequest
                 'movement_status_name' => 'required|unique:movement_statuses,movement_status_name',
             ];
         }
-        if($this->isMethod('put') && ($this->route()->parameter('movement-status'))){
-            $id = $this->route()->parameter('movement-status');
+        if($this->isMethod('put') && ($this->route()->parameter('movement_status'))){
+            $id = $this->route()->parameter('movement_status');
             return[
                 'movement_status_name' => 'required|unique:movement_statuses,movement_status_name,'.$id,
             ];
         }
+
         if($this->isMethod('patch') && ($this->route()->parameter('id'))){
             return[
                 'status' => 'required|boolean',

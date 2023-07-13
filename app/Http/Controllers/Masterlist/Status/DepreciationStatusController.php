@@ -97,6 +97,13 @@ class DepreciationStatusController extends Controller
             'error' => 'Depreciation status route not found.'
         ], 404);
 
+        //check if no changes
+        if($depreciationStatus->depreciation_status_name == $depreciation_status_name){
+            return response()->json([
+                'message' => 'No changes were made.'
+            ], 200);
+        }
+
         $depreciationStatus->update([
             'depreciation_status_name' => $depreciation_status_name
         ]);

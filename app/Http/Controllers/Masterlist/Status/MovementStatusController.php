@@ -99,6 +99,12 @@ class MovementStatusController extends Controller
             ], 404);
         }
 
+        if($movementStatus->movement_status_name == $movement_status_name){
+            return response()->json([
+                'message' => 'No changes were made.'
+            ], 200);
+        }
+
         $movementStatus->update([
             'movement_status_name' => $movement_status_name
         ]);

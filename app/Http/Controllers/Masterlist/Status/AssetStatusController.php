@@ -91,12 +91,18 @@ class AssetStatusController extends Controller
      */
     public function update(AssetStatusRequest $request, $id)
     {
+        $asset_status_name = ucwords(strtolower($request->asset_status_name));
+
         $assetStatus = AssetStatus::find($id);
         if(!$assetStatus) return response()->json([
             'error' => 'Asset status route not found.'
         ], 404);
 
-        $asset_status_name = ucwords(strtolower($request->asset_status_name));
+        if($assetStatus->asset_status_name == $asset_status_name){
+            return response()->json([
+                'message' => 'No changes were made.'
+            ], 200);
+        }
 
         $assetStatus->update([
             'asset_status_name' => $asset_status_name
