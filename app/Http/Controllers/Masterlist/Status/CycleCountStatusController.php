@@ -95,6 +95,13 @@ class CycleCountStatusController extends Controller
             'error' => 'Cycle count status route not found.'
         ], 404);
 
+        //check if no changes were made
+        if($cycleCountStatus->cycle_count_status_name == $cycle_count_status_name){
+            return response()->json([
+                'message' => 'No changes were made.'
+            ], 200);
+        }
+
         $cycleCountStatus->update([
             'cycle_count_status_name' => $cycle_count_status_name
         ]);
