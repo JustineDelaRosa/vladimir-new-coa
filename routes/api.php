@@ -101,7 +101,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
 
     //ServiceProvider
-
     Route::resource('service-provider', ServiceProviderController::class);
     Route::put('service-provider/archived-service-provider/{id}', [ServiceProviderController::class, 'archived']);
     Route::get('service-providers/search', [ServiceProviderController::class, 'search']);
