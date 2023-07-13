@@ -80,9 +80,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('location', LocationController::class);
     Route::get('locations/search', [LocationController::class, 'search']);
 
-    //LOCATION//
+    //ACCOUNT TITLE//
     Route::resource('account-title', AccountTitleController::class);
     Route::get('account-titles/search', [AccountTitleController::class, 'search']);
+    Route::patch('account-title/archived-account-title/{id}', [AccountTitleController::class, 'archived']);
 
 
 
@@ -106,13 +107,13 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('service-providers/search', [ServiceProviderController::class, 'search']);
 
 
-    //major category
+    //MAJOR CATEGORY//
     Route::resource('major-category', MajorCategoryController::class);
     Route::put('major-category/archived-major-category/{id}', [MajorCategoryController::class, 'archived']);
     Route::get('major-categories/search', [MajorCategoryController::class, 'search']);
 
 
-    //minor category
+    //MINOR CATEGORY//
     Route::resource('minor-category', MinorCategoryController::class);
     Route::put('minor-category/archived-minor-category/{id}', [MinorCategoryController::class, 'archived']);
     Route::get('minor-categories/search', [MinorCategoryController::class, 'search']);
@@ -126,61 +127,60 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::put('supplier/archived-supplier/{id}', [SupplierController::class, 'archived']);
     Route::get('suppliers/search', [SupplierController::class, 'search']);
 
-    //division
+    //DIVISION//
     Route::resource('division', DivisionController::class);
     Route::put('division/archived-division/{id}', [DivisionController::class, 'archived']);
     Route::get('divisions/search', [DivisionController::class, 'search']);
 
-    //Capex
+    //CAPEX//
     Route::resource('capex', CapexController::class);
     Route::patch('capex/archived-capex/{id}', [CapexController::class, 'archived']);
     Route::post('sub_capex/{id}', [CapexController::class, 'storeSubCapex']);
-    //sub capex
+    //SUB CAPEX//
     Route::resource('sub-capex', SubCapexController::class);
     Route::patch('sub-capex/archived-sub-capex/{id}', [SubCapexController::class, 'archived']);
 
-    //materlist import
+    //MASTERLIST IMPORT//
     Route::post('import-masterlist', [MasterlistImportController::class, 'masterlistImport']);
-    //capex import
-    Route::post('import-capex', [CapexController::class, 'capexImport']);
-    //materlist export
+    //MASTERLIST EXPORT//
     Route::get('export-masterlist', [MasterlistExportController::class, 'export']);
+    //CAPEX IMPORT//
+    Route::post('import-capex', [CapexController::class, 'capexImport']);
 
-    //fixed asset
+
+    //FIXED ASSET//
     Route::resource('fixed-asset', FixedAssetController::class);
     Route::patch('fixed-asset/archived-fixed-asset/{id}', [FixedAssetController::class, 'archived']);
     Route::get('fixed-assets/search', [FixedAssetController::class, 'search']);
     Route::get('fixed-assets/search-asset-tag', [FixedAssetController::class, 'searchAssetTag']);
-    //Custom asset depreciation calculation
+    //CUSTOM ASSET DEPRECIATION CALCULATION//
     Route::post('asset-depreciation/{id}', [FixedAssetController::class, 'assetDepreciation']);
     Route::get('show-fixed-asset/{tagNumber}', [FixedAssetController::class, 'showTagNumber']);
 
-    //barcode
+    //BARCODE//
     Route::post('fixed-asset/barcode', [PrintBarCodeController::class, 'printBarcode']);
 
-    //type of request
+    //TYPE OF REQUEST//
     Route::resource('type-of-request', TypeOfRequestController::class);
     Route::patch('type-of-request/archived-tor/{id}', [TypeOfRequestController::class, 'archived']);
 
-    //PrinterIp
+    //PRINT IP//
     Route::resource('printer-ip', PrinterIpController::class);
     Route::patch('activateIp/{id}', [PrinterIpController::class, 'activateIP']);
     Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
 
-    //COA Archive
-    Route::patch('account-title/archived-account-title/{id}', [AccountTitleController::class, 'archived']);
 
     //STATUS
-    //Asset Status
+    //ASSET STATUS
     Route::resource('asset-status', AssetStatusController::class);
     Route::patch('asset-status/archived-asset-status/{id}', [AssetStatusController::class, 'archived']);
-    //Cycle Count Status
+    //CYCLE COUNT STATUS
     Route::resource('cycle-count-status', CycleCountStatusController::class);
     Route::patch('cycle-count-status/archived-cycle-count-status/{id}', [CycleCountStatusController::class, 'archived']);
-    //Depreciation Status
+    //DEPRECIATION STATUS
     Route::resource('depreciation-status', DepreciationStatusController::class);
     Route::patch('depreciation-status/archived-depreciation-status/{id}', [DepreciationStatusController::class, 'archived']);
-    //Movement Status
+    //MOVEMENT STATUS
     Route::resource('movement-status', MovementStatusController::class);
     Route::patch('movement-status/archived-movement-status/{id}', [MovementStatusController::class, 'archived']);
 });
