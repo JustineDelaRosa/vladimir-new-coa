@@ -90,6 +90,7 @@ class MasterlistImport extends DefaultValueBinder implements
             $this->createFormula($fixedAsset, $collection, $est_useful_life);
         }
     }
+
     private function getEstUsefulLife($majorCategoryId)
     {
         $majorCategory = MajorCategory::withTrashed()
@@ -163,7 +164,7 @@ class MasterlistImport extends DefaultValueBinder implements
         ]);
     }
 
-    private function createFormula($fixedAsset, $collection,$est_useful_life)
+    private function createFormula($fixedAsset, $collection, $est_useful_life)
     {
         $fixedAsset->formula()->create([
             'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
@@ -196,12 +197,12 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Capex does not exist');
                 }
             }],
-            '*.sub_capex' => ['nullable','regex:/^.+$/', function ($attribute, $value, $fail) use ($collections) {
+            '*.sub_capex' => ['nullable', 'regex:/^.+$/', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $capexValue = $collections[$index]['capex'];
 
                 //todo:check for other way to check if the value is null or '-'
-                if ($capexValue != '-' ) {
+                if ($capexValue != '-') {
                     if ($value == '-') {
                         $fail('Sub Capex is required');
                         return true;
@@ -303,7 +304,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
             }],
             '*.major_category' => [
-                'required','exists:major_categories,major_category_name'
+                'required', 'exists:major_categories,major_category_name'
 //                function ($attribute, $value, $fail) use ($collections) {
 //                    $major_category = MajorCategory::withTrashed()->where('major_category_name', $value)->first();
 //                    if (!$major_category) {
@@ -337,8 +338,8 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Acquisition cost must not be negative');
                 }
             }],
-            '*.scrap_value' => ['required', ],
-            '*.original_cost' => ['required','regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+            '*.scrap_value' => ['required',],
+            '*.original_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Original cost must not be negative');
                 }
@@ -428,7 +429,6 @@ class MasterlistImport extends DefaultValueBinder implements
         ];
 
     }
-
 
 
 //  GENERATING VLADIMIR TAG NUMBER

@@ -14,6 +14,7 @@ use Maatwebsite\Excel\Concerns\WithStartRow;
 class CapexImport implements ToCollection, WithHeadingRow, WithStartRow
 {
     use Importable;
+
     public function startRow(): int
     {
         // TODO: Implement startRow() method.
@@ -25,23 +26,23 @@ class CapexImport implements ToCollection, WithHeadingRow, WithStartRow
      */
     public function collection(Collection $collection)
     {
-        Validator::make($collection->toArray() ,$this->rules($collection->toArray()), $this->messages())->validate();
+        Validator::make($collection->toArray(), $this->rules($collection->toArray()), $this->messages())->validate();
 
         foreach ($collection as $row) {
-            if($row['capex'] == $row['sub_capex']) {
+            if ($row['capex'] == $row['sub_capex']) {
                 $capex = Capex::create([
                     'capex' => $row['capex'],
                     'project_name' => $row['project_name'],
                     'is_active' => true,
                 ]);
-            }else{
+            } else {
                 $capex = Capex::withTrashed()->where('capex', $row['capex'])->first();
                 $subCapex = $capex->subCapex()->create([
                     'sub_capex' => $row['sub_capex'],
                     'sub_project' => $row['sub_project'],
                     'is_active' => !$capex->deleted_at,
                 ]);
-                if($capex->deleted_at) {
+                if ($capex->deleted_at) {
                     $subCapex->delete();
                 }
             }
@@ -52,14 +53,17 @@ class CapexImport implements ToCollection, WithHeadingRow, WithStartRow
     {
         return [
             '*.capex' => ['required', function ($attribute, $value, $fail) use ($collection) {
-                    $index = array_search($value, array_column($collection, 'capex'));
-                    $subCapex = $collection[$index]['sub_capex'];
-                if($value == $subCapex) {
+                $index = array_search($value, array_column($collection, 'capex'));
+                $subCapex = $collection[$index]['sub_capex'];
+                if (preg_match('/[A-Za-z]/', $value)) {
+                    $fail('Capex should not have a letter');
+                }
+                if ($value == $subCapex) {
                     $capex = Capex::withTrashed()->where('capex', $value)->first();
                     if ($capex) {
                         $fail('Capex already exists');
                     }
-                }else{
+                } else {
                     $capex = Capex::withTrashed()->where('capex', $value)->first();
                     if (!$capex) {
                         $fail('Capex does not exist');
@@ -72,7 +76,7 @@ class CapexImport implements ToCollection, WithHeadingRow, WithStartRow
                 $capex = $collection[$index]['capex'];
                 $subCapex = $collection[$index]['sub_capex'];
                 $capex = Capex::where('capex', $capex)->first();
-                if($capex) {
+                if ($capex) {
                     $subCapex = $capex->subCapex()->where('sub_capex', $subCapex)->first();
                     if ($subCapex) {
                         $fail('Sub capex already exists');
