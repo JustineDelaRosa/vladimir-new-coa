@@ -53,17 +53,31 @@ class FixedAssetUpdateRequest extends FormRequest
             'type_of_request_id' => 'required',
             'asset_specification' => 'required',
             'accountability' => 'required',
-            'accountable' => ['required',function ($attribute, $value, $fail) {
-                $accountability = request()->input('accountable');
-                $fullName = $accountability['general_info']['full_name'];
-                //change the value of accountable to full id number
-                request()->merge(['accountable' => $fullName]);
+            'accountable' => ['required_if:accountability,Personal Issued',
+                function ($attribute, $value, $fail) {
+                    $accountability = request()->input('accountable');
+                    //if accountable is null, continue
+                    if ($value == null) {
+                        return;
+                    }
 
-                // Example validation:
-                if (!$fullName) {
-                    $fail('Accountable is required');
-                }
-            }],
+                    // Check if necessary keys exist to avoid undefined index
+                    if (isset($accountability['general_info']['full_name'])) {
+                        $fullName = $accountability['general_info']['full_name'];
+                    }
+                    else {
+                        // Fail validation if keys don't exist
+                        $fail('The accountable person\'s full name is required.');
+                        return;
+                    }
+
+                    // Validate full name
+                    if ($fullName === '') {
+                        $fail('The accountable person\'s full name cannot be empty.');
+                        return;
+                    }
+                },
+            ],
             'cellphone_number' => 'nullable|numeric|digits:11',
             'brand' => 'nullable',
             'major_category_id' => 'required|exists:major_categories,id',
@@ -115,7 +129,7 @@ class FixedAssetUpdateRequest extends FormRequest
             'type_of_request_id.required' => 'Type of request is required',
             'asset_specification.required' => 'Asset specification is required',
             'accountability.required' => 'Accountability is required',
-            'accountable.required' => 'Accountable is required',
+            'accountable.required_if' => 'Accountable is required',
             'cellphone_number.numeric' => 'Cellphone number must be numeric',
             'cellphone_number.digits' => 'Cellphone number must be 11 digits',
             'major_category_id.required' => 'Major category is required',
