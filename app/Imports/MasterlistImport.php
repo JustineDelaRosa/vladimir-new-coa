@@ -200,6 +200,14 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.sub_capex' => ['nullable', 'regex:/^.+$/', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $capexValue = $collections[$index]['capex'];
+                $typeOfRequest = $collections[$index]['type_of_request'];
+                //if a type of request is not CAPEX, then capex and sub capex should be empty
+                if ($typeOfRequest != 'CAPEX') {
+                    if ($value != '-') {
+                        $fail('Capex and Sub Capex should be empty');
+                        return true;
+                    }
+                }
 
                 //todo:check for other way to check if the value is null or '-'
                 if ($capexValue != '-') {
@@ -281,7 +289,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
             }],
             '*.description' => 'required', //todo: changing asset_description to description
-            '*.type_of_request' => 'required|in:Asset,CAPEX,Cellular Phone, Major Repair, For Fabrication',
+            '*.type_of_request' => 'required|exists:type_of_requests,type_of_request_name',
             '*.additional_description' => 'required', //Todo changing asset_specification to Additional Description
             '*.accountability' => 'required',
             //required if accountability is personal issued and if the accountability is common it should be empty
