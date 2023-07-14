@@ -137,7 +137,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'type_of_request_id' => TypeOfRequest::where('type_of_request_name', ($collection['type_of_request']))->first()->id,
             'asset_specification' => ucwords(strtolower($collection['additional_description'])),
             'accountability' => ucwords(strtolower($collection['accountability'])),
-            'accountable' => ucwords(strtolower($collection['accountable'])),
+            'accountable' => ucwords(strtolower($collection['accountable'] ?? '-')),
             'cellphone_number' => $collection['cellphone_number'],
             'brand' => ucwords(strtolower($collection['brand'])),
             'division_id' => Division::where('division_name', $collection['division'])->first()->id,
@@ -283,7 +283,17 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.type_of_request' => 'required|in:Asset,CAPEX,Cellular Phone, Major Repair, For Fabrication',
             '*.additional_description' => 'required', //Todo changing asset_specification to Additional Description
             '*.accountability' => 'required',
-            '*.accountable' => 'required',
+            //required if accountability is personal issued and if the accountability is common it should be empty
+            '*.accountable' => ['required_if:*.accountability,Personal Issued',
+                function ($attribute, $value, $fail) use ($collections) {
+                    $index = array_search($attribute, array_keys($collections->toArray()));
+                    $accountability = $collections[$index]['accountability'];
+                    if ($accountability == 'Common') {
+                        if ($value != '') {
+                            $fail('Accountable should be empty');
+                        }
+                    }
+                }],
             '*.cellphone_number' => 'required',
             '*.brand' => 'required',
             '*.division' => ['required', function ($attribute, $value, $fail) {
@@ -372,7 +382,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.type_of_request.in' => 'Invalid Type of Request',
             '*.additional_description.required' => 'Additional Description is required',
             '*.accountability.required' => 'Accountability is required',
-            '*.accountable.required' => 'accountable is required',
+            '*.accountable.required_if' => 'Accountable is required',
             '*.cellphone_number.required' => 'Cellphone Number is required',
             '*.brand.required' => 'Brand is required',
             '*.division.required' => 'Division is required',
