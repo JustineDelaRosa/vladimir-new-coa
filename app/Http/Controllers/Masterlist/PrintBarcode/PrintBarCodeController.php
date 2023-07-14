@@ -18,7 +18,7 @@ class PrintBarCodeController extends Controller
     public function printBarcode(Request $request)
     {
         $tagNumber = $this->search($request);
-         $clientIP = $request->ip();
+         $clientIP = request()->ip();
 //        //accept only the ip address with 10.10.x.x
 //        if (substr($clientIP, 0, 7) === "10.10.1") {
 //            // print the barcode
@@ -27,16 +27,15 @@ class PrintBarCodeController extends Controller
 //            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
 //        }
 //        return $tagNumber;
-        if (!$tagNumber) {
-            return response()->json(['message' => 'No data found'], 404);
-        }
-
         $printerIP = PrinterIP::where('ip' , $clientIP)->first();
         //check status on printerIP table
         if (!$printerIP->is_active) {
             return response()->json(['message' => 'You are not allowed to print barcode'], 403);
         }
 
+        if (!$tagNumber) {
+            return response()->json(['message' => 'No data found'], 404);
+        }
 
 
         try {
@@ -113,20 +112,20 @@ class PrintBarCodeController extends Controller
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
-        $faStatus = $request->get('faStatus');
+//        $faStatus = $request->get('faStatus');
 
         // Simplify the logic for faStatus
-        if ($faStatus == null) {
-            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off', 'Disposed'];
-        } else if ($faStatus == 'Disposed, Sold') {
-            $faStatus = ['Disposed', 'Sold'];
-        } else if ($faStatus == 'Disposed' || $faStatus == 'Sold') {
-            $faStatus = [$faStatus];
-        } else {
-            $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
-                return $status !== 'Disposed';
-            });
-        }
+//        if ($faStatus == null) {
+//            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off', 'Disposed'];
+//        } else if ($faStatus == 'Disposed, Sold') {
+//            $faStatus = ['Disposed', 'Sold'];
+//        } else if ($faStatus == 'Disposed' || $faStatus == 'Sold') {
+//            $faStatus = [$faStatus];
+//        } else {
+//            $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
+//                return $status !== 'Disposed';
+//            });
+//        }
 
         // Define the common query for fixed assets
         $fixedAssetQuery = FixedAsset::with([
@@ -135,8 +134,7 @@ class PrintBarCodeController extends Controller
             'majorCategory:id,major_category_name',
             'minorCategory:id,minor_category_name',
         ])
-            ->where('type_of_request_id', '!=', 2)
-            ->whereIn('faStatus', $faStatus);
+            ->where('type_of_request_id', '!=', 2); //todo: ask if can be printed now
 
         // Add date filter if both startDate and endDate are given
         if ($startDate && $endDate){
@@ -146,29 +144,49 @@ class PrintBarCodeController extends Controller
         // Add search filter if search is given
         if ($search) {
             $fixedAssetQuery->where(function ($query) use ($search) {
-                $query->where('project_name', 'LIKE', "%$search%")
-                    ->orWhere('vladimir_tag_number', '=' ,$search)
+                $query->Where('vladimir_tag_number', '=' ,$search)
                     ->orWhere('tag_number', 'LIKE', "%$search%")
                     ->orWhere('tag_number_old', 'LIKE', "%$search%")
                     ->orWhere('accountability', 'LIKE', "%$search%")
                     ->orWhere('accountable', 'LIKE', "%$search%")
-                    ->orWhere('faStatus', 'LIKE', "%$search%")
                     ->orWhere('brand', 'LIKE', "%$search%")
                     ->orWhere('depreciation_method', 'LIKE', "%$search%");
+                $query->orWhereHas('subCapex', function ($query) use ($search) {
+                    $query->where('sub_capex', 'LIKE', '%' . $search . '%')
+                        ->orWhere('sub_project', 'LIKE', '%' . $search . '%');
+                });
                 $query->orWhereHas('majorCategory', function ($query) use ($search) {
-                    $query->where('major_category_name', 'LIKE', "%$search%");
+                    $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('minorCategory', function ($query) use ($search) {
-                    $query->where('minor_category_name', 'LIKE', "%$search%");
+                    $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('division', function ($query) use ($search) {
-                    $query->where('division_name', 'LIKE', "%$search%");
+                    $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('assetStatus', function ($query) use ($search) {
+                    $query->where('asset_status_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('cycleCountStatus', function ($query) use ($search) {
+                    $query->where('cycle_count_status_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('depreciationStatus', function ($query) use ($search) {
+                    $query->where('depreciation_status_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('movementStatus', function ($query) use ($search) {
+                    $query->where('movement_status_name', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('location', function ($query) use ($search) {
-                    $query->where('location_name', 'LIKE', "%$search%");
+                    $query->where('location_name', 'LIKE', '%' . $search . '%');
                 });
-                $query->orWhereHas('typeOfRequest', function ($query) use ($search) {
-                    $query->where('type_of_request_name', 'LIKE', "%$search%");
+                $query->orWhereHas('company', function ($query) use ($search) {
+                    $query->where('company_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('department', function ($query) use ($search) {
+                    $query->where('department_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('accountTitle', function ($query) use ($search) {
+                    $query->where('account_title_name', 'LIKE', '%' . $search . '%');
                 });
             });
         }
