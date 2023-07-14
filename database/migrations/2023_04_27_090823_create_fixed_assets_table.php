@@ -16,9 +16,9 @@ class CreateFixedAssetsTable extends Migration
         Schema::create('fixed_assets', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('capex_id')->nullable();
-            $table->string('project_name');
+//            $table->string('project_name');
             $table->unsignedInteger('sub_capex_id')->nullable();
-            $table->string('sub_project');
+//            $table->string('sub_project');
             $table->string('vladimir_tag_number');
             $table->string('tag_number');
             $table->string('tag_number_old');
@@ -37,7 +37,7 @@ class CreateFixedAssetsTable extends Migration
             $table->string('receipt');
             $table->string('quantity');
             $table->string('depreciation_method');
-            $table->decimal('est_useful_life',18,1);
+//            $table->decimal('est_useful_life',18,1);
             $table->date('acquisition_date');
             $table->Biginteger('acquisition_cost');
             $table->unsignedInteger('asset_status_id');
@@ -47,13 +47,13 @@ class CreateFixedAssetsTable extends Migration
             $table->boolean('is_old_asset')->default(0);
             $table->string('care_of');
             $table->unsignedInteger('company_id');
-            $table->string('company_name');
+//            $table->string('company_name');
             $table->unsignedInteger('department_id');
-            $table->string('department_name');
+//            $table->string('department_name');
             $table->unsignedInteger('location_id');
-            $table->string('location_name');
+//            $table->string('location_name');
             $table->unsignedInteger('account_id');
-            $table->string('account_title');
+//            $table->string('account_title');
             $table->softDeletes();
             $table->timestamps();
             $table->foreign('capex_id')

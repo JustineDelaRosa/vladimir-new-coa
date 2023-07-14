@@ -17,7 +17,7 @@ class CreateFormulasTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('fixed_asset_id');
             $table->string('depreciation_method');
-            $table->decimal('est_useful_life' , 10, 1);
+//            $table->decimal('est_useful_life' , 10, 1);
             $table->date('acquisition_date');
             $table->bigInteger('acquisition_cost');
             $table->integer('scrap_value');
