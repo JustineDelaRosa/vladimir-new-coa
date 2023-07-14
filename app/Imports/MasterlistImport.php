@@ -129,9 +129,7 @@ class MasterlistImport extends DefaultValueBinder implements
 
         return FixedAsset::create([
             'capex_id' => Capex::where('capex', $collection['capex'])->first()->id ?? null,
-            'project_name' => ucwords(strtolower($collection['project_name'])) ?? '-',
             'sub_capex_id' => SubCapex::where('sub_capex', $collection['sub_capex'])->first()->id ?? null,
-            'sub_project' => ucwords(strtolower($collection['sub_project'])) ?? '-',
             'vladimir_tag_number' => $this->vladimirTagGenerator(),
             'tag_number' => $collection['tag_number'] ?? '-',
             'tag_number_old' => $collection['tag_number_old'] ?? '-',
@@ -150,7 +148,6 @@ class MasterlistImport extends DefaultValueBinder implements
             'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
             'quantity' => $collection['quantity'],
             'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
-            'est_useful_life' => $est_useful_life ?? $collection['est_useful_life'],
             'acquisition_date' => $collection['acquisition_date'],
             'acquisition_cost' => $collection['acquisition_cost'],
             'asset_status_id' => AssetStatus::where('asset_status_name', $collection['asset_status'])->first()->id,
@@ -159,14 +156,10 @@ class MasterlistImport extends DefaultValueBinder implements
             'movement_status_id' => MovementStatus::where('movement_status_name', $collection['movement_status'])->first()->id,
             'is_old_asset' => $collection['tag_number'] != '-' || $collection['tag_number_old'] != '-',
             'care_of' => ucwords(strtolower($collection['care_of'])),
-            'company_id' => Company::where('company_name', $collection['company'])->first()->id,
-            'company_name' => ucwords(strtolower($collection['company'])),
-            'department_id' => Department::where('department_name', $collection['department'])->first()->id,
-            'department_name' => ucwords(strtolower($collection['department'])),
-            'location_id' => Location::where('location_name', $collection['location'])->first()->id,
-            'location_name' => ucwords(strtolower($collection['location'])),
-            'account_id' => AccountTitle::where('account_title_name', $collection['account_title'])->first()->id,
-            'account_title' => ucwords(strtolower($collection['account_title'])),
+            'company_id' => Company::where('company_code', $collection['company_code'])->first()->id,
+            'department_id' => Department::where('department_code', $collection['department_code'])->first()->id,
+            'location_id' => Location::where('location_code', $collection['location_code'])->first()->id,
+            'account_id' => AccountTitle::where('account_title_code', $collection['account_code'])->first()->id,
         ]);
     }
 
@@ -174,7 +167,6 @@ class MasterlistImport extends DefaultValueBinder implements
     {
         $fixedAsset->formula()->create([
             'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
-            'est_useful_life' => $est_useful_life ?? $collection['est_useful_life'],
             'acquisition_date' => $collection['acquisition_date'],
             'acquisition_cost' => $collection['acquisition_cost'],
             'scrap_value' => $collection['scrap_value'],
@@ -190,7 +182,7 @@ class MasterlistImport extends DefaultValueBinder implements
         ]);
     }
 
-
+//Todo: if the id is trashed then what should i do with the id?
     function rules($collection): array
     {
         $collections = collect($collection);
@@ -202,21 +194,6 @@ class MasterlistImport extends DefaultValueBinder implements
                 $capex = Capex::where('capex', $value)->first();
                 if (!$capex) {
                     $fail('Capex does not exist');
-                }
-            }],
-            '*.project_name' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
-                //check if the value of project name is null or '-'
-                if ($value == null || $value == '-') {
-                    return true;
-                }
-                //check in the capex table if the project name is the same with the capex
-                $index = array_search($attribute, array_keys($collections->toArray()));
-                $capex = Capex::where('capex', $collections[$index]['capex'])->first();
-                if ($capex) {
-                    $project = $capex->where('project_name', $value)->first();
-                    if (!$project) {
-                        $fail('Project name does not exist in the capex');
-                    }
                 }
             }],
             '*.sub_capex' => ['nullable','regex:/^.+$/', function ($attribute, $value, $fail) use ($collections) {
@@ -244,27 +221,42 @@ class MasterlistImport extends DefaultValueBinder implements
                     }
                 }
             }],
-            '*.sub_project' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
-                if ($value == '' || $value == '-') {
-                    return true;
-                }
-                $index = array_search($attribute, array_keys($collections->toArray()));
-                $subCapexValue = $collections[$index]['sub_capex'];
-                if($subCapexValue != '' && $subCapexValue != '-'){
-                    if ($value == '' || $value == '-') {
-                        $fail('Sub Project is required');
-                        return true;
-                    }
-                }
-                //check in the sub capex table if the subproject is the same with the capex
-                $subCapex = SubCapex::where('sub_capex', $subCapexValue)->first();
-                if ($subCapex) {
-                    $subProject = $subCapex->where('sub_project', $value)->first();
-                    if (!$subProject) {
-                        $fail('Sub project does not exist in the sub capex');
-                    }
-                }
-            }],
+//            '*.project_name' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
+//                //check if the value of project name is null or '-'
+//                if ($value == null || $value == '-') {
+//                    return true;
+//                }
+//                //check in the capex table if the project name is the same with the capex
+//                $index = array_search($attribute, array_keys($collections->toArray()));
+//                $capex = Capex::where('capex', $collections[$index]['capex'])->first();
+//                if ($capex) {
+//                    $project = $capex->where('project_name', $value)->first();
+//                    if (!$project) {
+//                        $fail('Project name does not exist in the capex');
+//                    }
+//                }
+//            }],
+//            '*.sub_project' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
+//                if ($value == '' || $value == '-') {
+//                    return true;
+//                }
+//                $index = array_search($attribute, array_keys($collections->toArray()));
+//                $subCapexValue = $collections[$index]['sub_capex'];
+//                if($subCapexValue != '' && $subCapexValue != '-'){
+//                    if ($value == '' || $value == '-') {
+//                        $fail('Sub Project is required');
+//                        return true;
+//                    }
+//                }
+//                //check in the sub capex table if the subproject is the same with the capex
+//                $subCapex = SubCapex::where('sub_capex', $subCapexValue)->first();
+//                if ($subCapex) {
+//                    $subProject = $subCapex->where('sub_project', $value)->first();
+//                    if (!$subProject) {
+//                        $fail('Sub project does not exist in the sub capex');
+//                    }
+//                }
+//            }],
             '*.tag_number' => ['required', 'regex:/^([0-9-]{6,13}|-)$/', function ($attribute, $value, $fail) use ($collections) {
                 $duplicate = $collections->where('tag_number', $value)->where('tag_number', '!=', '-')->count();
                 if ($duplicate > 1) {
@@ -301,28 +293,26 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
             }],
             '*.major_category' => [
-                'required', function ($attribute, $value, $fail) use ($collections) {
-                    $major_category = MajorCategory::withTrashed()->where('major_category_name', $value)->first();
-                    if (!$major_category) {
-                        $fail('Major Category does not exists');
-                    }
-                }
+                'required','exists:major_categories,major_category_name'
+//                function ($attribute, $value, $fail) use ($collections) {
+//                    $major_category = MajorCategory::withTrashed()->where('major_category_name', $value)->first();
+//                    if (!$major_category) {
+//                        $fail('Major Category does not exists');
+//                    }
+//                }
             ],
             '*.minor_category' => ['required', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
-                $status = $collections[$index]['asset_status'];
+//                $status = $collections[$index]['asset_status'];
                 $major_category = $collections[$index]['major_category'];
                 $major_category = MajorCategory::withTrashed()->where('major_category_name', $major_category)->first()->id ?? 0;
                 $minor_category = MinorCategory::withTrashed()->where('minor_category_name', $value)
                     ->where('major_category_id', $major_category)->first();
 
-                if ($minor_category !== null) {
-                    if ($status != 'Disposed') {
-                        if ($minor_category->trashed()) {
-                            $fail('Conflict with minor category and fixed asset status');
-                        }
-                    }
-                } else {
+//                if($minor_category->trashed()){
+//                    $fail('Minor Category does not exist');
+//                }
+                if (!$minor_category) {
                     $fail('Minor Category does not exist');
                 }
 
@@ -331,7 +321,6 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.receipt' => 'required',
             '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required|in:STL,One Time',
-            '*.est_useful_life' => ['required'],
             '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date'],
             '*.acquisition_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
                 if ($value < 0) {
@@ -349,10 +338,10 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Accumulated cost must not be negative');
                 }
             }],
-            '*.asset_status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
-            '*.depreciation_status' => 'required|in:Fully Depreciated,Running Depreciation,For Depreciation',
-            '*.cycle_count_status' => 'required|in:Onsite,Not Onsite,Discovered,Missing',
-            '*.movement_status' => 'required|in:New, Pull Out, Transfer',
+            '*.asset_status' => 'required|exists:asset_statuses,asset_status_name',
+            '*.depreciation_status' => 'required|exists:depreciation_statuses,depreciation_status_name',
+            '*.cycle_count_status' => 'required|exists:cycle_count_statuses,cycle_count_status_name',
+            '*.movement_status' => 'required|exists:movement_statuses,movement_status_name',
             '*.care_of' => 'required',
             '*.age' => 'nullable',
             '*.end_depreciation' => 'required',
@@ -365,13 +354,9 @@ class MasterlistImport extends DefaultValueBinder implements
             }],
             '*.start_depreciation' => ['required'],
             '*.company_code' => 'required|exists:companies,company_code',
-            '*.company' => 'required|exists:companies,company_name',
             '*.department_code' => 'required|exists:departments,department_code',
-            '*.department' => 'required|exists:departments,department_name',
             '*.location_code' => 'required|exists:locations,location_code',
-            '*.location' => 'required|exists:locations,location_name',
             '*.account_code' => 'required|exists:account_titles,account_title_code',
-            '*.account_title' => 'required|exists:account_titles,account_title_name',
         ];
     }
 
@@ -379,9 +364,6 @@ class MasterlistImport extends DefaultValueBinder implements
     {
         return [
             '*.capex_id.exists' => 'Capex does not exist',
-            '*.project_name.required' => 'Project Name is required',
-//            '*.sub_capex.required' => 'Sub Capex is required,'
-//            '*.sub_project.required' => 'Sub Project is required',
             '*.vladimir_tag_number.required' => 'Vladimir Tag Number is required',
             '*.tag_number.required' => 'Tag Number is required',
             '*.tag_number_old.required' => 'Tag Number Old is required',
@@ -396,6 +378,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.division.required' => 'Division is required',
             '*.division.exists' => 'Division does not exist',
             '*.major_category.required' => 'Major Category is required',
+            '*.major_category.exists' => 'Major Category does not exist',
             '*.minor_category.required' => 'Minor Category is required',
             '*.voucher.required' => 'Voucher is required',
             '*.receipt.required' => 'Receipt is required',
@@ -403,7 +386,6 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.quantity.numeric' => 'Quantity must be a number',
             '*.depreciation_method.required' => 'Depreciation Method is required',
             '*.depreciation_method.in' => 'The selected depreciation method is invalid.',
-            '*.est_useful_life.required' => 'Est Useful Life is required',
             '*.acquisition_date.required' => 'Acquisition Date is required',
             '*.acquisition_cost.required' => 'Acquisition Cost is required',
             '*.scrap_value.required' => 'Scrap Value is required',
@@ -427,27 +409,19 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.start_depreciation.date_format' => 'Invalid date format',
             '*.company_code.required' => 'Company Code is required',
             '*.company_code.exists' => 'Company Code does not exist',
-            '*.company.required' => 'Company is required',
-            '*.company.exists' => 'Company does not exist',
             '*.department_code.required' => 'Department Code is required',
             '*.department_code.exists' => 'Department Code does not exist',
-            '*.department.required' => 'Department is required',
-            '*.department.exists' => 'Department does not exist',
             '*.location_code.required' => 'Location Code is required',
             '*.location_code.exists' => 'Location Code does not exist',
-            '*.location.required' => 'Location is required',
-            '*.location.exists' => 'Location does not exist',
             '*.account_code.required' => 'Account Code is required',
             '*.account_code.exists' => 'Account Code does not exist',
-            '*.account_title.required' => 'Account Title is required',
-            '*.account_title.exists' => 'Account Title does not exist',
         ];
 
     }
 
 
 
-//    GENERATING VLADIMIR TAG NUMBER
+//  GENERATING VLADIMIR TAG NUMBER
     public function vladimirTagGenerator(): string
     {
         $generatedEan13Result = $this->generateEan13();
