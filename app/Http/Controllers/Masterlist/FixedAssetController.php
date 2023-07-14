@@ -122,7 +122,7 @@ class FixedAssetController extends Controller
             'cycle_count_status_id' => $request->cycle_count_status_id,
             'movement_status_id' => $request->movement_status_id,
             'is_old_asset' => $request->is_old_asset ?? 0,
-            'care_of' =>ucwords(strtolower($request->care_of)) ?? '-',
+            'care_of' =>ucwords(strtolower($request->care_of ?? '-')) ,
             'company_id' => Company::where('sync_id', $departmentQuery->company_sync_id)->first()->id ?? null,
             'department_id' => $request->department_id,
             'location_id' => Location::where('sync_id', $departmentQuery->location_sync_id)->first()->id ?? null,
