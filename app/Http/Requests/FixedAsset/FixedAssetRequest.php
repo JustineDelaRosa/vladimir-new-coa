@@ -5,6 +5,7 @@ namespace App\Http\Requests\FixedAsset;
 use App\Models\Capex;
 use App\Models\FixedAsset;
 use App\Models\SubCapex;
+use App\Models\TypeOfRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
 class FixedAssetRequest extends FormRequest
@@ -28,13 +29,13 @@ class FixedAssetRequest extends FormRequest
     {
         //Adding of Fixed Asset
         if ($this->isMethod('post') &&
-            ($this->sub_capex_id === null ))  {
+            ($this->sub_capex_id === null)) {
             return [
 //                'capex_id' => 'nullable',
                 'sub_capex_id' => 'nullable',
                 'tag_number' => ['nullable', 'max:13', function ($attribute, $value, $fail) {
                     //if the value id "-" and the is_old_asset is true return fail error
-                    if($value == "-" && $this->is_old_asset){
+                    if ($value == "-" && $this->is_old_asset) {
                         $fail('This is required for old asset');
                     }
                     $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
@@ -67,8 +68,7 @@ class FixedAssetRequest extends FormRequest
                         // Check if necessary keys exist to avoid undefined index
                         if (isset($accountability['general_info']['full_name'])) {
                             $fullName = $accountability['general_info']['full_name'];
-                        }
-                        else {
+                        } else {
                             // Fail validation if keys don't exist
                             $fail('The accountable person\'s full name is required.');
                             return;
@@ -92,7 +92,7 @@ class FixedAssetRequest extends FormRequest
                 'depreciation_status_id' => 'required|exists:depreciation_statuses,id',
                 'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
                 'movement_status_id' => 'required|exists:movement_statuses,id',
-                'is_old_asset' =>  ['required','boolean', function ($attribute, $value, $fail) {
+                'is_old_asset' => ['required', 'boolean', function ($attribute, $value, $fail) {
                     if ($value == 1) {
                         if (request()->tag_number == null && request()->tag_number_old == null) {
                             $fail('Either tag number or tag number old is required');
@@ -118,11 +118,13 @@ class FixedAssetRequest extends FormRequest
             ];
         }
 
-        if ($this->isMethod('post')){
+        if ($this->isMethod('post')) {
             return [
 //                'capex_id' => 'required|exists:capexes,id',
-                'sub_capex_id' => ['required','exists:sub_capexes,id'
-//                    function ($attribute, $value, $fail) {
+                'sub_capex_id' => ['required', 'exists:sub_capexes,id'
+//                    ,function ($attribute, $value, $fail) {
+//                    $typeOfRequest = TypeOfRequest::query();
+//                    $typeOfRequest->where('id', request()->type_of_request_id)->first()->type_of_request_name;
 //                    $capex = SubCapex::withTrashed()->where('capex_id', request()->capex_id)->where('id', $value)->first();
 //                    if (!$capex) {
 //                        $fail('Invalid sub capex selected');
@@ -131,12 +133,11 @@ class FixedAssetRequest extends FormRequest
 //                    if ($capex->deleted_at) {
 //                        $fail('Sub capex is already deleted');
 //                    }
-//
 //                }
                 ],
-                'tag_number' => ['nullable',  'max:13', function ($attribute, $value, $fail) {
+                'tag_number' => ['nullable', 'max:13', function ($attribute, $value, $fail) {
                     //if the value id "-" and the is_old_asset is true return fail error
-                    if($value == "-" && $this->is_old_asset){
+                    if ($value == "-" && $this->is_old_asset) {
                         $fail('This is required for old asset');
                     }
                     $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
@@ -170,8 +171,7 @@ class FixedAssetRequest extends FormRequest
                         // Check if necessary keys exist to avoid undefined index
                         if (isset($accountability['general_info']['full_name'])) {
                             $fullName = $accountability['general_info']['full_name'];
-                        }
-                        else {
+                        } else {
                             // Fail validation if keys don't exist
                             $fail('The accountable person\'s full name is required.');
                             return;
@@ -195,7 +195,7 @@ class FixedAssetRequest extends FormRequest
                 'depreciation_status_id' => 'required|exists:depreciation_statuses,id',
                 'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
                 'movement_status_id' => 'required|exists:movement_statuses,id',
-                'is_old_asset' =>  ['required','boolean', function ($attribute, $value, $fail) {
+                'is_old_asset' => ['required', 'boolean', function ($attribute, $value, $fail) {
                     if ($value == 1) {
                         if (request()->tag_number == null && request()->tag_number_old == null) {
                             $fail('Either tag number or tag number old is required');
