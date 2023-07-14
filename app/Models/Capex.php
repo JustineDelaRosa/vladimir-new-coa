@@ -11,10 +11,10 @@ class Capex extends Model
     use HasFactory, SoftDeletes;
     protected $guarded = [];
 
-//    public function fixedAsset()
-//    {
-//        return $this->hasMany(FixedAsset::class, 'capex_id', 'id');
-//    }
+    public function fixedAsset()
+    {
+        return $this->hasMany(FixedAsset::class, 'capex_id', 'id');
+    }
 
     public function subCapex()
     {

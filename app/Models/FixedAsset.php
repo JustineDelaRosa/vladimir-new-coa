@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Models\Status\AssetStatus;
+use App\Models\Status\CycleCountStatus;
+use App\Models\Status\DepreciationStatus;
+use App\Models\Status\MovementStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,10 +20,10 @@ class FixedAsset extends Model
 
     // ]
 
-//    public function capex()
-//    {
-//        return $this->belongsTo(Capex::class, 'capex_id', 'id');
-//    }
+    public function capex()
+    {
+        return $this->belongsTo(Capex::class, 'capex_id', 'id');
+    }
 
     public function subCapex()
     {
@@ -75,5 +78,20 @@ class FixedAsset extends Model
     public function assetStatus()
     {
         return $this->belongsTo(AssetStatus::class, 'asset_status_id', 'id');
+    }
+
+    public function cycleCountStatus()
+    {
+        return $this->belongsTo(CycleCountStatus::class, 'cycle_count_status_id', 'id');
+    }
+
+    public function depreciationStatus()
+    {
+        return $this->belongsTo(DepreciationStatus::class, 'depreciation_status_id', 'id');
+    }
+
+    public function movementStatus()
+    {
+        return $this->belongsTo(MovementStatus::class, 'movement_status_id', 'id');
     }
 }

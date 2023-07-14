@@ -17,6 +17,8 @@ class CreateFixedAssetsTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('capex_id')->nullable();
             $table->string('project_name');
+            $table->unsignedInteger('sub_capex_id')->nullable();
+            $table->string('sub_project');
             $table->string('vladimir_tag_number');
             $table->string('tag_number');
             $table->string('tag_number_old');
@@ -38,8 +40,10 @@ class CreateFixedAssetsTable extends Migration
             $table->decimal('est_useful_life',18,1);
             $table->date('acquisition_date');
             $table->Biginteger('acquisition_cost');
-            $table->string('faStatus');
-//            $table->boolean('is_active'); //->default(1)
+            $table->unsignedInteger('asset_status_id');
+            $table->unsignedInteger('cycle_count_status_id');
+            $table->unsignedInteger('depreciation_status_id');
+            $table->unsignedInteger('movement_status_id');
             $table->boolean('is_old_asset')->default(0);
             $table->string('care_of');
             $table->unsignedInteger('company_id');
@@ -53,6 +57,10 @@ class CreateFixedAssetsTable extends Migration
             $table->softDeletes();
             $table->timestamps();
             $table->foreign('capex_id')
+                ->references('id')
+                ->on('capexes')
+                ->onDelete('cascade');
+            $table->foreign('sub_capex_id')
                 ->references('id')
                 ->on('sub_capexes')
                 ->onDelete('cascade');
@@ -87,6 +95,22 @@ class CreateFixedAssetsTable extends Migration
             $table->foreign('account_id')
                 ->references('id')
                 ->on('account_titles')
+                ->onDelete('cascade');
+            $table->foreign('asset_status_id')
+                ->references('id')
+                ->on('asset_statuses')
+                ->onDelete('cascade');
+            $table->foreign('cycle_count_status_id')
+                ->references('id')
+                ->on('cycle_count_statuses')
+                ->onDelete('cascade');
+            $table->foreign('depreciation_status_id')
+                ->references('id')
+                ->on('depreciation_statuses')
+                ->onDelete('cascade');
+            $table->foreign('movement_status_id')
+                ->references('id')
+                ->on('movement_statuses')
                 ->onDelete('cascade');
         });
     }
