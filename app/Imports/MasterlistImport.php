@@ -11,6 +11,10 @@ use App\Models\Location;
 use App\Models\Department;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
+use App\Models\Status\AssetStatus;
+use App\Models\Status\CycleCountStatus;
+use App\Models\Status\DepreciationStatus;
+use App\Models\Status\MovementStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
 use Carbon\Carbon;
@@ -30,6 +34,7 @@ use Maatwebsite\Excel\Concerns\WithStartRow;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
+use function PHPUnit\Framework\isEmpty;
 
 class MasterlistImport extends DefaultValueBinder implements
     ToCollection,
@@ -56,7 +61,7 @@ class MasterlistImport extends DefaultValueBinder implements
     public function bindValue(Cell $cell, $value): bool
     {
 
-        if ($cell->getColumn() == 'T') {
+        if ($cell->getColumn() == 'V') {
             $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y-m-d'), DataType::TYPE_STRING);
             return true;
         }
@@ -79,9 +84,19 @@ class MasterlistImport extends DefaultValueBinder implements
         foreach ($collections as $collection) {
             $majorCategoryId = $this->getMajorCategoryId($collection['major_category']);
             $minorCategoryId = $this->getMinorCategoryId($collection['minor_category'], $majorCategoryId);
-            $fixedAsset = $this->createFixedAsset($collection, $majorCategoryId, $minorCategoryId);
-            $this->createFormula($fixedAsset, $collection);
+            //pass est_useful_life to formula and fixed asset
+            $est_useful_life = $this->getEstUsefulLife($majorCategoryId);
+            $fixedAsset = $this->createFixedAsset($collection, $majorCategoryId, $minorCategoryId, $est_useful_life);
+            $this->createFormula($fixedAsset, $collection, $est_useful_life);
         }
+    }
+    private function getEstUsefulLife($majorCategoryId)
+    {
+        $majorCategory = MajorCategory::withTrashed()
+            ->where('major_category_name', $majorCategoryId)
+            ->first();
+
+        return $majorCategory ? $majorCategory->est_useful_life : null;
     }
 
     private function getMajorCategoryId($majorCategoryName)
@@ -99,20 +114,24 @@ class MasterlistImport extends DefaultValueBinder implements
             ->where('minor_category_name', $minorCategoryName)
             ->where('major_category_id', $majorCategoryId)
             ->first();
-
+        //return two valie
         return $minorCategory ? $minorCategory->id : null;
     }
 
-    private function createFixedAsset($collection, $majorCategoryId, $minorCategoryId)
+    private function createFixedAsset($collection, $majorCategoryId, $minorCategoryId, $est_useful_life)
     {
         // Check if necessary IDs exist before creating FixedAsset
-        if ($majorCategoryId === null || $minorCategoryId === null) {
+        if ($majorCategoryId == null || $minorCategoryId == null) {
             throw new Exception('Unable to create FixedAsset due to missing Major/Minor category ID.');
         }
+        //get est_useful_life from major category
+
 
         return FixedAsset::create([
-            'capex_id' => SubCapex::where('sub_capex', $collection['capex'])->first()->id ?? null,
+            'capex_id' => Capex::where('capex', $collection['capex'])->first()->id ?? null,
             'project_name' => ucwords(strtolower($collection['project_name'])) ?? '-',
+            'sub_capex_id' => SubCapex::where('sub_capex', $collection['sub_capex'])->first()->id ?? null,
+            'sub_project' => ucwords(strtolower($collection['sub_project'])) ?? '-',
             'vladimir_tag_number' => $this->vladimirTagGenerator(),
             'tag_number' => $collection['tag_number'] ?? '-',
             'tag_number_old' => $collection['tag_number_old'] ?? '-',
@@ -131,10 +150,13 @@ class MasterlistImport extends DefaultValueBinder implements
             'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
             'quantity' => $collection['quantity'],
             'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
-            'est_useful_life' => $majorCategory->est_useful_life ?? $collection['est_useful_life'],
+            'est_useful_life' => $est_useful_life ?? $collection['est_useful_life'],
             'acquisition_date' => $collection['acquisition_date'],
             'acquisition_cost' => $collection['acquisition_cost'],
-            'faStatus' => $collection['status'],
+            'asset_status_id' => AssetStatus::where('asset_status_name', $collection['asset_status'])->first()->id,
+            'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', $collection['cycle_count_status'])->first()->id,
+            'depreciation_status_id' => DepreciationStatus::where('depreciation_status_name', $collection['depreciation_status'])->first()->id,
+            'movement_status_id' => MovementStatus::where('movement_status_name', $collection['movement_status'])->first()->id,
             'is_old_asset' => $collection['tag_number'] != '-' || $collection['tag_number_old'] != '-',
             'care_of' => ucwords(strtolower($collection['care_of'])),
             'company_id' => Company::where('company_name', $collection['company'])->first()->id,
@@ -148,18 +170,18 @@ class MasterlistImport extends DefaultValueBinder implements
         ]);
     }
 
-    private function createFormula($fixedAsset, $collection)
+    private function createFormula($fixedAsset, $collection,$est_useful_life)
     {
         $fixedAsset->formula()->create([
             'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
-            'est_useful_life' => $majorCategory->est_useful_life ?? $collection['est_useful_life'],
+            'est_useful_life' => $est_useful_life ?? $collection['est_useful_life'],
             'acquisition_date' => $collection['acquisition_date'],
             'acquisition_cost' => $collection['acquisition_cost'],
             'scrap_value' => $collection['scrap_value'],
             'original_cost' => $collection['original_cost'],
             'accumulated_cost' => $collection['accumulated_cost'],
             'age' => $collection['age'],
-            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($majorCategory->est_useful_life))->addMonths(floor(($majorCategory->est_useful_life - floor($majorCategory->est_useful_life)) * 12) - 1)->format('Y-m'),
+            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
             'depreciation_per_year' => $collection['depreciation_per_year'],
             'depreciation_per_month' => $collection['depreciation_per_month'],
             'remaining_book_value' => $collection['remaining_book_value'],
@@ -173,14 +195,11 @@ class MasterlistImport extends DefaultValueBinder implements
     {
         $collections = collect($collection);
         return [
-            //if capex is not equal to null or empty, check if it exists in the database
             '*.capex' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
-            //check if the value of capex is null or '-'
                 if ($value == null || $value == '-') {
                     return true;
                 }
-                //check if the value of capex exists in the database
-                $capex = SubCapex::where('sub_capex', $value)->first();
+                $capex = Capex::where('capex', $value)->first();
                 if (!$capex) {
                     $fail('Capex does not exist');
                 }
@@ -192,11 +211,57 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
                 //check in the capex table if the project name is the same with the capex
                 $index = array_search($attribute, array_keys($collections->toArray()));
-                $capex = SubCapex::where('sub_capex', $collections[$index]['capex'])->first();
+                $capex = Capex::where('capex', $collections[$index]['capex'])->first();
                 if ($capex) {
-                    $project = $capex->where('sub_project', $value)->first();
+                    $project = $capex->where('project_name', $value)->first();
                     if (!$project) {
                         $fail('Project name does not exist in the capex');
+                    }
+                }
+            }],
+            '*.sub_capex' => ['nullable','regex:/^.+$/', function ($attribute, $value, $fail) use ($collections) {
+                $index = array_search($attribute, array_keys($collections->toArray()));
+                $capexValue = $collections[$index]['capex'];
+
+                //todo:check for other way to check if the value is null or '-'
+                if ($capexValue != '-' ) {
+                    if ($value == '-') {
+                        $fail('Sub Capex is required');
+                        return true;
+                    }
+                } else {
+                    if ($value != '-') {
+                        $fail('Sub Capex should be empty');
+                        return true;
+                    }
+                }
+
+                $capex = Capex::where('capex', $capexValue)->first();
+                if ($capex) {
+                    $subCapex = SubCapex::withTrashed()->where('capex_id', $capex->id)->where('sub_capex', $value)->first();
+                    if (!$subCapex) {
+                        $fail('Sub capex does not exist in the capex');
+                    }
+                }
+            }],
+            '*.sub_project' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
+                if ($value == '' || $value == '-') {
+                    return true;
+                }
+                $index = array_search($attribute, array_keys($collections->toArray()));
+                $subCapexValue = $collections[$index]['sub_capex'];
+                if($subCapexValue != '' && $subCapexValue != '-'){
+                    if ($value == '' || $value == '-') {
+                        $fail('Sub Project is required');
+                        return true;
+                    }
+                }
+                //check in the sub capex table if the subproject is the same with the capex
+                $subCapex = SubCapex::where('sub_capex', $subCapexValue)->first();
+                if ($subCapex) {
+                    $subProject = $subCapex->where('sub_project', $value)->first();
+                    if (!$subProject) {
+                        $fail('Sub project does not exist in the sub capex');
                     }
                 }
             }],
@@ -245,7 +310,7 @@ class MasterlistImport extends DefaultValueBinder implements
             ],
             '*.minor_category' => ['required', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
-                $status = $collections[$index]['status'];
+                $status = $collections[$index]['asset_status'];
                 $major_category = $collections[$index]['major_category'];
                 $major_category = MajorCategory::withTrashed()->where('major_category_name', $major_category)->first()->id ?? 0;
                 $minor_category = MinorCategory::withTrashed()->where('minor_category_name', $value)
@@ -284,7 +349,10 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Accumulated cost must not be negative');
                 }
             }],
-            '*.status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
+            '*.asset_status' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
+            '*.depreciation_status' => 'required|in:Fully Depreciated,Running Depreciation,For Depreciation',
+            '*.cycle_count_status' => 'required|in:Onsite,Not Onsite,Discovered,Missing',
+            '*.movement_status' => 'required|in:New, Pull Out, Transfer',
             '*.care_of' => 'required',
             '*.age' => 'nullable',
             '*.end_depreciation' => 'required',
@@ -312,6 +380,8 @@ class MasterlistImport extends DefaultValueBinder implements
         return [
             '*.capex_id.exists' => 'Capex does not exist',
             '*.project_name.required' => 'Project Name is required',
+//            '*.sub_capex.required' => 'Sub Capex is required,'
+//            '*.sub_project.required' => 'Sub Project is required',
             '*.vladimir_tag_number.required' => 'Vladimir Tag Number is required',
             '*.tag_number.required' => 'Tag Number is required',
             '*.tag_number_old.required' => 'Tag Number Old is required',
@@ -339,8 +409,14 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.scrap_value.required' => 'Scrap Value is required',
             '*.original_cost.required' => 'Original Cost is required',
             '*.accumulated_cost.required' => 'Accumulated Cost is required',
-            '*.status.required' => 'Status is required',
-            '*.status.in' => 'The selected status is invalid.',
+            '*.asset_status.required' => 'Status is required',
+            '*.asset_status.in' => 'The selected status is invalid.',
+            '*.depreciation_status.required' => 'Depreciation Status is required',
+            '*.depreciation_status.in' => 'The selected depreciation status is invalid.',
+            '*.cycle_count_status.required' => 'Cycle Count Status is required',
+            '*.cycle_count_status.in' => 'The selected cycle count status is invalid.',
+            '*.movement_status.required' => 'Movement Status is required',
+            '*.movement_status.in' => 'The selected movement status is invalid.',
             '*.care_of.required' => 'Care Of is required',
             '*.age.required' => 'Age is required',
             '*.end_depreciation.required' => 'End Depreciation is required',
