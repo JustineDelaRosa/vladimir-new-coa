@@ -26,7 +26,7 @@ class CreateFixedAssetsTable extends Migration
             $table->unsignedInteger('type_of_request_id');
             $table->string('asset_specification');
             $table->string('accountability');
-            $table->string('accountable');
+            $table->string('accountable')->nullable();
             $table->string('capitalized')->default('Capitalized');
             $table->string('cellphone_number');
             $table->string('brand');
