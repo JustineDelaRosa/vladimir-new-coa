@@ -81,7 +81,7 @@ class FixedAssetController extends Controller
             );
         }
         $departmentQuery = Department::where('id', $request->department_id)->first();
-        if($departmentQuery->division_id == null){
+        if ($departmentQuery->division_id == null) {
             return response()->json(
                 [
                     'message' => 'The given data was invalid.',
@@ -101,20 +101,20 @@ class FixedAssetController extends Controller
             'vladimir_tag_number' => $vladimirTagNumber,
             'tag_number' => $request->tag_number ?? '-',
             'tag_number_old' => $request->tag_number_old ?? '-',
-            'asset_description' =>($request->asset_description),
+            'asset_description' => ($request->asset_description),
             'type_of_request_id' => $request->type_of_request_id,
-            'asset_specification' =>($request->asset_specification),
-            'accountability' =>($request->accountability),
-            'accountable' =>($request->accountable) ?? '-',
+            'asset_specification' => ($request->asset_specification),
+            'accountability' => ($request->accountability),
+            'accountable' => ($request->accountable) ?? '-',
             'cellphone_number' => $request->cellphone_number ?? '-',
-            'brand' => ucwords(strtolower($request->brand))?? '-',
+            'brand' => ucwords(strtolower($request->brand)) ?? '-',
             'division_id' => $departmentQuery->division_id ?? null,
             'major_category_id' => $request->major_category_id,
             'minor_category_id' => $request->minor_category_id,
             'voucher' => $request->voucher ?? '-',
             'receipt' => $request->receipt ?? '-',
             'quantity' => $request->quantity,
-            'depreciation_method' =>$request->depreciation_method,
+            'depreciation_method' => $request->depreciation_method,
             'acquisition_date' => $request->acquisition_date,
             'acquisition_cost' => $request->acquisition_cost,
             'asset_status_id' => $request->asset_status_id,
@@ -122,7 +122,7 @@ class FixedAssetController extends Controller
             'cycle_count_status_id' => $request->cycle_count_status_id,
             'movement_status_id' => $request->movement_status_id,
             'is_old_asset' => $request->is_old_asset ?? 0,
-            'care_of' =>ucwords(strtolower($request->care_of ?? '-')) ,
+            'care_of' => ucwords(strtolower($request->care_of ?? '-')),
             'company_id' => Company::where('sync_id', $departmentQuery->company_sync_id)->first()->id ?? null,
             'department_id' => $request->department_id,
             'location_id' => Location::where('sync_id', $departmentQuery->location_sync_id)->first()->id ?? null,
@@ -131,7 +131,7 @@ class FixedAssetController extends Controller
 
         $fixedAsset->formula()->create([
 //            $this->assetCalculations($request)
-            'depreciation_method' =>$request->depreciation_method,
+            'depreciation_method' => $request->depreciation_method,
             'acquisition_date' => $request->acquisition_date,
             'acquisition_cost' => $request->acquisition_cost,
             'scrap_value' => $request->scrap_value,
@@ -328,7 +328,7 @@ class FixedAssetController extends Controller
 //            ], 200);
 //        }
         $departmentQuery = Department::where('id', $request->department_id)->first();
-        if($departmentQuery->division_id == null){
+        if ($departmentQuery->division_id == null) {
             return response()->json(
                 [
                     'message' => 'The given data was invalid.',

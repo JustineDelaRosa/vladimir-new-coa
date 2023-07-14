@@ -43,7 +43,7 @@ class CycleCountStatusController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(CycleCountStatusRequest $request)
@@ -64,13 +64,13 @@ class CycleCountStatusController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
         $cycleCountStatus = CycleCountStatus::find($id);
-        if(!$cycleCountStatus) return response()->json([
+        if (!$cycleCountStatus) return response()->json([
         ], 404);
 
         return response()->json([
@@ -82,8 +82,8 @@ class CycleCountStatusController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(CycleCountStatusRequest $request, $id)
@@ -91,12 +91,12 @@ class CycleCountStatusController extends Controller
         $cycle_count_status_name = ucwords(strtolower($request->cycle_count_status_name));
 
         $cycleCountStatus = CycleCountStatus::find($id);
-        if(!$cycleCountStatus) return response()->json([
+        if (!$cycleCountStatus) return response()->json([
             'error' => 'Cycle count status route not found.'
         ], 404);
 
         //check if no changes were made
-        if($cycleCountStatus->cycle_count_status_name == $cycle_count_status_name){
+        if ($cycleCountStatus->cycle_count_status_name == $cycle_count_status_name) {
             return response()->json([
                 'message' => 'No changes were made.'
             ], 200);
@@ -186,7 +186,7 @@ class CycleCountStatusController extends Controller
         }
 
         // Perform changes based on requested status.
-        if (!$status){
+        if (!$status) {
             $cycleCount->is_active = false;
             $cycleCount->save();
             $cycleCount->delete();

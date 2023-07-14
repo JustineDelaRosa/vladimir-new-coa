@@ -120,7 +120,7 @@ class MasterlistExportController extends Controller
         ]);
 
 // Add date filter if both startDate and endDate are given
-        if ($startDate && $endDate){
+        if ($startDate && $endDate) {
             $fixedAssetQuery->whereBetween('created_at', [$startDate, $endDate]);
         }
 

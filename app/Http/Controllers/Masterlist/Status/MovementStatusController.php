@@ -43,7 +43,7 @@ class MovementStatusController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(MovementStatusRequest $request)
@@ -63,17 +63,17 @@ class MovementStatusController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
-       $movementStatus = MovementStatus::withTrashed()->find($id);
-       if(!$movementStatus) {
-           return response()->json([
-               'error' => 'Movement status not found.'
-           ], 404);
-       }
+        $movementStatus = MovementStatus::withTrashed()->find($id);
+        if (!$movementStatus) {
+            return response()->json([
+                'error' => 'Movement status not found.'
+            ], 404);
+        }
 
         return response()->json([
             'message' => 'Successfully retrieved movement status.',
@@ -84,8 +84,8 @@ class MovementStatusController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(MovementStatusRequest $request, $id)
@@ -93,13 +93,13 @@ class MovementStatusController extends Controller
         $movement_status_name = ucwords(strtolower($request->movement_status_name));
 
         $movementStatus = MovementStatus::withTrashed()->find($id);
-        if(!$movementStatus) {
+        if (!$movementStatus) {
             return response()->json([
                 'error' => 'Movement status not found.'
             ], 404);
         }
 
-        if($movementStatus->movement_status_name == $movement_status_name){
+        if ($movementStatus->movement_status_name == $movement_status_name) {
             return response()->json([
                 'message' => 'No changes were made.'
             ], 200);
@@ -115,7 +115,7 @@ class MovementStatusController extends Controller
         ], 200);
     }
 
-    public function archived(MovementStatusRequest $request,$id)
+    public function archived(MovementStatusRequest $request, $id)
     {
         $status = $request->status;
 
@@ -128,21 +128,21 @@ class MovementStatusController extends Controller
         }
 
 
-        if($status == $movementStatus->is_active){
+        if ($status == $movementStatus->is_active) {
             return response()->json([
                 'message' => 'No Changes.'
             ], 200);
         }
 
 
-        if(!$status){
+        if (!$status) {
             $movementStatus->is_active = false;
             $movementStatus->save();
             $movementStatus->delete();
             return response()->json([
                 'message' => 'Successfully archived Movement Status.',
             ], 200);
-        }else{
+        } else {
             $movementStatus->restore();
             $movementStatus->is_active = true;
             $movementStatus->save();

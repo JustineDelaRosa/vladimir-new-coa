@@ -50,7 +50,7 @@ class DepartmentController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
 
@@ -107,7 +107,7 @@ class DepartmentController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function show($id)
@@ -118,8 +118,8 @@ class DepartmentController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $id)
@@ -130,7 +130,7 @@ class DepartmentController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function destroy($id)
@@ -179,34 +179,34 @@ class DepartmentController extends Controller
             ->orderby('created_at', 'DESC')
             ->paginate($limit);
 
-            $Department->getCollection()->transform(function ($department) {
-                return [
-                    'id' =>$department->id,
-                    'sync_id' =>$department->sync_id,
-                    'company' =>[
-                        'company_id' =>$department->company->id ?? "-",
-                        'company_sync_id' =>$department->company->sync_id ?? "-",
-                        'company_code' =>$department->company->company_code ?? "-",
-                        'company_name' =>$department->company->company_name ?? "-",
-                    ],
-                    'location' =>[
-                        'location_id' =>$department->location->id ?? "-",
-                        'location_sync_id' => $department->location->sync_id ?? "-",
-                        'location_code' =>$department->location->location_code ?? "-",
-                        'location_name' =>$department->location->location_name ?? "-",
-                    ],
-                    'division' => [
-                        'division_id' =>$department->division->id ?? "-",
-                        'division_name' =>$department->division->division_name ?? "-",
-                    ],
-                    'department_code' =>$department->department_code,
-                    'department_name' =>$department->department_name,
-                    'is_active' =>$department->is_active,
-                    'created_at' =>$department->created_at,
-                    'updated_at' =>$department->updated_at,
+        $Department->getCollection()->transform(function ($department) {
+            return [
+                'id' => $department->id,
+                'sync_id' => $department->sync_id,
+                'company' => [
+                    'company_id' => $department->company->id ?? "-",
+                    'company_sync_id' => $department->company->sync_id ?? "-",
+                    'company_code' => $department->company->company_code ?? "-",
+                    'company_name' => $department->company->company_name ?? "-",
+                ],
+                'location' => [
+                    'location_id' => $department->location->id ?? "-",
+                    'location_sync_id' => $department->location->sync_id ?? "-",
+                    'location_code' => $department->location->location_code ?? "-",
+                    'location_name' => $department->location->location_name ?? "-",
+                ],
+                'division' => [
+                    'division_id' => $department->division->id ?? "-",
+                    'division_name' => $department->division->division_name ?? "-",
+                ],
+                'department_code' => $department->department_code,
+                'department_name' => $department->department_name,
+                'is_active' => $department->is_active,
+                'created_at' => $department->created_at,
+                'updated_at' => $department->updated_at,
 
-                ];
-            });
+            ];
+        });
         return $Department;
     }
 

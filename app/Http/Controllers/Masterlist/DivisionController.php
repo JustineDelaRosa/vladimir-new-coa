@@ -28,7 +28,7 @@ class DivisionController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(DivisionRequest $request)
@@ -42,7 +42,7 @@ class DivisionController extends Controller
             'division_name' => $division_name,
             'is_active' => 1
         ]);
-        if($addDivision) {
+        if ($addDivision) {
             $division_id = Division::where('division_name', $division_name)->first()->id;
             if ($division_id) {
                 foreach ($department_sync_id as $id) {
@@ -63,7 +63,7 @@ class DivisionController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
@@ -95,8 +95,8 @@ class DivisionController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(DivisionRequest $request, $id)
@@ -122,7 +122,7 @@ class DivisionController extends Controller
             'division_name' => $division_name,
         ]);
 
-        if($update){
+        if ($update) {
             Department::where('division_id', $id)->whereNotIn('sync_id', $department_sync_id)->update([
                 'division_id' => null
             ]);
@@ -133,10 +133,11 @@ class DivisionController extends Controller
         }
     }
     //! as of 10/12/2020 this function is not yet used
+
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function destroy($id)
@@ -212,7 +213,7 @@ class DivisionController extends Controller
             ->paginate($limit);
 
         $Division->getCollection()->transform(function ($division) {
-            return[
+            return [
                 'id' => $division->id,
                 'division_name' => $division->division_name,
                 'is_active' => $division->is_active,

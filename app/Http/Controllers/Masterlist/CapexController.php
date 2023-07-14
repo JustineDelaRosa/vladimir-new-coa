@@ -32,10 +32,10 @@ class CapexController extends Controller
             ]
         )
             ->where(function ($query) use ($search) {
-            $query
-                ->where("capex", "like", "%" . $search . "%")
-                ->orWhere("project_name", "like", "%" . $search . "%");
-        })
+                $query
+                    ->where("capex", "like", "%" . $search . "%")
+                    ->orWhere("project_name", "like", "%" . $search . "%");
+            })
             ->when($status === "deactivated", function ($query) {
                 $query->onlyTrashed();
             })
@@ -58,7 +58,7 @@ class CapexController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(CapexRequest $request)
@@ -80,13 +80,13 @@ class CapexController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
         $capex = Capex::query();
-        if(!$capex->where('id', $id)->exists()){
+        if (!$capex->where('id', $id)->exists()) {
             return response()->json([
                 'error' => 'Capex Route Not Found.'
             ], 404);
@@ -101,8 +101,8 @@ class CapexController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(CapexRequest $request, $id)
@@ -110,13 +110,13 @@ class CapexController extends Controller
         $project_name = ucwords(strtolower($request->project_name));
         $capex = Capex::find($id);
 
-        if(!$capex) {
+        if (!$capex) {
             return response()->json([
                 'error' => 'Capex Route Not Found.'
             ], 404);
         }
 
-        if($capex->project_name === $project_name){
+        if ($capex->project_name === $project_name) {
             return response()->json([
                 'message' => 'No changes.',
             ], 200);
@@ -136,27 +136,27 @@ class CapexController extends Controller
         $status = $request->status;
 
         $capex = Capex::query();
-        if(!$capex->withTrashed()->where('id', $id)->exists()){
+        if (!$capex->withTrashed()->where('id', $id)->exists()) {
             return response()->json([
                 'error' => 'Capex Route Not Found.'
             ], 404);
         }
 
-        if($status == false){
-            if(!Capex::where('id', $id)->where('is_active', true)->exists()){
+        if ($status == false) {
+            if (!Capex::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json([
                     'message' => 'No Changes.'
                 ], 200);
-            }else{
+            } else {
                 $checkFixedAsset = FixedAsset::where('capex_id', $id)->exists();
                 if ($checkFixedAsset) {
                     return response()->json(['error' => 'Unable to archived , Capex is still in use!'], 422);
                 }
-                if(Capex::where('id', $id)->exists()){
+                if (Capex::where('id', $id)->exists()) {
 
                     $sub_capex_check = SubCapex::where('capex_id', $id)->get('id');
                     //check if any of the sub capex is in use by fixed asset
-                    $checkFixedAsset = FixedAsset::whereIn('capex_id',$sub_capex_check)->exists();
+                    $checkFixedAsset = FixedAsset::whereIn('capex_id', $sub_capex_check)->exists();
                     if ($checkFixedAsset) {
                         return response()->json(['error' => 'Unable to archive, Sub Capex is still in use!'], 422);
                     }
@@ -178,12 +178,12 @@ class CapexController extends Controller
             }
         }
 
-        if($status == true){
-            if(Capex::where('id', $id)->where('is_active', true)->exists()){
+        if ($status == true) {
+            if (Capex::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json([
                     'message' => 'No Changes.'
                 ], 200);
-            }else{
+            } else {
                 $restoreCapex = Capex::withTrashed()->where('id', $id)->restore();
                 $updateStatus = Capex::where('id', $id)->update([
                     'is_active' => true,
@@ -195,7 +195,8 @@ class CapexController extends Controller
         }
     }
 
-    public function capexImport(Request $request){
+    public function capexImport(Request $request)
+    {
         $request->validate([
             'file' => 'required|mimes:csv,txt,xlx,xls,pdf,xlsx'
         ]);

@@ -45,7 +45,7 @@ class DepreciationStatusController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(DepreciationStatusRequest $request)
@@ -65,15 +65,15 @@ class DepreciationStatusController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
-       $depreciationStatus = DepreciationStatus::find($id);
-       if(!$depreciationStatus) return response()->json([
-           'error' => 'Depreciation status route not found.'
-         ], 404);
+        $depreciationStatus = DepreciationStatus::find($id);
+        if (!$depreciationStatus) return response()->json([
+            'error' => 'Depreciation status route not found.'
+        ], 404);
 
         return response()->json([
             'message' => 'Successfully retrieved depreciation status.',
@@ -93,12 +93,12 @@ class DepreciationStatusController extends Controller
         $depreciation_status_name = ucwords(strtolower($request->depreciation_status_name));
 
         $depreciationStatus = DepreciationStatus::find($id);
-        if(!$depreciationStatus) return response()->json([
+        if (!$depreciationStatus) return response()->json([
             'error' => 'Depreciation status route not found.'
         ], 404);
 
         //check if no changes
-        if($depreciationStatus->depreciation_status_name == $depreciation_status_name){
+        if ($depreciationStatus->depreciation_status_name == $depreciation_status_name) {
             return response()->json([
                 'message' => 'No changes were made.'
             ], 200);
@@ -128,21 +128,21 @@ class DepreciationStatusController extends Controller
         }
 
 
-        if($status == $depreciationStatus->is_active){
+        if ($status == $depreciationStatus->is_active) {
             return response()->json([
                 'message' => 'No Changes.'
             ], 200);
         }
 
 
-        if(!$status){
+        if (!$status) {
             $depreciationStatus->is_active = false;
             $depreciationStatus->save();
             $depreciationStatus->delete();
             return response()->json([
                 'message' => 'Successfully archived Depreciation Status.',
             ], 200);
-        }else{
+        } else {
             $depreciationStatus->restore();
             $depreciationStatus->is_active = true;
             $depreciationStatus->save();

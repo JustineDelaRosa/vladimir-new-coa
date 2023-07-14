@@ -35,28 +35,28 @@ class MajorCategoryController extends Controller
         $major_category_name = ucwords(strtolower($request->major_category_name));
         $est_useful_life = $request->est_useful_life;
 
-            $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name)
-                ->exists();
-            if ($majorCategory) {
-                return response()->json(
-                    [
-                        'message' => 'The given data was invalid.',
-                        'errors' => [
-                            'major_category_name' => [
-                                'The major category name has already been taken.'
-                            ]
+        $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name)
+            ->exists();
+        if ($majorCategory) {
+            return response()->json(
+                [
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'major_category_name' => [
+                            'The major category name has already been taken.'
                         ]
-                    ],
-                    422
-                );
-            }
+                    ]
+                ],
+                422
+            );
+        }
 
 
-            $majorCategory = MajorCategory::create([
-                'major_category_name' => $major_category_name,
-                'est_useful_life'=> $est_useful_life,
-                'is_active' => true
-            ]);
+        $majorCategory = MajorCategory::create([
+            'major_category_name' => $major_category_name,
+            'est_useful_life' => $est_useful_life,
+            'is_active' => true
+        ]);
 
 
         return response()->json(['message' => 'Successfully Created!', 'data' => $majorCategory], 201);
@@ -119,7 +119,7 @@ class MajorCategoryController extends Controller
         // }
 
         if (MajorCategory::where('id', $id)
-            ->where(['major_category_name' => $major_category_name, 'est_useful_life'=> $est_useful_life])
+            ->where(['major_category_name' => $major_category_name, 'est_useful_life' => $est_useful_life])
             ->exists()
         ) {
             return response()->json(['message' => 'No Changes'], 200);
@@ -145,7 +145,7 @@ class MajorCategoryController extends Controller
         if (MajorCategory::where('id', $id)->exists()) {
             $update = MajorCategory::where('id', $id)->update([
                 'major_category_name' => $major_category_name,
-                'est_useful_life'=> $est_useful_life,
+                'est_useful_life' => $est_useful_life,
                 // 'is_active' => true
             ]);
 
@@ -249,7 +249,7 @@ class MajorCategoryController extends Controller
             })
             ->where(function ($query) use ($search) {
                 $query->where('major_category_name', 'LIKE', "%{$search}%")
-                        ->orWhere('est_useful_life', 'LIKE', "%{$search}%");
+                    ->orWhere('est_useful_life', 'LIKE', "%{$search}%");
             })
             ->orderBy('created_at', 'DESC')
             ->paginate($limit);

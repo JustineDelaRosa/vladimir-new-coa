@@ -45,7 +45,7 @@ class AssetStatusController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(AssetStatusRequest $request)
@@ -66,13 +66,13 @@ class AssetStatusController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
         $assetStatus = AssetStatus::find($id);
-        if(!$assetStatus) return response()->json([
+        if (!$assetStatus) return response()->json([
             'message' => 'Asset status route not found.'
         ], 404);
 
@@ -85,8 +85,8 @@ class AssetStatusController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(AssetStatusRequest $request, $id)
@@ -94,11 +94,11 @@ class AssetStatusController extends Controller
         $asset_status_name = ucwords(strtolower($request->asset_status_name));
 
         $assetStatus = AssetStatus::find($id);
-        if(!$assetStatus) return response()->json([
+        if (!$assetStatus) return response()->json([
             'error' => 'Asset status route not found.'
         ], 404);
 
-        if($assetStatus->asset_status_name == $asset_status_name){
+        if ($assetStatus->asset_status_name == $asset_status_name) {
             return response()->json([
                 'message' => 'No changes were made.'
             ], 200);
@@ -117,7 +117,7 @@ class AssetStatusController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function destroy($id)
@@ -126,30 +126,29 @@ class AssetStatusController extends Controller
     }
 
 
-
     public function archived(AssetStatusRequest $request, $id)
     {
 
         $status = $request->status;
 
         $assetStatus = AssetStatus::query();
-        if(!$assetStatus->withTrashed()->where('id', $id)->exists()){
+        if (!$assetStatus->withTrashed()->where('id', $id)->exists()) {
             return response()->json([
                 'message' => 'Asset Status Route Not Found.'
             ], 404);
         }
 
-        if($status == false){
-            if(!AssetStatus::where('id', $id)->where('is_active', true)->exists()){
+        if ($status == false) {
+            if (!AssetStatus::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json([
                     'message' => 'No Changes.'
                 ], 200);
-            }else{
+            } else {
 //                $checkFixedAsset = FixedAsset::where('asset_status_id', $id)->exists();
 //                if ($checkFixedAsset) {
 //                    return response()->json(['error' => 'Unable to archived , Asset Status is still in use!'], 422);
 //                }
-                if(AssetStatus::where('id', $id)->exists()){
+                if (AssetStatus::where('id', $id)->exists()) {
                     $updateCapex = AssetStatus::Where('id', $id)->update([
                         'is_active' => false,
                     ]);
@@ -162,12 +161,12 @@ class AssetStatusController extends Controller
             }
         }
 
-        if($status == true){
-            if(AssetStatus::where('id', $id)->where('is_active', true)->exists()){
+        if ($status == true) {
+            if (AssetStatus::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json([
                     'message' => 'No Changes.'
                 ], 200);
-            }else{
+            } else {
                 $restoreCapex = AssetStatus::withTrashed()->where('id', $id)->restore();
                 $updateStatus = AssetStatus::where('id', $id)->update([
                     'is_active' => true,

@@ -23,8 +23,8 @@ class SubCapexController extends Controller
                 return $query->withTrashed();
             }])
             ->where(function ($query) use ($request) {
-                $query->where('sub_capex', 'like', '%'.$request->search.'%')
-                    ->orWhere('sub_project', 'like', '%'.$request->search.'%');
+                $query->where('sub_capex', 'like', '%' . $request->search . '%')
+                    ->orWhere('sub_project', 'like', '%' . $request->search . '%');
             })
             ->when($request->status === 'deactivated', function ($query) {
                 return $query->onlyTrashed();
@@ -48,7 +48,7 @@ class SubCapexController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(SubCapexRequest $request)
@@ -56,9 +56,9 @@ class SubCapexController extends Controller
         $capex_id = $request->capex_id;
         $sub_capex = strtoupper($request->sub_capex);
         $sub_project = ucwords(strtolower($request->sub_project));
-        $capex = Capex::with('subCapex')->where('id',$capex_id)->first();
+        $capex = Capex::with('subCapex')->where('id', $capex_id)->first();
         //check if this capex has this sub capex already
-        if(!$capex){
+        if (!$capex) {
             return response()->json([
                 'message' => 'The given data was invalid.',
                 'errors' => [
@@ -69,8 +69,8 @@ class SubCapexController extends Controller
             ], 422);
         }
 
-        $sub_capex_check = $capex->subCapex->where('sub_capex',$capex->capex. '-' . $sub_capex)->first();
-        if($sub_capex_check ){
+        $sub_capex_check = $capex->subCapex->where('sub_capex', $capex->capex . '-' . $sub_capex)->first();
+        if ($sub_capex_check) {
             return response()->json([
                 'message' => 'The given data was invalid.',
                 'errors' => [
@@ -82,7 +82,7 @@ class SubCapexController extends Controller
         }
 
         $capex->subCapex()->create([
-            'sub_capex' => $capex->capex. '-' . $sub_capex,
+            'sub_capex' => $capex->capex . '-' . $sub_capex,
             'sub_project' => $sub_project,
             'is_active' => true
         ]);
@@ -96,7 +96,7 @@ class SubCapexController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
@@ -118,8 +118,8 @@ class SubCapexController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(SubCapexRequest $request, $id)
@@ -148,23 +148,23 @@ class SubCapexController extends Controller
         $status = $request->status;
 
         $sub_capex = SubCapex::query();
-        if(!$sub_capex->withTrashed()->where('id', $id)->exists()){
+        if (!$sub_capex->withTrashed()->where('id', $id)->exists()) {
             return response()->json([
                 'error' => 'SubCapex Route Not Found.'
             ], 404);
         }
 
-        if($status == false){
-            if(!SubCapex::where('id', $id)->where('is_active', true)->exists()){
+        if ($status == false) {
+            if (!SubCapex::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json([
                     'message' => 'No Changes.'
                 ], 200);
-            }else{
+            } else {
 //                $checkFixedAsset = FixedAsset::where('capex_id', $id)->exists();
 //                if ($checkFixedAsset) {
 //                    return response()->json(['error' => 'Unable to archived , SubCapex is still in use!'], 422);
 //                }
-                if(SubCapex::where('id', $id)->exists()){
+                if (SubCapex::where('id', $id)->exists()) {
                     $updateCapex = SubCapex::Where('id', $id)->update([
                         'is_active' => false,
                     ]);
@@ -177,14 +177,14 @@ class SubCapexController extends Controller
             }
         }
 
-        if($status == true){
-            if(SubCapex::where('id', $id)->where('is_active', true)->exists()){
+        if ($status == true) {
+            if (SubCapex::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json([
                     'message' => 'No Changes.'
                 ], 200);
-            }else{
+            } else {
                 $capex_id = SubCapex::withTrashed()->where('id', $id)->first()->capex_id;
-                if(Capex::onlyTrashed()->where('id', $capex_id)->exists()){
+                if (Capex::onlyTrashed()->where('id', $capex_id)->exists()) {
                     return response()->json([
                         'error' => 'Unable to restore, Capex is in archived!'
                     ], 422);

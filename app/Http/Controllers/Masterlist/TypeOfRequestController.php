@@ -82,52 +82,53 @@ class TypeOfRequestController extends Controller
     {
         $type_of_request_name = ucwords(strtolower($request->type_of_request_name));
 
-        if(TypeOfRequest::where('id',$id)->where([
+        if (TypeOfRequest::where('id', $id)->where([
             'type_of_request_name' => $type_of_request_name,
-        ])->exists()){
+        ])->exists()) {
             return response()->json([
                 'message' => 'No changes.',
             ], 200);
         }
 
 
-        if(TypeOfRequest::where('id', $id)->exists()){
+        if (TypeOfRequest::where('id', $id)->exists()) {
             $updateTor = TypeOfRequest::Where('id', $id)->update([
                 'type_of_request_name' => $type_of_request_name,
             ]);
             return response()->json([
                 'message' => 'Successfully updated Type of Request.',
             ], 200);
-        }else{
+        } else {
             return response()->json([
                 'message' => 'Type of Request Route Not Found.'
             ], 404);
         }
     }
+
     public function archived(TypeOfRequestRequest $request, $id)
     {
 
         $status = $request->status;
 
         $typeOfRequest = TypeOfRequest::query();
-        if(!$typeOfRequest->withTrashed()->where('id', $id)->exists()){
+        if (!$typeOfRequest->withTrashed()->where('id', $id)->exists()) {
             return response()->json([
                 'message' => 'Type Of Request Route Not Found.'
             ], 404);
         }
 
-        if($status == false){
-            if(!TypeOfRequest::where('id', $id)->where('is_active', true)->exists()){
+        if ($status == false) {
+            if (!TypeOfRequest::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json([
                     'message' => 'No Changes.'
                 ], 200);
-            }else{
+            } else {
                 $checkFixedAsset = FixedAsset::where('type_of_request_id', $id)->exists();
                 if ($checkFixedAsset) {
                     return response()->json(['error' => 'Unable to archived , Type Of Request is still in use!'], 422);
                 }
-                if(TypeOfRequest::where('id', $id)->exists()){
-                    $updateStatus= TypeOfRequest::Where('id', $id)->update([
+                if (TypeOfRequest::where('id', $id)->exists()) {
+                    $updateStatus = TypeOfRequest::Where('id', $id)->update([
                         'is_active' => false,
                     ]);
                     $archiveTOR = TypeOfRequest::where('id', $id)->delete();
@@ -139,12 +140,12 @@ class TypeOfRequestController extends Controller
             }
         }
 
-        if($status == true){
-            if(TypeOfRequest::where('id', $id)->where('is_active', true)->exists()){
+        if ($status == true) {
+            if (TypeOfRequest::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json([
                     'message' => 'No Changes.'
                 ], 200);
-            }else{
+            } else {
                 $restoreTOR = TypeOfRequest::withTrashed()->where('id', $id)->restore();
                 $updateStatus = TypeOfRequest::where('id', $id)->update([
                     'is_active' => true,

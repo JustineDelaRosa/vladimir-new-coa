@@ -201,7 +201,7 @@ class MinorCategoryController extends Controller
 
 
         $MinorCategory = MinorCategory::withTrashed()->with(['majorCategory' => function ($query) {
-                $query->withTrashed();
+            $query->withTrashed();
         }])
             ->where(function ($query) use ($status) {
                 $query->where('is_active', $status);
