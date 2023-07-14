@@ -4,6 +4,7 @@ namespace App\Http\Requests\FixedAsset;
 
 use App\Models\Capex;
 use App\Models\FixedAsset;
+use App\Models\SubCapex;
 use Illuminate\Foundation\Http\FormRequest;
 
 class FixedAssetRequest extends FormRequest
@@ -26,11 +27,11 @@ class FixedAssetRequest extends FormRequest
     public function rules()
     {
         //Adding of Fixed Asset
-        if ($this->isMethod('post') &&
-            ($this->capex == null && $this->project_name == null)) {
+        if ($this->isMethod('post') && ($this->capex_id === null) &&
+            ($this->sub_capex_id === null ))  {
             return [
                 'capex_id' => 'nullable',
-                'project_name' => 'nullable',
+                'sub_capex_id' => 'nullable',
                 'tag_number' => ['nullable', 'max:13', function ($attribute, $value, $fail) {
                     //if the value id "-" and the is_old_asset is true return fail error
                     if($value == "-" && $this->is_old_asset){
@@ -57,13 +58,13 @@ class FixedAssetRequest extends FormRequest
                 'accountability' => 'required',
                 'accountable' => ['required',function ($attribute, $value, $fail) {
                     $accountability = request()->input('accountable');
-                    $fullIdNumber = $accountability['general_info']['full_id_number']; //todo: should be full name of accountable
+                    $fullName = $accountability['general_info']['full_name'];
                     //change the value of accountable to full id number
-                    request()->merge(['accountable' => $fullIdNumber]);
+                    request()->merge(['accountable' => $fullName]);
 
                     // Example validation:
-                    if (!$fullIdNumber) {
-                        $fail('Full ID number is required');
+                    if (!$fullName) {
+                        $fail('Accountable is required');
                     }
                 }],
                 'cellphone_number' => 'nullable|numeric|digits:11',
@@ -74,7 +75,10 @@ class FixedAssetRequest extends FormRequest
                 'voucher' => 'nullable',
                 'receipt' => 'nullable',
                 'quantity' => 'required',
-                'faStatus' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
+                'asset_status_id' => 'required|exists:asset_statuses,id',
+                'depreciation_status_id' => 'required|exists:depreciation_statuses,id',
+                'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
+                'movement_status_id' => 'required|exists:movement_statuses,id',
                 'is_old_asset' =>  ['required','boolean', function ($attribute, $value, $fail) {
                     if ($value == 1) {
                         if (request()->tag_number == null && request()->tag_number_old == null) {
@@ -83,7 +87,6 @@ class FixedAssetRequest extends FormRequest
                     }
                 }],
                 'depreciation_method' => 'required',
-                'est_useful_life' => ['required', 'numeric', 'max:100'],
                 'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
                 'acquisition_cost' => ['required', 'numeric'],
                 'scrap_value' => ['required', 'numeric'],
@@ -106,18 +109,20 @@ class FixedAssetRequest extends FormRequest
 
         if ($this->isMethod('post')){
             return [
-                'capex_id' => 'required|exists:capexes,id',
-                //check if this is the project name of selected capex_id
-                'project_name' => ['required' , function ($attribute, $value, $fail) {
-                    $capex = Capex::find(request()->capex_id);
-                    if (!$capex) {
-                        $fail('Invalid capex selected');
-                        return;
-                    }
-                    if ($value != $capex->project_name) {
-                        $fail('Project                                                                                                                                                                                                                     name is not the same as the selected capex');
-                    }
-                }],
+//                'capex_id' => 'required|exists:capexes,id',
+                'sub_capex_id' => ['required','exists:sub_capexes,id'
+//                    function ($attribute, $value, $fail) {
+//                    $capex = SubCapex::withTrashed()->where('capex_id', request()->capex_id)->where('id', $value)->first();
+//                    if (!$capex) {
+//                        $fail('Invalid sub capex selected');
+//                        return;
+//                    }
+//                    if ($capex->deleted_at) {
+//                        $fail('Sub capex is already deleted');
+//                    }
+//
+//                }
+                ],
                 'tag_number' => ['nullable',  'max:13', function ($attribute, $value, $fail) {
                     //if the value id "-" and the is_old_asset is true return fail error
                     if($value == "-" && $this->is_old_asset){
@@ -142,7 +147,17 @@ class FixedAssetRequest extends FormRequest
                 'type_of_request_id' => 'required',
                 'asset_specification' => 'required',
                 'accountability' => 'required',
-                'accountable' => ['required'],
+                'accountable' => ['required',function ($attribute, $value, $fail) {
+                    $accountability = request()->input('accountable');
+                    $fullName = $accountability['general_info']['full_name'];
+                    //change the value of accountable to full id number
+                    request()->merge(['accountable' => $fullName]);
+
+                    // Example validation:
+                    if (!$fullName) {
+                        $fail('Accountable is required');
+                    }
+                }],
                 'cellphone_number' => 'nullable|numeric|digits:11',
                 'brand' => 'nullable',
                 'division_id' => 'required|exists:divisions,id',
@@ -151,7 +166,10 @@ class FixedAssetRequest extends FormRequest
                 'voucher' => 'nullable',
                 'receipt' => 'nullable',
                 'quantity' => 'required',
-                'faStatus' => 'required|in:Good,For Disposal,For Repair,Spare,Sold,Write Off',
+                'asset_status_id' => 'required|exists:asset_statuses,id',
+                'depreciation_status_id' => 'required|exists:depreciation_statuses,id',
+                'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
+                'movement_status_id' => 'required|exists:movement_statuses,id',
                 'is_old_asset' =>  ['required','boolean', function ($attribute, $value, $fail) {
                     if ($value == 1) {
                         if (request()->tag_number == null && request()->tag_number_old == null) {
@@ -160,7 +178,6 @@ class FixedAssetRequest extends FormRequest
                     }
                 }],
                 'depreciation_method' => 'required',
-                'est_useful_life' => ['required', 'numeric', 'max:100'],
                 'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
                 'acquisition_cost' => ['required', 'numeric'],
                 'scrap_value' => ['required', 'numeric'],
@@ -192,6 +209,8 @@ class FixedAssetRequest extends FormRequest
         return [
             'capex_id.required' => 'Capex is required',
             'capex_id.exists' => 'Capex does not exist',
+            'sub_capex_id.required' => 'Sub capex is required',
+            'sub_project.required' => 'Sub project is required',
             'project_name.required' => 'Project name is required',
             'project_name.exists' => 'Project name does not exist',
             'tag_number.required' => 'Tag number is required',
@@ -228,8 +247,14 @@ class FixedAssetRequest extends FormRequest
             'original_cost.numeric' => 'Original cost must be a number',
             'accumulated_cost.required' => 'Accumulated cost is required',
             'accumulated_cost.numeric' => 'Accumulated cost must be a number',
-            'faStatus.required' => 'Status is required',
-            'faStatus.boolean' => 'Status must be a boolean',
+            'asset_status.required' => 'Status is required',
+            'asset_status.in' => 'The selected status is invalid.',
+            'depreciation_status.required' => 'Depreciation status is required',
+            'depreciation_status.in' => 'The selected status is invalid.',
+            'cycle_count_status.required' => 'Cycle count status is required',
+            'cycle_count_status.in' => 'The selected status is invalid.',
+            'movement_status.required' => 'Movement status is required',
+            'movement_status.in' => 'The selected status is invalid.',
             'faStatus.in' => 'The selected status is invalid.',
             'care_of.required' => 'Care of is required',
             'age.required' => 'Age is required',
