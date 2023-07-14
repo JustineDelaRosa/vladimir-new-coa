@@ -69,7 +69,6 @@ class FixedAssetRequest extends FormRequest
                 }],
                 'cellphone_number' => 'nullable|numeric|digits:11',
                 'brand' => 'nullable',
-                'division_id' => 'required|exists:divisions,id',
                 'major_category_id' => 'required|exists:major_categories,id',
                 'minor_category_id' => 'required|exists:minor_categories,id',
                 'voucher' => 'nullable',
@@ -100,9 +99,7 @@ class FixedAssetRequest extends FormRequest
                 'remaining_book_value' => ['nullable', 'numeric'],
                 'release_date' => ['required', 'date_format:Y-m'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
-                'company_id' => 'required|exists:companies,id',
                 'department_id' => 'required|exists:departments,id',
-                'location_id' => 'required|exists:locations,id',
                 'account_title_id' => 'required|exists:account_titles,id',
             ];
         }
@@ -160,7 +157,6 @@ class FixedAssetRequest extends FormRequest
                 }],
                 'cellphone_number' => 'nullable|numeric|digits:11',
                 'brand' => 'nullable',
-                'division_id' => 'required|exists:divisions,id',
                 'major_category_id' => 'required|exists:major_categories,id',
                 'minor_category_id' => 'required|exists:minor_categories,id',
                 'voucher' => 'nullable',
@@ -191,9 +187,7 @@ class FixedAssetRequest extends FormRequest
                 'remaining_book_value' => ['nullable', 'numeric'],
                 'release_date' => ['required', 'date_format:Y-m'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
-                'company_id' => 'required|exists:companies,id',
                 'department_id' => 'required|exists:departments,id',
-                'location_id' => 'required|exists:locations,id',
                 'account_title_id' => 'required|exists:account_titles,id',
             ];
         }
@@ -224,8 +218,6 @@ class FixedAssetRequest extends FormRequest
             'accountable.required' => 'Accountable is required',
             'cellphone_number.numeric' => 'Cellphone number must be a number',
             'brand.required' => 'Brand is required',
-            'division_id.required' => 'Division is required',
-            'division_id.exists' => 'Division does not exist',
             'major_category_id.required' => 'Major category is required',
             'major_category_id.exists' => 'Major category does not exist',
             'minor_category_id.required' => 'Minor category is required',

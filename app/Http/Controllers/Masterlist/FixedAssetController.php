@@ -33,6 +33,7 @@ class FixedAssetController extends Controller
         ], 200);
     }
 
+
     public function store(FixedAssetRequest $request)
     {
 
@@ -79,6 +80,20 @@ class FixedAssetController extends Controller
                 422
             );
         }
+        $departmentQuery = Department::where('id', $request->department_id)->first();
+        if($departmentQuery->division_id == null){
+            return response()->json(
+                [
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'division' => [
+                            'The division is required.'
+                        ]
+                    ]
+                ],
+                422
+            );
+        }
 
         $fixedAsset = FixedAsset::create([
             'capex_id' => SubCapex::where('id', $request->sub_capex_id)->first()->capex_id ?? null,
@@ -93,7 +108,7 @@ class FixedAssetController extends Controller
             'accountable' =>($request->accountable),
             'cellphone_number' => $request->cellphone_number ?? '-',
             'brand' => ucwords(strtolower($request->brand))?? '-',
-            'division_id' => $request->division_id,
+            'division_id' => $departmentQuery->division_id ?? null,
             'major_category_id' => $request->major_category_id,
             'minor_category_id' => $request->minor_category_id,
             'voucher' => $request->voucher ?? '-',
@@ -108,9 +123,9 @@ class FixedAssetController extends Controller
             'movement_status_id' => $request->movement_status_id,
             'is_old_asset' => $request->is_old_asset ?? 0,
             'care_of' =>ucwords(strtolower($request->care_of)) ?? '-',
-            'company_id' => $request->company_id,
+            'company_id' => Company::where('sync_id', $departmentQuery->company_sync_id)->first()->id ?? null,
             'department_id' => $request->department_id,
-            'location_id' => $request->location_id,
+            'location_id' => Location::where('sync_id', $departmentQuery->location_sync_id)->first()->id ?? null,
             'account_id' => $request->account_title_id,
         ]);
 
@@ -312,12 +327,26 @@ class FixedAssetController extends Controller
 //                'data' => $request->all()
 //            ], 200);
 //        }
+        $departmentQuery = Department::where('id', $request->department_id)->first();
+        if($departmentQuery->division_id == null){
+            return response()->json(
+                [
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'division' => [
+                            'The division is required.'
+                        ]
+                    ]
+                ],
+                422
+            );
+        }
 
-        $fixedAsset = FixedAsset::where('id', $id)->where('faStatus', '!=', 'Disposed')->first();
+        $fixedAsset = FixedAsset::where('id', $id)->first();
         if ($fixedAsset) {
             $fixedAsset->update([
-                'capex_id' => $request->capex_id ?? null,
-                'project_name' => $request->project_name ?? '-',
+                'capex_id' => SubCapex::where('id', $request->sub_capex_id)->first()->capex_id ?? null,
+                'sub_capex_id' => $request->sub_capex_id ?? null,
                 'tag_number' => $request->tag_number ?? '-',
                 'tag_number_old' => $request->tag_number_old ?? '-',
                 'asset_description' => $request->asset_description,
@@ -327,32 +356,29 @@ class FixedAssetController extends Controller
                 'accountable' => $request->accountable,
                 'cellphone_number' => $request->cellphone_number ?? '-',
                 'brand' => $request->brand ?? '-',
-                'division_id' => $request->division_id,
+                'division_id' => $departmentQuery->division_id ?? null,
                 'major_category_id' => $request->major_category_id,
                 'minor_category_id' => $request->minor_category_id,
                 'voucher' => $request->voucher ?? '-',
                 'receipt' => $request->receipt ?? '-',
                 'quantity' => $request->quantity,
                 'depreciation_method' => $request->depreciation_method,
-                'est_useful_life' => $request->est_useful_life,
                 'acquisition_date' => $request->acquisition_date,
                 'acquisition_cost' => $request->acquisition_cost,
-                'faStatus' => $request->faStatus ?? $fixedAsset->faStatus,
+                'asset_status_id' => $request->asset_status_id,
+                'depreciation_status_id' => $request->depreciation_status_id,
+                'cycle_count_status_id' => $request->cycle_count_status_id,
+                'movement_status_id' => $request->movement_status_id,
                 'is_old_asset' => $request->is_old_asset ?? 0,
                 'care_of' => $request->care_of ?? '-',
-                'company_id' => $request->company_id,
-                'company_name' => Company::where('id', $request->company_id)->value('company_name'),
-                'department_id' => $request->department_id,
-                'department_name' => Department::where('id', $request->department_id)->value('department_name'),
-                'location_id' => $request->location_id,
-                'location_name' => Location::where('id', $request->location_id)->value('location_name'),
+                'company_id' => Company::where('sync_id', $departmentQuery->company_sync_id)->first()->id ?? null,
+                'department_id' => $departmentQuery->id ?? null,
+                'location_id' => Location::where('sync_id', $departmentQuery->location_sync_id)->first()->id ?? null,
                 'account_id' => $request->account_title_id,
-                'account_title' => AccountTitle::where('id', $request->account_title_id)->value('account_title_name'),
             ]);
 
             $fixedAsset->formula()->update([
                 'depreciation_method' => $request->depreciation_method,
-                'est_useful_life' => $request->est_useful_life,
                 'acquisition_date' => $request->acquisition_date,
                 'acquisition_cost' => $request->acquisition_cost,
                 'scrap_value' => $request->scrap_value,

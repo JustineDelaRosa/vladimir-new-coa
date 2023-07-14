@@ -26,13 +26,7 @@ class FixedAssetUpdateRequest extends FormRequest
     {
         $id = $this->route()->parameter('fixed_asset');
         return [
-            'capex_id' => 'nullable|exists:capexes,id',
-            'project_name' => ['nullable', function ($attribute, $value, $fail) {
-                $capex = \App\Models\Capex::find(request()->capex_id);
-                if ($capex->project_name != $value) {
-                    $fail('Invalid project name');
-                }
-            }],
+            'sub_capex_id' => 'nullable|exists:sub_capexes,id',
             'tag_number' => ['nullable', 'max:13', function ($attribute, $value, $fail) use ($id) {
                 //if the value id "-" and the is_old_asset is true return fail error
                 if($value == "-" && $this->is_old_asset){
@@ -61,18 +55,17 @@ class FixedAssetUpdateRequest extends FormRequest
             'accountability' => 'required',
             'accountable' => ['required',function ($attribute, $value, $fail) {
                 $accountability = request()->input('accountable');
-                $fullIdNumber = $accountability['general_info']['full_id_number'];
+                $fullName = $accountability['general_info']['full_name'];
                 //change the value of accountable to full id number
-                request()->merge(['accountable' => $fullIdNumber]);
+                request()->merge(['accountable' => $fullName]);
 
                 // Example validation:
-                if (!$fullIdNumber) {
-                    $fail('Full ID number is required');
+                if (!$fullName) {
+                    $fail('Accountable is required');
                 }
             }],
             'cellphone_number' => 'nullable|numeric|digits:11',
             'brand' => 'nullable',
-            'division_id' => 'required|exists:divisions,id',
             'major_category_id' => 'required|exists:major_categories,id',
             'minor_category_id' => 'required|exists:minor_categories,id',
             'voucher' => 'nullable',
@@ -86,9 +79,11 @@ class FixedAssetUpdateRequest extends FormRequest
                     }
                 }
             }],
-            'faStatus' => 'required|in:Good,For Disposal,For Repair,Spare,Sold,Write Off',
+            'asset_status_id' => 'required|exists:asset_statuses,id',
+            'depreciation_status_id' => 'required|exists:depreciation_statuses,id',
+            'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
+            'movement_status_id' => 'required|exists:movement_statuses,id',
             'depreciation_method' => 'required',
-            'est_useful_life' => ['required', 'numeric', 'max:100'],
             'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
             'acquisition_cost' => ['required', 'numeric'],
             'scrap_value' => ['required', 'numeric'],
@@ -102,9 +97,7 @@ class FixedAssetUpdateRequest extends FormRequest
             'remaining_book_value' => ['nullable', 'numeric'],
             'release_date' => ['required', 'date_format:Y-m'],
 //            'start_depreciation' => ['required', 'date_format:Y-m'],
-            'company_id' => 'required|exists:companies,id',
             'department_id' => 'required|exists:departments,id',
-            'location_id' => 'required|exists:locations,id',
             'account_title_id' => 'required|exists:account_titles,id',
         ];
     }
@@ -113,75 +106,50 @@ class FixedAssetUpdateRequest extends FormRequest
     function messages(): array
     {
         return [
-            'capex.required' => 'Capex is required',
-            'capex.unique' => 'Capex already exists',
-            'project_name.required' => 'Project name is required',
+            'sub_capex_id.exists' => 'Sub capex is invalid',
             'tag_number.required' => 'Tag number is required',
+            'tag_number.max' => 'Tag number must not exceed 13 characters',
             'tag_number_old.required' => 'Tag number old is required',
+            'tag_number_old.max' => 'Tag number old must not exceed 13 characters',
             'asset_description.required' => 'Asset description is required',
             'type_of_request_id.required' => 'Type of request is required',
             'asset_specification.required' => 'Asset specification is required',
             'accountability.required' => 'Accountability is required',
             'accountable.required' => 'Accountable is required',
-            'cellphone_number.numeric' => 'Cellphone number must be a number',
-            'brand.required' => 'Brand is required',
-            'division_id.required' => 'Division is required',
-            'division_id.exists' => 'Division does not exist',
+            'cellphone_number.numeric' => 'Cellphone number must be numeric',
+            'cellphone_number.digits' => 'Cellphone number must be 11 digits',
             'major_category_id.required' => 'Major category is required',
-            'major_category_id.exists' => 'Major category does not exist',
             'minor_category_id.required' => 'Minor category is required',
-            'minor_category_id.exists' => 'Minor category does not exist',
-            'voucher.required' => 'Voucher is required',
-            'receipt.required' => 'Receipt is required',
             'quantity.required' => 'Quantity is required',
+            'is_old_asset.required' => 'Is old asset is required',
+            'asset_status_id.required' => 'Asset status is required',
+            'depreciation_status_id.required' => 'Depreciation status is required',
+            'cycle_count_status_id.required' => 'Cycle count status is required',
+            'movement_status_id.required' => 'Movement status is required',
             'depreciation_method.required' => 'Depreciation method is required',
-            'est_useful_life.required' => 'Estimated useful life is required',
-            'est_useful_life.numeric' => 'Estimated useful life must be a number',
-            'est_useful_life.max' => 'Estimated useful life must not exceed 100',
             'acquisition_date.required' => 'Acquisition date is required',
-            'acquisition_date.date_format' => 'Acquisition date must be a date',
+            'acquisition_date.date_format' => 'Acquisition date must be in Y-m-d format',
+            'acquisition_date.date' => 'Acquisition date must be a valid date',
             'acquisition_cost.required' => 'Acquisition cost is required',
-            'acquisition_cost.numeric' => 'Acquisition cost must be a number',
+            'acquisition_cost.numeric' => 'Acquisition cost must be numeric',
             'scrap_value.required' => 'Scrap value is required',
-            'scrap_value.numeric' => 'Scrap value must be a number',
+            'scrap_value.numeric' => 'Scrap value must be numeric',
             'original_cost.required' => 'Original cost is required',
-            'original_cost.numeric' => 'Original cost must be a number',
-            'accumulated_cost.required' => 'Accumulated cost is required',
-            'accumulated_cost.numeric' => 'Accumulated cost must be a number',
-            'faStatus.required' => 'Status is required',
-            'faStatus.boolean' => 'Status must be a boolean',
-            'faStatus.in' => 'The selected status is invalid.',
-            'care_of.required' => 'Care of is required',
+            'original_cost.numeric' => 'Original cost must be numeric',
+            'accumulated_cost.numeric' => 'Accumulated cost must be numeric',
             'age.required' => 'Age is required',
-            'age.numeric' => 'Age must be a number',
+            'age.numeric' => 'Age must be numeric',
             'end_depreciation.required' => 'End depreciation is required',
-            'end_depreciation.date_format' => 'End depreciation must be a date',
-            'depreciation_per_year.required' => 'Depreciation per year is required',
-            'depreciation_per_year.numeric' => 'Depreciation per year must be a number',
-            'depreciation_per_month.required' => 'Depreciation per month is required',
-            'depreciation_per_month.numeric' => 'Depreciation per month must be a number',
-            'remaining_book_value.required' => 'Remaining book value is required',
-            'remaining_book_value.numeric' => 'Remaining book value must be a number',
-            'release_date.required' => 'Released date is required',
+            'end_depreciation.date_format' => 'End depreciation must be in Y-m format',
+            'depreciation_per_year.numeric' => 'Depreciation per year must be numeric',
+            'depreciation_per_month.numeric' => 'Depreciation per month must be numeric',
+            'remaining_book_value.numeric' => 'Remaining book value must be numeric',
+            'release_date.required' => 'Release date is required',
+            'release_date.date_format' => 'Release date must be in Y-m format',
             'start_depreciation.required' => 'Start depreciation is required',
-            'start_depreciation.numeric' => 'Start depreciation must be a number',
-            'company_code.required' => 'Company code is required',
-            'company_code.exists' => 'Company code does not exist',
-            'company.required' => 'Company is required',
-            'company.exists' => 'Company does not exist',
-            'department_code.required' => 'Department code is required',
-            'department_code.exists' => 'Department code does not exist',
-            'department.required' => 'Department is required',
-            'department.exists' => 'Department does not exist',
-            'location_code.required' => 'Location code is required',
-            'location_code.exists' => 'Location code does not exist',
-            'location.required' => 'Location is required',
-            'location.exists' => 'Location does not exist',
-            'account_code.required' => 'Account code is required',
-            'account_code.exists' => 'Account code does not exist',
-            'account_title.required' => 'Account title is required',
-            'account_title.exists' => 'Account title does not exist',
-
+            'start_depreciation.date_format' => 'Start depreciation must be in Y-m format',
+            'department_id.required' => 'Department is required',
+            'account_title_id.required' => 'Account title is required',
         ];
     }
 
