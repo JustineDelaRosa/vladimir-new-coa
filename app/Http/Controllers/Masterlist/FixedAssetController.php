@@ -105,7 +105,7 @@ class FixedAssetController extends Controller
             'type_of_request_id' => $request->type_of_request_id,
             'asset_specification' =>($request->asset_specification),
             'accountability' =>($request->accountability),
-            'accountable' =>($request->accountable),
+            'accountable' =>($request->accountable) ?? '-',
             'cellphone_number' => $request->cellphone_number ?? '-',
             'brand' => ucwords(strtolower($request->brand))?? '-',
             'division_id' => $departmentQuery->division_id ?? null,
@@ -290,23 +290,23 @@ class FixedAssetController extends Controller
             ->first()->id;
         $minorCategoryCheck = MinorCategory::withTrashed()->where('id', $request->minor_category_id)
             ->where('major_category_id', $majorCategory)->exists();
-        if ($request->faStatus != 'Disposed') {
-            //check minor catrgory if softDelete
-            if (MinorCategory::onlyTrashed()->where('id', $request->minor_category_id)
-                ->where('major_category_id', $majorCategory)->exists()) {
-                return response()->json(
-                    [
-                        'message' => 'The given data was invalid.',
-                        'errors' => [
-                            'minor_category' => [
-                                'Conflict with minor category and fixed asset status.'
-                            ]
-                        ]
-                    ],
-                    422
-                );
-            }
-        }
+//        if ($request->faStatus != 'Disposed') {
+//            //check minor catrgory if softDelete
+//            if (MinorCategory::onlyTrashed()->where('id', $request->minor_category_id)
+//                ->where('major_category_id', $majorCategory)->exists()) {
+//                return response()->json(
+//                    [
+//                        'message' => 'The given data was invalid.',
+//                        'errors' => [
+//                            'minor_category' => [
+//                                'Conflict with minor category and fixed asset status.'
+//                            ]
+//                        ]
+//                    ],
+//                    422
+//                );
+//            }
+//        }
         if (!$minorCategoryCheck) {
             return response()->json(
                 [
@@ -404,119 +404,116 @@ class FixedAssetController extends Controller
         }
     }
 
-    public function archived(Request $request, $id)
-    {
-        $request->validate([
-            'faStatus' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
-        ],
-            [
-                'faStatus.required' => 'Status is required.',
-                'faStatus.in' => 'Status must be Good, For Disposal, Disposed, For Repair, Spare, Sold, Write Off.',
-            ]);
-
-        $faStatus = $request->faStatus;
-        $faStatus = ucwords($faStatus);
-        $fixedAsset = FixedAsset::query();
-        $formula = Formula::query();
-        if (!$fixedAsset->withTrashed()->where('id', $id)->exists()) {
-            return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
-        }
-
-        if ($faStatus === "Disposed") {
-            if (!FixedAsset::where('id', $id)->WhereIn('faStatus', ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off'])->exists()) {
-                return response()->json(['message' => 'No Changes'], 200);
-            } else {
-                $fixedAsset->where('id', $id)->update(['faStatus' => "Disposed"]);
-                $fixedAsset->where('id', $id)->delete();
-                $formula->where('fixed_asset_id', $id)->delete();
-                return response()->json(['message' => 'Successfully Disposed!'], 200);
-            }
-        }
-        if ($faStatus === "Good" || $faStatus === "For Repair" || $faStatus === "For Disposal" || $faStatus === "Spare" || $faStatus === "Sold" || $faStatus === "Write Off") {
-            if (FixedAsset::where('id', $id)->where('faStatus', $faStatus)->exists()) {
-                return response()->json(['message' => 'No Changes'], 200);
-            } else {
-                $checkMinorCategory = MinorCategory::where('id', $fixedAsset->where('id', $id)->first()->minor_category_id)->exists();
-                if (!$checkMinorCategory) {
-                    return response()->json(['error' => 'Unable to Restore!, Minor Category was Archived!'], 404);
-                }
-                //division
-                $checkDivision = Division::where('id', $fixedAsset->where('id', $id)->first()->division_id)->exists();
-                if (!$checkDivision) {
-                    return response()->json(['error' => 'Unable to Restore!, Division was Archived!'], 404);
-                }
-                //capex
-                $checkCapex = Capex::where('id', $fixedAsset->where('id', $id)->first()->capex_id)->exists();
-                if (!$checkCapex) {
-                    return response()->json(['error' => 'Unable to Restore!, Capex was Archived!'], 404);
-                }
-                //typeofrequest
-                $checkTypeOfRequest = TypeOfRequest::where('id', $fixedAsset->where('id', $id)->first()->type_of_request_id)->exists();
-                if (!$checkTypeOfRequest) {
-                    return response()->json(['error' => 'Unable to Restore!, Type of Request was Archived!'], 404);
-                }
-
-                $fixedAsset->withTrashed()->where('id', $id)->restore();
-                $fixedAsset->update(['faStatus' => $faStatus]);
-                $formula->where('fixed_asset_id', $id)->restore();
-                return response()->json(['message' => 'Successfully Change status'], 200);
-            }
-        }
-    }
+//    public function archived(Request $request, $id)
+//    {
+//        $request->validate([
+//            'faStatus' => 'required|in:Good,For Disposal,Disposed,For Repair,Spare,Sold,Write Off',
+//        ],
+//            [
+//                'faStatus.required' => 'Status is required.',
+//                'faStatus.in' => 'Status must be Good, For Disposal, Disposed, For Repair, Spare, Sold, Write Off.',
+//            ]);
+//
+//        $faStatus = $request->faStatus;
+//        $faStatus = ucwords($faStatus);
+//        $fixedAsset = FixedAsset::query();
+//        $formula = Formula::query();
+//        if (!$fixedAsset->withTrashed()->where('id', $id)->exists()) {
+//            return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
+//        }
+//
+//        if ($faStatus === "Disposed") {
+//            if (!FixedAsset::where('id', $id)->WhereIn('faStatus', ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off'])->exists()) {
+//                return response()->json(['message' => 'No Changes'], 200);
+//            } else {
+//                $fixedAsset->where('id', $id)->update(['faStatus' => "Disposed"]);
+//                $fixedAsset->where('id', $id)->delete();
+//                $formula->where('fixed_asset_id', $id)->delete();
+//                return response()->json(['message' => 'Successfully Disposed!'], 200);
+//            }
+//        }
+//        if ($faStatus === "Good" || $faStatus === "For Repair" || $faStatus === "For Disposal" || $faStatus === "Spare" || $faStatus === "Sold" || $faStatus === "Write Off") {
+//            if (FixedAsset::where('id', $id)->where('faStatus', $faStatus)->exists()) {
+//                return response()->json(['message' => 'No Changes'], 200);
+//            } else {
+//                $checkMinorCategory = MinorCategory::where('id', $fixedAsset->where('id', $id)->first()->minor_category_id)->exists();
+//                if (!$checkMinorCategory) {
+//                    return response()->json(['error' => 'Unable to Restore!, Minor Category was Archived!'], 404);
+//                }
+//                //division
+//                $checkDivision = Division::where('id', $fixedAsset->where('id', $id)->first()->division_id)->exists();
+//                if (!$checkDivision) {
+//                    return response()->json(['error' => 'Unable to Restore!, Division was Archived!'], 404);
+//                }
+//                //capex
+//                $checkCapex = Capex::where('id', $fixedAsset->where('id', $id)->first()->capex_id)->exists();
+//                if (!$checkCapex) {
+//                    return response()->json(['error' => 'Unable to Restore!, Capex was Archived!'], 404);
+//                }
+//                //typeofrequest
+//                $checkTypeOfRequest = TypeOfRequest::where('id', $fixedAsset->where('id', $id)->first()->type_of_request_id)->exists();
+//                if (!$checkTypeOfRequest) {
+//                    return response()->json(['error' => 'Unable to Restore!, Type of Request was Archived!'], 404);
+//                }
+//
+//                $fixedAsset->withTrashed()->where('id', $id)->restore();
+//                $fixedAsset->update(['faStatus' => $faStatus]);
+//                $formula->where('fixed_asset_id', $id)->restore();
+//                return response()->json(['message' => 'Successfully Change status'], 200);
+//            }
+//        }
+//    }
 
     public function search(Request $request)
     {
         $search = $request->get('search');
         $limit = $request->get('limit');
         $page = $request->get('page');
-        $faStatus = $request->get('faStatus');
+//        $faStatus = $request->get('faStatus');
 
-        if ($faStatus === null) {
-            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off', 'Disposed'];
-        } elseif ($faStatus == 'Disposed, Sold' || $faStatus == 'Disposed' || $faStatus == 'Sold') {
-            if($faStatus == 'Disposed, Sold'){
-                $faStatus = ['Disposed', 'Sold'];
-            }elseif($faStatus == 'Sold'){
-                $faStatus = ['Sold'];
-            }elseif($faStatus == 'Disposed'){
-                $faStatus = ['Disposed'];
-            }
-        } else {
-            $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
-                return $status !== 'Disposed';
-            });
-        }
+//        if ($faStatus === null) {
+//            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off', 'Disposed'];
+//        } elseif ($faStatus == 'Disposed, Sold' || $faStatus == 'Disposed' || $faStatus == 'Sold') {
+//            if($faStatus == 'Disposed, Sold'){
+//                $faStatus = ['Disposed', 'Sold'];
+//            }elseif($faStatus == 'Sold'){
+//                $faStatus = ['Sold'];
+//            }elseif($faStatus == 'Disposed'){
+//                $faStatus = ['Disposed'];
+//            }
+//        } else {
+//            $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
+//                return $status !== 'Disposed';
+//            });
+//        }
 
         $fixedAsset = FixedAsset::withTrashed()
-            ->with([
-                'formula' => function ($query) {
-                    $query->withTrashed();
-                },
-                'division' => function ($query) {
-                    $query->withTrashed()->select('id', 'division_name');
-                },
-                'majorCategory' => function ($query) {
-                    $query->withTrashed()->select('id', 'major_category_name');
-                },
-                'minorCategory' => function ($query) {
-                    $query->withTrashed()->select('id', 'minor_category_name');
-                },
-            ])
-            ->where(function ($query) use ($faStatus) {
-                $query->whereIn('faStatus', $faStatus);
-            })->where(function ($query) use ($search) {
-                $query->Where('project_name', 'LIKE', '%' . $search . '%')
-                    ->orWhere('vladimir_tag_number', 'LIKE', '%' . $search . '%')
+//            ->with([
+//                'formula' => function ($query) {
+//                    $query->withTrashed();
+//                },
+//                'division' => function ($query) {
+//                    $query->withTrashed()->select('id', 'division_name');
+//                },
+//                'majorCategory' => function ($query) {
+//                    $query->withTrashed()->select('id', 'major_category_name');
+//                },
+//                'minorCategory' => function ($query) {
+//                    $query->withTrashed()->select('id', 'minor_category_name');
+//                },
+//            ])
+            ->where(function ($query) use ($search) {
+                $query->Where('vladimir_tag_number', 'LIKE', '%' . $search . '%')
                     ->orWhere('tag_number', 'LIKE', '%' . $search . '%')
                     ->orWhere('tag_number_old', 'LIKE', '%' . $search . '%')
                     ->orWhere('type_of_request_id', 'LIKE', '%' . $search . '%')
                     ->orWhere('accountability', 'LIKE', '%' . $search . '%')
                     ->orWhere('accountable', 'LIKE', '%' . $search . '%')
-                    ->orWhere('faStatus', 'LIKE', '%' . $search . '%')
                     ->orWhere('brand', 'LIKE', '%' . $search . '%')
                     ->orWhere('depreciation_method', 'LIKE', '%' . $search . '%');
                 $query->orWhereHas('subCapex', function ($query) use ($search) {
-                    $query->where('sub_capex', 'LIKE', '%' . $search . '%');
+                    $query->where('sub_capex', 'LIKE', '%' . $search . '%')
+                        ->orWhere('sub_project', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('majorCategory', function ($query) use ($search) {
                     $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
@@ -526,6 +523,18 @@ class FixedAssetController extends Controller
                 });
                 $query->orWhereHas('division', function ($query) use ($search) {
                     $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('assetStatus', function ($query) use ($search) {
+                    $query->where('asset_status_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('cycleCountStatus', function ($query) use ($search) {
+                    $query->where('cycle_count_status_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('depreciationStatus', function ($query) use ($search) {
+                    $query->where('depreciation_status_name', 'LIKE', '%' . $search . '%');
+                });
+                $query->orWhereHas('movementStatus', function ($query) use ($search) {
+                    $query->where('movement_status_name', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('location', function ($query) use ($search) {
                     $query->where('location_name', 'LIKE', '%' . $search . '%');
@@ -548,18 +557,22 @@ class FixedAssetController extends Controller
             return [
                 'id' => $item->id,
                 'capex' => [
-                    'id' => $item->subCapex->id ?? '-',
-                    'capex' => $item->subCapex->sub_capex ?? '-',
-                    'project_name' => $item->subCapex->sub_project ?? '-',
+                    'id' => $item->capex->id ?? '-',
+                    'capex' => $item->capex->capex ?? '-',
+                    'project_name' => $item->capex->project_name ?? '-',
                 ],
-                'project_name' => $item->project_name,
+                'sub_capex' => [
+                    'id' => $item->subCapex->id ?? '-',
+                    'sub_capex' => $item->subCapex->sub_capex ?? '-',
+                    'sub_project' => $item->subCapex->sub_project ?? '-',
+                ],
                 'vladimir_tag_number' => $item->vladimir_tag_number,
                 'tag_number' => $item->tag_number,
                 'tag_number_old' => $item->tag_number_old,
                 'asset_description' => $item->asset_description,
                 'type_of_request' => [
-                    'id' => $item->typeOfRequest->id,
-                    'type_of_request_name' => $item->typeOfRequest->type_of_request_name,
+                    'id' => $item->typeOfRequest->id ?? '-',
+                    'type_of_request_name' => $item->typeOfRequest->type_of_request_name ?? '-',
                 ],
                 'asset_specification' => $item->asset_specification,
                 'accountability' => $item->accountability,
@@ -567,29 +580,44 @@ class FixedAssetController extends Controller
                 'cellphone_number' => $item->cellphone_number,
                 'brand' => $item->brand,
                 'division' => [
-                    'id' => $item->division->id,
-                    'division_name' => $item->division->division_name,
+                    'id' => $item->division->id ?? '-',
+                    'division_name' => $item->division->division_name ?? '-',
                 ],
                 'major_category' => [
-                    'id' => $item->majorCategory->id,
-                    'major_category_name' => $item->majorCategory->major_category_name,
+                    'id' => $item->majorCategory->id ?? '-',
+                    'major_category_name' => $item->majorCategory->major_category_name ?? '-',
+                    'est_useful_life' => $item->majorCategory->est_useful_life ?? '-',
                 ],
                 'minor_category' => [
-                    'id' => $item->minorCategory->id,
-                    'minor_category_name' => $item->minorCategory->minor_category_name,
+                    'id' => $item->minorCategory->id ?? '-',
+                    'minor_category_name' => $item->minorCategory->minor_category_name ?? '-',
                 ],
                 'voucher' => $item->voucher,
                 'receipt' => $item->receipt,
                 'quantity' => $item->quantity,
                 'depreciation_method' => $item->depreciation_method,
-                'est_useful_life' => $item->est_useful_life,
-                //'salvage_value' => $item->salvage_value,
+                //                    'salvage_value' => $item->salvage_value,
                 'acquisition_date' => $item->acquisition_date,
                 'acquisition_cost' => $item->acquisition_cost,
                 'scrap_value' => $item->formula->scrap_value,
                 'original_cost' => $item->formula->original_cost,
                 'accumulated_cost' => $item->formula->accumulated_cost,
-                'faStatus' => $item->faStatus,
+                'asset_status' => [
+                    'id' => $item->assetStatus->id ?? '-',
+                    'asset_status_name' => $item->assetStatus->asset_status_name ?? '-',
+                ],
+                'cycle_count_status' => [
+                    'id' => $item->cycleCountStatus->id ?? '-',
+                    'cycle_count_status_name' => $item->cycleCountStatus->cycle_count_status_name ?? '-',
+                ],
+                'depreciation_status' => [
+                    'id' => $item->depreciationStatus->id ?? '-',
+                    'depreciation_status_name' => $item->depreciationStatus->depreciation_status_name ?? '-',
+                ],
+                'movement_status' => [
+                    'id' => $item->movementStatus->id ?? '-',
+                    'movement_status_name' => $item->movementStatus->movement_status_name ?? '-',
+                ],
                 'is_old_asset' => $item->is_old_asset,
                 'care_of' => $item->care_of,
                 'age' => $item->formula->age,
@@ -600,24 +628,24 @@ class FixedAssetController extends Controller
                 'release_date' => $item->formula->release_date,
                 'start_depreciation' => $item->formula->start_depreciation,
                 'company' => [
-                    'id' => $item->company->id,
-                    'company_code' => $item->company->company_code,
-                    'company_name' => $item->company->company_name,
+                    'id' => $item->company->id ?? '-',
+                    'company_code' => $item->company->company_code ?? '-',
+                    'company_name' => $item->company->company_name ?? '-',
                 ],
                 'department' => [
-                    'id' => $item->department->id,
-                    'department_code' => $item->department->department_code,
-                    'department_name' => $item->department->department_name,
+                    'id' => $item->department->id ?? '-',
+                    'department_code' => $item->department->department_code ?? '-',
+                    'department_name' => $item->department->department_name ?? '-',
                 ],
                 'location' => [
-                    'id' => $item->location->id,
-                    'location_code' => $item->location->location_code,
-                    'location_name' => $item->location->location_name,
+                    'id' => $item->location->id ?? '-',
+                    'location_code' => $item->location->location_code ?? '-',
+                    'location_name' => $item->location->location_name ?? '-',
                 ],
                 'account_title' => [
-                    'id' => $item->accountTitle->id,
-                    'account_title_code' => $item->accountTitle->account_title_code,
-                    'account_title_name' => $item->accountTitle->account_title_name,
+                    'id' => $item->accountTitle->id ?? '-',
+                    'account_title_code' => $item->accountTitle->account_title_code ?? '-',
+                    'account_title_name' => $item->accountTitle->account_title_name ?? '-',
                 ],
             ];
         });
