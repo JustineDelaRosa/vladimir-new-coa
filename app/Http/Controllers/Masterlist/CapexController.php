@@ -51,10 +51,17 @@ class CapexController extends Controller
         //show only letters of sub capex
        $capex->map(function ($capex) {
             $capex->sub_capex = $capex->subCapex->map(function ($sub_capex) {
-                return $sub_capex->sub_capex = explode('-', $sub_capex->sub_capex)[2];
+                if (substr_count($sub_capex->sub_capex, '-') == 1) {
+                    return $sub_capex->sub_capex = explode('-', $sub_capex->sub_capex)[1];
+                }elseif (substr_count($sub_capex->sub_capex, '-') == 2) {
+                    return $sub_capex->sub_capex = explode('-', $sub_capex->sub_capex)[2];
+                }else{
+                    return $sub_capex->sub_capex;
+                }
             });
             return $capex;
         });
+
         return response()->json([
             'message' => 'Successfully retrieved capex.',
             'data' => $capex
