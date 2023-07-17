@@ -26,7 +26,8 @@ class CapexRequest extends FormRequest
 
         if($this->isMethod('post')){
             return [
-              'capex' => 'required|unique:capexes,capex',
+                //do not allow letters and special characters except dash
+              'capex' => 'required|unique:capexes,capex|regex:/^[0-9-]+$/',
                 'project_name' => 'required',
             ];
         }
@@ -44,6 +45,18 @@ class CapexRequest extends FormRequest
                 'status' => 'required|boolean'
             ];
         }
+    }
+
+    public function messages()
+    {
+        return [
+            'capex.required' => 'Capex is required.',
+            'capex.unique' => 'Capex already exists.',
+            'capex.regex' => 'Capex should not have a letter.',
+            'project_name.required' => 'Project name is required.',
+            'status.required' => 'Status is required.',
+            'status.boolean' => 'Status should be boolean.',
+        ];
     }
 
 }
