@@ -39,6 +39,7 @@ class SubCapexController extends Controller
                 return $query->get();
             });
 
+
         return response()->json([
             'message' => 'Successfully retrieved sub capex.',
             'data' => $subCapex,
@@ -107,6 +108,7 @@ class SubCapexController extends Controller
                 'error' => 'Sub Capex route not found.'
             ], 404);
         }
+        $sub_capex->sub_capex = explode('-', $sub_capex->sub_capex)[2];
 
         return response()->json([
             'message' => 'Successfully retrieved sub capex.',

@@ -48,7 +48,13 @@ class CapexController extends Controller
             }, function ($query) {
                 return $query->get();
             });
-
+        //show only letters of sub capex
+       $capex->map(function ($capex) {
+            $capex->sub_capex = $capex->subCapex->map(function ($sub_capex) {
+                return $sub_capex->sub_capex = explode('-', $sub_capex->sub_capex)[2];
+            });
+            return $capex;
+        });
         return response()->json([
             'message' => 'Successfully retrieved capex.',
             'data' => $capex
@@ -91,6 +97,7 @@ class CapexController extends Controller
                 'error' => 'Capex Route Not Found.'
             ], 404);
         }
+
         $capex = $capex->where('id', $id)->first();
         return response()->json([
             'message' => 'Successfully retrieved capex.',
