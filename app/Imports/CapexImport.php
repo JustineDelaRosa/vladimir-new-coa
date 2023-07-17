@@ -52,12 +52,12 @@ class CapexImport implements ToCollection, WithHeadingRow, WithStartRow
     private function rules($collection): array
     {
         return [
-            '*.capex' => ['required', function ($attribute, $value, $fail) use ($collection) {
+            '*.capex' => ['required','regex:/^[0-9-]+$/', function ($attribute, $value, $fail) use ($collection) {
                 $index = array_search($value, array_column($collection, 'capex'));
                 $subCapex = $collection[$index]['sub_capex'];
-                if (preg_match('/[A-Za-z]/', $value)) {
-                    $fail('Capex should not have a letter');
-                }
+//                if (preg_match('/[A-Za-z]/', $value)) {
+//                    $fail('Capex should not have a letter');
+//                }
                 if ($value == $subCapex) {
                     $capex = Capex::withTrashed()->where('capex', $value)->first();
                     if ($capex) {
@@ -91,6 +91,7 @@ class CapexImport implements ToCollection, WithHeadingRow, WithStartRow
     {
         return [
             'capex.required' => 'Capex is required.',
+            'capex.regex' => 'Capex should not have a letter.',
             'project_name.required' => 'Project name is required.',
             'sub_capex.required' => 'Sub capex is required.',
             'sub_project.required' => 'Sub project is required.',
