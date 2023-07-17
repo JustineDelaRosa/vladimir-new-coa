@@ -488,20 +488,6 @@ class FixedAssetController extends Controller
 //        }
 
         $fixedAsset = FixedAsset::withTrashed()
-//            ->with([
-//                'formula' => function ($query) {
-//                    $query->withTrashed();
-//                },
-//                'division' => function ($query) {
-//                    $query->withTrashed()->select('id', 'division_name');
-//                },
-//                'majorCategory' => function ($query) {
-//                    $query->withTrashed()->select('id', 'major_category_name');
-//                },
-//                'minorCategory' => function ($query) {
-//                    $query->withTrashed()->select('id', 'minor_category_name');
-//                },
-//            ])
             ->where(function ($query) use ($search) {
                 $query->Where('vladimir_tag_number', 'LIKE', '%' . $search . '%')
                     ->orWhere('tag_number', 'LIKE', '%' . $search . '%')
@@ -580,8 +566,8 @@ class FixedAssetController extends Controller
                 'cellphone_number' => $item->cellphone_number,
                 'brand' => $item->brand,
                 'division' => [
-                    'id' => $item->division->id ?? '-',
-                    'division_name' => $item->division->division_name ?? '-',
+                    'id' => $item->department->division->id ?? '-',
+                    'division_name' => $item->department->division->division_name ?? '-',
                 ],
                 'major_category' => [
                     'id' => $item->majorCategory->id ?? '-',
@@ -628,9 +614,9 @@ class FixedAssetController extends Controller
                 'release_date' => $item->formula->release_date,
                 'start_depreciation' => $item->formula->start_depreciation,
                 'company' => [
-                    'id' => $item->company->id ?? '-',
-                    'company_code' => $item->company->company_code ?? '-',
-                    'company_name' => $item->company->company_name ?? '-',
+                    'id' => $item->department->company->id ?? '-',
+                    'company_code' => $item->department->company->company_code ?? '-',
+                    'company_name' => $item->department->company->company_name ?? '-',
                 ],
                 'department' => [
                     'id' => $item->department->id ?? '-',
@@ -638,9 +624,9 @@ class FixedAssetController extends Controller
                     'department_name' => $item->department->department_name ?? '-',
                 ],
                 'location' => [
-                    'id' => $item->location->id ?? '-',
-                    'location_code' => $item->location->location_code ?? '-',
-                    'location_name' => $item->location->location_name ?? '-',
+                    'id' => $item->department->location->id ?? '-',
+                    'location_code' => $item->department->location->location_code ?? '-',
+                    'location_name' => $item->department->location->location_name ?? '-',
                 ],
                 'account_title' => [
                     'id' => $item->accountTitle->id ?? '-',
