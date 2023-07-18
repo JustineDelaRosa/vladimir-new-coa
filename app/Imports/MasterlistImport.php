@@ -292,13 +292,13 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.type_of_request' => 'required|exists:type_of_requests,type_of_request_name',
             '*.additional_description' => 'required', //Todo changing asset_specification to Additional Description
             '*.accountability' => 'required',
-            //required if accountability is personal issued and if the accountability is common it should be empty
+            //required if accountability is personally issued and if accountability is common, it should be empty
             '*.accountable' => ['required_if:*.accountability,Personal Issued',
                 function ($attribute, $value, $fail) use ($collections) {
                     $index = array_search($attribute, array_keys($collections->toArray()));
                     $accountability = $collections[$index]['accountability'];
                     if ($accountability == 'Common') {
-                        if ($value != '') {
+                        if ($value != '-') {
                             $fail('Accountable should be empty');
                         }
                     }
@@ -373,7 +373,23 @@ class MasterlistImport extends DefaultValueBinder implements
             }],
             '*.start_depreciation' => ['required'],
             '*.company_code' => 'required|exists:companies,company_code',
-            '*.department_code' => 'required|exists:departments,department_code',
+            '*.department_code' => ['required','exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
+                $index = array_search($attribute, array_keys($collections->toArray()));
+                $company_code = $collections[$index]['company_code'];
+                $division = $collections[$index]['division'];
+                $location_code = $collections[$index]['location_code'];
+                $division_id = Division::withTrashed()->where('division_name', $division)->first()->id ?? 0;
+                $location_sync_id = Location::where('location_code', $location_code)->first()->sync_id ?? 0;
+                $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
+                $department = Department::where('department_code', $value)
+                    ->where('division_id', $division_id)
+                    ->where('location_sync_id', $location_sync_id)
+                    ->where('company_sync_id', $company_sync_id)
+                    ->first();
+                if (!$department) {
+                    $fail('Invalid division, location, company and department combination');
+                }
+            }],
             '*.location_code' => 'required|exists:locations,location_code',
             '*.account_code' => 'required|exists:account_titles,account_title_code',
         ];
