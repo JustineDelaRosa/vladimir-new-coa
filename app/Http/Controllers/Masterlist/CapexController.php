@@ -162,15 +162,15 @@ class CapexController extends Controller
                     'message' => 'No Changes.'
                 ], 200);
             } else {
-                $checkFixedAsset = FixedAsset::where('capex_id', $id)->exists();
-                if ($checkFixedAsset) {
-                    return response()->json(['error' => 'Unable to archived , Capex is still in use!'], 422);
-                }
+//                $checkFixedAsset = FixedAsset::where('capex_id', $id)->exists();
+//                if ($checkFixedAsset) {
+//                    return response()->json(['error' => 'Unable to archived , Capex is still in use!'], 422);
+//                }
                 if (Capex::where('id', $id)->exists()) {
 
                     $sub_capex_check = SubCapex::where('capex_id', $id)->get('id');
                     //check if any of the sub capex is in use by fixed asset
-                    $checkFixedAsset = FixedAsset::whereIn('capex_id', $sub_capex_check)->exists();
+                    $checkFixedAsset = FixedAsset::whereIn('sub_capex_id', $sub_capex_check)->exists();
                     if ($checkFixedAsset) {
                         return response()->json(['error' => 'Unable to archive, Sub Capex is still in use!'], 422);
                     }
