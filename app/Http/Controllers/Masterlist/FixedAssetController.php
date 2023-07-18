@@ -206,23 +206,23 @@ class FixedAssetController extends Controller
             'cellphone_number' => $fixed_asset->cellphone_number,
             'brand' => $fixed_asset->brand,
             'division' => [
-                'id' => $fixed_asset->division->id ?? '-',
-                'division_name' => $fixed_asset->division->division_name ?? '-',
+                'id' => $fixed_asset->department->division->id ?? '-',
+                'division_name' => $fixed_asset->department->division->division_name ?? '-',
             ],
             'major_category' => [
                 'id' => $fixed_asset->majorCategory->id ?? '-',
                 'major_category_name' => $fixed_asset->majorCategory->major_category_name ?? '-',
-                'est_useful_life' => $fixed_asset->majorCategory->est_useful_life ?? '-',
             ],
             'minor_category' => [
                 'id' => $fixed_asset->minorCategory->id ?? '-',
                 'minor_category_name' => $fixed_asset->minorCategory->minor_category_name ?? '-',
             ],
+            'est_useful_life' => $fixed_asset->majorCategory->est_useful_life ?? '-',
             'voucher' => $fixed_asset->voucher,
             'receipt' => $fixed_asset->receipt,
             'quantity' => $fixed_asset->quantity,
             'depreciation_method' => $fixed_asset->depreciation_method,
-            //                    'salvage_value' => $fixed_asset->salvage_value,
+            'salvage_value' => $fixed_asset->salvage_value,
             'acquisition_date' => $fixed_asset->acquisition_date,
             'acquisition_cost' => $fixed_asset->acquisition_cost,
             'scrap_value' => $fixed_asset->formula->scrap_value,
@@ -254,9 +254,9 @@ class FixedAssetController extends Controller
             'release_date' => $fixed_asset->formula->release_date,
             'start_depreciation' => $fixed_asset->formula->start_depreciation,
             'company' => [
-                'id' => $fixed_asset->company->id ?? '-',
-                'company_code' => $fixed_asset->company->company_code ?? '-',
-                'company_name' => $fixed_asset->company->company_name ?? '-',
+                'id' => $fixed_asset->department->company->id ?? '-',
+                'company_code' => $fixed_asset->department->company->company_code ?? '-',
+                'company_name' => $fixed_asset->department->company->company_name ?? '-',
             ],
             'department' => [
                 'id' => $fixed_asset->department->id ?? '-',
@@ -264,9 +264,9 @@ class FixedAssetController extends Controller
                 'department_name' => $fixed_asset->department->department_name ?? '-',
             ],
             'location' => [
-                'id' => $fixed_asset->location->id ?? '-',
-                'location_code' => $fixed_asset->location->location_code ?? '-',
-                'location_name' => $fixed_asset->location->location_name ?? '-',
+                'id' => $fixed_asset->department->location->id ?? '-',
+                'location_code' => $fixed_asset->department->location->location_code ?? '-',
+                'location_name' => $fixed_asset->department->location->location_name ?? '-',
             ],
             'account_title' => [
                 'id' => $fixed_asset->accountTitle->id ?? '-',
@@ -572,12 +572,12 @@ class FixedAssetController extends Controller
                 'major_category' => [
                     'id' => $item->majorCategory->id ?? '-',
                     'major_category_name' => $item->majorCategory->major_category_name ?? '-',
-                    'est_useful_life' => $item->majorCategory->est_useful_life ?? '-',
                 ],
                 'minor_category' => [
                     'id' => $item->minorCategory->id ?? '-',
                     'minor_category_name' => $item->minorCategory->minor_category_name ?? '-',
                 ],
+                'est_useful_life' => $item->majorCategory->est_useful_life ?? '-',
                 'voucher' => $item->voucher,
                 'receipt' => $item->receipt,
                 'quantity' => $item->quantity,
@@ -862,4 +862,5 @@ class FixedAssetController extends Controller
             'data' => $fixed_asset_arr
         ], 200);
     }
+
 }
