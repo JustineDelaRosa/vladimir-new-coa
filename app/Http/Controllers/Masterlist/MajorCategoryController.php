@@ -148,35 +148,10 @@ class MajorCategoryController extends Controller
                 'est_useful_life' => $est_useful_life,
                 // 'is_active' => true
             ]);
-
-            $fixedAsset = FixedAsset::with('formula')->where('major_category_id', $id);
-            foreach ($fixedAsset->get() as $fixedAsset) {
-                if ($fixedAsset) {
-                    // Use the fill method to update the attributes without saving
-                    $fixedAsset->fill(['est_useful_life' => $est_useful_life]);
-                    // Use the save method to save both the model and its relation in one query
-                    $fixedAsset->push();
-                    // Use the formula attribute to access the related model
-                    $start_depreciation = $fixedAsset->formula->start_depreciation;
-                    $fixedAsset->formula->est_useful_life = $est_useful_life;
-                    // Use the end_depreciation attribute to calculate the value on the fly
-                    $fixedAsset->formula->end_depreciation = (new FixedAssetController())->getEndDepreciation($start_depreciation, $fixedAsset->est_useful_life);
-                    $fixedAsset->formula->save();
-                }
-            }
-            return response()->json(['message' => 'Successfully Updated!'], 200);
+            return response()->json(['message' => 'Successfully Updated!', 'data' => $update], 200);
         } else {
             return response()->json(['error' => 'Major Category Route Not Found'], 404);
         }
-
-
-        // $update = MajorCategory::where('id', $id)->update([
-        //     'division_id' => $division_id,
-        //     'major_category_name' => $major_category_name,
-        //     'is_active' => true
-        // ]);
-        // // return $major_category_name;
-        // return response()->json(['message' => 'Successfully Updated!'], 200);
     }
 
 
