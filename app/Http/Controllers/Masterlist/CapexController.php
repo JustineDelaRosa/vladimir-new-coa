@@ -35,6 +35,10 @@ class CapexController extends Controller
                 $query
                     ->where("capex", "like", "%" . $search . "%")
                     ->orWhere("project_name", "like", "%" . $search . "%");
+                $query->orWhereHas('subCapex', function ($query) use ($search) {
+                    $query->where('sub_capex', 'like', '%' . $search . '%')
+                            ->orWhere('sub_project', 'like', '%' . $search . '%');
+                });
             })
             ->when($status === "deactivated", function ($query) {
                 $query->onlyTrashed();
@@ -59,6 +63,8 @@ class CapexController extends Controller
                     return $sub_capex->sub_capex;
                 }
             });
+            //count sub capex
+           $capex->sub_capex_count = $capex->subCapex->count();
             return $capex;
         });
 

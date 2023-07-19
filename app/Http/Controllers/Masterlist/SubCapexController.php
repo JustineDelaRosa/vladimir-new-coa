@@ -70,8 +70,10 @@ class SubCapexController extends Controller
             ], 422);
         }
 
-        $sub_capex_check = $capex->subCapex->where('sub_capex', $capex->capex . '-' . $sub_capex)->first();
-        if ($sub_capex_check) {
+        //check also the soft deleted
+        $subCapexName = $capex->capex . '-' . $sub_capex;
+        $subCapexCheck = $capex->subCapex()->withTrashed()->where('sub_capex', $subCapexName)->first();
+        if ($subCapexCheck) {
             return response()->json([
                 'message' => 'The given data was invalid.',
                 'errors' => [
