@@ -55,7 +55,9 @@ Route::get('search/role-management', [RoleManagementController::class, 'search']
 Route::post('/auth/login', [AuthController::class, 'Login']);
 // Route::resource('user', UserController::class);
 
-
+//DOWNLOAD SAMPLE FILE//
+Route::get('capex-sample-file', [CapexController::class, 'sampleCapexDownload']);
+Route::get('fixed-asset-sample-file', [FixedAssetController::class, 'sampleFixedAssetDownload']);
 
 
 
@@ -169,7 +171,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
 
 
-    //STATUS
+    //STATUS//
     //ASSET STATUS
     Route::resource('asset-status', AssetStatusController::class);
     Route::patch('asset-status/archived-asset-status/{id}', [AssetStatusController::class, 'archived']);
@@ -182,4 +184,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //MOVEMENT STATUS
     Route::resource('movement-status', MovementStatusController::class);
     Route::patch('movement-status/archived-movement-status/{id}', [MovementStatusController::class, 'archived']);
+
+    //DOWNLOAD SAMPLE FILE//
+    Route::get('capex-sample-file', [CapexController::class, 'sampleCapexDownload']);
+    Route::get('fixed-asset-sample-file', [FixedAssetController::class, 'sampleFixedAssetDownload']);
 });
+

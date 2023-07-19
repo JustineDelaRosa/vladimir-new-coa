@@ -47,9 +47,9 @@ class FixedAssetController extends Controller
 
         //minor Category check
         $majorCategory = MajorCategory::withTrashed()->where('id', $request->major_category_id)
-            ->first()->id;
+            ->first();
         $minorCategoryCheck = MinorCategory::withTrashed()->where('id', $request->minor_category_id)
-            ->where('major_category_id', $majorCategory)->exists();
+            ->where('major_category_id', $majorCategory->id)->exists();
 //        if ($request->faStatus != 'Disposed') {
 //            //check minor catrgory if softDelete
 //            if (MinorCategory::onlyTrashed()->where('id', $request->minor_category_id)
@@ -94,7 +94,6 @@ class FixedAssetController extends Controller
                 422
             );
         }
-
         $fixedAsset = FixedAsset::create([
             'capex_id' => SubCapex::where('id', $request->sub_capex_id)->first()->capex_id ?? null,
             'sub_capex_id' => $request->sub_capex_id ?? null,
@@ -135,10 +134,10 @@ class FixedAssetController extends Controller
             'acquisition_date' => $request->acquisition_date,
             'acquisition_cost' => $request->acquisition_cost,
             'scrap_value' => $request->scrap_value,
-            'original_cost' => $request->original_cost,
+            'depreciable_basis' => $request->depreciable_basis,
             'accumulated_cost' => $request->accumulated_cost ?? 0,
-            'age' => $request->age,
-            'end_depreciation' => $this->getEndDepreciation($this->getStartDepreciation($request->release_date), $request->est_useful_life),
+            'months_depreciated' => $request->months_depreciated ?? 0,
+            'end_depreciation' => $this->getEndDepreciation($this->getStartDepreciation($request->release_date), $majorCategory->est_useful_life),
             'depreciation_per_year' => $request->depreciation_per_year ?? 0,
             'depreciation_per_month' => $request->depreciation_per_month ?? 0,
             'remaining_book_value' => $request->remaining_book_value ?? 0,
@@ -222,11 +221,11 @@ class FixedAssetController extends Controller
             'receipt' => $fixed_asset->receipt,
             'quantity' => $fixed_asset->quantity,
             'depreciation_method' => $fixed_asset->depreciation_method,
-            'salvage_value' => $fixed_asset->salvage_value,
+            //                    'salvage_value' => $fixed_asset->salvage_value,
             'acquisition_date' => $fixed_asset->acquisition_date,
             'acquisition_cost' => $fixed_asset->acquisition_cost,
             'scrap_value' => $fixed_asset->formula->scrap_value,
-            'original_cost' => $fixed_asset->formula->original_cost,
+            'depreciable_basis' => $fixed_asset->formula->depreciable_basis,
             'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
             'asset_status' => [
                 'id' => $fixed_asset->assetStatus->id ?? '-',
@@ -246,7 +245,7 @@ class FixedAssetController extends Controller
             ],
             'is_old_asset' => $fixed_asset->is_old_asset,
             'care_of' => $fixed_asset->care_of,
-            'age' => $fixed_asset->formula->age,
+            'months_depreciated' => $fixed_asset->formula->months_depreciated,
             'end_depreciation' => $fixed_asset->formula->end_depreciation,
             'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year,
             'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month,
@@ -382,10 +381,10 @@ class FixedAssetController extends Controller
                 'acquisition_date' => $request->acquisition_date,
                 'acquisition_cost' => $request->acquisition_cost,
                 'scrap_value' => $request->scrap_value,
-                'original_cost' => $request->original_cost,
+                'depreciable_basis' => $request->depreciable_basis,
                 'accumulated_cost' => $request->accumulated_cost ?? 0,
-                'age' => $request->age,
-                'end_depreciation' => $this->getEndDepreciation($request->start_depreciation, $request->est_useful_life),
+                'months_depreciated' => $request->months_depreciated,
+                'end_depreciation' => $this->getEndDepreciation($request->start_depreciation, $departmentQuery->est_useful_life),
                 'depreciation_per_year' => $request->depreciation_per_year ?? 0,
                 'depreciation_per_month' => $request->depreciation_per_month ?? 0,
                 'remaining_book_value' => $request->remaining_book_value ?? 0,
@@ -586,7 +585,7 @@ class FixedAssetController extends Controller
                 'acquisition_date' => $item->acquisition_date,
                 'acquisition_cost' => $item->acquisition_cost,
                 'scrap_value' => $item->formula->scrap_value,
-                'original_cost' => $item->formula->original_cost,
+                'depreciable_basis' => $item->formula->depreciable_basis,
                 'accumulated_cost' => $item->formula->accumulated_cost,
                 'asset_status' => [
                     'id' => $item->assetStatus->id ?? '-',
@@ -606,7 +605,7 @@ class FixedAssetController extends Controller
                 ],
                 'is_old_asset' => $item->is_old_asset,
                 'care_of' => $item->care_of,
-                'age' => $item->formula->age,
+                'months_depreciated' => $item->formula->months_depreciated,
                 'end_depreciation' => $item->formula->end_depreciation,
                 'depreciation_per_year' => $item->formula->depreciation_per_year,
                 'depreciation_per_month' => $item->formula->depreciation_per_month,
@@ -658,9 +657,9 @@ class FixedAssetController extends Controller
 
         //Variable declaration
         $depreciation_method = $fixedAsset->depreciation_method;
-        $est_useful_life = $fixedAsset->est_useful_life;
+        $est_useful_life = $fixedAsset->majorCategory->est_useful_life;
         $start_depreciation = $fixedAsset->formula->start_depreciation;
-        $original_cost = $fixedAsset->formula->original_cost;
+        $depreciable_basis = $fixedAsset->formula->depreciable_basis;
         $scrap_value = $fixedAsset->formula->scrap_value;
         $end_depreciation = $fixedAsset->formula->end_depreciation;
         $release_date = $fixedAsset->formula->release_date;
@@ -677,21 +676,21 @@ class FixedAssetController extends Controller
         }
 
         //calculation variables
-        $custom_age = $this->getAge($start_depreciation, $custom_end_depreciation);
-        $monthly_depreciation = $this->getMonthlyDepreciation($original_cost, $est_useful_life);
-        $yearly_depreciation = $this->getYearlyDepreciation($original_cost, $est_useful_life);
+        $custom_age = $this->getMonthsDepreciated($start_depreciation, $custom_end_depreciation);
+        $monthly_depreciation = $this->getMonthlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life);
+        $yearly_depreciation = $this->getYearlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life);
         $accumulated_cost = $this->getAccumulatedCost($monthly_depreciation, $custom_age);
-        $remaining_book_value = $this->getRemainingBookValue($original_cost, $accumulated_cost);
+        $remaining_book_value = $this->getRemainingBookValue($depreciable_basis, $accumulated_cost);
 
 
         if ($fixedAsset->depreciation_method == 'One Time') {
             $age = 0.083333333333333;
-            $monthly_depreciation = $this->getMonthlyDepreciation($original_cost, $age);
+            $monthly_depreciation = $this->getMonthlyDepreciation($depreciable_basis, $scrap_value, $age);
             return response()->json([
                 'message' => 'Depreciation retrieved successfully.',
                 'data' => [
                     'depreciation_method' => $depreciation_method,
-                    'original_cost' => $original_cost,
+                    'depreciable_basis' => $depreciable_basis,
                     'start_depreciation' => $start_depreciation,
                     'end_depreciation' => $end_depreciation,
                     'depreciation' => $monthly_depreciation,
@@ -707,9 +706,9 @@ class FixedAssetController extends Controller
             'message' => 'Depreciation calculated successfully',
             'data' => [
                 'depreciation_method' => $depreciation_method,
-                'original_cost' => $original_cost,
+                'depreciable_basis' => $depreciable_basis,
                 'est_useful_life' => $est_useful_life,
-                'age' => $custom_age,
+                'months_depreciated' => $custom_age,
                 'scarp_value' => $scrap_value,
                 'start_depreciation' => $start_depreciation,
                 'end_depreciation' => $end_depreciation,
@@ -722,21 +721,21 @@ class FixedAssetController extends Controller
 
     }
 
-    private function getAge($start_depreciation, $custom_end_depreciation)
+    public function getMonthsDepreciated($start_depreciation, $custom_end_depreciation)
     {
         $start_depreciation = Carbon::parse($start_depreciation);
         $custom_end_depreciation = Carbon::parse($custom_end_depreciation);
         return $start_depreciation->diffInMonths($custom_end_depreciation->addMonth(1));
     }
 
-    private function getYearlyDepreciation($original_cost, $est_useful_life): float
+    private function getYearlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life): float
     {
-        return round($original_cost / $est_useful_life, 2);
+        return round(($depreciable_basis - $scrap_value) / $est_useful_life, 2);
     }
 
-    private function getMonthlyDepreciation($original_cost, $est_useful_life): float
+    private function getMonthlyDepreciation($depreciable_basis, $scrap_value,$est_useful_life): float
     {
-        $yearly = $original_cost / $est_useful_life;
+        $yearly = ($depreciable_basis - $scrap_value) / $est_useful_life;
         return round($yearly / 12, 2);
     }
 
@@ -758,16 +757,18 @@ class FixedAssetController extends Controller
         return round($accumulated_cost);
     }
 
-    private function getRemainingBookValue($original_cost, float $accumulated_cost): float
+    private function getRemainingBookValue($depreciable_basis, float $accumulated_cost): float
     {
-        $remaining_book_value = $original_cost - $accumulated_cost;
+        $remaining_book_value = $depreciable_basis - $accumulated_cost;
         return round($remaining_book_value);
     }
 
     public function getEndDepreciation($start_depreciation, $est_useful_life)
     {
+
         $start_depreciation = Carbon::parse($start_depreciation);
         return $start_depreciation->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12))->subMonth(1)->format('Y-m');
+
     }
 
     private function getStartDepreciation($release_date)
@@ -828,11 +829,11 @@ class FixedAssetController extends Controller
             'receipt' => $fixed_asset->receipt,
             'quantity' => $fixed_asset->quantity,
             'depreciation_method' => $fixed_asset->depreciation_method,
-            'salvage_value' => $fixed_asset->salvage_value,
+            //                    'salvage_value' => $fixed_asset->salvage_value,
             'acquisition_date' => $fixed_asset->acquisition_date,
             'acquisition_cost' => $fixed_asset->acquisition_cost,
             'scrap_value' => $fixed_asset->formula->scrap_value,
-            'original_cost' => $fixed_asset->formula->original_cost,
+            'depreciable_basis' => $fixed_asset->formula->depreciable_basis,
             'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
             'asset_status' => [
                 'id' => $fixed_asset->assetStatus->id ?? '-',
@@ -852,7 +853,7 @@ class FixedAssetController extends Controller
             ],
             'is_old_asset' => $fixed_asset->is_old_asset,
             'care_of' => $fixed_asset->care_of,
-            'age' => $fixed_asset->formula->age,
+            'months_depreciated' => $fixed_asset->formula->months_depreciated,
             'end_depreciation' => $fixed_asset->formula->end_depreciation,
             'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year,
             'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month,
@@ -884,6 +885,13 @@ class FixedAssetController extends Controller
             'message' => 'Fixed Asset retrieved successfully.',
             'data' => $fixed_asset_arr
         ], 200);
+    }
+
+    public function sampleFixedAssetDownload()
+    {
+        //download file from storage/sample
+        $path = storage_path('app/sample/fixed_asset.xlsx');
+        return response()->download($path);
     }
 
 }

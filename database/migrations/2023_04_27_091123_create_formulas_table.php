@@ -21,14 +21,14 @@ class CreateFormulasTable extends Migration
             $table->date('acquisition_date');
             $table->bigInteger('acquisition_cost');
             $table->integer('scrap_value');
-            $table->bigInteger('original_cost');
+            $table->bigInteger('depreciable_basis');
             $table->bigInteger('accumulated_cost');
-            $table->integer('age'); //months
+            $table->integer('months_depreciated'); //months
             $table->string('end_depreciation'); //date format yyyy-mm
             $table->BigInteger('depreciation_per_year');
             $table->BigInteger('depreciation_per_month');
             $table->BigInteger('remaining_book_value');
-            $table->string('release_date'); //date format yyyy-mm
+            $table->string('release_date'); //date format yyyy-mm-dd
             $table->string('start_depreciation'); //date format yyyy-mm
             $table->softDeletes();
             $table->timestamps();

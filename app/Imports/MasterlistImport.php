@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Http\Controllers\Masterlist\FixedAssetController;
 use App\Models\AccountTitle;
 use App\Models\Capex;
 use App\Models\Company;
@@ -65,13 +66,6 @@ class MasterlistImport extends DefaultValueBinder implements
             $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y-m-d'), DataType::TYPE_STRING);
             return true;
         }
-//          elseif ($cell->getColumn() == 'AB') {
-//            $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y-m'), DataType::TYPE_STRING);
-//            return true;
-//        } elseif ($cell->getColumn() == 'AG') {
-//            $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y'), DataType::TYPE_STRING);
-//            return true;
-//        }
 
         // else return default behavior
         return parent::bindValue($cell, $value);
@@ -84,7 +78,6 @@ class MasterlistImport extends DefaultValueBinder implements
         foreach ($collections as $collection) {
             $majorCategoryId = $this->getMajorCategoryId($collection['major_category']);
             $minorCategoryId = $this->getMinorCategoryId($collection['minor_category'], $majorCategoryId);
-            //pass est_useful_life to formula and fixed asset
             $est_useful_life = $this->getEstUsefulLife($majorCategoryId);
             $fixedAsset = $this->createFixedAsset($collection, $majorCategoryId, $minorCategoryId, $est_useful_life);
             $this->createFormula($fixedAsset, $collection, $est_useful_life);
@@ -94,7 +87,7 @@ class MasterlistImport extends DefaultValueBinder implements
     private function getEstUsefulLife($majorCategoryId)
     {
         $majorCategory = MajorCategory::withTrashed()
-            ->where('major_category_name', $majorCategoryId)
+            ->where('id', $majorCategoryId)
             ->first();
 
         return $majorCategory ? $majorCategory->est_useful_life : null;
@@ -115,7 +108,6 @@ class MasterlistImport extends DefaultValueBinder implements
             ->where('minor_category_name', $minorCategoryName)
             ->where('major_category_id', $majorCategoryId)
             ->first();
-        //return two valie
         return $minorCategory ? $minorCategory->id : null;
     }
 
@@ -166,19 +158,22 @@ class MasterlistImport extends DefaultValueBinder implements
 
     private function createFormula($fixedAsset, $collection, $est_useful_life)
     {
+        $faController = new FixedAssetController();
+        //current date
         $fixedAsset->formula()->create([
             'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
             'acquisition_date' => $collection['acquisition_date'],
             'acquisition_cost' => $collection['acquisition_cost'],
             'scrap_value' => $collection['scrap_value'],
-            'original_cost' => $collection['original_cost'],
+            'depreciable_basis' => $collection['depreciable_basis'],
             'accumulated_cost' => $collection['accumulated_cost'],
-            'age' => $collection['age'],
-            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
+            'months_depreciated' => $faController->getMonthsDepreciated(substr_replace($collection['start_depreciation'], '-', 4, 0),Carbon::now()),
+//            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
+            'end_depreciation' => $faController->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life),
             'depreciation_per_year' => $collection['depreciation_per_year'],
             'depreciation_per_month' => $collection['depreciation_per_month'],
             'remaining_book_value' => $collection['remaining_book_value'],
-            'release_date' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->subMonth()->format('Y-m'),
+            'release_date' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->subMonth()->format('Y-m-d'),
             'start_depreciation' => substr_replace($collection['start_depreciation'], '-', 4, 0),
         ]);
     }
@@ -201,8 +196,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $capexValue = $collections[$index]['capex'];
                 $typeOfRequest = $collections[$index]['type_of_request'];
-                //if a type of request is not CAPEX, then capex and sub capex should be empty
-                if ($typeOfRequest != 'CAPEX') {
+                if (ucwords(strtolower($typeOfRequest)) != 'Capex') {
                     if ($value != '-') {
                         $fail('Capex and Sub Capex should be empty');
                         return true;
@@ -341,15 +335,22 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required|in:STL,One Time',
             '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date'],
-            '*.acquisition_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+            '*.acquisition_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) use ($collections) {
+                $index = array_search($attribute, array_keys($collections->toArray()));
+                $scrap_value = $collections[$index]['scrap_value'];
+
+                if($value < $scrap_value){
+                    $fail('Acquisition cost must not be less than scrap value');
+                }
+
                 if ($value < 0) {
                     $fail('Acquisition cost must not be negative');
                 }
             }],
             '*.scrap_value' => ['required',],
-            '*.original_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+            '*.depreciable_basis' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
                 if ($value < 0) {
-                    $fail('Original cost must not be negative');
+                    $fail('Depreciation basis must not be negative');
                 }
             }],
             '*.accumulated_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
@@ -362,7 +363,6 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.cycle_count_status' => 'required|exists:cycle_count_statuses,cycle_count_status_name',
             '*.movement_status' => 'required|exists:movement_statuses,movement_status_name',
             '*.care_of' => 'required',
-            '*.age' => 'nullable',
             '*.end_depreciation' => 'required',
             '*.depreciation_per_year' => ['required'],
             '*.depreciation_per_month' => ['required'],
@@ -424,7 +424,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.acquisition_date.required' => 'Acquisition Date is required',
             '*.acquisition_cost.required' => 'Acquisition Cost is required',
             '*.scrap_value.required' => 'Scrap Value is required',
-            '*.original_cost.required' => 'Original Cost is required',
+            '*.depreciable_basis.required' => 'Depreciable basis is required',
             '*.accumulated_cost.required' => 'Accumulated Cost is required',
             '*.asset_status.required' => 'Status is required',
             '*.asset_status.in' => 'The selected status is invalid.',
@@ -435,7 +435,6 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.movement_status.required' => 'Movement Status is required',
             '*.movement_status.in' => 'The selected movement status is invalid.',
             '*.care_of.required' => 'Care Of is required',
-            '*.age.required' => 'Age is required',
             '*.end_depreciation.required' => 'End Depreciation is required',
             '*.depreciation_per_year.required' => 'Depreciation Per Year is required',
             '*.depreciation_per_month.required' => 'Depreciation Per Month is required',

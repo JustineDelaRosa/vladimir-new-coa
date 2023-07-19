@@ -231,4 +231,11 @@ class CapexController extends Controller
             'data' => $data
         ], 200);
     }
+
+    public function sampleCapexDownload()
+    {
+        //download file from storage/sample
+        $path = storage_path('app/sample/capex.xlsx');
+        return response()->download($path);
+    }
 }
