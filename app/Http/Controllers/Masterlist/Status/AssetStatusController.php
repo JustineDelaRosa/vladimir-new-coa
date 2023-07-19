@@ -144,10 +144,17 @@ class AssetStatusController extends Controller
                     'message' => 'No Changes.'
                 ], 200);
             } else {
-//                $checkFixedAsset = FixedAsset::where('asset_status_id', $id)->exists();
-//                if ($checkFixedAsset) {
-//                    return response()->json(['error' => 'Unable to archived , Asset Status is still in use!'], 422);
-//                }
+                $checkFixedAsset = FixedAsset::where('asset_status_id', $id)->exists();
+                if ($checkFixedAsset) {
+                    return response()->json([
+                        'message' => 'The given data was invalid.',
+                        'errors' => [
+                            'asset_status' => [
+                                'Asset Status is still in use!'
+                            ]
+                        ]
+                    ], 422);
+                }
                 if (AssetStatus::where('id', $id)->exists()) {
                     $updateCapex = AssetStatus::Where('id', $id)->update([
                         'is_active' => false,

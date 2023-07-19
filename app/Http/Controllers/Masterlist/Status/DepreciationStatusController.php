@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Masterlist\Status;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Status\DepreciationStatus\DepreciationStatusRequest;
+use App\Models\FixedAsset;
 use App\Models\Status\DepreciationStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -136,6 +137,18 @@ class DepreciationStatusController extends Controller
 
 
         if (!$status) {
+            $checkFixedAsset = FixedAsset::where('depreciation_status_id', $id)->exists();
+            if ($checkFixedAsset) {
+                return response()->json([
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'depreciation_status' => [
+                            'Depreciation Status is still being used.'
+                        ]
+                    ]
+                ], 422);
+            }
+
             $depreciationStatus->is_active = false;
             $depreciationStatus->save();
             $depreciationStatus->delete();

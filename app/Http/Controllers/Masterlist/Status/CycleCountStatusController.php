@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Masterlist\Status;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Status\CycleCountStatus\CycleCountStatusRequest;
+use App\Models\FixedAsset;
 use App\Models\Status\CycleCountStatus;
 use Illuminate\Http\Request;
 
@@ -187,6 +188,17 @@ class CycleCountStatusController extends Controller
 
         // Perform changes based on requested status.
         if (!$status) {
+            $checkFixedAsset = FixedAsset::where('cycle_count_status_id', $id)->exists();
+                if ($checkFixedAsset) {
+                    return response()->json([
+                        'message' => 'The given data was invalid.',
+                        'errors' => [
+                            'cycle_count_status' => [
+                                'Cycle Count Status is still in use!'
+                            ]
+                        ]
+                    ], 422);
+                }
             $cycleCount->is_active = false;
             $cycleCount->save();
             $cycleCount->delete();

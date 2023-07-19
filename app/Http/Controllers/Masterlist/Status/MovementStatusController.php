@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Masterlist\Status;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Status\MovementStatus\MovementStatusRequest;
+use App\Models\FixedAsset;
 use App\Models\Status\MovementStatus;
 use Illuminate\Http\Request;
 
@@ -136,6 +137,19 @@ class MovementStatusController extends Controller
 
 
         if (!$status) {
+
+            $checkFixedAsset = FixedAsset::where('movement_status_id', $id)->exists();
+            if ($checkFixedAsset) {
+                return response()->json([
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'movement_status' => [
+                            'Movement Status is still in use.'
+                        ]
+                    ]
+                ], 422);
+            }
+
             $movementStatus->is_active = false;
             $movementStatus->save();
             $movementStatus->delete();
