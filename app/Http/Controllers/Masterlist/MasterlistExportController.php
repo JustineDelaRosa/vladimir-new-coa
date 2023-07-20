@@ -245,8 +245,6 @@ class MasterlistExportController extends Controller
                 'account_title_name' => $fixed_asset->accountTitle->account_title_name
             ];
         }
-
         return $fixed_assets_arr;
     }
-
 }

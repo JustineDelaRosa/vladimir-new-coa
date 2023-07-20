@@ -148,7 +148,22 @@ class MajorCategoryController extends Controller
                 'est_useful_life' => $est_useful_life,
                 // 'is_active' => true
             ]);
-            return response()->json(['message' => 'Successfully Updated!', 'data' => $update], 200);
+            if($update){
+
+                $faEndDepreciation = new FixedAssetController();
+                //get est_useful_life from major category
+                $majorCategory = MajorCategory::where('id', $id)->first();
+                //adjust end depreciation from formulas
+                $fixedAsset = FixedAsset::where('major_category_id', $id)->get();
+                foreach ($fixedAsset as $fa) {
+                    $startDepreciation = $fa->formula->start_depreciation;
+                    $fa->formula()->update([
+                        'end_depreciation' => $faEndDepreciation->getEndDepreciation($startDepreciation, $majorCategory->est_useful_life)
+                    ]);
+                }
+            }
+            return response()->json(['message' => 'Successfully Updated!'], 200);
+
         } else {
             return response()->json(['error' => 'Major Category Route Not Found'], 404);
         }

@@ -137,6 +137,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('capex', CapexController::class);
     Route::patch('capex/archived-capex/{id}', [CapexController::class, 'archived']);
     Route::post('sub_capex/{id}', [CapexController::class, 'storeSubCapex']);
+    Route::get('capex-export', [CapexController::class, 'capexExport']);
     //SUB CAPEX//
     Route::resource('sub-capex', SubCapexController::class);
     Route::patch('sub-capex/archived-sub-capex/{id}', [SubCapexController::class, 'archived']);
