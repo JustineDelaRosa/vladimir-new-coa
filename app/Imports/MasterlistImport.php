@@ -18,6 +18,7 @@ use App\Models\Status\DepreciationStatus;
 use App\Models\Status\MovementStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
+use App\Repositories\VladimirTagGeneratorRepository;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
@@ -45,6 +46,13 @@ class MasterlistImport extends DefaultValueBinder implements
     WithCalculatedFormulas
 {
     use Importable;
+
+    private $vladimirTagGeneratorRepository;
+
+    public function __construct()
+    {
+        $this->vladimirTagGeneratorRepository = new VladimirTagGeneratorRepository();
+    }
 
     function headingRow(): int
     {
@@ -79,7 +87,7 @@ class MasterlistImport extends DefaultValueBinder implements
             $majorCategoryId = $this->getMajorCategoryId($collection['major_category']);
             $minorCategoryId = $this->getMinorCategoryId($collection['minor_category'], $majorCategoryId);
             $est_useful_life = $this->getEstUsefulLife($majorCategoryId);
-            $fixedAsset = $this->createFixedAsset($collection, $majorCategoryId, $minorCategoryId, $est_useful_life);
+            $fixedAsset = $this->createFixedAsset($collection, $majorCategoryId, $minorCategoryId, $this->vladimirTagGeneratorRepository->vladimirTagGenerator());
             $this->createFormula($fixedAsset, $collection, $est_useful_life);
         }
     }
@@ -111,7 +119,7 @@ class MasterlistImport extends DefaultValueBinder implements
         return $minorCategory ? $minorCategory->id : null;
     }
 
-    private function createFixedAsset($collection, $majorCategoryId, $minorCategoryId, $est_useful_life)
+    private function createFixedAsset($collection, $majorCategoryId, $minorCategoryId, $vladimirTagGeneratorRepository)
     {
         // Check if necessary IDs exist before creating FixedAsset
         if ($majorCategoryId == null || $minorCategoryId == null) {
@@ -119,11 +127,10 @@ class MasterlistImport extends DefaultValueBinder implements
         }
         //get est_useful_life from major category
 
-
         return FixedAsset::create([
             'capex_id' => Capex::where('capex', $collection['capex'])->first()->id ?? null,
             'sub_capex_id' => SubCapex::where('sub_capex', $collection['sub_capex'])->first()->id ?? null,
-            'vladimir_tag_number' => $this->vladimirTagGenerator(),
+            'vladimir_tag_number' => $vladimirTagGeneratorRepository,
             'tag_number' => $collection['tag_number'] ?? '-',
             'tag_number_old' => $collection['tag_number_old'] ?? '-',
             'asset_description' => ucwords(strtolower($collection['description'])),
@@ -167,7 +174,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'scrap_value' => $collection['scrap_value'],
             'depreciable_basis' => $collection['depreciable_basis'],
             'accumulated_cost' => $collection['accumulated_cost'],
-            'months_depreciated' => $faController->getMonthsDepreciated(substr_replace($collection['start_depreciation'], '-', 4, 0),Carbon::now()),
+            'months_depreciated' => $faController->getMonthsDepreciated(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
 //            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
             'end_depreciation' => $faController->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life),
             'depreciation_per_year' => $collection['depreciation_per_year'],
@@ -224,42 +231,6 @@ class MasterlistImport extends DefaultValueBinder implements
                     }
                 }
             }],
-//            '*.project_name' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
-//                //check if the value of project name is null or '-'
-//                if ($value == null || $value == '-') {
-//                    return true;
-//                }
-//                //check in the capex table if the project name is the same with the capex
-//                $index = array_search($attribute, array_keys($collections->toArray()));
-//                $capex = Capex::where('capex', $collections[$index]['capex'])->first();
-//                if ($capex) {
-//                    $project = $capex->where('project_name', $value)->first();
-//                    if (!$project) {
-//                        $fail('Project name does not exist in the capex');
-//                    }
-//                }
-//            }],
-//            '*.sub_project' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
-//                if ($value == '' || $value == '-') {
-//                    return true;
-//                }
-//                $index = array_search($attribute, array_keys($collections->toArray()));
-//                $subCapexValue = $collections[$index]['sub_capex'];
-//                if($subCapexValue != '' && $subCapexValue != '-'){
-//                    if ($value == '' || $value == '-') {
-//                        $fail('Sub Project is required');
-//                        return true;
-//                    }
-//                }
-//                //check in the sub capex table if the subproject is the same with the capex
-//                $subCapex = SubCapex::where('sub_capex', $subCapexValue)->first();
-//                if ($subCapex) {
-//                    $subProject = $subCapex->where('sub_project', $value)->first();
-//                    if (!$subProject) {
-//                        $fail('Sub project does not exist in the sub capex');
-//                    }
-//                }
-//            }],
             '*.tag_number' => ['required', 'regex:/^([0-9-]{6,13}|-)$/', function ($attribute, $value, $fail) use ($collections) {
                 $duplicate = $collections->where('tag_number', $value)->where('tag_number', '!=', '-')->count();
                 if ($duplicate > 1) {
@@ -339,7 +310,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $scrap_value = $collections[$index]['scrap_value'];
 
-                if($value < $scrap_value){
+                if ($value < $scrap_value) {
                     $fail('Acquisition cost must not be less than scrap value');
                 }
 
@@ -373,7 +344,7 @@ class MasterlistImport extends DefaultValueBinder implements
             }],
             '*.start_depreciation' => ['required'],
             '*.company_code' => 'required|exists:companies,company_code',
-            '*.department_code' => ['required','exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
+            '*.department_code' => ['required', 'exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $company_code = $collections[$index]['company_code'];
                 $division = $collections[$index]['division'];
@@ -451,78 +422,6 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.account_code.exists' => 'Account Code does not exist',
         ];
 
-    }
-
-
-//  GENERATING VLADIMIR TAG NUMBER
-    public function vladimirTagGenerator(): string
-    {
-        $generatedEan13Result = $this->generateEan13();
-        // Check if the generated number is a duplicate or already exists in the database
-        while ($this->checkDuplicateEan13($generatedEan13Result)) {
-            $generatedEan13Result = $this->generateEan13();
-        }
-
-        return $generatedEan13Result;
-    }
-
-    public function generateEan13(): string
-    {
-        $date = date('ymd');
-        static $lastRandom = 0;
-        do {
-            $random = mt_rand(1, 9) . mt_rand(1000, 9999);
-        } while ($random === $lastRandom);
-        $lastRandom = $random;
-
-        $number = "5$date$random";
-
-        if (strlen($number) !== 12) {
-            return 'Invalid Number';
-        }
-
-        //Calculate checkDigit
-        $checkDigit = $this->calculateCheckDigit($number);
-
-        $ean13Result = $number . $checkDigit;
-
-        return $ean13Result;
-    }
-
-    public function calculateCheckDigit(string $number): int
-    {
-        $evenSum = $this->calculateEvenSum($number);
-        $oddSum = $this->calculateOddSum($number);
-
-        $totalSum = $evenSum + $oddSum;
-        $remainder = $totalSum % 10;
-        $checkDigit = ($remainder === 0) ? 0 : 10 - $remainder;
-
-        return $checkDigit;
-    }
-
-    public function calculateEvenSum(string $number): int
-    {
-        $evenSum = 0;
-        for ($i = 1; $i < 12; $i += 2) {
-            $evenSum += (int)$number[$i];
-        }
-        return $evenSum * 3;
-    }
-
-    public function calculateOddSum(string $number): int
-    {
-        $oddSum = 0;
-        for ($i = 0; $i < 12; $i += 2) {
-            $oddSum += (int)$number[$i];
-        }
-        return $oddSum;
-    }
-
-    public function checkDuplicateEan13(string $ean13Result): bool
-    {
-        $generated = [];
-        return in_array($ean13Result, $generated) || FixedAsset::where('vladimir_tag_number', $ean13Result)->exists();
     }
 
 }
