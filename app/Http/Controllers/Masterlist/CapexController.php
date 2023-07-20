@@ -9,8 +9,10 @@ use App\Imports\CapexImport;
 use App\Models\Capex;
 use App\Models\FixedAsset;
 use App\Models\SubCapex;
+use DateTime;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
+use function PHPUnit\Framework\isEmpty;
 
 class CapexController extends Controller
 {
@@ -178,7 +180,7 @@ class CapexController extends Controller
                     //check if any of the sub capex is in use by fixed asset
                     $checkFixedAsset = FixedAsset::whereIn('sub_capex_id', $sub_capex_check)->exists();
                     if ($checkFixedAsset) {
-                        return response()->json(['error' => 'Unable to archive, Sub Capex is still in use!'], 422);
+                        return response()->json(['error' => 'Still in use!'], 422);
                     }
 
                     $updateCapex = Capex::Where('id', $id)->update([
@@ -237,5 +239,57 @@ class CapexController extends Controller
         //download file from storage/sample
         $path = storage_path('app/sample/capex.xlsx');
         return response()->download($path);
+    }
+
+    public function capexExport(Request $request){
+        $search = $request->search;
+        $status = $request->status;
+        $startDate = $request->startDate;
+        $endDate = $request->endDate;
+
+        $capex = Capex::withTrashed()->with([
+                'subCapex' => function ($query) {
+                    $query->withTrashed();
+                },
+            ]
+        )
+            ->where(function ($query) use ($search) {
+                $query
+                    ->where("capex", "like", "%" . $search . "%")
+                    ->orWhere("project_name", "like", "%" . $search . "%");
+                $query->orWhereHas('subCapex', function ($query) use ($search) {
+                    $query->where('sub_capex', 'like', '%' . $search . '%')
+                        ->orWhere('sub_project', 'like', '%' . $search . '%');
+                });
+            })
+            ->when($status === "deactivated", function ($query) {
+                $query->onlyTrashed();
+            })
+            ->when($request->status === 'active', function ($query) {
+                return $query->whereNull('deleted_at');
+            })
+            ->when($startDate && $endDate, function ($query) use($startDate, $endDate) {
+                return $query->whereBetween('created_at', [$startDate, $endDate]);
+            })
+            ->orderByDesc('created_at')
+            ->get();
+
+        //refactor capex response
+        return  $capex->map(function ($capex) {
+            return[
+                'id' => $capex->id,
+                'capex' => $capex->capex,
+                'project_name' => $capex->project_name,
+                'status' => $capex->is_active ? 'Active' : 'Deactivated',
+                'sub_capex' => $capex->subCapex->isEmpty() ? 'null' : $capex->subCapex->map(function ($sub_capex) {
+                    return [
+                        'sub_capex_id' => $sub_capex->id,
+                        'sub_capex' => $sub_capex->sub_capex,
+                        'sub_project' => $sub_capex->sub_project,
+                        'status' => $sub_capex->is_active ? 'Active' : 'Inactive',
+                    ];
+                }),
+            ];
+        });
     }
 }

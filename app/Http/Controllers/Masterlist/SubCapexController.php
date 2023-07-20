@@ -78,7 +78,7 @@ class SubCapexController extends Controller
                 'message' => 'The given data was invalid.',
                 'errors' => [
                     'sub_capex' => [
-                        'This Capex already has this Sub Capex.'
+                        'Already in exists'
                     ]
                 ]
             ], 422);
@@ -166,7 +166,7 @@ class SubCapexController extends Controller
             } else {
                 $checkFixedAsset = FixedAsset::where('sub_capex_id', $id)->exists();
                 if ($checkFixedAsset) {
-                    return response()->json(['error' => 'Unable to archived , SubCapex is still in use!'], 422);
+                    return response()->json(['error' => 'SubCapex is still in use!'], 422);
                 }
                 if (SubCapex::where('id', $id)->exists()) {
                     $updateCapex = SubCapex::Where('id', $id)->update([
