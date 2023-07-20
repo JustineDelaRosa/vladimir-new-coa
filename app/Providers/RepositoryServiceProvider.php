@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Repositories\FixedAssetRepository;
+use App\Repositories\VladimirTagGeneratorRepository;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -14,9 +15,16 @@ class RepositoryServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->bind(FixedAssetRepository::class, function ($app) {
-            return new FixedAssetRepository();
-        });
+        $repositories = [
+            FixedAssetRepository::class,
+            VladimirTagGeneratorRepository::class,
+        ];
+
+        foreach ($repositories as $repository) {
+            $this->app->bind($repository, function () use ($repository) {
+                return new $repository();
+            });
+        }
     }
 
     /**
