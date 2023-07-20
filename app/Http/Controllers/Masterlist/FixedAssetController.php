@@ -40,7 +40,7 @@ class FixedAssetController extends Controller
         $fixed_assets = FixedAsset::with('formula')->get();
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
-            'data' => $fixed_assets
+            'data' => $this->fixedAssetRepository->transformFixedAsset($fixed_assets)
         ], 200);
     }
 
@@ -110,7 +110,7 @@ class FixedAssetController extends Controller
 
         return response()->json([
             'message' => 'Fixed Asset retrieved successfully.',
-            'data' => $this->fixedAssetRepository->transformFixedAsset($fixed_asset)
+            'data' => $this->fixedAssetRepository->transformSingleFixedAsset($fixed_asset)
         ], 200);
     }
 
@@ -338,7 +338,7 @@ class FixedAssetController extends Controller
 
         return response()->json([
             'message' => 'Fixed Asset retrieved successfully.',
-            'data' => $this->fixedAssetRepository->transformFixedAsset($fixed_asset)
+            'data' => $this->fixedAssetRepository->transformSingleFixedAsset($fixed_asset)
         ], 200);
     }
 

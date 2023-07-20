@@ -6,7 +6,6 @@ use App\Models\FixedAsset;
 
 class VladimirTagGeneratorRepository
 {
-    //VLADIMIR TAG NUMBER GENERATOR
     public function vladimirTagGenerator(): string
     {
         $generatedEan13Result = $this->generateEan13();
@@ -17,7 +16,6 @@ class VladimirTagGeneratorRepository
 
         return $generatedEan13Result;
     }
-
     function generateEan13(): string
     {
         $date = date('ymd');
@@ -40,7 +38,6 @@ class VladimirTagGeneratorRepository
 
         return $ean13Result;
     }
-
     function calculateCheckDigit(string $number): int
     {
         $evenSum = $this->calculateEvenSum($number);
@@ -52,7 +49,6 @@ class VladimirTagGeneratorRepository
 
         return $checkDigit;
     }
-
     function calculateEvenSum(string $number): int
     {
         $evenSum = 0;
@@ -61,7 +57,6 @@ class VladimirTagGeneratorRepository
         }
         return $evenSum * 3;
     }
-
     function calculateOddSum(string $number): int
     {
         $oddSum = 0;
@@ -70,7 +65,6 @@ class VladimirTagGeneratorRepository
         }
         return $oddSum;
     }
-
     function checkDuplicateEan13(string $ean13Result): bool
     {
         $generated = [];
