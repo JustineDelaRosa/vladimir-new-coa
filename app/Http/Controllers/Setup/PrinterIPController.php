@@ -28,7 +28,8 @@ class PrinterIPController extends Controller
             ->when($status === "deactivated", function ($query) {
                 $query->where("is_active", false);
             })
-            ->orderBy("is_active", "desc");
+            ->orderBy("is_active", "desc")
+            ->orderBy('created_at', 'desc');
         $printerIP = $limit ? $printerIP->paginate($limit) : $printerIP->get();
 
 
