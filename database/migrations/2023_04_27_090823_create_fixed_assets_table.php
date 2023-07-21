@@ -32,7 +32,6 @@ class CreateFixedAssetsTable extends Migration
             $table->string('brand');
             $table->unsignedInteger('major_category_id');
             $table->unsignedInteger('minor_category_id');
-            $table->unsignedInteger('division_id');
             $table->string('voucher');
             $table->string('receipt');
             $table->string('quantity');
@@ -75,10 +74,6 @@ class CreateFixedAssetsTable extends Migration
             $table->foreign('minor_category_id')
                 ->references('id')
                 ->on('minor_categories')
-                ->onDelete('cascade');
-            $table->foreign('division_id')
-                ->references('id')
-                ->on('divisions')
                 ->onDelete('cascade');
             $table->foreign('company_id')
                 ->references('id')

@@ -50,10 +50,6 @@ class FixedAsset extends Model
         return $this->belongsTo(MinorCategory::class, 'minor_category_id', 'id');
     }
 
-    public function division()
-    {
-        return $this->belongsTo(Division::class, 'division_id', 'id');
-    }
 
     public function company()
     {

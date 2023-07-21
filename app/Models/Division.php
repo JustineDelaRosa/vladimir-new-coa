@@ -16,10 +16,6 @@ class Division extends Model
         'is_active',
     ];
 
-    public function fixedAsset()
-    {
-        return $this->hasMany(FixedAsset::class, 'division_id', 'id');
-    }
 
     public function department()
     {
