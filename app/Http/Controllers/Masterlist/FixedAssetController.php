@@ -18,6 +18,7 @@ use App\Models\MajorCategory;
 use App\Models\MinorCategory;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
+use App\Repositories\CalculationRepository;
 use App\Repositories\FixedAssetRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
 use Carbon\Carbon;
@@ -26,12 +27,13 @@ use Illuminate\Support\Facades\Validator;
 
 class FixedAssetController extends Controller
 {
-    private $fixedAssetRepository, $vladimirTagGeneratorRepository;
+    private $fixedAssetRepository, $vladimirTagGeneratorRepository, $calculationRepository;
 
     public function __construct()
     {
         $this->fixedAssetRepository = new FixedAssetRepository();
         $this->vladimirTagGeneratorRepository = new VladimirTagGeneratorRepository();
+        $this->calculationRepository = new CalculationRepository();
     }
 
 
@@ -175,155 +177,220 @@ class FixedAssetController extends Controller
         }
     }
 
-
     public function search(Request $request)
     {
         $search = $request->get('search');
         $limit = $request->get('limit');
-        $page = $request->get('page');
-
         return $this->fixedAssetRepository->searchFixedAsset($search, $limit);
     }
 
     //todo change assetDescription
+
+//    function assetDepreciation(Request $request, $id)
+//    {
+//        //validation
+//        $validator = Validator::make($request->all(), [
+//            'date' => 'required|date_format:Y-m',
+//        ],
+//            [
+//                'date.required' => 'Date is required.',
+//                'date.date_format' => 'Date format is invalid.',
+//            ]);
+//
+//        $fixedAsset = FixedAsset::with('formula')->where('id', $id)->first();
+//        if (!$fixedAsset) {
+//            return response()->json([
+//                'message' => 'Route not found.'
+//            ], 404);
+//        }
+//
+//        //Variable declaration
+//        $depreciation_method = $fixedAsset->depreciation_method;
+//        $est_useful_life = $fixedAsset->majorCategory->est_useful_life;
+//        $start_depreciation = $fixedAsset->formula->start_depreciation;
+//        $depreciable_basis = $fixedAsset->formula->depreciable_basis;
+//        $scrap_value = $fixedAsset->formula->scrap_value;
+//        $end_depreciation = $fixedAsset->formula->end_depreciation;
+//        $release_date = $fixedAsset->formula->release_date;
+//        $custom_end_depreciation = $validator->validated()['date'];
+//
+//        if ($custom_end_depreciation == date('Y-m')) {
+//            if ($custom_end_depreciation > $end_depreciation) {
+//                $custom_end_depreciation = $end_depreciation;
+//            }
+//        } elseif (!$this->calculationRepository->dateValidation($custom_end_depreciation, $start_depreciation, $fixedAsset->formula->end_depreciation)) {
+//            return response()->json([
+//                'message' => 'Date is invalid.'
+//            ], 422);
+//        }
+//
+//        //calculation variables
+//        $custom_age = $this->calculationRepository->getMonthDifference($start_depreciation, $custom_end_depreciation);
+//        $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life);
+//        $yearly_depreciation = $this->calculationRepository->getYearlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life);
+//        $accumulated_cost = $this->calculationRepository->getAccumulatedCost($monthly_depreciation, $custom_age);
+//        $remaining_book_value = $this->calculationRepository->getRemainingBookValue($depreciable_basis, $accumulated_cost);
+//
+//
+//        if ($fixedAsset->depreciation_method == 'One Time') {
+//            $age = 0.083333333333333;
+//            $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($depreciable_basis, $scrap_value, $age);
+//            return response()->json([
+//                'message' => 'Depreciation retrieved successfully.',
+//                'data' => [
+//                    'depreciation_method' => $depreciation_method,
+//                    'depreciable_basis' => $depreciable_basis,
+//                    'start_depreciation' => $start_depreciation,
+//                    'end_depreciation' => $end_depreciation,
+//                    'depreciation' => $monthly_depreciation,
+//                    'depreciation_per_month' => 0,
+//                    'depreciation_per_year' => 0,
+//                    'accumulated_cost' => 0,
+//                    'remaining_book_value' => 0,
+//
+//                ]
+//            ], 200);
+//        }
+//        return response()->json([
+//            'message' => 'Depreciation calculated successfully',
+//            'data' => [
+//                'depreciation_method' => $depreciation_method,
+//                'depreciable_basis' => $depreciable_basis,
+//                'est_useful_life' => $est_useful_life,
+//                'months_depreciated' => $custom_age,
+//                'scarp_value' => $scrap_value,
+//                'start_depreciation' => $start_depreciation,
+//                'end_depreciation' => $end_depreciation,
+//                'depreciation_per_month' => $monthly_depreciation,
+//                'depreciation_per_year' => $yearly_depreciation,
+//                'accumulated_cost' => $accumulated_cost,
+//                'remaining_book_value' => $remaining_book_value,
+//            ]
+//        ], 200);
+//
+//    }
+
+
     function assetDepreciation(Request $request, $id)
     {
-        //validation
-        $validator = Validator::make($request->all(), [
+        $validator = $this->validateRequest($request);
+        $fixedAsset = $this->getFixedAsset($id);
+
+        if (!$fixedAsset) {
+            return $this->buildResponse('Route not found.', 404);
+        }
+
+        $validationState = $this->checkDateValidation($validator, $fixedAsset);
+
+        if (!$validationState['status']) {
+            return $this->buildResponse($validationState['message'], 422);
+        }
+
+        $calculationData = $this->calculateDepreciation($validator, $fixedAsset);
+
+        if ($fixedAsset->depreciation_method === 'One Time') {
+            return $this->buildResponse('Depreciation retrieved successfully.', 200, $calculationData['onetime']);
+        }
+
+        return $this->buildResponse('Depreciation calculated successfully', 200, $calculationData['default']);
+    }
+
+    function validateRequest(Request $request)
+    {
+        return Validator::make($request->all(), [
             'date' => 'required|date_format:Y-m',
         ],
             [
                 'date.required' => 'Date is required.',
                 'date.date_format' => 'Date format is invalid.',
             ]);
+    }
 
-        $fixedAsset = FixedAsset::with('formula')->where('id', $id)->first();
-        if (!$fixedAsset) {
-            return response()->json([
-                'message' => 'Route not found.'
-            ], 404);
+    function getFixedAsset($id)
+    {
+        return FixedAsset::with('formula')->where('id', $id)->first();
+    }
+
+    function checkDateValidation($validator, $fixedAsset)
+    {
+        $custom_end_depreciation = $validator->validated()['date'];
+        $end_depreciation = $fixedAsset->formula->end_depreciation;
+        $start_depreciation = $fixedAsset->formula->start_depreciation;
+
+        if ($custom_end_depreciation === date('Y-m') && $custom_end_depreciation > $end_depreciation) {
+            $custom_end_depreciation = $end_depreciation;
+        } elseif (!$this->calculationRepository->dateValidation($custom_end_depreciation, $start_depreciation, $end_depreciation)) {
+            return [
+                'status' => false,
+                'message' => 'Date is invalid.'
+            ];
         }
 
+        return [
+            'status' => true,
+            'message' => 'Valid date.'
+        ];
+    }
+
+    function calculateDepreciation($validator, $fixedAsset)
+    {
         //Variable declaration
+        $properties = $fixedAsset->formula;
         $depreciation_method = $fixedAsset->depreciation_method;
         $est_useful_life = $fixedAsset->majorCategory->est_useful_life;
-        $start_depreciation = $fixedAsset->formula->start_depreciation;
-        $depreciable_basis = $fixedAsset->formula->depreciable_basis;
-        $scrap_value = $fixedAsset->formula->scrap_value;
-        $end_depreciation = $fixedAsset->formula->end_depreciation;
-        $release_date = $fixedAsset->formula->release_date;
         $custom_end_depreciation = $validator->validated()['date'];
 
-        if ($custom_end_depreciation == date('Y-m')) {
-            if ($custom_end_depreciation > $end_depreciation) {
-                $custom_end_depreciation = $end_depreciation;
-            }
-        } elseif (!$this->dateValidation($custom_end_depreciation, $start_depreciation, $fixedAsset->formula->end_depreciation)) {
-            return response()->json([
-                'message' => 'Date is invalid.'
-            ], 422);
-        }
-
         //calculation variables
-        $custom_age = $this->getMonthsDepreciated($start_depreciation, $custom_end_depreciation);
-        $monthly_depreciation = $this->getMonthlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life);
-        $yearly_depreciation = $this->getYearlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life);
-        $accumulated_cost = $this->getAccumulatedCost($monthly_depreciation, $custom_age);
-        $remaining_book_value = $this->getRemainingBookValue($depreciable_basis, $accumulated_cost);
+        $custom_age = $this->calculationRepository->getMonthDifference($properties->start_depreciation, $custom_end_depreciation);
+        $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->depreciable_basis, $properties->scrap_value, $est_useful_life);
+        $yearly_depreciation = $this->calculationRepository->getYearlyDepreciation($properties->depreciable_basis, $properties->scrap_value, $est_useful_life);
+        $accumulated_cost = $this->calculationRepository->getAccumulatedCost($monthly_depreciation, $custom_age);
+        $remaining_book_value = $this->calculationRepository->getRemainingBookValue($properties->depreciable_basis, $accumulated_cost);
 
-
-        if ($fixedAsset->depreciation_method == 'One Time') {
+        if ($depreciation_method === 'One Time') {
             $age = 0.083333333333333;
-            $monthly_depreciation = $this->getMonthlyDepreciation($depreciable_basis, $scrap_value, $age);
-            return response()->json([
-                'message' => 'Depreciation retrieved successfully.',
-                'data' => [
-                    'depreciation_method' => $depreciation_method,
-                    'depreciable_basis' => $depreciable_basis,
-                    'start_depreciation' => $start_depreciation,
-                    'end_depreciation' => $end_depreciation,
-                    'depreciation' => $monthly_depreciation,
-                    'depreciation_per_month' => 0,
-                    'depreciation_per_year' => 0,
-                    'accumulated_cost' => 0,
-                    'remaining_book_value' => 0,
-
-                ]
-            ], 200);
+            $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->depreciable_basis, $properties->scrap_value, $age);
         }
-        return response()->json([
-            'message' => 'Depreciation calculated successfully',
-            'data' => [
+
+        return [
+            'onetime' => [
                 'depreciation_method' => $depreciation_method,
-                'depreciable_basis' => $depreciable_basis,
+                'depreciable_basis' => $properties->depreciable_basis,
+                'start_depreciation' => $properties->start_depreciation,
+                'end_depreciation' => $properties->end_depreciation,
+                'depreciation' => $monthly_depreciation,
+                'depreciation_per_month' => 0,
+                'depreciation_per_year' => 0,
+                'accumulated_cost' => 0,
+                'remaining_book_value' => 0,
+            ],
+            'default' => [
+                'depreciation_method' => $depreciation_method,
+                'depreciable_basis' => $properties->depreciable_basis,
                 'est_useful_life' => $est_useful_life,
                 'months_depreciated' => $custom_age,
-                'scarp_value' => $scrap_value,
-                'start_depreciation' => $start_depreciation,
-                'end_depreciation' => $end_depreciation,
+                'scarp_value' => $properties->scrap_value,
+                'start_depreciation' => $properties->start_depreciation,
+                'end_depreciation' => $properties->end_depreciation,
                 'depreciation_per_month' => $monthly_depreciation,
                 'depreciation_per_year' => $yearly_depreciation,
                 'accumulated_cost' => $accumulated_cost,
                 'remaining_book_value' => $remaining_book_value,
             ]
-        ], 200);
-
+        ];
     }
 
-    public function getMonthsDepreciated($start_depreciation, $custom_end_depreciation)
+    function buildResponse($message, $statusCode, $data = null)
     {
-        $start_depreciation = Carbon::parse($start_depreciation);
-        $custom_end_depreciation = Carbon::parse($custom_end_depreciation);
-        return $start_depreciation->diffInMonths($custom_end_depreciation->addMonth(1));
-    }
+        $responseData = [
+            'message' => $message,
+        ];
 
-    private function getYearlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life): float
-    {
-        return round(($depreciable_basis - $scrap_value) / $est_useful_life, 2);
-    }
-
-    private function getMonthlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life): float
-    {
-        $yearly = ($depreciable_basis - $scrap_value) / $est_useful_life;
-        return round($yearly / 12, 2);
-    }
-
-    private function dateValidation($date, $start_depreciation, $end_depreciation): bool
-    {
-        $date = Carbon::parse($date);
-        $start_depreciation = Carbon::parse($start_depreciation);
-        $end_depreciation = Carbon::parse($end_depreciation);
-        if ($date->between($start_depreciation, $end_depreciation)) {
-            return true;
-        } else {
-            return false;
+        if ($data !== null) {
+            $responseData['data'] = $data;
         }
-    }
 
-    private function getAccumulatedCost($monthly_depreciation, float $custom_age): float
-    {
-        $accumulated_cost = $monthly_depreciation * $custom_age;
-        return round($accumulated_cost);
-    }
-
-    private function getRemainingBookValue($depreciable_basis, float $accumulated_cost): float
-    {
-        $remaining_book_value = $depreciable_basis - $accumulated_cost;
-        return round($remaining_book_value);
-    }
-
-    public function getEndDepreciation($start_depreciation, $est_useful_life)
-    {
-
-        $start_depreciation = Carbon::parse($start_depreciation);
-        return $start_depreciation->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12))->subMonth(1)->format('Y-m');
-
-    }
-
-    public function getStartDepreciation($release_date)
-    {
-        $release_date = Carbon::parse($release_date);
-        return $release_date->addMonth(1)->format('Y-m');
+        return response()->json($responseData, $statusCode);
     }
 
     public function showTagNumber(int $tagNumber)

@@ -7,10 +7,18 @@ use App\Http\Requests\MajorCategory\MajorCategoryRequest;
 use App\Models\FixedAsset;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
+use App\Repositories\CalculationRepository;
 use Illuminate\Http\Request;
 
 class MajorCategoryController extends Controller
 {
+
+    private $calculationRepository;
+    public function __construct()
+    {
+        $this->calculationRepository = new CalculationRepository();
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -118,17 +126,22 @@ class MajorCategoryController extends Controller
         //     return response()->json(['error' => 'Major Category Route Not Found2'], 404);
         // }
 
-        if (MajorCategory::where('id', $id)
-            ->where(['major_category_name' => $major_category_name, 'est_useful_life' => $est_useful_life])
-            ->exists()
-        ) {
+        $majorCategory = MajorCategory::withTrashed()
+            ->find($id);
+
+        if (!$majorCategory) {
+            return response()->json(['error' => 'Major Category Route Not Found'], 404);
+        }
+
+        if ($majorCategory->major_category_name === $major_category_name && $majorCategory->est_useful_life === $est_useful_life) {
             return response()->json(['message' => 'No Changes'], 200);
         }
-        $majorCategory = MajorCategory::withTrashed()
-            ->where('major_category_name', $major_category_name)
+
+        if (MajorCategory::where(['major_category_name' => $major_category_name])
             ->where('id', '!=', $id)
-            ->exists();
-        if ($majorCategory) {
+            ->withTrashed()
+            ->first()
+        ) {
             return response()->json(
                 [
                     'message' => 'The given data was invalid.',
@@ -142,31 +155,21 @@ class MajorCategoryController extends Controller
             );
         }
 
-        if (MajorCategory::where('id', $id)->exists()) {
-            $update = MajorCategory::where('id', $id)->update([
-                'major_category_name' => $major_category_name,
-                'est_useful_life' => $est_useful_life,
-                // 'is_active' => true
+        $majorCategory->major_category_name = $major_category_name;
+        $majorCategory->est_useful_life = $est_useful_life;
+
+        $fixedAsset = FixedAsset::where('major_category_id', $id)->get();
+
+        foreach ($fixedAsset as $fa) {
+            $startDepreciation = $fa->formula->start_depreciation;
+            $fa->formula()->update([
+                'end_depreciation' => $this->calculationRepository->getEndDepreciation($startDepreciation, $majorCategory->est_useful_life)
             ]);
-            if($update){
-
-                $faEndDepreciation = new FixedAssetController();
-                //get est_useful_life from major category
-                $majorCategory = MajorCategory::where('id', $id)->first();
-                //adjust end depreciation from formulas
-                $fixedAsset = FixedAsset::where('major_category_id', $id)->get();
-                foreach ($fixedAsset as $fa) {
-                    $startDepreciation = $fa->formula->start_depreciation;
-                    $fa->formula()->update([
-                        'end_depreciation' => $faEndDepreciation->getEndDepreciation($startDepreciation, $majorCategory->est_useful_life)
-                    ]);
-                }
-            }
-            return response()->json(['message' => 'Successfully Updated!'], 200);
-
-        } else {
-            return response()->json(['error' => 'Major Category Route Not Found'], 404);
         }
+
+        $majorCategory->save();
+
+        return response()->json(['message' => 'Successfully Updated!'], 200);
     }
 
 

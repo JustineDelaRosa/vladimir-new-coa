@@ -11,103 +11,11 @@ class MasterlistExportController extends Controller
 {
     public function export(Request $request)
     {
-////        $validated = $request->validate([
-////            'startDate' => 'nullable|date',
-////            'endDate' => 'nullable|date',
-////        ]);
-////        $filename = $request->get('filename');
-////        //ternary if empty the default filename is Fixed_Asset_Date
-////        $filename = $filename == null ? 'Fixed_Asset'. '_' . date('Y-m-d') :
-////            str_replace(' ', '_', $filename) . '_' . date('Y-m-d');
-////        $search = $request->get('search');
-////        $startDate = $request->get('startDate');
-////        $endDate = $request->get('endDate');
-////
-////        //directly download the Excel file to the frontend without saving it to the storage folder
-////        return Excel::download(new MasterlistExport($search, $startDate, $endDate), $filename . '.xlsx');
-////        return Excel::download(new MasterlistExport($search, $startDate, $endDate), $filename . '.xlsx');
-////        return (new MasterlistExport($search, $startDate, $endDate))->download($filename . '.xlsx');
-//
-//
-//        $search = $request->get('search');
-//        $startDate = $request->get('startDate');
-//        $endDate = $request->get('endDate');
-////      $result = [];
-//
-//
-//
-//        if($startDate != null && $endDate != null && $search == null){
-//            $fixedAsset = FixedAsset::whereBetween('created_at', [$startDate, $endDate])
-//                ->orderBy('id', 'ASC')->get();
-////                ->select('vladimir_tag_number', 'asset_description','id')
-////                ->chunk(500, function ($assets) use (&$result) {
-////                    foreach ($assets as $asset) {
-////                        $result[] = [
-////                            'vladimir_tag_number' => $asset->vladimir_tag_number,
-////                            'asset_description' => $asset->asset_description,
-////                        ];
-////                    }
-////                });
-//            return $this->refactorExport($fixedAsset);
-//        }
-//
-//        if (strpos($search, ',') !== false || strlen($search) < 2) {
-//            $search = explode(',', $search);
-//            $fixedAsset = FixedAsset::whereIn('type_of_request_id', $search)
-//                ->whereBetween('created_at', [$startDate, $endDate])
-//                ->orderBy('id', 'ASC')->get();
-////                ->select('vladimir_tag_number', 'asset_description','id','type_of_request_id')
-////                ->chunk(500, function ($assets) use (&$result) {
-////                    foreach ($assets as $asset) {
-////                        $result[] = [
-////                            'vladimir_tag_number' => $asset->vladimir_tag_number,
-////                            'asset_description' => $asset->asset_description,
-////                            'id' => $asset->id,
-////                            'type_of_request_id' => $asset->type_of_request_id,
-////                        ];
-////                    }
-////                });
-//            return $this->refactorExport($fixedAsset);
-//        }
-//
-//
-//        $fixedAsset = FixedAsset::where(function ($query) use ($search) {
-//            $query->Where('vladimir_tag_number', $search )
-//                ->orWhere('tag_number', $search);
-//        })->orderBy('id', 'ASC')->get();
-////            ->select('vladimir_tag_number', 'asset_description','id')
-////            ->chunk(500, function ($assets) use (&$result) {
-////                foreach ($assets as $asset) {
-////                    $result[] = [
-////                        'vladimir_tag_number' => $asset->vladimir_tag_number,
-////                        'asset_description' => $asset->asset_description,
-////                    ];
-////                }
-////            });
-//
-//        return $this->refactorExport($fixedAsset);
-//    }
-//        $filename = $request->get('filename');
-//        //ternary if empty, the default filename is Fixed_Asset_Date
-//        $filename = $filename == null ? 'Fixed_Asset'. '_' . date('Y-m-d') :
-//                    str_replace(' ', '_', $filename) . '_' . date('Y-m-d');
+
 
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
-//        $faStatus = $request->get('faStatus');
-        // Simplify the logic for faStatus
-//        if ($faStatus == null) {
-//            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off', 'Disposed'];
-//        } else if ($faStatus == 'Disposed, Sold') {
-//            $faStatus = ['Disposed', 'Sold'];
-//        } else if ($faStatus == 'Disposed' || $faStatus == 'Sold') {
-//            $faStatus = [$faStatus];
-//        } else {
-//            $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
-//                return $status !== 'Disposed';
-//            });
-//        }
 
 // Define the common query for fixed assets
         $fixedAssetQuery = FixedAsset::withTrashed()->with([
@@ -177,10 +85,14 @@ class MasterlistExportController extends Controller
         // Get the fixed assets and refactor them for export
         $fixedAssets = $fixedAssetQuery->get();
 
-        //if the fixed assets is empty, return error message
         if ($fixedAssets->isEmpty()) {
             return response()->json([
-                'message' => 'No data found',
+                'message' => 'Invalid search',
+                'errors' => [
+                    'search' => [
+                        'No data found'
+                    ]
+                ]
             ], 422);
         }
         return response()->json([

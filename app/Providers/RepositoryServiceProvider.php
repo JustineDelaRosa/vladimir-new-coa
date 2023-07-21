@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Repositories\CalculationRepository;
 use App\Repositories\FixedAssetRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
 use Illuminate\Support\ServiceProvider;
@@ -18,6 +19,7 @@ class RepositoryServiceProvider extends ServiceProvider
         $repositories = [
             FixedAssetRepository::class,
             VladimirTagGeneratorRepository::class,
+            CalculationRepository::class,
         ];
 
         foreach ($repositories as $repository) {

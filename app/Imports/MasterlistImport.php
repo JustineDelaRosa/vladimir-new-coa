@@ -18,6 +18,7 @@ use App\Models\Status\DepreciationStatus;
 use App\Models\Status\MovementStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
+use App\Repositories\CalculationRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
@@ -47,11 +48,12 @@ class MasterlistImport extends DefaultValueBinder implements
 {
     use Importable;
 
-    private $vladimirTagGeneratorRepository;
+    private $vladimirTagGeneratorRepository, $calculationRepository;
 
     public function __construct()
     {
         $this->vladimirTagGeneratorRepository = new VladimirTagGeneratorRepository();
+        $this->calculationRepository = new CalculationRepository();
     }
 
     function headingRow(): int
@@ -125,7 +127,6 @@ class MasterlistImport extends DefaultValueBinder implements
         if ($majorCategoryId == null || $minorCategoryId == null) {
             throw new Exception('Unable to create FixedAsset due to missing Major/Minor category ID.');
         }
-        //get est_useful_life from major category
 
         return FixedAsset::create([
             'capex_id' => Capex::where('capex', $collection['capex'])->first()->id ?? null,
@@ -165,7 +166,6 @@ class MasterlistImport extends DefaultValueBinder implements
 
     private function createFormula($fixedAsset, $collection, $est_useful_life)
     {
-        $faController = new FixedAssetController();
         //current date
         $fixedAsset->formula()->create([
             'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
@@ -174,9 +174,9 @@ class MasterlistImport extends DefaultValueBinder implements
             'scrap_value' => $collection['scrap_value'],
             'depreciable_basis' => $collection['depreciable_basis'],
             'accumulated_cost' => $collection['accumulated_cost'],
-            'months_depreciated' => $faController->getMonthsDepreciated(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
+            'months_depreciated' => $this->calculationRepository->getMonthDifference(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
 //            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
-            'end_depreciation' => $faController->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life),
             'depreciation_per_year' => $collection['depreciation_per_year'],
             'depreciation_per_month' => $collection['depreciation_per_month'],
             'remaining_book_value' => $collection['remaining_book_value'],
