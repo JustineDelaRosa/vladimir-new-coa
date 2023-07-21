@@ -6,7 +6,6 @@ use App\Http\Controllers\Masterlist\FixedAssetController;
 use App\Models\AccountTitle;
 use App\Models\Capex;
 use App\Models\Company;
-use App\Models\Division;
 use App\Models\FixedAsset;
 use App\Models\Location;
 use App\Models\Department;
@@ -133,7 +132,6 @@ class MasterlistImport extends DefaultValueBinder implements
             'accountable' => ucwords(strtolower($collection['accountable'] ?? '-')),
             'cellphone_number' => $collection['cellphone_number'],
             'brand' => ucwords(strtolower($collection['brand'])),
-            'division_id' => Division::where('division_name', $collection['division'])->first()->id,
             'major_category_id' => $majorCategoryId,
             'minor_category_id' => $minorCategoryId,
             'voucher' => ucwords(strtolower($collection['voucher'])),
@@ -299,12 +297,6 @@ class MasterlistImport extends DefaultValueBinder implements
                 }],
             '*.cellphone_number' => 'required',
             '*.brand' => 'required',
-            '*.division' => ['required', function ($attribute, $value, $fail) {
-                $division = Division::withTrashed()->where('division_name', $value)->first();
-                if (!$division) {
-                    $fail('Division does not exists');
-                }
-            }],
             '*.major_category' => [
                 'required', 'exists:major_categories,major_category_name'
 //                function ($attribute, $value, $fail) use ($collections) {
@@ -376,18 +368,15 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.department_code' => ['required','exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $company_code = $collections[$index]['company_code'];
-                $division = $collections[$index]['division'];
                 $location_code = $collections[$index]['location_code'];
-                $division_id = Division::withTrashed()->where('division_name', $division)->first()->id ?? 0;
                 $location_sync_id = Location::where('location_code', $location_code)->first()->sync_id ?? 0;
                 $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
                 $department = Department::where('department_code', $value)
-                    ->where('division_id', $division_id)
                     ->where('location_sync_id', $location_sync_id)
                     ->where('company_sync_id', $company_sync_id)
                     ->first();
                 if (!$department) {
-                    $fail('Invalid division, location, company and department combination');
+                    $fail('Invalid location, company and department combination');
                 }
             }],
             '*.location_code' => 'required|exists:locations,location_code',
@@ -410,8 +399,6 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.accountable.required_if' => 'Accountable is required',
             '*.cellphone_number.required' => 'Cellphone Number is required',
             '*.brand.required' => 'Brand is required',
-            '*.division.required' => 'Division is required',
-            '*.division.exists' => 'Division does not exist',
             '*.major_category.required' => 'Major Category is required',
             '*.major_category.exists' => 'Major Category does not exist',
             '*.minor_category.required' => 'Minor Category is required',
