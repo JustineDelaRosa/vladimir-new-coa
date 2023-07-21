@@ -506,7 +506,7 @@ class FixedAssetController extends Controller
                 $query->orWhereHas('minorCategory', function ($query) use ($search) {
                     $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
                 });
-                $query->orWhereHas('division', function ($query) use ($search) {
+                $query->orWhereHas('department.division', function ($query) use ($search) {
                     $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('assetStatus', function ($query) use ($search) {
