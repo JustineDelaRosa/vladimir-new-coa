@@ -56,13 +56,12 @@ class PrinterIPController extends Controller
     {
         $printerIP = $request->ip;
         $name = $request->name;
-        //only allow ip with 10.10.x.x format
-        if(!preg_match('/^10\.10\.\d{1,3}\.\d{1,3}$/', $printerIP)){
-            return response()->json([
-                'message' => 'Invalid IP format.',
-                'data' => null
-            ], 400);
-        }
+//        //only allow ip with 10.10.x.x format
+//        if(!preg_match('/^10\.10\.\d{1,3}\.\d{1,3}$/', $printerIP)){
+//            return response()->json([
+//                'message' => 'Invalid IP format.',
+//            ], 422);
+//        }
 
         $printerIP = PrinterIP::create([
             'ip' => $printerIP,
