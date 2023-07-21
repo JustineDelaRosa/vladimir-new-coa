@@ -159,18 +159,24 @@ class DivisionController extends Controller
             if (!Division::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
-                $checkFixedAsset = FixedAsset::where('division_id', $id)->exists();
-                if ($checkFixedAsset) {
-                    return response()->json(['error' => 'Unable to archived , Division is still in use!'], 422);
-                }
-                $checkDepartment = Department::where('division_id', $id)->exists();
-                if ($checkDepartment) {
-                    return response()->json(['error' => 'Unable to archived , Division is still in use!'], 422);
-                }
 
-                $updateStatus = $Division->where('id', $id)->update(['is_active' => false]);
-                $Division->where('id', $id)->delete();
-                return response()->json(['message' => 'Successfully Deactived!'], 200);
+//                $checkFixedAsset = FixedAsset::where('division_id', $id)->exists();
+//                if ($checkFixedAsset) {
+//                    return response()->json(['error' => 'Unable to archived , Division is still in use!'], 422);
+//                }
+//                $checkDepartment = Department::where('division_id', $id)->exists();
+//                if ($checkDepartment) {
+//                    return response()->json(['error' => 'Unable to archived , Division is still in use!'], 422);
+//                }
+
+                $removeDivision = Department::where('division_id', $id)->update([
+                    'division_id' => null
+                ]);
+                if($removeDivision){
+                    $updateStatus = $Division->where('id', $id)->update(['is_active' => false]);
+                    $Division->where('id', $id)->delete();
+                    return response()->json(['message' => 'Successfully Deactivated!'], 200);
+                }
             }
         }
         if ($status == true) {
