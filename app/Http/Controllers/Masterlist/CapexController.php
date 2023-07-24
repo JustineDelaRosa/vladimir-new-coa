@@ -23,56 +23,58 @@ class CapexController extends Controller
      */
     public function index(Request $request)
     {
-        $search = $request->search;
-        $status = $request->status;
-        $limit = $request->limit;
+        $search = $request->input('search', '');
+        $status = $request->input('status', '');
+        $limit  = $request->input('limit', null);
 
-        $capex = Capex::withTrashed()->with([
+        $capexQuery = Capex::withTrashed()
+            ->with([
                 'subCapex' => function ($query) {
                     $query->withTrashed();
                 },
-            ]
-        )
+            ])
             ->where(function ($query) use ($search) {
-                $query
-                    ->where("capex", "like", "%" . $search . "%")
-                    ->orWhere("project_name", "like", "%" . $search . "%");
+                $query->where('capex', 'like', "%$search%")
+                    ->orWhere('project_name', 'like', "%$search%");
                 $query->orWhereHas('subCapex', function ($query) use ($search) {
-                    $query->where('sub_capex', 'like', '%' . $search . '%')
-                            ->orWhere('sub_project', 'like', '%' . $search . '%');
+                    $query->where('sub_capex', 'like', "%$search%")
+                        ->orWhere('sub_project', 'like', "%$search%");
                 });
-            })
-            ->when($status === "deactivated", function ($query) {
-                $query->onlyTrashed();
-            })
-            ->when($request->status === 'active', function ($query) {
-                return $query->whereNull('deleted_at');
-            })
-            ->orderByDesc('created_at')
-            ->when($request->limit, function ($query) use ($request) {
-                return $query->paginate($request->limit);
-            }, function ($query) {
-                return $query->get();
             });
-        //show only letters of sub capex
-       $capex->map(function ($capex) {
-            $capex->sub_capex = $capex->subCapex->map(function ($sub_capex) {
-                if (substr_count($sub_capex->sub_capex, '-') == 1) {
-                    return $sub_capex->sub_capex = explode('-', $sub_capex->sub_capex)[1];
-                }elseif (substr_count($sub_capex->sub_capex, '-') == 2) {
-                    return $sub_capex->sub_capex = explode('-', $sub_capex->sub_capex)[2];
-                }else{
-                    return $sub_capex->sub_capex;
-                }
-            });
-            //count sub capex
-           $capex->sub_capex_count = $capex->subCapex->count();
+
+        if($status === "deactivated") {
+            $capexQuery->onlyTrashed();
+        } elseif($status === 'active') {
+            $capexQuery->whereNull('deleted_at');
+        }
+
+        $capexQuery->orderByDesc('created_at');
+
+        if($limit !== null) {
+            $result = is_numeric($limit) ? $capexQuery->paginate($limit) : $capexQuery->paginate(PHP_INT_MAX);
+        } else {
+            $result = $capexQuery->get();
+        }
+
+        $result->transform(function ($capex) {
+            $capex->sub_capex =
+                $capex->subCapex
+                    ->map(function ($sub_capex) {
+                        $subCapexParts = explode('-', $sub_capex->sub_capex);
+                        if (count($subCapexParts) > 1) {
+                            $sub_capex->sub_capex = end($subCapexParts);
+                        }
+
+                        return $sub_capex;
+                    });
+
+            $capex->sub_capex_count = $capex->subCapex->count();
             return $capex;
         });
 
         return response()->json([
             'message' => 'Successfully retrieved capex.',
-            'data' => $capex
+            'data' => $result
         ], 200);
     }
 
