@@ -171,6 +171,7 @@ class FixedAssetRequest extends FormRequest
                         // Check if necessary keys exist to avoid undefined index
                         if (isset($accountability['general_info']['full_name'])) {
                             $fullName = $accountability['general_info']['full_name'];
+                            request()->merge(['accountable' => $fullName]);
                         } else {
                             // Fail validation if keys don't exist
                             $fail('The accountable person\'s full name is required.');
