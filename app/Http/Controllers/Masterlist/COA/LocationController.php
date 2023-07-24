@@ -16,7 +16,7 @@ class LocationController extends Controller
      */
     public function index()
     {
-        $location = Location::with('locationDepartment')->get();
+        $location = Location::get();
 //        return $location;
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
@@ -97,7 +97,6 @@ class LocationController extends Controller
                     if ($sync) {
                         Department::WhereIn('sync_id', $departments)->update(['location_sync_id' => $sync_id]);
                     }
-
                 }
             }
         }
