@@ -45,4 +45,15 @@ class PrinterIPRequest extends FormRequest
             ];
         }
     }
+
+    public function messages(): array
+    {
+        return [
+            'ip.regex' => 'The ip format is invalid.',
+            'ip.unique' => 'The ip has already been taken.',
+            'name.unique' => 'The name has already been taken.',
+            'printer_id.required' => 'The printer id field is required.',
+            'printer_id.exists' => 'The printer id field is invalid.',
+        ];
+    }
 }
