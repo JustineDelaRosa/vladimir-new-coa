@@ -37,6 +37,8 @@ class FixedAssetController extends Controller
     public function store(FixedAssetRequest $request)
     {
 
+//        return $request->all();
+
         $vladimirTagNumber = (new MasterlistImport())->vladimirTagGenerator();
         if (!is_numeric($vladimirTagNumber) || strlen($vladimirTagNumber) != 13) {
             return response()->json([
@@ -81,19 +83,7 @@ class FixedAssetController extends Controller
             );
         }
         $departmentQuery = Department::where('id', $request->department_id)->first();
-        if ($departmentQuery->division_id == null) {
-            return response()->json(
-                [
-                    'message' => 'The given data was invalid.',
-                    'errors' => [
-                        'division' => [
-                            'The division is required.'
-                        ]
-                    ]
-                ],
-                422
-            );
-        }
+
         $fixedAsset = FixedAsset::create([
             'capex_id' => SubCapex::where('id', $request->sub_capex_id)->first()->capex_id ?? null,
             'sub_capex_id' => $request->sub_capex_id ?? null,
@@ -107,7 +97,6 @@ class FixedAssetController extends Controller
             'accountable' => ($request->accountable) ?? '-',
             'cellphone_number' => $request->cellphone_number ?? '-',
             'brand' => ucwords(strtolower($request->brand)) ?? '-',
-            'division_id' => $departmentQuery->division_id ?? null,
             'major_category_id' => $request->major_category_id,
             'minor_category_id' => $request->minor_category_id,
             'voucher' => $request->voucher ?? '-',
@@ -327,20 +316,6 @@ class FixedAssetController extends Controller
 //            ], 200);
 //        }
         $departmentQuery = Department::where('id', $request->department_id)->first();
-        if ($departmentQuery->division_id == null) {
-            return response()->json(
-                [
-                    'message' => 'The given data was invalid.',
-                    'errors' => [
-                        'division' => [
-                            'The division is required.'
-                        ]
-                    ]
-                ],
-                422
-            );
-        }
-
         $fixedAsset = FixedAsset::where('id', $id)->first();
         if ($fixedAsset) {
             $fixedAsset->update([
@@ -355,7 +330,6 @@ class FixedAssetController extends Controller
                 'accountable' => $request->accountable,
                 'cellphone_number' => $request->cellphone_number ?? '-',
                 'brand' => $request->brand ?? '-',
-                'division_id' => $departmentQuery->division_id ?? null,
                 'major_category_id' => $request->major_category_id,
                 'minor_category_id' => $request->minor_category_id,
                 'voucher' => $request->voucher ?? '-',
