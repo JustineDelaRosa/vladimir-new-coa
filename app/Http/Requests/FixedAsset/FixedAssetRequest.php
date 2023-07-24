@@ -15,7 +15,7 @@ class FixedAssetRequest extends FormRequest
      *
      * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
@@ -111,7 +111,7 @@ class FixedAssetRequest extends FormRequest
                 'depreciation_per_year' => ['nullable', 'numeric'],
                 'depreciation_per_month' => ['nullable', 'numeric'],
                 'remaining_book_value' => ['nullable', 'numeric'],
-                'release_date' => ['required', 'date_format:Y-m'],
+                'release_date' => ['required', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'department_id' => 'required|exists:departments,id',
                 'account_title_id' => 'required|exists:account_titles,id',
@@ -214,7 +214,7 @@ class FixedAssetRequest extends FormRequest
                 'depreciation_per_year' => ['nullable', 'numeric'],
                 'depreciation_per_month' => ['nullable', 'numeric'],
                 'remaining_book_value' => ['nullable', 'numeric'],
-                'release_date' => ['required', 'date_format:Y-m'],
+                'release_date' => ['required', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'department_id' => 'required|exists:departments,id',
                 'account_title_id' => 'required|exists:account_titles,id',
@@ -288,6 +288,7 @@ class FixedAssetRequest extends FormRequest
             'remaining_book_value.required' => 'Remaining book value is required',
             'remaining_book_value.numeric' => 'Remaining book value must be a number',
             'release_date.required' => 'Release date is required',
+            'release_date.date_format' => 'Invalid release date format',
             'start_depreciation.required' => 'Start depreciation is required',
             'start_depreciation.numeric' => 'Start depreciation must be a number',
             'company_code.required' => 'Company code is required',
