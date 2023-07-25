@@ -19,12 +19,11 @@ class FixedAssetRepository
     }
     public function storeFixedAsset($request, $vladimirTagNumber, $departmentQuery)
     {
-        $faCalculations = new FixedAssetController();
-        $subCapex = SubCapex::find($request['sub_capex_id']);
+
         $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
         $fixedAsset = FixedAsset::create([
-            'capex_id' => $subCapex ? $subCapex->capex_id : null,
-            'sub_capex_id' => $subCapex->id ?? null,
+            'capex_id' => isset($request['sub_capex_id']) ? SubCapex::find($request['sub_capex_id'])->capex_id : null,
+            'sub_capex_id' => $request['sub_capex_id'] ?? null,
             'vladimir_tag_number' => $vladimirTagNumber,
             'tag_number' => $request['tag_number'] ?? '-',
             'tag_number_old' => $request['tag_number_old'] ?? '-',
@@ -152,7 +151,7 @@ class FixedAssetRepository
                 $query->orWhereHas('minorCategory', function ($query) use ($search) {
                     $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
                 });
-                $query->orWhereHas('division', function ($query) use ($search) {
+                $query->orWhereHas('department.division', function ($query) use ($search) {
                     $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('assetStatus', function ($query) use ($search) {

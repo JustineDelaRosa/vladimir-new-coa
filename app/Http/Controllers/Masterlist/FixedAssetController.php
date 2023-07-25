@@ -10,7 +10,6 @@ use App\Models\AccountTitle;
 use App\Models\Capex;
 use App\Models\Company;
 use App\Models\Department;
-use App\Models\Division;
 use App\Models\FixedAsset;
 use App\Models\Formula;
 use App\Models\Location;
@@ -77,19 +76,6 @@ class FixedAssetController extends Controller
             );
         }
         $departmentQuery = Department::where('id', $request->department_id)->first();
-        if ($departmentQuery->division_id == null) {
-            return response()->json(
-                [
-                    'message' => 'The given data was invalid.',
-                    'errors' => [
-                        'division' => [
-                            'The division is required.'
-                        ]
-                    ]
-                ],
-                422
-            );
-        }
         $fixedAsset = $this->fixedAssetRepository->storeFixedAsset($request->all(), $vladimirTagNumber, $departmentQuery);
 
         //return the fixed asset and formula
@@ -148,19 +134,6 @@ class FixedAssetController extends Controller
 //            ], 200);
 //        }
         $departmentQuery = Department::where('id', $request->department_id)->first();
-        if ($departmentQuery->division_id == null) {
-            return response()->json(
-                [
-                    'message' => 'The given data was invalid.',
-                    'errors' => [
-                        'division' => [
-                            'The division is required.'
-                        ]
-                    ]
-                ],
-                422
-            );
-        }
 
         $fixedAsset = FixedAsset::where('id', $id)->first();
         if ($fixedAsset) {
@@ -302,6 +275,7 @@ class FixedAssetController extends Controller
         ],
             [
                 'date.required' => 'Date is required.',
+                'date.date_format' => 'Date format is invalid.',
                 'date.date_format' => 'Date format is invalid.',
             ]);
     }
