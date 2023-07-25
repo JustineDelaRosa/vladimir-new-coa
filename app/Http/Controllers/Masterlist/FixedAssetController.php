@@ -127,7 +127,7 @@ class FixedAssetController extends Controller
             );
         }
         //if no changes in all fields
-//        if( FixedAsset::where('id', $id)->first()) {
+//        if(FixedAsset::where('id', $id)->first()) {
 //            return response()->json([
 //                'message' => 'No changes made.',
 //                'data' => $request->all()
@@ -138,7 +138,6 @@ class FixedAssetController extends Controller
         $fixedAsset = FixedAsset::where('id', $id)->first();
         if ($fixedAsset) {
             $fixedAsset = $this->fixedAssetRepository->updateFixedAsset($request->all(), $departmentQuery);
-
             return response()->json([
                 'message' => 'Fixed Asset updated successfully',
                 'data' => $fixedAsset->load('formula'),
@@ -285,7 +284,7 @@ class FixedAssetController extends Controller
         return FixedAsset::with('formula')->where('id', $id)->first();
     }
 
-    function checkDateValidation($validator, $fixedAsset)
+    function checkDateValidation($validator, $fixedAsset): array
     {
         $custom_end_depreciation = $validator->validated()['date'];
         $end_depreciation = $fixedAsset->formula->end_depreciation;
@@ -306,7 +305,7 @@ class FixedAssetController extends Controller
         ];
     }
 
-    function calculateDepreciation($validator, $fixedAsset)
+    function calculateDepreciation($validator, $fixedAsset): array
     {
         //Variable declaration
         $properties = $fixedAsset->formula;
@@ -389,5 +388,4 @@ class FixedAssetController extends Controller
         $path = storage_path('app/sample/fixed_asset.xlsx');
         return response()->download($path);
     }
-
 }

@@ -128,13 +128,7 @@ class PrintBarCodeController extends Controller
 //        }
 
         // Define the common query for fixed assets
-        $fixedAssetQuery = FixedAsset::with([
-            'formula',
-            'division:id,division_name',
-            'majorCategory:id,major_category_name',
-            'minorCategory:id,minor_category_name',
-        ])
-            ->where('type_of_request_id', '!=', 2); //todo: ask if can be printed now
+        $fixedAssetQuery = FixedAsset::where('type_of_request_id', '!=', 2); //todo: ask if can be printed now
 
         // Add date filter if both startDate and endDate are given
         if ($startDate && $endDate) {
@@ -161,7 +155,7 @@ class PrintBarCodeController extends Controller
                 $query->orWhereHas('minorCategory', function ($query) use ($search) {
                     $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
                 });
-                $query->orWhereHas('division', function ($query) use ($search) {
+                $query->orWhereHas('department.division', function ($query) use ($search) {
                     $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('assetStatus', function ($query) use ($search) {
@@ -198,13 +192,12 @@ class PrintBarCodeController extends Controller
                     'id' => $asset->id,
                     'vladimir_tag_number' => $asset->vladimir_tag_number,
                     'asset_description' => $asset->asset_description,
-                    'location_name' => $asset->location_name,
-                    //if the department has 10 characters or more, then make it an acronym
-                    'department_name' => strlen($asset->department_name) > 10 ? $this->acronym($asset->department_name) : $asset->department_name
+//                    'location_name' => $asset->location_name,
+//                    //if the department has 10 characters or more, then make it an acronym
+//                    'department_name' => strlen($asset->department_name) > 10 ? $this->acronym($asset->department_name) : $asset->department_name
                 ];
             }
         });
-
         // Return the result array
         return $result;
     }

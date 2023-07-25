@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Repositories\CalculationRepository;
+use App\Repositories\CrudRepository;
 use App\Repositories\FixedAssetRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
 use Illuminate\Support\ServiceProvider;

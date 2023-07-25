@@ -13,10 +13,12 @@ class FixedAssetRepository
 {
 
     private $calculationRepository;
+
     public function __construct()
     {
         $this->calculationRepository = new CalculationRepository();
     }
+
     public function storeFixedAsset($request, $vladimirTagNumber, $departmentQuery)
     {
 
@@ -31,7 +33,7 @@ class FixedAssetRepository
             'type_of_request_id' => $request['type_of_request_id'],
             'asset_specification' => $request['asset_specification'],
             'accountability' => $request['accountability'],
-            'accountable' => $request['accountable'] ?? '-',
+            'accountable' => ucwords(strtolower($request['accountable'] ?? '-')),
             'cellphone_number' => $request['cellphone_number'] ?? '-',
             'brand' => ucwords(strtolower($request['brand'])) ?? '-',
             'major_category_id' => $request['major_category_id'],
@@ -73,6 +75,7 @@ class FixedAssetRepository
 
         return $fixedAsset;
     }
+
     public function updateFixedAsset($request, $departmentQuery)
     {
         $faCalculations = new FixedAssetController();
@@ -87,7 +90,7 @@ class FixedAssetRepository
             'type_of_request_id' => $request['type_of_request_id'],
             'asset_specification' => $request['asset_specification'],
             'accountability' => $request['accountability'],
-            'accountable' => $request['accountable'] ?? '-',
+            'accountable' => ucwords(strtolower($request['accountable'] ?? '-')),
             'cellphone_number' => $request['cellphone_number'] ?? '-',
             'brand' => ucwords(strtolower($request['brand'])) ?? '-',
             'major_category_id' => $request['major_category_id'],
@@ -129,6 +132,7 @@ class FixedAssetRepository
 
         return $fixedAsset;
     }
+
     public function searchFixedAsset($search, $limit = null)
     {
         $fixedAsset = FixedAsset::withTrashed()
@@ -188,6 +192,7 @@ class FixedAssetRepository
 
         return $fixedAsset;
     }
+
     public function transformFixedAsset($fixed_asset): array
     {
         $fixed_assets_arr = [];
@@ -197,7 +202,8 @@ class FixedAssetRepository
         }
         return $fixed_assets_arr;
     }
-    public function transformSingleFixedAsset($fixed_asset):array
+
+    public function transformSingleFixedAsset($fixed_asset): array
     {
         return [
             'id' => $fixed_asset->id,
