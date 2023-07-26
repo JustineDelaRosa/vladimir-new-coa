@@ -72,6 +72,37 @@ class MasterlistImport extends DefaultValueBinder implements
 
     public function collection(Collection $collections)
     {
+
+//        $client = new Client();
+//        $token = '9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4';
+//        $response = $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
+//            'headers' => [
+//                'Authorization' => 'Bearer ' . $token,
+//                'Accept' => 'application/json',
+//            ],
+//        ]);
+//
+//// Get the body content from the response
+//        $body = $response->getBody()->getContents();
+//
+//// Decode the JSON response into an associative array
+//        $data = json_decode($body, true);
+//        $nameToCheck = [
+//            'Perona, jerome',
+//            'Dela Rosa, Justine',
+//            'Nucum, Caren'
+//        ];
+//
+//        if (!empty($data['data']) && is_array($data['data'])) {
+//            foreach ($data['data'] as $employee) {
+//                if (!empty($employee['general_info']) && in_array($employee['general_info']['full_name'], $nameToCheck)) {
+//                    echo $employee['general_info']['full_id_number'] . PHP_EOL;
+//                    break;
+//                }
+//            }
+//        }
+
+
         Validator::make($collections->toArray(), $this->rules($collections->toArray()), $this->messages())->validate();
 
         foreach ($collections as $collection) {
@@ -302,7 +333,7 @@ class MasterlistImport extends DefaultValueBinder implements
 //                function ($attribute, $value, $fail) use ($collections) {
 //                    $major_category = MajorCategory::withTrashed()->where('major_category_name', $value)->first();
 //                    if (!$major_category) {
-//                        $fail('Major Category does not exists');
+//                        $fail('Major Category does not exist');
 //                    }
 //                }
             ],
@@ -511,5 +542,23 @@ class MasterlistImport extends DefaultValueBinder implements
         $generated = [];
         return in_array($ean13Result, $generated) || FixedAsset::where('vladimir_tag_number', $ean13Result)->exists();
     }
+    function getEmployeeData($client, $token){
+        return $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+                'Accept' => 'application/json',
+            ],
+        ])->getBody()->getContents();
+    }
 
+    function findEmployee($data, $value){
+        if (!empty($data['data']) && is_array($data['data'])) {
+            foreach ($data['data'] as $employee) {
+                if (!empty($employee['general_info']) && in_array($employee['general_info']['full_name'], $value)) {
+                    echo $employee['general_info']['full_id_number'] . PHP_EOL;
+                    break;
+                }
+            }
+        }
+    }
 }
