@@ -33,10 +33,20 @@ class CalculationRepository
         $remaining_book_value = $depreciable_basis - $accumulated_cost;
         return round($remaining_book_value);
     }
-    public function getEndDepreciation($start_depreciation, $est_useful_life): string
+    public function getEndDepreciation($start_depreciation, $est_useful_life, $depreciation_method): string
     {
         $start_depreciation = Carbon::parse($start_depreciation);
-        return $start_depreciation->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12))->subMonth(1)->format('Y-m');
+
+        if ($depreciation_method == 'One Time') {
+            $end_depreciation = $start_depreciation->addMonth();
+        } else {
+            $years_added = floor($est_useful_life);
+            $months_added = floor(($est_useful_life - $years_added) * 12);
+
+            $end_depreciation = $start_depreciation->addYears($years_added)->addMonths($months_added)->subMonth(1);
+        }
+
+        return $end_depreciation->format('Y-m');
     }
     public function getStartDepreciation($release_date): string
     {
