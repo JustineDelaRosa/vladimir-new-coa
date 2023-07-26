@@ -235,14 +235,6 @@ class CapexController extends Controller
             'data' => $data
         ], 200);
     }
-
-    public function sampleCapexDownload()
-    {
-        //download file from storage/sample
-        $path = storage_path('app/sample/capex.xlsx');
-        return response()->download($path);
-    }
-
     public function capexExport(Request $request){
         $search = $request->search;
         $status = $request->status;
@@ -293,5 +285,14 @@ class CapexController extends Controller
                 }),
             ];
         });
+    }
+
+    public function sampleCapexDownload()
+    {
+        //download file from storage/sample send to front end with header like this application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        $file = storage_path('app/sample/capex.xlsx') ;
+        return response()->download($file);
+
+
     }
 }

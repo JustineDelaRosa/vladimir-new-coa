@@ -102,7 +102,7 @@ class PrintBarCodeController extends Controller
                 ], 200);
         } catch (Exception $e) {
             // Handle any exceptions that may occur during the printing process
-            return response()->json(['message' => 'Error printing ZPL code: ' . $e->getMessage()]);
+            return response()->json(['message' => 'Unable to Print'],422);
         }
     }
 
@@ -130,7 +130,6 @@ class PrintBarCodeController extends Controller
         // Define the common query for fixed assets
         $fixedAssetQuery = FixedAsset::with([
             'formula',
-            'division:id,division_name',
             'majorCategory:id,major_category_name',
             'minorCategory:id,minor_category_name',
         ])
@@ -161,7 +160,7 @@ class PrintBarCodeController extends Controller
                 $query->orWhereHas('minorCategory', function ($query) use ($search) {
                     $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
                 });
-                $query->orWhereHas('division', function ($query) use ($search) {
+                $query->orWhereHas('department.division', function ($query) use ($search) {
                     $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('assetStatus', function ($query) use ($search) {

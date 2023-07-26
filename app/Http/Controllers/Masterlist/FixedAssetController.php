@@ -92,7 +92,7 @@ class FixedAssetController extends Controller
             'type_of_request_id' => $request->type_of_request_id,
             'asset_specification' => ($request->asset_specification),
             'accountability' => ($request->accountability),
-            'accountable' => ($request->accountable) ?? '-',
+            'accountable' => $request->accountable ?? '-',
             'cellphone_number' => $request->cellphone_number ?? '-',
             'brand' => ucwords(strtolower($request->brand)) ?? '-',
             'major_category_id' => $request->major_category_id,
@@ -273,9 +273,9 @@ class FixedAssetController extends Controller
         $request->validated();
         //minor Category check
         $majorCategory = MajorCategory::withTrashed()->where('id', $request->major_category_id)
-            ->first()->id;
+            ->first();
         $minorCategoryCheck = MinorCategory::withTrashed()->where('id', $request->minor_category_id)
-            ->where('major_category_id', $majorCategory)->exists();
+            ->where('major_category_id', $majorCategory->id)->exists();
 //        if ($request->faStatus != 'Disposed') {
 //            //check minor catrgory if softDelete
 //            if (MinorCategory::onlyTrashed()->where('id', $request->minor_category_id)
@@ -325,7 +325,7 @@ class FixedAssetController extends Controller
                 'type_of_request_id' => $request->type_of_request_id,
                 'asset_specification' => $request->asset_specification,
                 'accountability' => ucwords(strtolower($request->accountability)),
-                'accountable' => $request->accountable,
+                'accountable' => $request->accountable ?? '-',
                 'cellphone_number' => $request->cellphone_number ?? '-',
                 'brand' => $request->brand ?? '-',
                 'major_category_id' => $request->major_category_id,
@@ -356,7 +356,7 @@ class FixedAssetController extends Controller
                 'depreciable_basis' => $request->depreciable_basis,
                 'accumulated_cost' => $request->accumulated_cost ?? 0,
                 'months_depreciated' => $request->months_depreciated,
-                'end_depreciation' => $this->getEndDepreciation($request->start_depreciation, $departmentQuery->est_useful_life),
+                'end_depreciation' => $this->getEndDepreciation($this->getStartDepreciation($request->release_date), $majorCategory->est_useful_life),
                 'depreciation_per_year' => $request->depreciation_per_year ?? 0,
                 'depreciation_per_month' => $request->depreciation_per_month ?? 0,
                 'remaining_book_value' => $request->remaining_book_value ?? 0,
@@ -745,7 +745,7 @@ class FixedAssetController extends Controller
 
     private function getStartDepreciation($release_date)
     {
-        $release_date = Carbon::parse($release_date);
+         $release_date = Carbon::parse($release_date);
         return $release_date->addMonth(1)->format('Y-m');
     }
 

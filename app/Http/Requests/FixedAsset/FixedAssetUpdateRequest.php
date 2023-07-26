@@ -62,9 +62,9 @@ class FixedAssetUpdateRequest extends FormRequest
                     }
 
                     // Check if necessary keys exist to avoid undefined index
-                    if (isset($accountability['general_info']['full_name'])) {
-                        $fullName = $accountability['general_info']['full_name'];
-                        request()->merge(['accountable' => $fullName]);
+                    if (isset($accountability['general_info']['full_id_number_full_name'])) {
+                        $full_id_number_full_name = $accountability['general_info']['full_id_number_full_name'];
+                        request()->merge(['accountable' => $full_id_number_full_name]);
                     }
                     else {
                         // Fail validation if keys don't exist
@@ -73,7 +73,7 @@ class FixedAssetUpdateRequest extends FormRequest
                     }
 
                     // Validate full name
-                    if ($fullName === '') {
+                    if ($full_id_number_full_name === '') {
                         $fail('The accountable person\'s full name cannot be empty.');
                         return;
                     }
