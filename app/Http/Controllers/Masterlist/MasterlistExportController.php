@@ -11,8 +11,6 @@ class MasterlistExportController extends Controller
 {
     public function export(Request $request)
     {
-
-
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
@@ -22,7 +20,6 @@ class MasterlistExportController extends Controller
             'formula' => function ($query) {
                 $query->withTrashed();
             },
-            'division:id,division_name',
             'majorCategory:id,major_category_name',
             'minorCategory:id,minor_category_name',
         ]);
@@ -52,7 +49,7 @@ class MasterlistExportController extends Controller
                 $query->orWhereHas('minorCategory', function ($query) use ($search) {
                     $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
                 });
-                $query->orWhereHas('division', function ($query) use ($search) {
+                $query->orWhereHas('department.division', function ($query) use ($search) {
                     $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
                 });
                 $query->orWhereHas('assetStatus', function ($query) use ($search) {
@@ -119,7 +116,7 @@ class MasterlistExportController extends Controller
                 'accountability' => $fixed_asset->accountability,
                 'accountable' => $fixed_asset->accountable,
                 'brand' => $fixed_asset->brand,
-                'division' => $fixed_asset->division->division_name,
+                'division' => $fixed_asset->department->division->division_name,
                 'major_category' => $fixed_asset->majorCategory->major_category_name,
                 'minor_category' => $fixed_asset->minorCategory->minor_category_name,
                 'capitalized' => $fixed_asset->capitalized,
