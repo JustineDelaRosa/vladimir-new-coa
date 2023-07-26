@@ -174,7 +174,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'accumulated_cost' => $collection['accumulated_cost'],
             'months_depreciated' => $this->calculationRepository->getMonthDifference(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
 //            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life,$collection['depreciation_method']),
             'depreciation_per_year' => $collection['depreciation_per_year'],
             'depreciation_per_month' => $collection['depreciation_per_month'],
             'remaining_book_value' => $collection['remaining_book_value'],
