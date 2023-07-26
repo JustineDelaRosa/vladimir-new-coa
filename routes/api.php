@@ -191,3 +191,4 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('fixed-asset-sample-file', [FixedAssetController::class, 'sampleFixedAssetDownload']);
 });
 
+

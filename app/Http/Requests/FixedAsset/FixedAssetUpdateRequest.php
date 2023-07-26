@@ -53,11 +53,10 @@ class FixedAssetUpdateRequest extends FormRequest
             'type_of_request_id' => 'required',
             'asset_specification' => 'required',
             'accountability' => 'required',
-            'accountable' => [
-                'required_if:accountability,Personal Issued',
+            'accountable' => ['required_if:accountability,Personal Issued',
                 function ($attribute, $value, $fail) {
                     $accountability = request()->input('accountable');
-                    //if accountable is null continue
+                    //if accountable is null, continue
                     if ($value == null) {
                         return;
                     }
@@ -66,7 +65,8 @@ class FixedAssetUpdateRequest extends FormRequest
                     if (isset($accountability['general_info']['full_id_number_full_name'])) {
                         $full_id_number_full_name = $accountability['general_info']['full_id_number_full_name'];
                         request()->merge(['accountable' => $full_id_number_full_name]);
-                    } else {
+                    }
+                    else {
                         // Fail validation if keys don't exist
                         $fail('The accountable person\'s full name is required.');
                         return;

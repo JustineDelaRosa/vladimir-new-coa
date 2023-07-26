@@ -102,7 +102,7 @@ class PrintBarCodeController extends Controller
                 ], 200);
         } catch (Exception $e) {
             // Handle any exceptions that may occur during the printing process
-            return response()->json(['message' => 'Error printing ZPL code: ' . $e->getMessage()]);
+            return response()->json(['message' => 'Unable to Print'],422);
         }
     }
 
@@ -112,23 +112,15 @@ class PrintBarCodeController extends Controller
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
-//        $faStatus = $request->get('faStatus');
 
-        // Simplify the logic for faStatus
-//        if ($faStatus == null) {
-//            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off', 'Disposed'];
-//        } else if ($faStatus == 'Disposed, Sold') {
-//            $faStatus = ['Disposed', 'Sold'];
-//        } else if ($faStatus == 'Disposed' || $faStatus == 'Sold') {
-//            $faStatus = [$faStatus];
-//        } else {
-//            $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
-//                return $status !== 'Disposed';
-//            });
-//        }
 
         // Define the common query for fixed assets
-        $fixedAssetQuery = FixedAsset::where('type_of_request_id', '!=', 2); //todo: ask if can be printed now
+        $fixedAssetQuery = FixedAsset::with([
+            'formula',
+            'majorCategory:id,major_category_name',
+            'minorCategory:id,minor_category_name',
+        ])
+            ->where('type_of_request_id', '!=', 2); //todo: ask if can be printed now
 
         // Add date filter if both startDate and endDate are given
         if ($startDate && $endDate) {
@@ -192,12 +184,13 @@ class PrintBarCodeController extends Controller
                     'id' => $asset->id,
                     'vladimir_tag_number' => $asset->vladimir_tag_number,
                     'asset_description' => $asset->asset_description,
-//                    'location_name' => $asset->location_name,
-//                    //if the department has 10 characters or more, then make it an acronym
-//                    'department_name' => strlen($asset->department_name) > 10 ? $this->acronym($asset->department_name) : $asset->department_name
+                    'location_name' => $asset->location_name,
+                    //if the department has 10 characters or more, then make it an acronym
+                    'department_name' => strlen($asset->department_name) > 10 ? $this->acronym($asset->department_name) : $asset->department_name
                 ];
             }
         });
+
         // Return the result array
         return $result;
     }
