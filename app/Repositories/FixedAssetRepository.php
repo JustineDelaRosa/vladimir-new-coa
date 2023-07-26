@@ -12,10 +12,9 @@ use App\Models\SubCapex;
 class FixedAssetRepository
 {
 
-    private $calculationRepository;
+    protected $calculationRepository;
 
-    public function __construct()
-    {
+    public function __construct() {
         $this->calculationRepository = new CalculationRepository();
     }
 
@@ -33,7 +32,7 @@ class FixedAssetRepository
             'type_of_request_id' => $request['type_of_request_id'],
             'asset_specification' => $request['asset_specification'],
             'accountability' => $request['accountability'],
-            'accountable' => ucwords(strtolower($request['accountable'] ?? '-')),
+            'accountable' => $request['accountable'] ?? '-',
             'cellphone_number' => $request['cellphone_number'] ?? '-',
             'brand' => ucwords(strtolower($request['brand'])) ?? '-',
             'major_category_id' => $request['major_category_id'],
@@ -57,7 +56,6 @@ class FixedAssetRepository
         ]);
 
         $fixedAsset->formula()->create([
-//            $this->assetCalculations($request'['']depreciation_method' => $request['depreciation_method'],
             'depreciation_method' => $request['depreciation_method'],
             'acquisition_date' => $request['acquisition_date'],
             'acquisition_cost' => $request['acquisition_cost'],
@@ -76,21 +74,20 @@ class FixedAssetRepository
         return $fixedAsset;
     }
 
-    public function updateFixedAsset($request, $departmentQuery)
+    public function updateFixedAsset($request, $departmentQuery, $id)
     {
-        $faCalculations = new FixedAssetController();
-        $subCapex = SubCapex::find($request['sub_capex_id']);
         $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
-        $fixedAsset = FixedAsset::create([
-            'capex_id' => $subCapex ? $subCapex->capex_id : null,
-            'sub_capex_id' => $subCapex->id ?? null,
+        $fixedAsset = FixedAsset::find($id);
+        $fixedAsset->update([
+            'capex_id' => isset($request['sub_capex_id']) ? SubCapex::find($request['sub_capex_id'])->capex_id : null,
+            'sub_capex_id' => $request['sub_capex_id'] ?? null,
             'tag_number' => $request['tag_number'] ?? '-',
             'tag_number_old' => $request['tag_number_old'] ?? '-',
             'asset_description' => $request['asset_description'],
             'type_of_request_id' => $request['type_of_request_id'],
             'asset_specification' => $request['asset_specification'],
             'accountability' => $request['accountability'],
-            'accountable' => ucwords(strtolower($request['accountable'] ?? '-')),
+            'accountable' =>$request['accountable'] ?? '-',
             'cellphone_number' => $request['cellphone_number'] ?? '-',
             'brand' => ucwords(strtolower($request['brand'])) ?? '-',
             'major_category_id' => $request['major_category_id'],
@@ -113,15 +110,14 @@ class FixedAssetRepository
             'account_id' => $request['account_title_id'],
         ]);
 
-        $fixedAsset->formula()->create([
-//            $this->assetCalculations($request'['']depreciation_method' => $request['depreciation_method'],
+        $fixedAsset->formula()->update([
             'depreciation_method' => $request['depreciation_method'],
             'acquisition_date' => $request['acquisition_date'],
             'acquisition_cost' => $request['acquisition_cost'],
             'scrap_value' => $request['scrap_value'],
             'depreciable_basis' => $request['depreciable_basis'],
             'accumulated_cost' => $request['accumulated_cost'] ?? 0,
-            'months_depreciated' => $request['months_depr  eciated'],
+            'months_depreciated' => $request['months_depreciated'],
             'end_depreciation' => $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life),
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
@@ -129,10 +125,8 @@ class FixedAssetRepository
             'release_date' => $request['release_date'],
             'start_depreciation' => $this->calculationRepository->getStartDepreciation($request['release_date'])
         ]);
-
         return $fixedAsset;
     }
-
     public function searchFixedAsset($search, $limit = null)
     {
         $fixedAsset = FixedAsset::withTrashed()
@@ -229,7 +223,7 @@ class FixedAssetRepository
             'accountability' => $fixed_asset->accountability,
             'accountable' => $fixed_asset->accountable,
             'cellphone_number' => $fixed_asset->cellphone_number,
-            'brand' => $fixed_asset->brand,
+            'brand' => $fixed_asset->brand ?? '-',
             'division' => [
                 'id' => $fixed_asset->department->division->id ?? '-',
                 'division_name' => $fixed_asset->department->division->division_name ?? '-',
@@ -300,4 +294,6 @@ class FixedAssetRepository
             ],
         ];
     }
+
+
 }

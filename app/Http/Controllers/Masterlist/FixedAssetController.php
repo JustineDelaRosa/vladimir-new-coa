@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Validator;
 
 class FixedAssetController extends Controller
 {
-    private $fixedAssetRepository, $vladimirTagGeneratorRepository, $calculationRepository;
+    protected $fixedAssetRepository, $vladimirTagGeneratorRepository, $calculationRepository;
 
     public function __construct()
     {
@@ -134,10 +134,9 @@ class FixedAssetController extends Controller
 //            ], 200);
 //        }
         $departmentQuery = Department::where('id', $request->department_id)->first();
-
         $fixedAsset = FixedAsset::where('id', $id)->first();
         if ($fixedAsset) {
-            $fixedAsset = $this->fixedAssetRepository->updateFixedAsset($request->all(), $departmentQuery);
+            $this->fixedAssetRepository->updateFixedAsset($request->all(), $departmentQuery, $id);
             return response()->json([
                 'message' => 'Fixed Asset updated successfully',
                 'data' => $fixedAsset->load('formula'),
