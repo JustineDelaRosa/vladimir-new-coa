@@ -55,29 +55,29 @@ class FixedAssetUpdateRequest extends FormRequest
             'accountability' => 'required',
             'accountable' => [
                 'required_if:accountability,Personal Issued',
-//                function ($attribute, $value, $fail) {
-//                    $accountability = request()->input('accountable');
-//                    //if accountable is null continue
-//                    if ($value == null) {
-//                        return;
-//                    }
-//
-//                    // Check if necessary keys exist to avoid undefined index
-//                    if (isset($accountability['general_info']['full_id_number_full_name'])) {
-//                        $full_id_number_full_name = $accountability['general_info']['full_id_number_full_name'];
-//                        request()->merge(['accountable' => $full_id_number_full_name]);
-//                    } else {
-//                        // Fail validation if keys don't exist
-//                        $fail('The accountable person\'s full name is required.');
-//                        return;
-//                    }
-//
-//                    // Validate full name
-//                    if ($full_id_number_full_name === '') {
-//                        $fail('The accountable person\'s full name cannot be empty.');
-//                        return;
-//                    }
-//                },
+                function ($attribute, $value, $fail) {
+                    $accountability = request()->input('accountable');
+                    //if accountable is null continue
+                    if ($value == null) {
+                        return;
+                    }
+
+                    // Check if necessary keys exist to avoid undefined index
+                    if (isset($accountability['general_info']['full_id_number_full_name'])) {
+                        $full_id_number_full_name = $accountability['general_info']['full_id_number_full_name'];
+                        request()->merge(['accountable' => $full_id_number_full_name]);
+                    } else {
+                        // Fail validation if keys don't exist
+                        $fail('The accountable person\'s full name is required.');
+                        return;
+                    }
+
+                    // Validate full name
+                    if ($full_id_number_full_name === '') {
+                        $fail('The accountable person\'s full name cannot be empty.');
+                        return;
+                    }
+                },
             ],
             'cellphone_number' => 'nullable|numeric|digits:11',
             'brand' => 'nullable',
