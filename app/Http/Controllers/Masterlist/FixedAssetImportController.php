@@ -7,7 +7,7 @@ use App\Imports\MasterlistImport;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
-class MasterlistImportController extends Controller
+class FixedAssetImportController extends Controller
 {
     public function masterlistImport(Request $request)
     {

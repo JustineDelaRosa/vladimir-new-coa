@@ -18,7 +18,8 @@ class FixedAssetRepository
 
     protected $calculationRepository;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->calculationRepository = new CalculationRepository();
     }
 
@@ -95,7 +96,7 @@ class FixedAssetRepository
             'type_of_request_id' => $request['type_of_request_id'],
             'asset_specification' => $request['asset_specification'],
             'accountability' => $request['accountability'],
-            'accountable' =>$request['accountable'] ?? '-',
+            'accountable' => $request['accountable'] ?? '-',
             'cellphone_number' => $request['cellphone_number'] ?? '-',
             'brand' => ucwords(strtolower($request['brand'])) ?? '-',
             'major_category_id' => $request['major_category_id'],
@@ -154,94 +155,94 @@ class FixedAssetRepository
         return $paginator;
     }
 
-    public function searchFixedAsset($search, $limit = null, $page)
+    public function searchFixedAsset($search, $page, $limit = null)
     {
         $firstQuery = FixedAsset::select([
-                'id',
-                'capex_id',
-                'sub_capex_id',
-                'vladimir_tag_number',
-                'tag_number',
-                'tag_number_old',
-                'asset_description',
-                'type_of_request_id',
-                'asset_specification',
-                'accountability',
-                'accountable',
-                'capitalized',
-                'cellphone_number',
-                'brand',
-                'major_category_id',
-                'minor_category_id',
-                'voucher',
-                'receipt',
-                'quantity',
-                'depreciation_method',
-                'acquisition_cost',
-                'asset_status_id',
-                'cycle_count_status_id',
-                'depreciation_status_id',
-                'movement_status_id',
-                'is_old_asset',
-                'is_additional_cost',
-                'care_of',
-                'company_id',
-                'department_id',
-                'location_id',
-                'account_id',
-                'created_at',
-            ]);
+            'id',
+            'capex_id',
+            'sub_capex_id',
+            'vladimir_tag_number',
+            'tag_number',
+            'tag_number_old',
+            'asset_description',
+            'type_of_request_id',
+            'asset_specification',
+            'accountability',
+            'accountable',
+            'capitalized',
+            'cellphone_number',
+            'brand',
+            'major_category_id',
+            'minor_category_id',
+            'voucher',
+            'receipt',
+            'quantity',
+            'depreciation_method',
+            'acquisition_cost',
+            'asset_status_id',
+            'cycle_count_status_id',
+            'depreciation_status_id',
+            'movement_status_id',
+            'is_old_asset',
+            'is_additional_cost',
+            'care_of',
+            'company_id',
+            'department_id',
+            'location_id',
+            'account_id',
+            'created_at',
+        ]);
 
         $secondQuery = AdditionalCost::select([
-                'additional_costs.id',
-                'fixed_assets.capex_id AS capex_id',
-                'fixed_assets.sub_capex_id AS sub_capex_id',
-                'fixed_assets.vladimir_tag_number AS vladimir_tag_number',
-                'fixed_assets.tag_number AS tag_number',
-                'fixed_assets.tag_number_old AS tag_number_old',
-                'additional_costs.asset_description',
-                'additional_costs.type_of_request_id',
-                'additional_costs.asset_specification',
-                'additional_costs.accountability',
-                'additional_costs.accountable',
-                'additional_costs.capitalized',
-                'additional_costs.cellphone_number',
-                'additional_costs.brand',
-                'additional_costs.major_category_id',
-                'additional_costs.minor_category_id',
-                'additional_costs.voucher',
-                'additional_costs.receipt',
-                'additional_costs.quantity',
-                'additional_costs.depreciation_method',
-                'additional_costs.acquisition_cost',
-                'additional_costs.asset_status_id',
-                'additional_costs.cycle_count_status_id',
-                'additional_costs.depreciation_status_id',
-                'additional_costs.movement_status_id',
-                'fixed_assets.is_old_asset as is_old_asset',
-                'additional_costs.is_additional_cost',
-                'additional_costs.care_of',
-                'additional_costs.company_id',
-                'additional_costs.department_id',
-                'additional_costs.location_id',
-                'additional_costs.account_id',
-                'fixed_assets.created_at'
-            ])->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
+            'additional_costs.id',
+            'fixed_assets.capex_id AS capex_id',
+            'fixed_assets.sub_capex_id AS sub_capex_id',
+            'fixed_assets.vladimir_tag_number AS vladimir_tag_number',
+            'fixed_assets.tag_number AS tag_number',
+            'fixed_assets.tag_number_old AS tag_number_old',
+            'additional_costs.asset_description',
+            'additional_costs.type_of_request_id',
+            'additional_costs.asset_specification',
+            'additional_costs.accountability',
+            'additional_costs.accountable',
+            'additional_costs.capitalized',
+            'additional_costs.cellphone_number',
+            'additional_costs.brand',
+            'additional_costs.major_category_id',
+            'additional_costs.minor_category_id',
+            'additional_costs.voucher',
+            'additional_costs.receipt',
+            'additional_costs.quantity',
+            'additional_costs.depreciation_method',
+            'additional_costs.acquisition_cost',
+            'additional_costs.asset_status_id',
+            'additional_costs.cycle_count_status_id',
+            'additional_costs.depreciation_status_id',
+            'additional_costs.movement_status_id',
+            'fixed_assets.is_old_asset as is_old_asset',
+            'additional_costs.is_additional_cost',
+            'additional_costs.care_of',
+            'additional_costs.company_id',
+            'additional_costs.department_id',
+            'additional_costs.location_id',
+            'additional_costs.account_id',
+            'fixed_assets.created_at'
+        ])->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
 
         $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'desc')->get();
 
 //if search is not empty
-        if(!empty($search)){
+        if (!empty($search)) {
             $results = $results->filter(function ($item) use ($search) {
                 return $this->searchInMainAttributes($item, $search) || $this->searchInRelationAttributes($item, $search);
             });
         }
 
-        $results = $this->paginateResults($results, $limit,$page);
+        $results = $this->paginateResults($results, $limit, $page);
 
         $results->setCollection($results->getCollection()->values());
-                $results->getCollection()->transform(function ($item) {
+        $results->getCollection()->transform(function ($item) {
             return $this->transformSearchFixedAsset($item);
         });
         return $results;
@@ -261,7 +262,7 @@ class FixedAssetRepository
     {
         $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? count($fixed_asset->additionalCost) : 0;
         return [
-            'additional_cost_count' => $fixed_asset->additional_cost_count ,
+            'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
             'capex' => [
                 'id' => $fixed_asset->capex->id ?? '-',
@@ -354,7 +355,7 @@ class FixedAssetRepository
                 'account_title_code' => $fixed_asset->accountTitle->account_title_code ?? '-',
                 'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
             ],
-            'additional_cost'=> isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
+            'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
                 return [
                     'id' => $additional_cost->id,
                     'asset_description' => $additional_cost->asset_description,

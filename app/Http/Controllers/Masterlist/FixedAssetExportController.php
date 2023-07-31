@@ -7,7 +7,7 @@ use App\Models\FixedAsset;
 use Illuminate\Http\Request;
 
 
-class MasterlistExportController extends Controller
+class FixedAssetExportController extends Controller
 {
     public function export(Request $request)
     {

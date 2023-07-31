@@ -11,8 +11,8 @@ use App\Http\Controllers\Masterlist\COA\LocationController;
 use App\Http\Controllers\Masterlist\DivisionController;
 use App\Http\Controllers\Masterlist\FixedAssetController;
 use App\Http\Controllers\Masterlist\MajorCategoryController;
-use App\Http\Controllers\Masterlist\MasterlistExportController;
-use App\Http\Controllers\Masterlist\MasterlistImportController;
+use App\Http\Controllers\Masterlist\FixedAssetExportController;
+use App\Http\Controllers\Masterlist\FixedAssetImportController;
 use App\Http\Controllers\Masterlist\MinorCategoryController;
 use App\Http\Controllers\Masterlist\PrintBarcode\PrintBarCodeController;
 use App\Http\Controllers\Masterlist\Status\AssetStatusController;
@@ -144,9 +144,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::patch('sub-capex/archived-sub-capex/{id}', [SubCapexController::class, 'archived']);
 
     //MASTERLIST IMPORT//
-    Route::post('import-masterlist', [MasterlistImportController::class, 'masterlistImport']);
+    Route::post('import-masterlist', [FixedAssetImportController::class, 'masterlistImport']);
     //MASTERLIST EXPORT//
-    Route::get('export-masterlist', [MasterlistExportController::class, 'export']);
+    Route::get('export-masterlist', [FixedAssetExportController::class, 'export']);
     //CAPEX IMPORT//
     Route::post('import-capex', [CapexController::class, 'capexImport']);
 
