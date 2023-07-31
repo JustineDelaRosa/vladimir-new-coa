@@ -29,7 +29,64 @@ class AdditionalCostRequest extends FormRequest
 
         if($this->isMethod('put') && ($this->route()->parameter('additional_cost'))){
             $id = $this->route()->parameter('additional_cost');
-            return $this->getArr();
+            return [
+//                'fixed_asset_id' => 'required|exists:fixed_assets,id',
+                'asset_description' => 'required',
+                'type_of_request_id' => 'required',
+                'asset_specification' => 'required',
+                'accountability' => 'required',
+                'accountable' => [
+                    'required_if:accountability,Personal Issued',
+                    function ($attribute, $value, $fail) {
+                        $accountability = request()->input('accountable');
+                        //if accountable is null continue
+                        if ($value == null) {
+                            return;
+                        }
+
+                        // Check if necessary keys exist to avoid undefined index
+                        if (isset($accountability['general_info']['full_id_number_full_name'])) {
+                            $full_id_number_full_name = $accountability['general_info']['full_id_number_full_name'];
+                            request()->merge(['accountable' => $full_id_number_full_name]);
+                        } else {
+                            // Fail validation if keys don't exist
+                            $fail('The accountable person\'s full name is required.');
+                            return;
+                        }
+
+                        // Validate full name
+                        if ($full_id_number_full_name === '') {
+                            $fail('The accountable person\'s full name cannot be empty.');
+                            return;
+                        }
+                    },
+                ],
+                'cellphone_number' => 'nullable|numeric|digits:11',
+                'brand' => 'nullable',
+                'major_category_id' => 'required|exists:major_categories,id',
+                'minor_category_id' => 'required|exists:minor_categories,id',
+                'voucher' => 'nullable',
+                'receipt' => 'nullable',
+                'quantity' => 'required',
+                'asset_status_id' => 'required|exists:asset_statuses,id',
+                'depreciation_status_id' => 'required|exists:depreciation_statuses,id',
+                'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
+                'movement_status_id' => 'required|exists:movement_statuses,id',
+                'depreciation_method' => 'required',
+                'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
+                'acquisition_cost' => ['required', 'numeric'],
+                'scrap_value' => ['required', 'numeric'],
+                'depreciable_basis' => ['required', 'numeric'],
+                'accumulated_cost' => ['nullable', 'numeric'],
+                'care_of' => 'nullable',
+                'months_depreciated' => 'required|numeric',
+                'depreciation_per_year' => ['nullable', 'numeric'],
+                'depreciation_per_month' => ['nullable', 'numeric'],
+                'remaining_book_value' => ['nullable', 'numeric'],
+                'release_date' => ['required', 'date_format:Y-m-d'],
+                'department_id' => 'required|exists:departments,id',
+                'account_title_id' => 'required|exists:account_titles,id',
+            ];
         }
     }
 

@@ -44,7 +44,9 @@ class FixedAssetRepository
             'voucher' => $request['voucher'] ?? '-',
             'receipt' => $request['receipt'] ?? '-',
             'quantity' => $request['quantity'],
-            'depreciation_method' => $request['depreciation_method'],
+            'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
+                ? strtoupper($request['depreciation_method'])
+                : ucwords(strtolower($request['depreciation_method'])),
             'acquisition_date' => $request['acquisition_date'],
             'acquisition_cost' => $request['acquisition_cost'],
             'asset_status_id' => $request['asset_status_id'],
@@ -60,14 +62,16 @@ class FixedAssetRepository
         ]);
 
         $fixedAsset->formula()->create([
-            'depreciation_method' => $request['depreciation_method'],
+            'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
+                ? strtoupper($request['depreciation_method'])
+                : ucwords(strtolower($request['depreciation_method'])),
             'acquisition_date' => $request['acquisition_date'],
             'acquisition_cost' => $request['acquisition_cost'],
             'scrap_value' => $request['scrap_value'],
             'depreciable_basis' => $request['depreciable_basis'],
             'accumulated_cost' => $request['accumulated_cost'] ?? 0,
             'months_depreciated' => $request['months_depreciated'],
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, $request['depreciation_method']),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])),),
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
@@ -99,7 +103,9 @@ class FixedAssetRepository
             'voucher' => $request['voucher'] ?? '-',
             'receipt' => $request['receipt'] ?? '-',
             'quantity' => $request['quantity'],
-            'depreciation_method' => $request['depreciation_method'],
+            'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
+                ? strtoupper($request['depreciation_method'])
+                : ucwords(strtolower($request['depreciation_method'])),
             'acquisition_date' => $request['acquisition_date'],
             'acquisition_cost' => $request['acquisition_cost'],
             'asset_status_id' => $request['asset_status_id'],
@@ -115,14 +121,16 @@ class FixedAssetRepository
         ]);
 
         $fixedAsset->formula()->update([
-            'depreciation_method' => $request['depreciation_method'],
+            'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
+                ? strtoupper($request['depreciation_method'])
+                : ucwords(strtolower($request['depreciation_method'])),
             'acquisition_date' => $request['acquisition_date'],
             'acquisition_cost' => $request['acquisition_cost'],
             'scrap_value' => $request['scrap_value'],
             'depreciable_basis' => $request['depreciable_basis'],
             'accumulated_cost' => $request['accumulated_cost'] ?? 0,
             'months_depreciated' => $request['months_depreciated'],
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life,$request['depreciation_method']),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])),),
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
@@ -226,30 +234,7 @@ class FixedAssetRepository
 //if search is not empty
         if(!empty($search)){
             $results = $results->filter(function ($item) use ($search) {
-                // Using stripos for multiple checks similar to 'LIKE' operator in SQL
-                $mainConditionChecked = stripos($item->vladimir_tag_number, $search) !== false ||
-                    stripos($item->tag_number, $search) !== false ||
-                    stripos($item->tag_number_old, $search) !== false ||
-                    stripos($item->type_of_request_id, $search) !== false ||
-                    stripos($item->accountability, $search) !== false ||
-                    stripos($item->accountable, $search) !== false ||
-                    stripos($item->brand, $search) !== false ||
-                    stripos($item->depreciation_method, $search) !== false;
-
-                $relationConditionChecked = (isset($item->subCapex) && (stripos($item->subCapex->sub_capex, $search) !== false || stripos($item->subCapex->sub_project, $search) !== false)) ||
-                    (isset($item->majorCategory) && stripos($item->majorCategory->major_category_name, $search) !== false) ||
-                    (isset($item->minorCategory) && stripos($item->minorCategory->minor_category_name, $search) !== false) ||
-                    (isset($item->department->division) && stripos($item->department->division->division_name, $search) !== false) ||
-                    (isset($item->assetStatus) && stripos($item->assetStatus->asset_status_name, $search) !== false) ||
-                    (isset($item->cycleCountStatus) && stripos($item->cycleCountStatus->cycle_count_status_name, $search) !== false) ||
-                    (isset($item->depreciationStatus) && stripos($item->depreciationStatus->depreciation_status_name, $search) !== false) ||
-                    (isset($item->movementStatus) && stripos($item->movementStatus->movement_status_name, $search) !== false) ||
-                    (isset($item->location) && stripos($item->location->location_name, $search) !== false) ||
-                    (isset($item->company) && stripos($item->company->company_name, $search) !== false) ||
-                    (isset($item->department) && stripos($item->department->department_name, $search) !== false) ||
-                    (isset($item->accountTitle) && stripos($item->accountTitle->account_title_name, $search) !== false);
-
-                return $mainConditionChecked || $relationConditionChecked;
+                return $this->searchInMainAttributes($item, $search) || $this->searchInRelationAttributes($item, $search);
             });
         }
 
@@ -274,7 +259,9 @@ class FixedAssetRepository
 
     public function transformSingleFixedAsset($fixed_asset): array
     {
+        $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? count($fixed_asset->additionalCost) : 0;
         return [
+            'additional_cost_count' => $fixed_asset->additional_cost_count ,
             'id' => $fixed_asset->id,
             'capex' => [
                 'id' => $fixed_asset->capex->id ?? '-',
@@ -367,6 +354,89 @@ class FixedAssetRepository
                 'account_title_code' => $fixed_asset->accountTitle->account_title_code ?? '-',
                 'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
             ],
+            'additional_cost'=> isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
+                return [
+                    'id' => $additional_cost->id,
+                    'asset_description' => $additional_cost->asset_description,
+                    'type_of_request' => [
+                        'id' => $additional_cost->typeOfRequest->id ?? '-',
+                        'type_of_request_name' => $additional_cost->typeOfRequest->type_of_request_name ?? '-',
+                    ],
+                    'asset_specification' => $additional_cost->asset_specification,
+                    'accountability' => $additional_cost->accountability,
+                    'accountable' => $additional_cost->accountable,
+                    'cellphone_number' => $additional_cost->cellphone_number,
+                    'brand' => $additional_cost->brand ?? '-',
+                    'division' => [
+                        'id' => $additional_cost->department->division->id ?? '-',
+                        'division_name' => $additional_cost->department->division->division_name ?? '-',
+                    ],
+                    'major_category' => [
+                        'id' => $additional_cost->majorCategory->id ?? '-',
+                        'major_category_name' => $additional_cost->majorCategory->major_category_name ?? '-',
+                    ],
+                    'minor_category' => [
+                        'id' => $additional_cost->minorCategory->id ?? '-',
+                        'minor_category_name' => $additional_cost->minorCategory->minor_category_name ?? '-',
+                    ],
+                    'est_useful_life' => $additional_cost->majorCategory->est_useful_life ?? '-',
+                    'voucher' => $additional_cost->voucher,
+                    'receipt' => $additional_cost->receipt,
+                    'quantity' => $additional_cost->quantity,
+                    'depreciation_method' => $additional_cost->depreciation_method,
+                    //                    'salvage_value' => $additional_cost->salvage_value,
+                    'acquisition_date' => $additional_cost->acquisition_date,
+                    'acquisition_cost' => $additional_cost->acquisition_cost,
+                    'scrap_value' => $additional_cost->formula->scrap_value,
+                    'depreciable_basis' => $additional_cost->formula->depreciable_basis,
+                    'accumulated_cost' => $additional_cost->formula->accumulated_cost,
+                    'asset_status' => [
+                        'id' => $additional_cost->assetStatus->id ?? '-',
+                        'asset_status_name' => $additional_cost->assetStatus->asset_status_name ?? '-',
+                    ],
+                    'cycle_count_status' => [
+                        'id' => $additional_cost->cycleCountStatus->id ?? '-',
+                        'cycle_count_status_name' => $additional_cost->cycleCountStatus->cycle_count_status_name ?? '-',
+                    ],
+                    'depreciation_status' => [
+                        'id' => $additional_cost->depreciationStatus->id ?? '-',
+                        'depreciation_status_name' => $additional_cost->depreciationStatus->depreciation_status_name ?? '-',
+                    ],
+                    'movement_status' => [
+                        'id' => $additional_cost->movementStatus->id ?? '-',
+                        'movement_status_name' => $additional_cost->movementStatus->movement_status_name ?? '-',
+                    ],
+                    'is_additional_cost' => $additional_cost->is_old_asset,
+                    'care_of' => $additional_cost->care_of,
+                    'months_depreciated' => $additional_cost->formula->months_depreciated,
+                    'end_depreciation' => $additional_cost->formula->end_depreciation,
+                    'depreciation_per_year' => $additional_cost->formula->depreciation_per_year,
+                    'depreciation_per_month' => $additional_cost->formula->depreciation_per_month,
+                    'remaining_book_value' => $additional_cost->formula->remaining_book_value,
+                    'release_date' => $additional_cost->formula->release_date,
+                    'start_depreciation' => $additional_cost->formula->start_depreciation,
+                    'company' => [
+                        'id' => $additional_cost->department->company->id ?? '-',
+                        'company_code' => $additional_cost->department->company->company_code ?? '-',
+                        'company_name' => $additional_cost->department->company->company_name ?? '-',
+                    ],
+                    'department' => [
+                        'id' => $additional_cost->department->id ?? '-',
+                        'department_code' => $additional_cost->department->department_code ?? '-',
+                        'department_name' => $additional_cost->department->department_name ?? '-',
+                    ],
+                    'location' => [
+                        'id' => $additional_cost->department->location->id ?? '-',
+                        'location_code' => $additional_cost->department->location->location_code ?? '-',
+                        'location_name' => $additional_cost->department->location->location_name ?? '-',
+                    ],
+                    'account_title' => [
+                        'id' => $additional_cost->accountTitle->id ?? '-',
+                        'account_title_code' => $additional_cost->accountTitle->account_title_code ?? '-',
+                        'account_title_name' => $additional_cost->accountTitle->account_title_name ?? '-',
+                    ],
+                ];
+            }) : [],
         ];
     }
 
@@ -456,5 +526,58 @@ class FixedAssetRepository
                 'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
             ],
         ];
+    }
+
+    function searchInMainAttributes($item, $search)
+    {
+        $mainAttributes = [
+            'vladimir_tag_number',
+            'tag_number',
+            'tag_number_old',
+            'type_of_request_id',
+            'accountability',
+            'accountable',
+            'brand',
+            'depreciation_method',
+        ];
+
+        foreach ($mainAttributes as $attribute) {
+            if (stripos($item->$attribute, $search) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function searchInRelationAttributes($item, $search)
+    {
+        $relationAttributes = [
+            'subCapex' => ['sub_capex', 'sub_project'],
+            'majorCategory' => ['major_category_name'],
+            'minorCategory' => ['minor_category_name'],
+            'department' => ['division', 'department_name'],
+            'assetStatus' => ['asset_status_name'],
+            'cycleCountStatus' => ['cycle_count_status_name'],
+            'depreciationStatus' => ['depreciation_status_name'],
+            'movementStatus' => ['movement_status_name'],
+            'location' => ['location_name'],
+            'company' => ['company_name'],
+            'accountTitle' => ['account_title_name'],
+        ];
+
+        foreach ($relationAttributes as $relation => $attributes) {
+            if (!isset($item->$relation)) {
+                continue;
+            }
+
+            foreach ($attributes as $attribute) {
+                if (stripos($item->$relation->$attribute, $search) !== false) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

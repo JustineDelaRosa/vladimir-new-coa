@@ -37,7 +37,9 @@ class AdditionalCostRepository
             'voucher' => $request['voucher'] ?? '-',
             'receipt' => $request['receipt'] ?? '-',
             'quantity' => $request['quantity'],
-            'depreciation_method' => $request['depreciation_method'],
+            'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
+                ? strtoupper($request['depreciation_method'])
+                : ucwords(strtolower($request['depreciation_method'])),
             'acquisition_date' => $request['acquisition_date'],
             'acquisition_cost' => $request['acquisition_cost'],
             'asset_status_id' => $request['asset_status_id'],
@@ -52,14 +54,16 @@ class AdditionalCostRepository
         ]);
 
         $additionalCost->formula()->create([
-            'depreciation_method' => $request['depreciation_method'],
+            'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
+                ? strtoupper($request['depreciation_method'])
+                : ucwords(strtolower($request['depreciation_method'])),
             'acquisition_date' => $request['acquisition_date'],
             'acquisition_cost' => $request['acquisition_cost'],
             'scrap_value' => $request['scrap_value'],
             'depreciable_basis' => $request['depreciable_basis'],
             'accumulated_cost' => $request['accumulated_cost'] ?? 0,
             'months_depreciated' => $request['months_depreciated'],
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, $request['depreciation_method']),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])),),
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
@@ -89,7 +93,9 @@ class AdditionalCostRepository
             'voucher' => $request['voucher'] ?? '-',
             'receipt' => $request['receipt'] ?? '-',
             'quantity' => $request['quantity'],
-            'depreciation_method' => $request['depreciation_method'],
+            'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
+                ? strtoupper($request['depreciation_method'])
+                : ucwords(strtolower($request['depreciation_method'])),
             'acquisition_date' => $request['acquisition_date'],
             'acquisition_cost' => $request['acquisition_cost'],
             'asset_status_id' => $request['asset_status_id'],
@@ -104,14 +110,16 @@ class AdditionalCostRepository
         ]);
 
         $additionalCost->formula()->update([
-            'depreciation_method' => $request['depreciation_method'],
+            'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
+                ? strtoupper($request['depreciation_method'])
+                : ucwords(strtolower($request['depreciation_method'])),
             'acquisition_date' => $request['acquisition_date'],
             'acquisition_cost' => $request['acquisition_cost'],
             'scrap_value' => $request['scrap_value'],
             'depreciable_basis' => $request['depreciable_basis'],
             'accumulated_cost' => $request['accumulated_cost'] ?? 0,
             'months_depreciated' => $request['months_depreciated'],
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, $request['depreciation_method']),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])),),
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,

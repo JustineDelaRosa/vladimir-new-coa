@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Masterlist;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MajorCategory\MajorCategoryRequest;
+use App\Models\AdditionalCost;
 use App\Models\FixedAsset;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
@@ -159,13 +160,10 @@ class MajorCategoryController extends Controller
         $majorCategory->est_useful_life = $est_useful_life;
 
         $fixedAsset = FixedAsset::where('major_category_id', $id)->get();
+        $additionalCost = AdditionalCost::where('major_category_id', $id)->get();
 
-        foreach ($fixedAsset as $fa) {
-            $startDepreciation = $fa->formula->start_depreciation;
-            $fa->formula()->update([
-                'end_depreciation' => $this->calculationRepository->getEndDepreciation($startDepreciation, $majorCategory->est_useful_life)
-            ]);
-        }
+        $this->applyEndDepreciation($fixedAsset, $majorCategory);
+        $this->applyEndDepreciation($additionalCost, $majorCategory);
 
         $majorCategory->save();
 
@@ -264,5 +262,17 @@ class MajorCategoryController extends Controller
 
 
         return $MajorCategory;
+    }
+
+
+    private function applyEndDepreciation($assets, $majorCategory)
+    {
+        foreach ($assets as $asset) {
+            $startDepreciation = $asset->formula->start_depreciation;
+            $depreciationMethod = $asset->formula->depreciation_method;
+            $asset->formula()->update([
+                'end_depreciation' => $this->calculationRepository->getEndDepreciation($startDepreciation, $majorCategory->est_useful_life, $depreciationMethod)
+            ]);
+        }
     }
 }
