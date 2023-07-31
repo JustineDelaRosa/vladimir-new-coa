@@ -152,7 +152,8 @@ class FixedAssetController extends Controller
     {
         $search = $request->get('search');
         $limit = $request->get('limit');
-        return $this->fixedAssetRepository->searchFixedAsset($search, $limit);
+        $page = $request->get('page');
+        return $this->fixedAssetRepository->searchFixedAsset($search, $limit, $page);
     }
 
     //todo change assetDescription

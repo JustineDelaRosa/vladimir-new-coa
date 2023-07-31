@@ -43,7 +43,8 @@ class CreateFixedAssetsTable extends Migration
             $table->unsignedInteger('cycle_count_status_id');
             $table->unsignedInteger('depreciation_status_id');
             $table->unsignedInteger('movement_status_id');
-            $table->boolean('is_old_asset')->default(0);
+            $table->boolean('is_old_asset')->default(false);
+            $table->boolean('is_additional_cost')->default(false);
             $table->string('care_of');
             $table->unsignedInteger('company_id');
 //            $table->string('company_name');

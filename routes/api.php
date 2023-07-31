@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CategoryListController;
+use App\Http\Controllers\Masterlist\AdditionalCostController;
 use App\Http\Controllers\Masterlist\CapexController;
 use App\Http\Controllers\Masterlist\COA\AccountTitleController;
 use App\Http\Controllers\Masterlist\COA\CompanyController;
@@ -155,6 +156,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::patch('fixed-asset/archived-fixed-asset/{id}', [FixedAssetController::class, 'archived']);
     Route::get('fixed-assets/search', [FixedAssetController::class, 'search']);
     Route::get('fixed-assets/search-asset-tag', [FixedAssetController::class, 'searchAssetTag']);
+    //ADDITIONAL COST//
+    Route::resource('additional-cost', AdditionalCostController::class);
+
     //CUSTOM ASSET DEPRECIATION CALCULATION//
     Route::post('asset-depreciation/{id}', [FixedAssetController::class, 'assetDepreciation']);
     Route::get('show-fixed-asset/{tagNumber}', [FixedAssetController::class, 'showTagNumber']);
