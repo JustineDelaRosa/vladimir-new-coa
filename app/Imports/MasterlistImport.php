@@ -146,7 +146,9 @@ class MasterlistImport extends DefaultValueBinder implements
             //check for unnecessary spaces and trim them to one space only
             'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
             'quantity' => $collection['quantity'],
-            'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
+            'depreciation_method' => strtoupper($collection['depreciation_method']) == 'STL'
+                ? strtoupper($collection['depreciation_method'])
+                : ucwords(strtolower($collection['depreciation_method'])),
             'acquisition_date' => $collection['acquisition_date'],
             'acquisition_cost' => $collection['acquisition_cost'],
             'asset_status_id' => AssetStatus::where('asset_status_name', $collection['asset_status'])->first()->id,
@@ -166,7 +168,9 @@ class MasterlistImport extends DefaultValueBinder implements
     {
         //current date
         $fixedAsset->formula()->create([
-            'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
+            'depreciation_method' => strtoupper($collection['depreciation_method']) == 'STL'
+                ? strtoupper($collection['depreciation_method'])
+                : ucwords(strtolower($collection['depreciation_method'])),
             'acquisition_date' => $collection['acquisition_date'],
             'acquisition_cost' => $collection['acquisition_cost'],
             'scrap_value' => $collection['scrap_value'],
