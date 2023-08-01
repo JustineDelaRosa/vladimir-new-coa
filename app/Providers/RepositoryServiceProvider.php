@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Repositories\CalculationRepository;
 use App\Repositories\CrudRepository;
+use App\Repositories\FixedAssetExportRepository;
 use App\Repositories\FixedAssetRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
 use Illuminate\Support\ServiceProvider;
@@ -21,6 +22,7 @@ class RepositoryServiceProvider extends ServiceProvider
             FixedAssetRepository::class,
             VladimirTagGeneratorRepository::class,
             CalculationRepository::class,
+            FixedAssetExportRepository::class,
         ];
 
         foreach ($repositories as $repository) {

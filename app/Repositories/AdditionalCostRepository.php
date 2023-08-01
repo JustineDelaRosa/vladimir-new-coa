@@ -207,7 +207,7 @@ class AdditionalCostRepository
                 'id' => $additional_cost->movementStatus->id ?? '-',
                 'movement_status_name' => $additional_cost->movementStatus->movement_status_name ?? '-',
             ],
-            'is_additional_cost' => $additional_cost->is_old_asset,
+            'is_additional_cost' => $additional_cost->is_additional_cost,
             'care_of' => $additional_cost->care_of,
             'months_depreciated' => $additional_cost->formula->months_depreciated,
             'end_depreciation' => $additional_cost->formula->end_depreciation,

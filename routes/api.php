@@ -158,6 +158,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('fixed-assets/search-asset-tag', [FixedAssetController::class, 'searchAssetTag']);
     //ADDITIONAL COST//
     Route::resource('additional-cost', AdditionalCostController::class);
+    Route::post('addcost-depreciation/{id}', [AdditionalCostController::class, 'assetDepreciation']);
 
     //CUSTOM ASSET DEPRECIATION CALCULATION//
     Route::post('asset-depreciation/{id}', [FixedAssetController::class, 'assetDepreciation']);

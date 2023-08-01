@@ -141,7 +141,7 @@ class FixedAssetRepository
         return $fixedAsset;
     }
 
-    public function paginateResults($items, $perPage = 15, $page = null, $options = [])
+    public function paginateResults($items, $page = null, $perPage = 15, $options = [])
     {
         $page = $page ?: (LengthAwarePaginator::resolveCurrentPage() ?: 1);
 
@@ -232,7 +232,7 @@ class FixedAssetRepository
 
         $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'desc')->get();
 
-//if search is not empty
+        //if search is not empty
         if (!empty($search)) {
             $results = $results->filter(function ($item) use ($search) {
                 return $this->searchInMainAttributes($item, $search) || $this->searchInRelationAttributes($item, $search);
@@ -326,6 +326,7 @@ class FixedAssetRepository
                 'id' => $fixed_asset->movementStatus->id ?? '-',
                 'movement_status_name' => $fixed_asset->movementStatus->movement_status_name ?? '-',
             ],
+            'is_additional_cost'=> $fixed_asset->is_additional_cost,
             'is_old_asset' => $fixed_asset->is_old_asset,
             'care_of' => $fixed_asset->care_of,
             'months_depreciated' => $fixed_asset->formula->months_depreciated,
@@ -407,7 +408,7 @@ class FixedAssetRepository
                         'id' => $additional_cost->movementStatus->id ?? '-',
                         'movement_status_name' => $additional_cost->movementStatus->movement_status_name ?? '-',
                     ],
-                    'is_additional_cost' => $additional_cost->is_old_asset,
+                    'is_additional_cost' => $additional_cost->is_additional_cost,
                     'care_of' => $additional_cost->care_of,
                     'months_depreciated' => $additional_cost->formula->months_depreciated,
                     'end_depreciation' => $additional_cost->formula->end_depreciation,
@@ -529,7 +530,7 @@ class FixedAssetRepository
         ];
     }
 
-    function searchInMainAttributes($item, $search)
+    function searchInMainAttributes($item, $search): bool
     {
         $mainAttributes = [
             'vladimir_tag_number',
@@ -551,7 +552,7 @@ class FixedAssetRepository
         return false;
     }
 
-    function searchInRelationAttributes($item, $search)
+    function searchInRelationAttributes($item, $search): bool
     {
         $relationAttributes = [
             'subCapex' => ['sub_capex', 'sub_project'],
