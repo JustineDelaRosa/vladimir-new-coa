@@ -15,6 +15,7 @@ use App\Models\Formula;
 use App\Models\Location;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
+use App\Models\Status\DepreciationStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
 use App\Repositories\CalculationRepository;
@@ -148,12 +149,75 @@ class FixedAssetController extends Controller
         }
     }
 
+
+    public function archived(FixedAssetRequest $request, $id)
+    {
+
+        $status = $request->status;
+        $remarks = ucwords($request->remarks);
+        $fixedAsset = FixedAsset::query();
+        $formula = Formula::query();
+        if (!$fixedAsset->withTrashed()->where('id', $id)->exists()) {
+            return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
+        }
+
+        if ($status == false) {
+            if (!FixedAsset::where('id', $id)->where('is_active', true)->exists()) {
+                return response()->json(['message' => 'No Changes'], 200);
+            } else {
+
+                $depreciationStatusId = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
+                $fixedAssetExists = FixedAsset::where('id', $id)->where('depreciation_status_id', $depreciationStatusId)->first();
+
+                if ($fixedAssetExists) {
+                    return response()->json(['errors' => 'Unable to Archive!, Depreciation is Running!'], 422);
+                }
+
+                $fixedAsset->where('id', $id)->update(['remarks' => $remarks, 'is_active' => false]);
+                $fixedAsset->where('id', $id)->delete();
+                $formula->where('fixed_asset_id', $id)->delete();
+                return response()->json(['message' => 'Successfully Deactivated!'], 200);
+            }
+        }
+        if ($status == true) {
+            if (FixedAsset::where('id', $id)->where('is_active', true)->exists()) {
+                return response()->json(['message' => 'No Changes'], 200);
+            } else {
+                if(FixedAsset::where('id', $id)->where('sub_capex_id', null)->exists()) {
+                    $checkSubCapex = SubCapex::where('id', $fixedAsset->where('id', $id)->first()->sub_capex_id)->exists();
+                    if (!$checkSubCapex) {
+                        return response()->json(['errors' => 'Unable to Restore!, SubCapex was Archived!'], 422);
+                    }
+                }
+
+                $checkMinorCategory = MinorCategory::where('id', $fixedAsset->where('id', $id)->first()->minor_category_id)->exists();
+                if (!$checkMinorCategory) {
+                    return response()->json(['errors' => 'Unable to Restore!, Minor Category was Archived!'], 422);
+                }
+
+                //typeofrequest
+                $checkTypeOfRequest = TypeOfRequest::where('id', $fixedAsset->where('id', $id)->first()->type_of_request_id)->exists();
+                if (!$checkTypeOfRequest) {
+                    return response()->json(['errors' => 'Unable to Restore!, Type of Request was Archived!'], 422);
+                }
+
+                $fixedAsset->withTrashed()->where('id', $id)->restore();
+                $fixedAsset->update(['is_active' => true]);
+                $fixedAsset->where('id', $id)->update(['remarks' => null]);
+                $formula->where('fixed_asset_id', $id)->restore();
+                return response()->json(['message' => 'Successfully Activated!'], 200);
+            }
+        }
+    }
+
+
     public function search(Request $request)
     {
         $search = $request->get('search');
         $limit = $request->get('limit');
         $page = $request->get('page');
-        return $this->fixedAssetRepository->searchFixedAsset($search, $limit, $page);
+        $status = $request->get('status');
+        return $this->fixedAssetRepository->searchFixedAsset($search, $status, $limit, $page);
     }
 
     //todo change assetDescription

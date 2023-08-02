@@ -155,9 +155,9 @@ class FixedAssetRepository
         return $paginator;
     }
 
-    public function searchFixedAsset($search, $page, $limit = null)
+    public function searchFixedAsset($search, $status, $page, $limit = null)
     {
-        $firstQuery = FixedAsset::select([
+        $fixedAssetFields = [
             'id',
             'capex_id',
             'sub_capex_id',
@@ -185,15 +185,17 @@ class FixedAssetRepository
             'movement_status_id',
             'is_old_asset',
             'is_additional_cost',
+            'is_active',
             'care_of',
             'company_id',
             'department_id',
             'location_id',
             'account_id',
+            'remarks',
             'created_at',
-        ]);
+        ];
 
-        $secondQuery = AdditionalCost::select([
+        $additionalCostFields = [
             'additional_costs.id',
             'fixed_assets.capex_id AS capex_id',
             'fixed_assets.sub_capex_id AS sub_capex_id',
@@ -221,13 +223,22 @@ class FixedAssetRepository
             'additional_costs.movement_status_id',
             'fixed_assets.is_old_asset as is_old_asset',
             'additional_costs.is_additional_cost',
+            'additional_costs.is_active',
             'additional_costs.care_of',
             'additional_costs.company_id',
             'additional_costs.department_id',
             'additional_costs.location_id',
             'additional_costs.account_id',
+            'additional_costs.remarks',
             'fixed_assets.created_at'
-        ])->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
+        ];
+        $firstQuery = ($status === 'deactivated')
+            ? FixedAsset::onlyTrashed()->select($fixedAssetFields)
+            : FixedAsset::select($fixedAssetFields);
+
+        $secondQuery = ($status === 'deactivated')
+            ? AdditionalCost::onlyTrashed()->select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
+            : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
 
         $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'desc')->get();
@@ -356,6 +367,7 @@ class FixedAssetRepository
                 'account_title_code' => $fixed_asset->accountTitle->account_title_code ?? '-',
                 'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
             ],
+            'remarks' => $fixed_asset->remarks,
             'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
                 return [
                     'id' => $additional_cost->id,
@@ -437,6 +449,7 @@ class FixedAssetRepository
                         'account_title_code' => $additional_cost->accountTitle->account_title_code ?? '-',
                         'account_title_name' => $additional_cost->accountTitle->account_title_name ?? '-',
                     ],
+                    'remarks' => $additional_cost->remarks,
                 ];
             }) : [],
         ];
@@ -444,7 +457,9 @@ class FixedAssetRepository
 
     public function transformSearchFixedAsset($fixed_asset): array
     {
+        $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? count($fixed_asset->additionalCost) : 0;
         return [
+            'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
             'capex' => [
                 'id' => $fixed_asset->capex->id ?? '-',
@@ -527,6 +542,7 @@ class FixedAssetRepository
                 'account_title_code' => $fixed_asset->accountTitle->account_title_code ?? '-',
                 'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
             ],
+            'remarks' => $fixed_asset->remarks,
         ];
     }
 

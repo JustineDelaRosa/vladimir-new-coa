@@ -137,7 +137,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'type_of_request_id' => TypeOfRequest::where('type_of_request_name', ($collection['type_of_request']))->first()->id,
             'asset_specification' => ucwords(strtolower($collection['additional_description'])),
             'accountability' => ucwords(strtolower($collection['accountability'])),
-            'accountable' => ucwords(strtolower($collection['accountable'] ?? '-')),
+            'accountable' => strtoupper($collection['accountable'] ?? '-'),
             'cellphone_number' => $collection['cellphone_number'],
             'brand' => ucwords(strtolower($collection['brand'])),
             'major_category_id' => $majorCategoryId,

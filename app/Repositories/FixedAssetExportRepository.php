@@ -252,7 +252,7 @@ class FixedAssetExportRepository
                 'end_depreciation' => $fixed_asset->formula->end_depreciation,
                 'depreciation_per_year' => $depreciation_rate['yearly'],
                 'depreciation_per_month' => $depreciation_rate['monthly'],
-                'remaining_book_value' => $this->calculateRemainingBookValue($fixed_asset, $accumulated_cost, $depreciation_rate['monthly']),
+                'remaining_book_value' => $this->calculateRemainingBookValue($fixed_asset, $accumulated_cost),
                 'release_date' => $fixed_asset->formula->release_date,
                 'start_depreciation' => $fixed_asset->formula->start_depreciation,
                 'company_code' => $fixed_asset->company->company_code,
@@ -268,7 +268,8 @@ class FixedAssetExportRepository
         return $fixed_assets_arr;
     }
 
-    private function calculateDepreciationRates($fixed_asset) {
+    private function calculateDepreciationRates($fixed_asset): array
+    {
         return [
             'monthly' => $this->depreciationPerMonth($fixed_asset->formula->depreciable_basis, $fixed_asset->formula->scrap_value, $fixed_asset->MajorCategory->est_useful_life),
             'yearly' => $this->depreciationPerYear($fixed_asset->formula->depreciable_basis, $fixed_asset->formula->scrap_value, $fixed_asset->MajorCategory->est_useful_life),
@@ -280,8 +281,8 @@ class FixedAssetExportRepository
         return $this->calculationRepository->getAccumulatedCost($depreciation_rate['monthly'], $this->monthDepreciated($fixed_asset->formula->start_depreciation));
     }
 
-    private function calculateRemainingBookValue($fixed_asset, $accumulated_cost, $monthly_depreciation_rate) {
-        return $this->calculationRepository->getRemainingBookValue($fixed_asset->formula->depreciable_basis, $accumulated_cost, $monthly_depreciation_rate);
+    private function calculateRemainingBookValue($fixed_asset, $accumulated_cost) {
+        return $this->calculationRepository->getRemainingBookValue($fixed_asset->formula->depreciable_basis, $accumulated_cost);
     }
 
     private function depreciationPerMonth($depreciable_basis, $scrap_value, $est_useful_life)

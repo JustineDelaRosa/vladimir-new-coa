@@ -58,8 +58,7 @@ class FixedAssetRequest extends FormRequest
                 'asset_specification' => 'required',
                 'accountability' => 'required',
                 'accountable' => [
-                    'required_if:accountability,Personal Issued',
-                    function ($attribute, $value, $fail) {
+                    'required_if:accountability,Personal Issued',                    function ($attribute, $value, $fail) {
                         $accountability = request()->input('accountable');
                         //if accountable is null continue
                         if ($value == null) {
@@ -82,6 +81,7 @@ class FixedAssetRequest extends FormRequest
                             return;
                         }
                     },
+
                 ],
                 'cellphone_number' => 'nullable|numeric|digits:11',
                 'brand' => 'nullable',
@@ -223,6 +223,14 @@ class FixedAssetRequest extends FormRequest
                 'account_title_id' => 'required|exists:account_titles,id',
             ];
         }
+
+        if($this->isMethod('patch') && ($this->route()->parameter('id'))){
+            $id = $this->route()->parameter('id');
+            return[
+              'status' => 'required|boolean',
+                'remarks' => 'required|string|max:255',
+            ];
+        }
     }
 
     /**
@@ -310,6 +318,12 @@ class FixedAssetRequest extends FormRequest
             'account_code.exists' => 'Account code does not exist',
             'account_title.required' => 'Account title is required',
             'account_title.exists' => 'Account title does not exist',
+
+            'status.required' => 'Status is required',
+            'status.boolean' => 'Status must be a boolean',
+            'remarks.required' => 'Remarks is required',
+            'remarks.string' => 'Remarks must be a string',
+            'remarks.max' => 'Remarks must not exceed 255 characters',
 
         ];
     }
