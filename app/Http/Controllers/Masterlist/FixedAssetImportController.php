@@ -19,11 +19,11 @@ class FixedAssetImportController extends Controller
 
         Excel::import(new MasterlistImport, $file);
 
-        //put into an array the data from the excel file
+        //put into an array the data from the Excel file
         $data = Excel::toArray(new MasterlistImport, $file);
         return response()->json(
             [
-                'message' => 'Masterlist imported successfully.',
+                'message' => 'Fixed Asset imported successfully.',
                 'data' => $data
             ],
             200

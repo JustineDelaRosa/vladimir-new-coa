@@ -59,6 +59,7 @@ Route::post('/auth/login', [AuthController::class, 'Login']);
 //DOWNLOAD SAMPLE FILE//
 Route::get('capex-sample-file', [CapexController::class, 'sampleCapexDownload']);
 Route::get('fixed-asset-sample-file', [FixedAssetController::class, 'sampleFixedAssetDownload']);
+Route::get('additional-cost-sample-file', [AdditionalCostController::class, 'sampleAdditionalCostDownload']);
 
 
 
@@ -160,6 +161,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('additional-cost', AdditionalCostController::class);
     Route::post('add-cost-depreciation/{id}', [AdditionalCostController::class, 'assetDepreciation']);
     Route::patch('add-cost/archived-add-cost/{id}', [AdditionalCostController::class, 'archived']);
+    Route::post('import-add-cost', [AdditionalCostController::class, 'additionalCostImport']);
 
     //CUSTOM ASSET DEPRECIATION CALCULATION//
     Route::post('asset-depreciation/{id}', [FixedAssetController::class, 'assetDepreciation']);

@@ -144,7 +144,11 @@ class AdditionalCostRepository
     {
         return [
             'id' => $additional_cost->id,
-            'fixed_asset_id' => $additional_cost->fixed_asset_id,
+            'fixed_asset' => [
+                'id' => $additional_cost->fixedAsset->id,
+                'vladimir_tag_number'=> $additional_cost->fixedAsset->vladimir_tag_number,
+                'asset_description' => $additional_cost->fixedAsset->asset_description,
+            ],
             'capex' => [
                 'id' => $additional_cost->fixedAsset->capex->id ?? '-',
                 'capex' => $additional_cost->fixedAsset->capex->capex ?? '-',

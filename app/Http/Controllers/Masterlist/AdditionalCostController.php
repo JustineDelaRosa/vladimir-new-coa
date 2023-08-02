@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Masterlist;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AdditionalCost\AdditionalCostRequest;
+use App\Imports\AdditionalCostImport;
+use App\Imports\MasterlistImport;
 use App\Models\AdditionalCost;
 use App\Models\Department;
 use App\Models\FixedAsset;
@@ -15,6 +17,7 @@ use App\Repositories\AdditionalCostRepository;
 use App\Repositories\CalculationRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AdditionalCostController extends Controller
 {
@@ -281,4 +284,31 @@ class AdditionalCostController extends Controller
         return response()->json($responseData, $statusCode);
     }
 
+
+    public function additionalCostImport(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:csv,txt,xlx,xls,pdf,xlsx'
+        ]);
+
+        $file = $request->file('file');
+
+        Excel::import(new AdditionalCostImport, $file);
+
+        //put into an array the data from the Excel file
+        $data = Excel::toArray(new AdditionalCostImport, $file);
+        return response()->json(
+            [
+                'message' => 'Additional Cost imported successfully.',
+                'data' => $data
+            ],
+            200
+        );
+    }
+
+    public function sampleAdditionalCostDownload(){
+
+        $path = storage_path('app/sample/additionalCost.xlsx');
+        return response()->download($path);
+    }
 }
