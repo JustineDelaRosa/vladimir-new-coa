@@ -22,6 +22,7 @@ class CreateAdditionalCostsTable extends Migration
                 ->on('fixed_assets')
                 ->onDelete('cascade');
             $table->boolean('is_additional_cost')->default(true);
+            $table->boolean('is_active')->default(true);
             $table->string('asset_description');
             $table->unsignedInteger('type_of_request_id');
             $table->string('asset_specification');
@@ -47,6 +48,7 @@ class CreateAdditionalCostsTable extends Migration
             $table->unsignedInteger('department_id');
             $table->unsignedInteger('location_id');
             $table->unsignedInteger('account_id');
+            $table->string('remarks')->nullable();
             $table->softDeletes();
             $table->timestamps();
             $table->foreign('type_of_request_id')

@@ -45,15 +45,13 @@ class CreateFixedAssetsTable extends Migration
             $table->unsignedInteger('movement_status_id');
             $table->boolean('is_old_asset')->default(false);
             $table->boolean('is_additional_cost')->default(false);
+            $table->boolean('is_active')->default(true);
             $table->string('care_of');
             $table->unsignedInteger('company_id');
-//            $table->string('company_name');
             $table->unsignedInteger('department_id');
-//            $table->string('department_name');
             $table->unsignedInteger('location_id');
-//            $table->string('location_name');
             $table->unsignedInteger('account_id');
-//            $table->string('account_title');
+            $table->string('remarks')->nullable();
             $table->softDeletes();
             $table->timestamps();
             $table->foreign('capex_id')
