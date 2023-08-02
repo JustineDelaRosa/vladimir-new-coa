@@ -7,6 +7,10 @@ use App\Http\Requests\AdditionalCost\AdditionalCostRequest;
 use App\Models\AdditionalCost;
 use App\Models\Department;
 use App\Models\FixedAsset;
+use App\Models\Formula;
+use App\Models\MinorCategory;
+use App\Models\Status\DepreciationStatus;
+use App\Models\TypeOfRequest;
 use App\Repositories\AdditionalCostRepository;
 use App\Repositories\CalculationRepository;
 use Illuminate\Http\Request;
@@ -99,6 +103,60 @@ class AdditionalCostController extends Controller
             ], 404);
         }
     }
+
+
+    public function archived(AdditionalCostRequest $request, $id)
+    {
+
+        $status = $request->status;
+        $remarks = ucwords($request->remarks);
+        $additionalCost = AdditionalCost::query();
+        $formula = Formula::query();
+        if (!$additionalCost->withTrashed()->where('id', $id)->exists()) {
+            return response()->json(['error' => 'Additional Cost Route Not Found'], 404);
+        }
+
+        if ($status == false) {
+            if (!AdditionalCost::where('id', $id)->where('is_active', true)->exists()) {
+                return response()->json(['message' => 'No Changes'], 200);
+            } else {
+
+                $depreciationStatusId = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
+                $fixedAssetExists = AdditionalCost::where('id', $id)->where('depreciation_status_id', $depreciationStatusId)->first();
+
+                if ($fixedAssetExists) {
+                    return response()->json(['errors' => 'Unable to Archive!, Depreciation is Running!'], 422);
+                }
+
+                $additionalCost->where('id', $id)->update(['remarks' => $remarks, 'is_active' => false]);
+                $additionalCost->where('id', $id)->delete();
+                $formula->where('additional_cost_id', $id)->delete();
+                return response()->json(['message' => 'Successfully Deactivated!'], 200);
+            }
+        }
+        if ($status == true) {
+            if (AdditionalCost::where('id', $id)->where('is_active', true)->exists()) {
+                return response()->json(['message' => 'No Changes'], 200);
+            } else {
+                $checkMinorCategory = MinorCategory::where('id', $additionalCost->where('id', $id)->first()->minor_category_id)->exists();
+                if (!$checkMinorCategory) {
+                    return response()->json(['errors' => 'Unable to Restore!, Minor Category was Archived!'], 422);
+                }
+
+                $checkTypeOfRequest = TypeOfRequest::where('id', $additionalCost->where('id', $id)->first()->type_of_request_id)->exists();
+                if (!$checkTypeOfRequest) {
+                    return response()->json(['errors' => 'Unable to Restore!, Type of Request was Archived!'], 422);
+                }
+
+                $additionalCost->withTrashed()->where('id', $id)->restore();
+                $additionalCost->update(['is_active' => true,'remarks' => null]);
+                $formula->where('additional_cost_id', $id)->restore();
+                return response()->json(['message' => 'Successfully Activated!'], 200);
+            }
+        }
+    }
+
+
 
     function assetDepreciation(Request $request, $id)
     {
@@ -221,29 +279,6 @@ class AdditionalCostController extends Controller
         }
 
         return response()->json($responseData, $statusCode);
-    }
-
-    public function showTagNumber(int $tagNumber)
-    {
-        $fixed_asset = FixedAsset::withTrashed()->with('formula', function ($query) {
-            $query->withTrashed();
-        })->where('vladimir_tag_number', $tagNumber)->first();
-
-        if (!$fixed_asset) {
-            return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
-        }
-
-        return response()->json([
-            'message' => 'Fixed Asset retrieved successfully.',
-            'data' => $this->additionalCostRepository->transformSingleAdditionalCost($fixed_asset)
-        ], 200);
-    }
-
-    public function sampleFixedAssetDownload()
-    {
-        //download file from storage/sample
-        $path = storage_path('app/sample/fixed_asset.xlsx');
-        return response()->download($path);
     }
 
 }

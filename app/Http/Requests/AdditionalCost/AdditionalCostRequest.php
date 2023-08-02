@@ -88,6 +88,13 @@ class AdditionalCostRequest extends FormRequest
                 'account_title_id' => 'required|exists:account_titles,id',
             ];
         }
+        if($this->isMethod('patch') && ($this->route()->parameter('id'))){
+            $id = $this->route()->parameter('id');
+            return[
+                'status' => 'required|boolean',
+                'remarks' => 'required|string|max:255',
+            ];
+        }
     }
 
     function messages()
@@ -141,6 +148,13 @@ class AdditionalCostRequest extends FormRequest
             'department_id.exists' => 'The department id must be a valid department id.',
             'account_title_id.required' => 'The account title id is required.',
             'account_title_id.exists' => 'The account title id must be a valid account title id.',
+
+            'status.required' => 'The status is required.',
+            'status.boolean' => 'The status must be a boolean.',
+            'remarks.required' => 'The remarks is required.',
+            'remarks.string' => 'The remarks must be a string.',
+            'remarks.max' => 'The remarks may not be greater than 255 characters.',
+
         ];
     }
 

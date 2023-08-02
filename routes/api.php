@@ -154,11 +154,12 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //FIXED ASSET//
     Route::resource('fixed-asset', FixedAssetController::class);
     Route::patch('fixed-asset/archived-fixed-asset/{id}', [FixedAssetController::class, 'archived']);
-    Route::get('fixed-assets/search', [FixedAssetController::class, 'search']);
+    Route::get('fixed-asset-search', [FixedAssetController::class, 'search']);
     Route::get('fixed-assets/search-asset-tag', [FixedAssetController::class, 'searchAssetTag']);
     //ADDITIONAL COST//
     Route::resource('additional-cost', AdditionalCostController::class);
-    Route::post('addcost-depreciation/{id}', [AdditionalCostController::class, 'assetDepreciation']);
+    Route::post('add-cost-depreciation/{id}', [AdditionalCostController::class, 'assetDepreciation']);
+    Route::patch('add-cost/archived-add-cost/{id}', [AdditionalCostController::class, 'archived']);
 
     //CUSTOM ASSET DEPRECIATION CALCULATION//
     Route::post('asset-depreciation/{id}', [FixedAssetController::class, 'assetDepreciation']);
@@ -191,9 +192,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('movement-status', MovementStatusController::class);
     Route::patch('movement-status/archived-movement-status/{id}', [MovementStatusController::class, 'archived']);
 
-    //DOWNLOAD SAMPLE FILE//
-    Route::get('capex-sample-file', [CapexController::class, 'sampleCapexDownload']);
-    Route::get('fixed-asset-sample-file', [FixedAssetController::class, 'sampleFixedAssetDownload']);
+
 });
 
 
