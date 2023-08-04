@@ -237,7 +237,7 @@ class FixedAssetRequest extends FormRequest
             $id = $this->route()->parameter('id');
             return[
               'status' => 'required|boolean',
-                'remarks' => 'required_if:status,false|string|max:255',
+//                'remarks' => 'required_if:status,false|string|max:255',
             ];
         }
     }

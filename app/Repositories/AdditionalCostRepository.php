@@ -118,7 +118,7 @@ class AdditionalCostRepository
             'department_id' => $request['department_id'],
             'location_id' => Location::where('sync_id', $departmentQuery->location_sync_id)->first()->id ?? null,
             'account_id' => $request['account_title_id'],
-            ]);
+        ]);
 
 
         return $formula->additionalCost()->with('formula')->first();
@@ -196,7 +196,7 @@ class AdditionalCostRepository
             'id' => $additional_cost->id,
             'fixed_asset' => [
                 'id' => $additional_cost->fixedAsset->id,
-                'vladimir_tag_number'=> $additional_cost->fixedAsset->vladimir_tag_number,
+                'vladimir_tag_number' => $additional_cost->fixedAsset->vladimir_tag_number,
                 'asset_description' => $additional_cost->fixedAsset->asset_description,
             ],
             'capex' => [
@@ -289,6 +289,103 @@ class AdditionalCostRepository
                 'id' => $additional_cost->accountTitle->id ?? '-',
                 'account_title_code' => $additional_cost->accountTitle->account_title_code ?? '-',
                 'account_title_name' => $additional_cost->accountTitle->account_title_name ?? '-',
+            ],
+            'main' =>[
+                'id' => $additional_cost->fixedAsset->id,
+                'capex' => [
+                    'id' => $additional_cost->fixedAsset->capex->id ?? '-',
+                    'capex' => $additional_cost->fixedAsset->capex->capex ?? '-',
+                    'project_name' => $additional_cost->fixedAsset->capex->project_name ?? '-',
+                ],
+                'sub_capex' => [
+                    'id' => $additional_cost->fixedAsset->subCapex->id ?? '-',
+                    'sub_capex' => $additional_cost->fixedAsset->subCapex->sub_capex ?? '-',
+                    'sub_project' => $additional_cost->fixedAsset->subCapex->sub_project ?? '-',
+                ],
+                'vladimir_tag_number' => $additional_cost->fixedAsset->vladimir_tag_number,
+                'tag_number' => $additional_cost->fixedAsset->tag_number,
+                'tag_number_old' => $additional_cost->fixedAsset->tag_number_old,
+                'asset_description' => $additional_cost->fixedAsset->asset_description,
+                'type_of_request' => [
+                    'id' => $additional_cost->fixedAsset->typeOfRequest->id ?? '-',
+                    'type_of_request_name' => $additional_cost->fixedAsset->typeOfRequest->type_of_request_name ?? '-',
+                ],
+                'asset_specification' => $additional_cost->fixedAsset->asset_specification,
+                'accountability' => $additional_cost->fixedAsset->accountability,
+                'accountable' => $additional_cost->fixedAsset->accountable,
+                'cellphone_number' => $additional_cost->fixedAsset->cellphone_number,
+                'brand' => $additional_cost->fixedAsset->brand ?? '-',
+                'division' => [
+                    'id' => $additional_cost->fixedAsset->department->division->id ?? '-',
+                    'division_name' => $additional_cost->fixedAsset->department->division->division_name ?? '-',
+                ],
+                'major_category' => [
+                    'id' => $additional_cost->fixedAsset->majorCategory->id ?? '-',
+                    'major_category_name' => $additional_cost->fixedAsset->majorCategory->major_category_name ?? '-',
+                ],
+                'minor_category' => [
+                    'id' => $additional_cost->fixedAsset->minorCategory->id ?? '-',
+                    'minor_category_name' => $additional_cost->fixedAsset->minorCategory->minor_category_name ?? '-',
+                ],
+                'est_useful_life' => $additional_cost->fixedAsset->majorCategory->est_useful_life ?? '-',
+                'voucher' => $additional_cost->fixedAsset->voucher,
+                'receipt' => $additional_cost->fixedAsset->receipt,
+                'quantity' => $additional_cost->fixedAsset->quantity,
+                'depreciation_method' => $additional_cost->fixedAsset->depreciation_method,
+                //                    'salvage_value' => $additional_cost->fixedAsset->salvage_value,
+                'acquisition_date' => $additional_cost->fixedAsset->acquisition_date,
+                'acquisition_cost' => $additional_cost->fixedAsset->acquisition_cost,
+                'scrap_value' => $additional_cost->fixedAsset->formula->scrap_value,
+                'depreciable_basis' => $additional_cost->fixedAsset->formula->depreciable_basis,
+                'accumulated_cost' => $additional_cost->fixedAsset->formula->accumulated_cost,
+                'asset_status' => [
+                    'id' => $additional_cost->fixedAsset->assetStatus->id ?? '-',
+                    'asset_status_name' => $additional_cost->fixedAsset->assetStatus->asset_status_name ?? '-',
+                ],
+                'cycle_count_status' => [
+                    'id' => $additional_cost->fixedAsset->cycleCountStatus->id ?? '-',
+                    'cycle_count_status_name' => $additional_cost->fixedAsset->cycleCountStatus->cycle_count_status_name ?? '-',
+                ],
+                'depreciation_status' => [
+                    'id' => $additional_cost->fixedAsset->depreciationStatus->id ?? '-',
+                    'depreciation_status_name' => $additional_cost->fixedAsset->depreciationStatus->depreciation_status_name ?? '-',
+                ],
+                'movement_status' => [
+                    'id' => $additional_cost->fixedAsset->movementStatus->id ?? '-',
+                    'movement_status_name' => $additional_cost->fixedAsset->movementStatus->movement_status_name ?? '-',
+                ],
+                'is_additional_cost'=> $additional_cost->fixedAsset->is_additional_cost,
+                'is_old_asset' => $additional_cost->fixedAsset->is_old_asset,
+                'status' => $additional_cost->fixedAsset->is_active,
+                'care_of' => $additional_cost->fixedAsset->care_of,
+                'months_depreciated' => $additional_cost->fixedAsset->formula->months_depreciated,
+                'end_depreciation' => $additional_cost->fixedAsset->formula->end_depreciation,
+                'depreciation_per_year' => $additional_cost->fixedAsset->formula->depreciation_per_year,
+                'depreciation_per_month' => $additional_cost->fixedAsset->formula->depreciation_per_month,
+                'remaining_book_value' => $additional_cost->fixedAsset->formula->remaining_book_value,
+                'release_date' => $additional_cost->fixedAsset->formula->release_date,
+                'start_depreciation' => $additional_cost->fixedAsset->formula->start_depreciation,
+                'company' => [
+                    'id' => $additional_cost->fixedAsset->department->company->id ?? '-',
+                    'company_code' => $additional_cost->fixedAsset->department->company->company_code ?? '-',
+                    'company_name' => $additional_cost->fixedAsset->department->company->company_name ?? '-',
+                ],
+                'department' => [
+                    'id' => $additional_cost->fixedAsset->department->id ?? '-',
+                    'department_code' => $additional_cost->fixedAsset->department->department_code ?? '-',
+                    'department_name' => $additional_cost->fixedAsset->department->department_name ?? '-',
+                ],
+                'location' => [
+                    'id' => $additional_cost->fixedAsset->department->location->id ?? '-',
+                    'location_code' => $additional_cost->fixedAsset->department->location->location_code ?? '-',
+                    'location_name' => $additional_cost->fixedAsset->department->location->location_name ?? '-',
+                ],
+                'account_title' => [
+                    'id' => $additional_cost->fixedAsset->accountTitle->id ?? '-',
+                    'account_title_code' => $additional_cost->fixedAsset->accountTitle->account_title_code ?? '-',
+                    'account_title_name' => $additional_cost->fixedAsset->accountTitle->account_title_name ?? '-',
+                ],
+                'remarks' => $additional_cost->fixedAsset->remarks,
             ],
         ];
     }
