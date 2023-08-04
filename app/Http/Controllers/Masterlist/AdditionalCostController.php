@@ -132,8 +132,9 @@ class AdditionalCostController extends Controller
                 }
 
                 $additionalCost->where('id', $id)->update(['remarks' => $remarks, 'is_active' => false]);
+                Formula::where('id',AdditionalCost::where('id', $id)->first()->formula_id)->delete();
                 $additionalCost->where('id', $id)->delete();
-                $formula->where('additional_cost_id', $id)->delete();
+//                $formula->where('additional_cost_id', $id)->delete();
                 return response()->json(['message' => 'Successfully Deactivated!'], 200);
             }
         }
@@ -153,7 +154,8 @@ class AdditionalCostController extends Controller
 
                 $additionalCost->withTrashed()->where('id', $id)->restore();
                 $additionalCost->update(['is_active' => true,'remarks' => null]);
-                $formula->where('additional_cost_id', $id)->restore();
+//                $formula->where('additional_cost_id', $id)->restore();
+                Formula::where('id',AdditionalCost::where('id', $id)->first()->formula_id)->restore();
                 return response()->json(['message' => 'Successfully Activated!'], 200);
             }
         }
@@ -192,7 +194,6 @@ class AdditionalCostController extends Controller
         ],
             [
                 'date.required' => 'Date is required.',
-                'date.date_format' => 'Date format is invalid.',
                 'date.date_format' => 'Date format is invalid.',
             ]);
     }

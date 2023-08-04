@@ -7,6 +7,7 @@ use App\Models\AccountTitle;
 use App\Models\Capex;
 use App\Models\Company;
 use App\Models\FixedAsset;
+use App\Models\Formula;
 use App\Models\Location;
 use App\Models\Department;
 use App\Models\MajorCategory;
@@ -88,8 +89,9 @@ class MasterlistImport extends DefaultValueBinder implements
             $majorCategoryId = $this->getMajorCategoryId($collection['major_category']);
             $minorCategoryId = $this->getMinorCategoryId($collection['minor_category'], $majorCategoryId);
             $est_useful_life = $this->getEstUsefulLife($majorCategoryId);
-            $fixedAsset = $this->createFixedAsset($collection, $majorCategoryId, $minorCategoryId, $this->vladimirTagGeneratorRepository->vladimirTagGenerator());
-            $this->createFormula($fixedAsset, $collection, $est_useful_life);
+            $formula = $this->createFormula($collection, $est_useful_life);
+            $this->createFixedAsset($formula, $collection, $majorCategoryId, $minorCategoryId, $this->vladimirTagGeneratorRepository->vladimirTagGenerator());
+
         }
     }
 
@@ -120,14 +122,38 @@ class MasterlistImport extends DefaultValueBinder implements
         return $minorCategory ? $minorCategory->id : null;
     }
 
-    private function createFixedAsset($collection, $majorCategoryId, $minorCategoryId, $vladimirTagGeneratorRepository)
+    private function createFormula($collection, $est_useful_life)
+    {
+        //current date
+        return Formula::create([
+            'depreciation_method' => strtoupper($collection['depreciation_method']) == 'STL'
+                ? strtoupper($collection['depreciation_method'])
+                : ucwords(strtolower($collection['depreciation_method'])),
+            'acquisition_date' => $collection['acquisition_date'],
+            'acquisition_cost' => $collection['acquisition_cost'],
+            'scrap_value' => $collection['scrap_value'],
+            'depreciable_basis' => $collection['depreciable_basis'],
+            'accumulated_cost' => $collection['accumulated_cost'],
+            'months_depreciated' => $this->calculationRepository->getMonthDifference(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
+//            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life,$collection['depreciation_method']),
+            'depreciation_per_year' => $collection['depreciation_per_year'],
+            'depreciation_per_month' => $collection['depreciation_per_month'],
+            'remaining_book_value' => $collection['remaining_book_value'],
+            'release_date' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->subMonth()->format('Y-m-d'),
+            'start_depreciation' => substr_replace($collection['start_depreciation'], '-', 4, 0),
+        ]);
+    }
+
+    private function createFixedAsset($formula, $collection, $majorCategoryId, $minorCategoryId, $vladimirTagGeneratorRepository)
     {
         // Check if necessary IDs exist before creating FixedAsset
         if ($majorCategoryId == null || $minorCategoryId == null) {
             throw new Exception('Unable to create FixedAsset due to missing Major/Minor category ID.');
         }
 
-        return FixedAsset::create([
+
+        $formula->fixedAsset()->create([
             'capex_id' => Capex::where('capex', $collection['capex'])->first()->id ?? null,
             'sub_capex_id' => SubCapex::where('sub_capex', $collection['sub_capex'])->first()->id ?? null,
             'vladimir_tag_number' => $vladimirTagGeneratorRepository,
@@ -164,28 +190,7 @@ class MasterlistImport extends DefaultValueBinder implements
         ]);
     }
 
-    private function createFormula($fixedAsset, $collection, $est_useful_life)
-    {
-        //current date
-        $fixedAsset->formula()->create([
-            'depreciation_method' => strtoupper($collection['depreciation_method']) == 'STL'
-                ? strtoupper($collection['depreciation_method'])
-                : ucwords(strtolower($collection['depreciation_method'])),
-            'acquisition_date' => $collection['acquisition_date'],
-            'acquisition_cost' => $collection['acquisition_cost'],
-            'scrap_value' => $collection['scrap_value'],
-            'depreciable_basis' => $collection['depreciable_basis'],
-            'accumulated_cost' => $collection['accumulated_cost'],
-            'months_depreciated' => $this->calculationRepository->getMonthDifference(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
-//            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life,$collection['depreciation_method']),
-            'depreciation_per_year' => $collection['depreciation_per_year'],
-            'depreciation_per_month' => $collection['depreciation_per_month'],
-            'remaining_book_value' => $collection['remaining_book_value'],
-            'release_date' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->subMonth()->format('Y-m-d'),
-            'start_depreciation' => substr_replace($collection['start_depreciation'], '-', 4, 0),
-        ]);
-    }
+
 
 //Todo: if the id is trashed then what should i do with the id?
     function rules($collection): array

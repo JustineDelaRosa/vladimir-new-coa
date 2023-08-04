@@ -15,8 +15,6 @@ class CreateFormulasTable extends Migration
     {
         Schema::create('formulas', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('fixed_asset_id')->nullable();
-            $table->unsignedInteger('additional_cost_id')->nullable();
             $table->string('depreciation_method');
 //            $table->decimal('est_useful_life' , 10, 1);
             $table->date('acquisition_date');
@@ -33,14 +31,6 @@ class CreateFormulasTable extends Migration
             $table->string('start_depreciation'); //date format yyyy-mm
             $table->softDeletes();
             $table->timestamps();
-            $table->foreign('fixed_asset_id')
-                ->references('id')
-                ->on('fixed_assets')
-                ->onDelete('cascade');
-            $table->foreign('additional_cost_id')
-                ->references('id')
-                ->on('additional_costs')
-                ->onDelete('cascade');
         });
     }
 

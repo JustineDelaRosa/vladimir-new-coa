@@ -92,6 +92,8 @@ class FixedAssetController extends Controller
             $query->withTrashed();
         })
             ->where('id', $id)->first();
+
+
         //        return $fixed_asset->majorCategory->major_category_name;
         if (!$fixed_asset) {
             return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
@@ -174,8 +176,9 @@ class FixedAssetController extends Controller
                 }
 
                 $fixedAsset->where('id', $id)->update(['remarks' => $remarks, 'is_active' => false]);
+                Formula::where('id', $fixedAsset->where('id', $id)->first()->formula_id)->delete();
                 $fixedAsset->where('id', $id)->delete();
-                $formula->where('fixed_asset_id', $id)->delete();
+//                $formula->where('fixed_asset_id', $id)->delete();
                 return response()->json(['message' => 'Successfully Deactivated!'], 200);
             }
         }
@@ -204,7 +207,7 @@ class FixedAssetController extends Controller
                 $fixedAsset->withTrashed()->where('id', $id)->restore();
                 $fixedAsset->update(['is_active' => true]);
                 $fixedAsset->where('id', $id)->update(['remarks' => null]);
-                $formula->where('fixed_asset_id', $id)->restore();
+                Formula::withTrashed()->where('id', FixedAsset::where('id', $id)->first()->formula_id)->restore();
                 return response()->json(['message' => 'Successfully Activated!'], 200);
             }
         }
@@ -338,7 +341,6 @@ class FixedAssetController extends Controller
         ],
             [
                 'date.required' => 'Date is required.',
-                'date.date_format' => 'Date format is invalid.',
                 'date.date_format' => 'Date format is invalid.',
             ]);
     }

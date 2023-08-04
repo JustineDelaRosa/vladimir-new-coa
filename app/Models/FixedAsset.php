@@ -23,7 +23,7 @@ class FixedAsset extends Model
 
     public function additionalCost()
     {
-        return $this->hasMany(AdditionalCost::class, 'fixed_asset_id', 'id');
+        return $this->belongsTo(AdditionalCost::class, 'fixed_asset_id', 'id');
     }
     public function capex()
     {
@@ -37,7 +37,7 @@ class FixedAsset extends Model
 
     public function formula()
     {
-        return $this->hasOne(Formula::class, 'fixed_asset_id', 'id');
+        return $this->belongsTo(Formula::class, 'formula_id', 'id');
     }
 
      public function typeOfRequest()

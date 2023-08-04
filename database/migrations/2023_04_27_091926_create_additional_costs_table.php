@@ -49,6 +49,7 @@ class CreateAdditionalCostsTable extends Migration
             $table->unsignedInteger('location_id');
             $table->unsignedInteger('account_id');
             $table->string('remarks')->nullable();
+            $table->unsignedInteger('formula_id');
             $table->softDeletes();
             $table->timestamps();
             $table->foreign('type_of_request_id')
@@ -94,6 +95,10 @@ class CreateAdditionalCostsTable extends Migration
             $table->foreign('movement_status_id')
                 ->references('id')
                 ->on('movement_statuses')
+                ->onDelete('cascade');
+            $table->foreign('formula_id')
+                ->references('id')
+                ->on('formulas')
                 ->onDelete('cascade');
         });
     }

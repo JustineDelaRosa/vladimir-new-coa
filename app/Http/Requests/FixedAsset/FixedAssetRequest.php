@@ -103,16 +103,25 @@ class FixedAssetRequest extends FormRequest
                 }],
                 'depreciation_method' => 'required',
                 'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
-                'acquisition_cost' => ['required', 'numeric'],
+                //acquisition cost should not be less than or equal to 0
+                'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
+                    if ($value <= 0) {
+                        $fail('Invalid acquisition cost');
+                    }
+                }],
                 'scrap_value' => ['required', 'numeric'],
-                'depreciable_basis' => ['required', 'numeric'],
-                'accumulated_cost' => ['nullable', 'numeric'],
+                'depreciable_basis' => ['required', 'numeric',function ($attribute, $value, $fail) {
+                    if ($value <= 0) {
+                        $fail('Invalid depreciable basis');
+                    }
+                }],
+//                'accumulated_cost' => ['nullable', 'numeric'],
                 'care_of' => 'nullable',
                 'months_depreciated' => 'required|numeric',
 //                'end_depreciation' => 'required|date_format:Y-m',
-                'depreciation_per_year' => ['nullable', 'numeric'],
-                'depreciation_per_month' => ['nullable', 'numeric'],
-                'remaining_book_value' => ['nullable', 'numeric'],
+//                'depreciation_per_year' => ['nullable', 'numeric'],
+//                'depreciation_per_month' => ['nullable', 'numeric'],
+//                'remaining_book_value' => ['nullable', 'numeric'],
                 'release_date' => ['required', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'department_id' => 'required|exists:departments,id',
