@@ -7,7 +7,6 @@ use App\Models\AccountTitle;
 use App\Models\Capex;
 use App\Models\Company;
 use App\Models\FixedAsset;
-use App\Models\Formula;
 use App\Models\Location;
 use App\Models\Department;
 use App\Models\MajorCategory;
@@ -18,8 +17,6 @@ use App\Models\Status\DepreciationStatus;
 use App\Models\Status\MovementStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
-use App\Repositories\CalculationRepository;
-use App\Repositories\VladimirTagGeneratorRepository;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
@@ -48,14 +45,6 @@ class MasterlistImport extends DefaultValueBinder implements
 {
     use Importable;
 
-    private $vladimirTagGeneratorRepository, $calculationRepository;
-
-    public function __construct()
-    {
-        $this->vladimirTagGeneratorRepository = new VladimirTagGeneratorRepository();
-        $this->calculationRepository = new CalculationRepository();
-    }
-
     function headingRow(): int
     {
         return 1;
@@ -83,15 +72,45 @@ class MasterlistImport extends DefaultValueBinder implements
 
     public function collection(Collection $collections)
     {
+
+//        $client = new Client();
+//        $token = '9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4';
+//        $response = $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
+//            'headers' => [
+//                'Authorization' => 'Bearer ' . $token,
+//                'Accept' => 'application/json',
+//            ],
+//        ]);
+//
+//// Get the body content from the response
+//        $body = $response->getBody()->getContents();
+//
+//// Decode the JSON response into an associative array
+//        $data = json_decode($body, true);
+//        $nameToCheck = [
+//            'Perona, jerome',
+//            'Dela Rosa, Justine',
+//            'Nucum, Caren'
+//        ];
+//
+//        if (!empty($data['data']) && is_array($data['data'])) {
+//            foreach ($data['data'] as $employee) {
+//                if (!empty($employee['general_info']) && in_array($employee['general_info']['full_name'], $nameToCheck)) {
+//                    echo $employee['general_info']['full_id_number'] . PHP_EOL;
+//                    break;
+//                }
+//            }
+//        }
+
+
         Validator::make($collections->toArray(), $this->rules($collections->toArray()), $this->messages())->validate();
 
         foreach ($collections as $collection) {
             $majorCategoryId = $this->getMajorCategoryId($collection['major_category']);
             $minorCategoryId = $this->getMinorCategoryId($collection['minor_category'], $majorCategoryId);
             $est_useful_life = $this->getEstUsefulLife($majorCategoryId);
-            $formula = $this->createFormula($collection, $est_useful_life);
-            $this->createFixedAsset($formula, $collection, $majorCategoryId, $minorCategoryId, $this->vladimirTagGeneratorRepository->vladimirTagGenerator());
-
+            $fixedAsset = $this->createFixedAsset($collection, $majorCategoryId, $minorCategoryId, $est_useful_life);
+            $this->createFormula($fixedAsset, $collection, $est_useful_life);
         }
     }
 
@@ -122,48 +141,26 @@ class MasterlistImport extends DefaultValueBinder implements
         return $minorCategory ? $minorCategory->id : null;
     }
 
-    private function createFormula($collection, $est_useful_life)
-    {
-        //current date
-        return Formula::create([
-            'depreciation_method' => strtoupper($collection['depreciation_method']) == 'STL'
-                ? strtoupper($collection['depreciation_method'])
-                : ucwords(strtolower($collection['depreciation_method'])),
-            'acquisition_date' => $collection['acquisition_date'],
-            'acquisition_cost' => $collection['acquisition_cost'],
-            'scrap_value' => $collection['scrap_value'],
-            'depreciable_basis' => $collection['depreciable_basis'],
-            'accumulated_cost' => $collection['accumulated_cost'],
-            'months_depreciated' => $this->calculationRepository->getMonthDifference(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
-//            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life,$collection['depreciation_method']),
-            'depreciation_per_year' => $collection['depreciation_per_year'],
-            'depreciation_per_month' => $collection['depreciation_per_month'],
-            'remaining_book_value' => $collection['remaining_book_value'],
-            'release_date' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->subMonth()->format('Y-m-d'),
-            'start_depreciation' => substr_replace($collection['start_depreciation'], '-', 4, 0),
-        ]);
-    }
-
-    private function createFixedAsset($formula, $collection, $majorCategoryId, $minorCategoryId, $vladimirTagGeneratorRepository)
+    private function createFixedAsset($collection, $majorCategoryId, $minorCategoryId, $est_useful_life)
     {
         // Check if necessary IDs exist before creating FixedAsset
         if ($majorCategoryId == null || $minorCategoryId == null) {
             throw new Exception('Unable to create FixedAsset due to missing Major/Minor category ID.');
         }
+        //get est_useful_life from major category
 
 
-        $formula->fixedAsset()->create([
+        return FixedAsset::create([
             'capex_id' => Capex::where('capex', $collection['capex'])->first()->id ?? null,
             'sub_capex_id' => SubCapex::where('sub_capex', $collection['sub_capex'])->first()->id ?? null,
-            'vladimir_tag_number' => $vladimirTagGeneratorRepository,
+            'vladimir_tag_number' => $this->vladimirTagGenerator(),
             'tag_number' => $collection['tag_number'] ?? '-',
             'tag_number_old' => $collection['tag_number_old'] ?? '-',
             'asset_description' => ucwords(strtolower($collection['description'])),
             'type_of_request_id' => TypeOfRequest::where('type_of_request_name', ($collection['type_of_request']))->first()->id,
             'asset_specification' => ucwords(strtolower($collection['additional_description'])),
             'accountability' => ucwords(strtolower($collection['accountability'])),
-            'accountable' => strtoupper($collection['accountable'] ?? '-'),
+            'accountable' => ucwords(strtolower($collection['accountable'] ?? '-')),
             'cellphone_number' => $collection['cellphone_number'],
             'brand' => ucwords(strtolower($collection['brand'])),
             'major_category_id' => $majorCategoryId,
@@ -172,9 +169,7 @@ class MasterlistImport extends DefaultValueBinder implements
             //check for unnecessary spaces and trim them to one space only
             'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
             'quantity' => $collection['quantity'],
-            'depreciation_method' => strtoupper($collection['depreciation_method']) == 'STL'
-                ? strtoupper($collection['depreciation_method'])
-                : ucwords(strtolower($collection['depreciation_method'])),
+            'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
             'acquisition_date' => $collection['acquisition_date'],
             'acquisition_cost' => $collection['acquisition_cost'],
             'asset_status_id' => AssetStatus::where('asset_status_name', $collection['asset_status'])->first()->id,
@@ -190,7 +185,27 @@ class MasterlistImport extends DefaultValueBinder implements
         ]);
     }
 
-
+    private function createFormula($fixedAsset, $collection, $est_useful_life)
+    {
+        $faController = new FixedAssetController();
+        //current date
+        $fixedAsset->formula()->create([
+            'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
+            'acquisition_date' => $collection['acquisition_date'],
+            'acquisition_cost' => $collection['acquisition_cost'],
+            'scrap_value' => $collection['scrap_value'],
+            'depreciable_basis' => $collection['depreciable_basis'],
+            'accumulated_cost' => $collection['accumulated_cost'],
+            'months_depreciated' => $faController->getMonthsDepreciated(substr_replace($collection['start_depreciation'], '-', 4, 0),Carbon::now()),
+//            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
+            'end_depreciation' => $faController->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life),
+            'depreciation_per_year' => $collection['depreciation_per_year'],
+            'depreciation_per_month' => $collection['depreciation_per_month'],
+            'remaining_book_value' => $collection['remaining_book_value'],
+            'release_date' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->subMonth()->format('Y-m-d'),
+            'start_depreciation' => substr_replace($collection['start_depreciation'], '-', 4, 0),
+        ]);
+    }
 
 //Todo: if the id is trashed then what should i do with the id?
     function rules($collection): array
@@ -238,6 +253,42 @@ class MasterlistImport extends DefaultValueBinder implements
                     }
                 }
             }],
+//            '*.project_name' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
+//                //check if the value of project name is null or '-'
+//                if ($value == null || $value == '-') {
+//                    return true;
+//                }
+//                //check in the capex table if the project name is the same with the capex
+//                $index = array_search($attribute, array_keys($collections->toArray()));
+//                $capex = Capex::where('capex', $collections[$index]['capex'])->first();
+//                if ($capex) {
+//                    $project = $capex->where('project_name', $value)->first();
+//                    if (!$project) {
+//                        $fail('Project name does not exist in the capex');
+//                    }
+//                }
+//            }],
+//            '*.sub_project' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
+//                if ($value == '' || $value == '-') {
+//                    return true;
+//                }
+//                $index = array_search($attribute, array_keys($collections->toArray()));
+//                $subCapexValue = $collections[$index]['sub_capex'];
+//                if($subCapexValue != '' && $subCapexValue != '-'){
+//                    if ($value == '' || $value == '-') {
+//                        $fail('Sub Project is required');
+//                        return true;
+//                    }
+//                }
+//                //check in the sub capex table if the subproject is the same with the capex
+//                $subCapex = SubCapex::where('sub_capex', $subCapexValue)->first();
+//                if ($subCapex) {
+//                    $subProject = $subCapex->where('sub_project', $value)->first();
+//                    if (!$subProject) {
+//                        $fail('Sub project does not exist in the sub capex');
+//                    }
+//                }
+//            }],
             '*.tag_number' => ['required', 'regex:/^([0-9-]{6,13}|-)$/', function ($attribute, $value, $fail) use ($collections) {
                 $duplicate = $collections->where('tag_number', $value)->where('tag_number', '!=', '-')->count();
                 if ($duplicate > 1) {
@@ -282,7 +333,7 @@ class MasterlistImport extends DefaultValueBinder implements
 //                function ($attribute, $value, $fail) use ($collections) {
 //                    $major_category = MajorCategory::withTrashed()->where('major_category_name', $value)->first();
 //                    if (!$major_category) {
-//                        $fail('Major Category does not exists');
+//                        $fail('Major Category does not exist');
 //                    }
 //                }
             ],
@@ -311,7 +362,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $scrap_value = $collections[$index]['scrap_value'];
 
-                if ($value < $scrap_value) {
+                if($value < $scrap_value){
                     $fail('Acquisition cost must not be less than scrap value');
                 }
 
@@ -345,7 +396,7 @@ class MasterlistImport extends DefaultValueBinder implements
             }],
             '*.start_depreciation' => ['required'],
             '*.company_code' => 'required|exists:companies,company_code',
-            '*.department_code' => ['required', 'exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
+            '*.department_code' => ['required','exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $company_code = $collections[$index]['company_code'];
                 $location_code = $collections[$index]['location_code'];
@@ -420,4 +471,94 @@ class MasterlistImport extends DefaultValueBinder implements
 
     }
 
+
+//  GENERATING VLADIMIR TAG NUMBER
+    public function vladimirTagGenerator(): string
+    {
+        $generatedEan13Result = $this->generateEan13();
+        // Check if the generated number is a duplicate or already exists in the database
+        while ($this->checkDuplicateEan13($generatedEan13Result)) {
+            $generatedEan13Result = $this->generateEan13();
+        }
+
+        return $generatedEan13Result;
+    }
+
+    public function generateEan13(): string
+    {
+        $date = date('ymd');
+        static $lastRandom = 0;
+        do {
+            $random = mt_rand(1, 9) . mt_rand(1000, 9999);
+        } while ($random === $lastRandom);
+        $lastRandom = $random;
+
+        $number = "5$date$random";
+
+        if (strlen($number) !== 12) {
+            return 'Invalid Number';
+        }
+
+        //Calculate checkDigit
+        $checkDigit = $this->calculateCheckDigit($number);
+
+        $ean13Result = $number . $checkDigit;
+
+        return $ean13Result;
+    }
+
+    public function calculateCheckDigit(string $number): int
+    {
+        $evenSum = $this->calculateEvenSum($number);
+        $oddSum = $this->calculateOddSum($number);
+
+        $totalSum = $evenSum + $oddSum;
+        $remainder = $totalSum % 10;
+        $checkDigit = ($remainder === 0) ? 0 : 10 - $remainder;
+
+        return $checkDigit;
+    }
+
+    public function calculateEvenSum(string $number): int
+    {
+        $evenSum = 0;
+        for ($i = 1; $i < 12; $i += 2) {
+            $evenSum += (int)$number[$i];
+        }
+        return $evenSum * 3;
+    }
+
+    public function calculateOddSum(string $number): int
+    {
+        $oddSum = 0;
+        for ($i = 0; $i < 12; $i += 2) {
+            $oddSum += (int)$number[$i];
+        }
+        return $oddSum;
+    }
+
+    public function checkDuplicateEan13(string $ean13Result): bool
+    {
+        $generated = [];
+        return in_array($ean13Result, $generated) || FixedAsset::where('vladimir_tag_number', $ean13Result)->exists();
+    }
+    function getEmployeeData($client, $token){
+        return $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+                'Accept' => 'application/json',
+            ],
+        ])->getBody()->getContents();
+    }
+
+    function findEmployee($data, $value){
+        if (!empty($data['data']) && is_array($data['data'])) {
+            foreach ($data['data'] as $employee) {
+                if (!empty($employee['general_info']) && in_array($employee['general_info']['full_name'], $value)) {
+                    echo $employee['general_info']['full_id_number'] . PHP_EOL;
+                    break;
+                }
+            }
+        }
+    }
 }
