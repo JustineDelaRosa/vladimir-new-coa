@@ -128,7 +128,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             'accumulated_cost' => $collection['accumulated_cost'],
             'months_depreciated' => $this->calculationRepository->getMonthDifference(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
 //            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life,$collection['depreciation_method']),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life, $collection['depreciation_method']),
             'depreciation_per_year' => $collection['depreciation_per_year'],
             'depreciation_per_month' => $collection['depreciation_per_month'],
             'remaining_book_value' => $collection['remaining_book_value'],
@@ -162,7 +162,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             'quantity' => $collection['quantity'],
             'depreciation_method' => strtoupper($collection['depreciation_method']) == 'STL'
                 ? strtoupper($collection['depreciation_method'])
-                : ucwords(strtolower($collection['depreciation_method'])) ,
+                : ucwords(strtolower($collection['depreciation_method'])),
             'acquisition_date' => $collection['acquisition_date'],
             'acquisition_cost' => $collection['acquisition_cost'],
             'asset_status_id' => AssetStatus::where('asset_status_name', $collection['asset_status'])->first()->id,
@@ -178,9 +178,9 @@ class AdditionalCostImport extends DefaultValueBinder implements
     }
 
 
-
     private function rules($collections)
     {
+        $processedFixedAssets = [];
         return [
             '*.vladimir_tag_number' => ['required', 'exists:fixed_assets,vladimir_tag_number'],
             '*.description' => 'required',
@@ -217,16 +217,27 @@ class AdditionalCostImport extends DefaultValueBinder implements
                 }
 
             }],
-            '*.voucher' => ['required', function ($attribute, $value, $fail) use ($collections) {
-                $index = array_search($attribute, array_keys($collections));
-                $vladimir_tag_number = $collections[$index]['vladimir_tag_number'];
-                $fixed_asset_id = FixedAsset::where('vladimir_tag_number', $vladimir_tag_number)->first()->id ?? 0;
-                //check if this voucher already exists in this fixed asset id
-                $additional_cost = AdditionalCost::where('fixed_asset_id', $fixed_asset_id)->where('voucher', $value)->first();
-                if ($additional_cost) {
-                    $fail('Voucher already exists');
+
+            '*.voucher' => [
+                'required',
+                function ($attribute, $value, $fail) use ($collections, &$processedFixedAssets) {
+                    $index = array_search($attribute, array_keys($collections));
+                    $vladimirTagNumber = $collections[$index]['vladimir_tag_number'];
+                    $fixedAsset = FixedAsset::where('vladimir_tag_number', $vladimirTagNumber)->first();
+                    $fixedAssetId = $fixedAsset->id ?? 0;
+                    if (isset($processedFixedAssets[$fixedAssetId][$value])) {
+                        $fail('Duplicate voucher');
+                        return;
+                    }
+                    $processedFixedAssets[$fixedAssetId][$value] = true;
+                    $additionalCost = AdditionalCost::where('fixed_asset_id', $fixedAssetId)
+                        ->where('voucher', $value)
+                        ->first();
+                    if ($additionalCost) {
+                        $fail('Voucher already exists');
+                    }
                 }
-            }],
+            ],
             '*.receipt' => 'required',
             '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required|in:STL,One Time',
@@ -291,6 +302,8 @@ class AdditionalCostImport extends DefaultValueBinder implements
     private function messages()
     {
         return [
+            '*.vladimir_tag_number.required' => 'Vladimir Tag Number is required',
+            '*.vladimir_tag_number.exists' => 'Vladimir Tag Number does not exist',
             '*.asset_description.required' => 'Description is required',
             '*.type_of_request.required' => 'Type of Request is required',
             '*.type_of_request.in' => 'Invalid Type of Request',
