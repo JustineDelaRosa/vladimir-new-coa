@@ -20,6 +20,11 @@ class FixedAsset extends Model
 
     // ]
 
+
+    public function additionalCost()
+    {
+        return $this->hasMany(AdditionalCost::class, 'fixed_asset_id', 'id');
+    }
     public function capex()
     {
         return $this->belongsTo(Capex::class, 'capex_id', 'id');

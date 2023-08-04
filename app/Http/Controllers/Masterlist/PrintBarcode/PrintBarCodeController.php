@@ -112,20 +112,7 @@ class PrintBarCodeController extends Controller
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
-//        $faStatus = $request->get('faStatus');
 
-        // Simplify the logic for faStatus
-//        if ($faStatus == null) {
-//            $faStatus = ['Good', 'For Disposal', 'For Repair', 'Spare', 'Sold', 'Write Off', 'Disposed'];
-//        } else if ($faStatus == 'Disposed, Sold') {
-//            $faStatus = ['Disposed', 'Sold'];
-//        } else if ($faStatus == 'Disposed' || $faStatus == 'Sold') {
-//            $faStatus = [$faStatus];
-//        } else {
-//            $faStatus = array_filter(array_map('trim', explode(',', $faStatus)), function ($status) {
-//                return $status !== 'Disposed';
-//            });
-//        }
 
         // Define the common query for fixed assets
         $fixedAssetQuery = FixedAsset::with([

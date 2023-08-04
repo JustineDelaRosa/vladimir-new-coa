@@ -4,13 +4,22 @@ namespace App\Http\Controllers\Masterlist;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MajorCategory\MajorCategoryRequest;
+use App\Models\AdditionalCost;
 use App\Models\FixedAsset;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
+use App\Repositories\CalculationRepository;
 use Illuminate\Http\Request;
 
 class MajorCategoryController extends Controller
 {
+
+    private $calculationRepository;
+    public function __construct()
+    {
+        $this->calculationRepository = new CalculationRepository();
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -118,17 +127,22 @@ class MajorCategoryController extends Controller
         //     return response()->json(['error' => 'Major Category Route Not Found2'], 404);
         // }
 
-        if (MajorCategory::where('id', $id)
-            ->where(['major_category_name' => $major_category_name, 'est_useful_life' => $est_useful_life])
-            ->exists()
-        ) {
+        $majorCategory = MajorCategory::withTrashed()
+            ->find($id);
+
+        if (!$majorCategory) {
+            return response()->json(['error' => 'Major Category Route Not Found'], 404);
+        }
+
+        if ($majorCategory->major_category_name === $major_category_name && $majorCategory->est_useful_life === $est_useful_life) {
             return response()->json(['message' => 'No Changes'], 200);
         }
-        $majorCategory = MajorCategory::withTrashed()
-            ->where('major_category_name', $major_category_name)
+
+        if (MajorCategory::where(['major_category_name' => $major_category_name])
             ->where('id', '!=', $id)
-            ->exists();
-        if ($majorCategory) {
+            ->withTrashed()
+            ->first()
+        ) {
             return response()->json(
                 [
                     'message' => 'The given data was invalid.',
@@ -142,31 +156,18 @@ class MajorCategoryController extends Controller
             );
         }
 
-        if (MajorCategory::where('id', $id)->exists()) {
-            $update = MajorCategory::where('id', $id)->update([
-                'major_category_name' => $major_category_name,
-                'est_useful_life' => $est_useful_life,
-                // 'is_active' => true
-            ]);
-            if($update){
+        $majorCategory->major_category_name = $major_category_name;
+        $majorCategory->est_useful_life = $est_useful_life;
 
-                $faEndDepreciation = new FixedAssetController();
-                //get est_useful_life from major category
-                $majorCategory = MajorCategory::where('id', $id)->first();
-                //adjust end depreciation from formulas
-                $fixedAsset = FixedAsset::where('major_category_id', $id)->get();
-                foreach ($fixedAsset as $fa) {
-                    $startDepreciation = $fa->formula->start_depreciation;
-                    $fa->formula()->update([
-                        'end_depreciation' => $faEndDepreciation->getEndDepreciation($startDepreciation, $majorCategory->est_useful_life)
-                    ]);
-                }
-            }
-            return response()->json(['message' => 'Successfully Updated!'], 200);
+        $fixedAsset = FixedAsset::where('major_category_id', $id)->get();
+        $additionalCost = AdditionalCost::where('major_category_id', $id)->get();
 
-        } else {
-            return response()->json(['error' => 'Major Category Route Not Found'], 404);
-        }
+        $this->applyEndDepreciation($fixedAsset, $majorCategory);
+        $this->applyEndDepreciation($additionalCost, $majorCategory);
+
+        $majorCategory->save();
+
+        return response()->json(['message' => 'Successfully Updated!'], 200);
     }
 
 
@@ -261,5 +262,17 @@ class MajorCategoryController extends Controller
 
 
         return $MajorCategory;
+    }
+
+
+    private function applyEndDepreciation($assets, $majorCategory)
+    {
+        foreach ($assets as $asset) {
+            $startDepreciation = $asset->formula->start_depreciation;
+            $depreciationMethod = $asset->formula->depreciation_method;
+            $asset->formula()->update([
+                'end_depreciation' => $this->calculationRepository->getEndDepreciation($startDepreciation, $majorCategory->est_useful_life, $depreciationMethod)
+            ]);
+        }
     }
 }

@@ -7,7 +7,7 @@ use App\Imports\MasterlistImport;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
-class MasterlistImportController extends Controller
+class FixedAssetImportController extends Controller
 {
     public function masterlistImport(Request $request)
     {
@@ -19,11 +19,11 @@ class MasterlistImportController extends Controller
 
         Excel::import(new MasterlistImport, $file);
 
-        //put into an array the data from the excel file
+        //put into an array the data from the Excel file
         $data = Excel::toArray(new MasterlistImport, $file);
         return response()->json(
             [
-                'message' => 'Masterlist imported successfully.',
+                'message' => 'Fixed Asset imported successfully.',
                 'data' => $data
             ],
             200

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateFixedAssetsTable extends Migration
+class CreateAdditionalCostsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,15 +13,16 @@ class CreateFixedAssetsTable extends Migration
      */
     public function up()
     {
-        Schema::create('fixed_assets', function (Blueprint $table) {
+        //Todo: Possible revision of the table structure
+        Schema::create('additional_costs', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('capex_id')->nullable();
-//            $table->string('project_name');
-            $table->unsignedInteger('sub_capex_id')->nullable();
-//            $table->string('sub_project');
-            $table->string('vladimir_tag_number');
-            $table->string('tag_number');
-            $table->string('tag_number_old');
+            $table->unsignedInteger('fixed_asset_id');
+            $table->foreign('fixed_asset_id')
+                ->references('id')
+                ->on('fixed_assets')
+                ->onDelete('cascade');
+            $table->boolean('is_additional_cost')->default(true);
+            $table->boolean('is_active')->default(true);
             $table->string('asset_description');
             $table->unsignedInteger('type_of_request_id');
             $table->string('asset_specification');
@@ -36,16 +37,12 @@ class CreateFixedAssetsTable extends Migration
             $table->string('receipt');
             $table->string('quantity');
             $table->string('depreciation_method');
-//            $table->decimal('est_useful_life',18,1);
             $table->date('acquisition_date');
             $table->Biginteger('acquisition_cost');
             $table->unsignedInteger('asset_status_id');
             $table->unsignedInteger('cycle_count_status_id');
             $table->unsignedInteger('depreciation_status_id');
             $table->unsignedInteger('movement_status_id');
-            $table->boolean('is_old_asset')->default(false);
-            $table->boolean('is_additional_cost')->default(false);
-            $table->boolean('is_active')->default(true);
             $table->string('care_of');
             $table->unsignedInteger('company_id');
             $table->unsignedInteger('department_id');
@@ -54,18 +51,10 @@ class CreateFixedAssetsTable extends Migration
             $table->string('remarks')->nullable();
             $table->softDeletes();
             $table->timestamps();
-            $table->foreign('capex_id')
+            $table->foreign('type_of_request_id')
                 ->references('id')
-                ->on('capexes')
+                ->on('type_of_requests')
                 ->onDelete('cascade');
-            $table->foreign('sub_capex_id')
-                ->references('id')
-                ->on('sub_capexes')
-                ->onDelete('cascade');
-             $table->foreign('type_of_request_id')
-                 ->references('id')
-                 ->on('type_of_requests')
-                 ->onDelete('cascade');
             $table->foreign('major_category_id')
                 ->references('id')
                 ->on('major_categories')
@@ -116,6 +105,7 @@ class CreateFixedAssetsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('fixed_assets');
+        Schema::dropIfExists('additional_costs');
     }
 }
+

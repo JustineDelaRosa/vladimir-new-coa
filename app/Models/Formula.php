@@ -16,4 +16,8 @@ class Formula extends Model
     {
         return $this->belongsTo(FixedAsset::class, 'fixed_asset_id', 'id');
     }
+
+    public function additionalCost(){
+        return $this->belongsTo(AdditionalCost::class, 'additional_cost_id', 'id');
+    }
 }

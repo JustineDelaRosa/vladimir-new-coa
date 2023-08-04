@@ -2,6 +2,7 @@
 
 namespace App\Models\Status;
 
+use App\Models\AdditionalCost;
 use App\Models\FixedAsset;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,8 +14,11 @@ class DepreciationStatus extends Model
 
     protected $guarded = [];
 
-    public function fixedAssets()
+    public function fixedAsset()
     {
-        return $this->hasMany(FixedAsset::class, 'depreciation_status' , 'id');
+        return $this->hasMany(FixedAsset::class, 'depreciation_status_id' , 'id');
+    }
+    public function additionalCost(){
+        return $this->hasMany(AdditionalCost::class, 'depreciation_status_id' , 'id');
     }
 }

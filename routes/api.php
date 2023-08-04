@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CategoryListController;
+use App\Http\Controllers\Masterlist\AdditionalCostController;
 use App\Http\Controllers\Masterlist\CapexController;
 use App\Http\Controllers\Masterlist\COA\AccountTitleController;
 use App\Http\Controllers\Masterlist\COA\CompanyController;
@@ -10,8 +11,8 @@ use App\Http\Controllers\Masterlist\COA\LocationController;
 use App\Http\Controllers\Masterlist\DivisionController;
 use App\Http\Controllers\Masterlist\FixedAssetController;
 use App\Http\Controllers\Masterlist\MajorCategoryController;
-use App\Http\Controllers\Masterlist\MasterlistExportController;
-use App\Http\Controllers\Masterlist\MasterlistImportController;
+use App\Http\Controllers\Masterlist\FixedAssetExportController;
+use App\Http\Controllers\Masterlist\FixedAssetImportController;
 use App\Http\Controllers\Masterlist\MinorCategoryController;
 use App\Http\Controllers\Masterlist\PrintBarcode\PrintBarCodeController;
 use App\Http\Controllers\Masterlist\Status\AssetStatusController;
@@ -58,6 +59,7 @@ Route::post('/auth/login', [AuthController::class, 'Login']);
 //DOWNLOAD SAMPLE FILE//
 Route::get('capex-sample-file', [CapexController::class, 'sampleCapexDownload']);
 Route::get('fixed-asset-sample-file', [FixedAssetController::class, 'sampleFixedAssetDownload']);
+Route::get('additional-cost-sample-file', [AdditionalCostController::class, 'sampleAdditionalCostDownload']);
 
 
 
@@ -143,9 +145,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::patch('sub-capex/archived-sub-capex/{id}', [SubCapexController::class, 'archived']);
 
     //MASTERLIST IMPORT//
-    Route::post('import-masterlist', [MasterlistImportController::class, 'masterlistImport']);
+    Route::post('import-masterlist', [FixedAssetImportController::class, 'masterlistImport']);
     //MASTERLIST EXPORT//
-    Route::get('export-masterlist', [MasterlistExportController::class, 'export']);
+    Route::get('export-masterlist', [FixedAssetExportController::class, 'export']);
     //CAPEX IMPORT//
     Route::post('import-capex', [CapexController::class, 'capexImport']);
 
@@ -153,8 +155,14 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //FIXED ASSET//
     Route::resource('fixed-asset', FixedAssetController::class);
     Route::patch('fixed-asset/archived-fixed-asset/{id}', [FixedAssetController::class, 'archived']);
-    Route::get('fixed-assets/search', [FixedAssetController::class, 'search']);
+    Route::get('fixed-asset-search', [FixedAssetController::class, 'search']);
     Route::get('fixed-assets/search-asset-tag', [FixedAssetController::class, 'searchAssetTag']);
+    //ADDITIONAL COST//
+    Route::resource('additional-cost', AdditionalCostController::class);
+    Route::post('add-cost-depreciation/{id}', [AdditionalCostController::class, 'assetDepreciation']);
+    Route::patch('add-cost/archived-add-cost/{id}', [AdditionalCostController::class, 'archived']);
+    Route::post('import-add-cost', [AdditionalCostController::class, 'additionalCostImport']);
+
     //CUSTOM ASSET DEPRECIATION CALCULATION//
     Route::post('asset-depreciation/{id}', [FixedAssetController::class, 'assetDepreciation']);
     Route::get('show-fixed-asset/{tagNumber}', [FixedAssetController::class, 'showTagNumber']);
@@ -186,9 +194,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('movement-status', MovementStatusController::class);
     Route::patch('movement-status/archived-movement-status/{id}', [MovementStatusController::class, 'archived']);
 
-    //DOWNLOAD SAMPLE FILE//
-    Route::get('capex-sample-file', [CapexController::class, 'sampleCapexDownload']);
-    Route::get('fixed-asset-sample-file', [FixedAssetController::class, 'sampleFixedAssetDownload']);
+
 });
 
 
