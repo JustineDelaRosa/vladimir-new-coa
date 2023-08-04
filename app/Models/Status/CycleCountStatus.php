@@ -15,6 +15,6 @@ class CycleCountStatus extends Model
 
     public function fixedAssets()
     {
-        return $this->hasMany(FixedAsset::class, 'cycle_count_status' , 'id');
+        return $this->hasMany(FixedAsset::class, 'cycle_count_status_id' , 'id');
     }
 }

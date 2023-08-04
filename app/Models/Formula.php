@@ -12,8 +12,13 @@ class Formula extends Model
 
     protected $guarded = [];
 
-    public function fixedAsset()
+    public function fixedAsset(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
-        return $this->belongsTo(FixedAsset::class, 'fixed_asset_id', 'id');
+        return $this->hasOne(FixedAsset::class, 'formula_id', 'id');
+    }
+
+    public function additionalCost(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(AdditionalCost::class, 'formula_id', 'id');
     }
 }

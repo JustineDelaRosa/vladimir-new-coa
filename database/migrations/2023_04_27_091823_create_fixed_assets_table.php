@@ -43,16 +43,16 @@ class CreateFixedAssetsTable extends Migration
             $table->unsignedInteger('cycle_count_status_id');
             $table->unsignedInteger('depreciation_status_id');
             $table->unsignedInteger('movement_status_id');
-            $table->boolean('is_old_asset')->default(0);
+            $table->boolean('is_old_asset')->default(false);
+            $table->boolean('is_additional_cost')->default(false);
+            $table->boolean('is_active')->default(true);
             $table->string('care_of');
             $table->unsignedInteger('company_id');
-//            $table->string('company_name');
             $table->unsignedInteger('department_id');
-//            $table->string('department_name');
             $table->unsignedInteger('location_id');
-//            $table->string('location_name');
             $table->unsignedInteger('account_id');
-//            $table->string('account_title');
+            $table->string('remarks')->nullable();
+            $table->unsignedInteger('formula_id');
             $table->softDeletes();
             $table->timestamps();
             $table->foreign('capex_id')
@@ -107,6 +107,11 @@ class CreateFixedAssetsTable extends Migration
                 ->references('id')
                 ->on('movement_statuses')
                 ->onDelete('cascade');
+            $table->foreign('formula_id')
+                ->references('id')
+                ->on('formulas')
+                ->onDelete('cascade');
+
         });
     }
 

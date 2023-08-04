@@ -57,8 +57,8 @@ class FixedAssetRequest extends FormRequest
                 'type_of_request_id' => 'required',
                 'asset_specification' => 'required',
                 'accountability' => 'required',
-                'accountable' => ['required_if:accountability,Personal Issued',
-                    function ($attribute, $value, $fail) {
+                'accountable' => [
+                    'required_if:accountability,Personal Issued',                    function ($attribute, $value, $fail) {
                         $accountability = request()->input('accountable');
                         //if accountable is null continue
                         if ($value == null) {
@@ -81,6 +81,7 @@ class FixedAssetRequest extends FormRequest
                             return;
                         }
                     },
+
                 ],
                 'cellphone_number' => 'nullable|numeric|digits:11',
                 'brand' => 'nullable',
@@ -102,16 +103,25 @@ class FixedAssetRequest extends FormRequest
                 }],
                 'depreciation_method' => 'required',
                 'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
-                'acquisition_cost' => ['required', 'numeric'],
+                //acquisition cost should not be less than or equal to 0
+                'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
+                    if ($value <= 0) {
+                        $fail('Invalid acquisition cost');
+                    }
+                }],
                 'scrap_value' => ['required', 'numeric'],
-                'depreciable_basis' => ['required', 'numeric'],
-                'accumulated_cost' => ['nullable', 'numeric'],
+                'depreciable_basis' => ['required', 'numeric',function ($attribute, $value, $fail) {
+                    if ($value <= 0) {
+                        $fail('Invalid depreciable basis');
+                    }
+                }],
+//                'accumulated_cost' => ['nullable', 'numeric'],
                 'care_of' => 'nullable',
                 'months_depreciated' => 'required|numeric',
 //                'end_depreciation' => 'required|date_format:Y-m',
-                'depreciation_per_year' => ['nullable', 'numeric'],
-                'depreciation_per_month' => ['nullable', 'numeric'],
-                'remaining_book_value' => ['nullable', 'numeric'],
+//                'depreciation_per_year' => ['nullable', 'numeric'],
+//                'depreciation_per_month' => ['nullable', 'numeric'],
+//                'remaining_book_value' => ['nullable', 'numeric'],
                 'release_date' => ['required', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'department_id' => 'required|exists:departments,id',
@@ -222,6 +232,14 @@ class FixedAssetRequest extends FormRequest
                 'account_title_id' => 'required|exists:account_titles,id',
             ];
         }
+
+        if($this->isMethod('patch') && ($this->route()->parameter('id'))){
+            $id = $this->route()->parameter('id');
+            return[
+              'status' => 'required|boolean',
+                'remarks' => 'required_if:status,false|string|max:255',
+            ];
+        }
     }
 
     /**
@@ -309,6 +327,12 @@ class FixedAssetRequest extends FormRequest
             'account_code.exists' => 'Account code does not exist',
             'account_title.required' => 'Account title is required',
             'account_title.exists' => 'Account title does not exist',
+
+            'status.required' => 'Status is required',
+            'status.boolean' => 'Status must be a boolean',
+            'remarks.required_if' => 'Remarks is required',
+            'remarks.string' => 'Remarks must be a string',
+            'remarks.max' => 'Remarks must not exceed 255 characters',
 
         ];
     }

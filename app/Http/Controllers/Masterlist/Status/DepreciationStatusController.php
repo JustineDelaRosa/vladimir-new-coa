@@ -22,7 +22,7 @@ class DepreciationStatusController extends Controller
         $status = $request->status;
         $limit = $request->limit;
 
-        $depreciationStatus = DepreciationStatus::withTrashed()->where(function ($query) use ($search) {
+        $depreciationStatus = DepreciationStatus::where(function ($query) use ($search) {
             $query
                 ->where("depreciation_status_name", "like", "%" . $search . "%");
         })

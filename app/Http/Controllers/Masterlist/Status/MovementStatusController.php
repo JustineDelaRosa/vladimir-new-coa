@@ -21,7 +21,7 @@ class MovementStatusController extends Controller
         $status = $request->status;
         $limit = $request->limit;
 
-        $movementStatus = MovementStatus::withTrashed()->where(function ($query) use ($search) {
+        $movementStatus = MovementStatus::where(function ($query) use ($search) {
             $query
                 ->where("movement_status_name", "like", "%" . $search . "%");
         })

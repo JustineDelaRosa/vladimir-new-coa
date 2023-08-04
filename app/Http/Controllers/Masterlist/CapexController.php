@@ -27,8 +27,7 @@ class CapexController extends Controller
         $status = $request->input('status', '');
         $limit  = $request->input('limit', null);
 
-        $capexQuery = Capex::withTrashed()
-            ->with([
+        $capexQuery = Capex::withTrashed()->with([
                 'subCapex' => function ($query) {
                     $query->withTrashed();
                 },
@@ -64,10 +63,8 @@ class CapexController extends Controller
                         if (count($subCapexParts) > 1) {
                             $sub_capex->sub_capex = end($subCapexParts);
                         }
-
                         return $sub_capex;
                     });
-
             $capex->sub_capex_count = $capex->subCapex->count();
             return $capex;
         });
@@ -156,7 +153,6 @@ class CapexController extends Controller
 
     public function archived(CapexRequest $request, $id)
     {
-
         $status = $request->status;
 
         $capex = Capex::query();
@@ -174,7 +170,7 @@ class CapexController extends Controller
             } else {
 //                $checkFixedAsset = FixedAsset::where('capex_id', $id)->exists();
 //                if ($checkFixedAsset) {
-//                    return response()->json(['error' => 'Unable to archived , Capex is still in use!'], 422);
+//                    return response()->json(['error' => 'Unable to archive, Capex is still in use!'], 422);
 //                }
                 if (Capex::where('id', $id)->exists()) {
 
@@ -235,6 +231,14 @@ class CapexController extends Controller
             'data' => $data
         ], 200);
     }
+
+    public function sampleCapexDownload()
+    {
+        //download file from storage/sample
+        $path = storage_path('app/sample/capex.xlsx');
+        return response()->download($path);
+    }
+
     public function capexExport(Request $request){
         $search = $request->search;
         $status = $request->status;
@@ -287,12 +291,4 @@ class CapexController extends Controller
         });
     }
 
-    public function sampleCapexDownload()
-    {
-        //download file from storage/sample send to front end with header like this application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-        $file = storage_path('app/sample/capex.xlsx') ;
-        return response()->download($file);
-
-
-    }
 }
