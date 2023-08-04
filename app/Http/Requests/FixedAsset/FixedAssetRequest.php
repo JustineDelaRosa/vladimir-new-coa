@@ -237,7 +237,7 @@ class FixedAssetRequest extends FormRequest
             $id = $this->route()->parameter('id');
             return[
               'status' => 'required|boolean',
-                'remarks' => 'required|string|max:255',
+                'remarks' => 'required_if:status,false|string|max:255',
             ];
         }
     }
@@ -330,7 +330,7 @@ class FixedAssetRequest extends FormRequest
 
             'status.required' => 'Status is required',
             'status.boolean' => 'Status must be a boolean',
-            'remarks.required' => 'Remarks is required',
+            'remarks.required_if' => 'Remarks is required',
             'remarks.string' => 'Remarks must be a string',
             'remarks.max' => 'Remarks must not exceed 255 characters',
 

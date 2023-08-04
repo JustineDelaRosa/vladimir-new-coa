@@ -193,8 +193,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //MOVEMENT STATUS
     Route::resource('movement-status', MovementStatusController::class);
     Route::patch('movement-status/archived-movement-status/{id}', [MovementStatusController::class, 'archived']);
-
-
 });
 
 

@@ -217,7 +217,16 @@ class AdditionalCostImport extends DefaultValueBinder implements
                 }
 
             }],
-            '*.voucher' => 'required',
+            '*.voucher' => ['required', function ($attribute, $value, $fail) use ($collections) {
+                $index = array_search($attribute, array_keys($collections));
+                $vladimir_tag_number = $collections[$index]['vladimir_tag_number'];
+                $fixed_asset_id = FixedAsset::where('vladimir_tag_number', $vladimir_tag_number)->first()->id ?? 0;
+                //check if this voucher already exists in this fixed asset id
+                $additional_cost = AdditionalCost::where('fixed_asset_id', $fixed_asset_id)->where('voucher', $value)->first();
+                if ($additional_cost) {
+                    $fail('Voucher already exists');
+                }
+            }],
             '*.receipt' => 'required',
             '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required|in:STL,One Time',

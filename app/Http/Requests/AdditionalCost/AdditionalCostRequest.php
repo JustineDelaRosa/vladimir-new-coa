@@ -92,7 +92,7 @@ class AdditionalCostRequest extends FormRequest
             $id = $this->route()->parameter('id');
             return[
                 'status' => 'required|boolean',
-                'remarks' => 'required|string|max:255',
+                'remarks' => 'required_if:status,false|string|max:255',
             ];
         }
     }
@@ -151,7 +151,7 @@ class AdditionalCostRequest extends FormRequest
 
             'status.required' => 'The status is required.',
             'status.boolean' => 'The status must be a boolean.',
-            'remarks.required' => 'The remarks is required.',
+            'remarks.required_if' => 'The remarks is required.',
             'remarks.string' => 'The remarks must be a string.',
             'remarks.max' => 'The remarks may not be greater than 255 characters.',
 

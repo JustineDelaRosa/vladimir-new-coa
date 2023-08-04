@@ -54,7 +54,7 @@ class FixedAssetExportRepository
             'account_id',
             'formula_id',
             'created_at',
-        ]);
+        ])->where('is_active', 1);
 
         $secondQuery = AdditionalCost::select([
             'additional_costs.id',
@@ -91,7 +91,8 @@ class FixedAssetExportRepository
             'additional_costs.account_id',
             'additional_costs.formula_id',
             'fixed_assets.created_at'
-        ])->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
+        ])->where('additional_costs.is_active', 1)
+            ->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
 
         if ((!empty($startDate) && empty($endDate)) || (empty($startDate) && !empty($endDate))) {
@@ -321,7 +322,7 @@ class FixedAssetExportRepository
         $firstQuery = $this->applyFilters($firstQuery, $search, $startDate, $endDate);
         $secondQuery = $this->applyFilters($secondQuery, $search, $startDate, $endDate,
             'fixed_assets.created_at', 'fixedAsset.subCapex', 'fixed_assets.accountability',
-            'fixed_assets.accountable', 'fixed_assets.brand', 'fixed_assets.depreciation_method');
+            'fixed_assets.accountable', 'fixed_assets.brand', 'fixed_assets.depreciation_method', 'fixed_assets.is_active');
 
         $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number')->get();
         //if results are empty
@@ -449,9 +450,11 @@ class FixedAssetExportRepository
                           $accountability = 'accountability',
                           $accountable = 'accountable',
                           $brand = 'brand',
-                          $depreciation_method = 'depreciation_method')
+                          $depreciation_method = 'depreciation_method',
+                          $is_active = 'is_active')
     {
 
+        $query->where($is_active, 1);
         if ($search != null && ($startDate == null && $endDate == null)) {
             $query->where(function ($q) use ($relation, $depreciation_method, $brand, $accountable, $accountability, $search) {
                 $queryConditions = [

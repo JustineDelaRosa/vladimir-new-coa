@@ -68,7 +68,14 @@ class AdditionalCostController extends Controller
      */
     public function show($id)
     {
-        $additional_cost = AdditionalCost::withTrashed()->with('formula')->where('id', $id)->first();
+        $additional_cost = AdditionalCost::withTrashed()->with([
+            'formula'=> function($query) {
+                $query->withTrashed();
+            },
+            'fixedAsset'=> function($query) {
+                $query->withTrashed();
+            },
+        ])->where('id', $id)->first();
 
         if(!$additional_cost) {
             return response()->json([
@@ -240,7 +247,7 @@ class AdditionalCostController extends Controller
         $remaining_book_value = $this->calculationRepository->getRemainingBookValue($properties->depreciable_basis, $accumulated_cost);
 
         if ($depreciation_method === 'One Time') {
-            $age = 0.083333333333333;
+            $age = 0.08333333333333;
             $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->depreciable_basis, $properties->scrap_value, $age);
         }
 
@@ -301,14 +308,13 @@ class AdditionalCostController extends Controller
         return response()->json(
             [
                 'message' => 'Additional Cost imported successfully.',
-                'data' => $data
             ],
             200
         );
     }
 
-    public function sampleAdditionalCostDownload(){
-
+    public function sampleAdditionalCostDownload(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
         $path = storage_path('app/sample/additionalCost.xlsx');
         return response()->download($path);
     }

@@ -7,6 +7,7 @@ use App\Http\Requests\FixedAsset\FixedAssetRequest;
 use App\Http\Requests\FixedAsset\FixedAssetUpdateRequest;
 use App\Imports\MasterlistImport;
 use App\Models\AccountTitle;
+use App\Models\AdditionalCost;
 use App\Models\Capex;
 use App\Models\Company;
 use App\Models\Department;
@@ -39,7 +40,8 @@ class FixedAssetController extends Controller
 
     public function index()
     {
-        $fixed_assets = FixedAsset::with('formula')->get();
+        $fixed_assets = FixedAsset::with(['formula', 'additionalCost'])
+            ->get();
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
             'data' => $this->fixedAssetRepository->transformFixedAsset($fixed_assets)
@@ -88,10 +90,14 @@ class FixedAssetController extends Controller
 
     public function show(int $id)
     {
-        $fixed_asset = FixedAsset::withTrashed()->with('formula', function ($query) {
-            $query->withTrashed();
-        })
-            ->where('id', $id)->first();
+        $fixed_asset = FixedAsset::withTrashed()->with([
+            'formula' => function ($query) {
+                $query->withTrashed();
+            },
+            'additionalCost' => function ($query) {
+                $query->withTrashed();
+            },
+        ])->where('id', $id)->first();
 
 
         //        return $fixed_asset->majorCategory->major_category_name;
@@ -175,6 +181,24 @@ class FixedAssetController extends Controller
                     return response()->json(['errors' => 'Unable to Archive!, Depreciation is Running!'], 422);
                 }
 
+                //if fixed asset was tag then don't allow archiving
+                $additionalCosts = AdditionalCost::where('fixed_asset_id', $id)->first();
+                if ($additionalCosts) {
+                    return response()->json(['errors' => 'Fixed Asset was Tagged!'], 422);
+                }
+
+
+//                foreach($additionalCosts as $additionalCost)  {
+//                    // Get the associated Formula and delete it.
+//                    $formula = $additionalCost->formula;
+//                    if($formula) {
+//                        $formula->delete();
+//                    }
+//
+//                    // Then, it's safe to delete the AdditionalCost.
+//                    $additionalCost->delete();
+//                }
+
                 $fixedAsset->where('id', $id)->update(['remarks' => $remarks, 'is_active' => false]);
                 Formula::where('id', $fixedAsset->where('id', $id)->first()->formula_id)->delete();
                 $fixedAsset->where('id', $id)->delete();
@@ -186,7 +210,7 @@ class FixedAssetController extends Controller
             if (FixedAsset::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
-                if(FixedAsset::where('id', $id)->where('sub_capex_id', null)->exists()) {
+                if (FixedAsset::where('id', $id)->where('sub_capex_id', null)->exists()) {
                     $checkSubCapex = SubCapex::where('id', $fixedAsset->where('id', $id)->first()->sub_capex_id)->exists();
                     if (!$checkSubCapex) {
                         return response()->json(['errors' => 'Unable to Restore!, SubCapex was Archived!'], 422);
