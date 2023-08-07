@@ -6,6 +6,7 @@ use App\Models\AdditionalCost;
 use App\Models\FixedAsset;
 use App\Models\Formula;
 use Carbon\Carbon;
+use DateTime;
 use Illuminate\Support\Facades\DB;
 
 class FixedAssetExportRepository
@@ -513,7 +514,14 @@ class FixedAssetExportRepository
         if (($startDate && $endDate) || $search) {
 
             if ($startDate && $endDate) {
-                $query->whereBetween($created_at, [$startDate, $endDate]);
+                //Ensure the dates are in Y-m-d H:i:s format
+                $startDate = new DateTime($startDate);
+                $endDate = new DateTime($endDate);
+
+                //set time to end of day
+                $endDate->setTime(23, 59, 59);
+
+                $query->whereBetween($created_at, [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
             }
 
             if ($search) {

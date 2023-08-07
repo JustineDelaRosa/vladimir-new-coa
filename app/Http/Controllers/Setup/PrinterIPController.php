@@ -85,8 +85,7 @@ class PrinterIPController extends Controller
         $printerIP = PrinterIP::find($id);
         if(!$printerIP){
             return response()->json([
-                'message' => 'Printer ip not found.',
-                'data' => null
+                'message' => 'Printer ip not found.'
             ], 404);
         }
         return response()->json([
@@ -108,11 +107,10 @@ class PrinterIPController extends Controller
         $printerIP = PrinterIP::find($id);
         if(!$printerIP){
             return response()->json([
-                'message' => 'Printer ip not found.',
-                'data' => null
+                'message' => 'Printer ip not found.'
             ], 404);
         }
-        $printerIP->ip = $request->printer_ip;
+        $printerIP->ip = $request->ip;
         $printerIP->name = $request->name;
         $printerIP->save();
         return response()->json([
@@ -167,9 +165,26 @@ class PrinterIPController extends Controller
 
     public function getClientIP(Request $request){
         $ip = $_SERVER['REMOTE_ADDR'];
+//        $ip = request()->ip();
         return response()->json([
             'message' => 'Successfully retrieved client ip.',
             'data' => $ip
         ], 200);
     }
+
+
+//    public function getClientIP(Request $request) {
+//        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+//            $ip = $_SERVER['HTTP_CLIENT_IP'];
+//        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+//            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+//        } else {
+//            $ip = $_SERVER['REMOTE_ADDR'];
+//        }
+//
+//        return response()->json([
+//            'message' => 'Successfully retrieved client ip.',
+//            'data' => $ip
+//        ], 200);
+//    }
 }

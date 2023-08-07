@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Masterlist\PrintBarcode;
 use App\Http\Controllers\Controller;
 use App\Models\FixedAsset;
 use App\Models\PrinterIP;
+use DateTime;
 use Exception;
 use Illuminate\Http\Request;
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
@@ -124,7 +125,14 @@ class PrintBarCodeController extends Controller
 
         // Add date filter if both startDate and endDate are given
         if ($startDate && $endDate) {
-            $fixedAssetQuery->whereBetween('created_at', [$startDate, $endDate]);
+            //Ensure the dates are in Y-m-d H:i:s format
+            $startDate = new DateTime($startDate);
+            $endDate = new DateTime($endDate);
+
+            //set time to end of day
+            $endDate->setTime(23, 59, 59);
+
+            $fixedAssetQuery->whereBetween('created_at', [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
         }
 
         // Add search filter if search is given

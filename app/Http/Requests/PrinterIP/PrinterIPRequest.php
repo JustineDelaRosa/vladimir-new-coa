@@ -30,8 +30,8 @@ class PrinterIPRequest extends FormRequest
                 'name' => 'required|unique:printer_i_p_s,name',
             ];
         }
-        if($this->isMethod('put')){
-            $id = $this->route()->parameter('printer-ip');
+        if($this->isMethod('put') && ($this->route()->parameter('printer_ip'))){
+            $id = $this->route()->parameter('printer_ip');
             return [
                 //unique ignore his own id
                 'ip' => 'required|ip|unique:printer_i_p_s,ip,'.$id,
