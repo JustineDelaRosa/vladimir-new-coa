@@ -8,6 +8,7 @@ use App\Models\PrinterIP;
 use DateTime;
 use Exception;
 use Illuminate\Http\Request;
+use Mike42\Escpos\PrintConnectors\FilePrintConnector;
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 use Mike42\Escpos\Printer;
 
@@ -18,7 +19,7 @@ class PrintBarCodeController extends Controller
 {
     public function printBarcode(Request $request)
     {
-        $tagNumber = $this->search($request);
+       $tagNumber = $this->search($request);
         $clientIP = request()->ip();
 //        //accept only the ip address with 10.10.x.x
 //        if (substr($clientIP, 0, 7) === "10.10.1") {
@@ -28,11 +29,16 @@ class PrintBarCodeController extends Controller
 //            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
 //        }
 //        return $tagNumber;
+//        where('ip', $clientIP)->
         $printerIP = PrinterIP::where('ip', $clientIP)->first();
-        //check status on printerIP table
-        if (!$printerIP->is_active) {
+        if (!$printerIP || !$printerIP->is_active) {
             return response()->json(['message' => 'You are not allowed to print barcode'], 403);
         }
+
+        //check status on printerIP table
+//        if (!$printerIP->is_active) {
+//            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
+//        }
 
         if (!$tagNumber) {
             return response()->json(['message' => 'No data found'], 404);
@@ -40,7 +46,7 @@ class PrintBarCodeController extends Controller
 
 
         try {
-            //get the ip from ative printerIP table in a database
+            //get the ip from active printerIP table in a database
 //$printerIP = PrinterIP::where('is_active', true)->first()->ip;
             // Initialize the WindowsPrintConnector with the COM port and baud rate
             //$connector = new WindowsPrintConnector("COM1");
@@ -49,6 +55,8 @@ class PrintBarCodeController extends Controller
             //$printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
             $connector = new WindowsPrintConnector("smb://{$printerIP->ip}/ZDesigner ZD230-203dpi ZPL");
             //check if the smb://10.10.10.11 is available
+//            $printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
+//            $connector = new FilePrintConnector($printer);
 
             // Create a new Printer object and assign the connector to it
             $printer = new Printer($connector);
@@ -103,7 +111,9 @@ class PrintBarCodeController extends Controller
                 ], 200);
         } catch (Exception $e) {
             // Handle any exceptions that may occur during the printing process
-            return response()->json(['message' => 'Unable to Print'],422);
+            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
+
+//            return response()->json(['message' => 'Unable to Print'],422);
         }
     }
 
@@ -192,15 +202,16 @@ class PrintBarCodeController extends Controller
                     'id' => $asset->id,
                     'vladimir_tag_number' => $asset->vladimir_tag_number,
                     'asset_description' => $asset->asset_description,
-                    'location_name' => $asset->location_name,
-                    //if the department has 10 characters or more, then make it an acronym
-                    'department_name' => strlen($asset->department_name) > 10 ? $this->acronym($asset->department_name) : $asset->department_name
+//                    'location_name' => $asset->location_name,
+//                    //if the department has 10 characters or more, then make it an acronym
+//                    'department_name' => strlen($asset->department_name) > 10 ? $this->acronym($asset->department_name) : $asset->department_name
                 ];
             }
         });
 
         // Return the result array
         return $result;
+
     }
 
     private function acronym($department_name): string

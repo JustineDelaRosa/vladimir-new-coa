@@ -90,8 +90,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::patch('account-title/archived-account-title/{id}', [AccountTitleController::class, 'archived']);
 
 
-
-
     ///AUTH//
     Route::put('auth/reset/{id}', [AuthController::class, 'resetPassword']);
     Route::post('auth/change_password', [AuthController::class, 'changedPassword']);

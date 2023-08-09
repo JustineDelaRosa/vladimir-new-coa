@@ -68,6 +68,11 @@ class LocationController extends Controller
             return response()->json(['message' => 'Data not Ready']);
         }
 
+        //check if the department table is not empty
+        if (Department::all()->isEmpty()) {
+            return response()->json(['message' => 'Sync the department first!']);
+        }
+
         foreach ($location_request as $locations) {
             foreach ($locations as $location) {
                 foreach ($location as $loc) {
@@ -97,6 +102,8 @@ class LocationController extends Controller
                     if ($sync) {
                         Department::WhereIn('sync_id', $departments)->update(['location_sync_id' => $sync_id]);
                     }
+
+
                 }
             }
         }

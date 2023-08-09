@@ -111,6 +111,10 @@ class MasterlistImport extends DefaultValueBinder implements
 //            }
 //        }
 
+        //if collection is empty pass an empty array
+        if ($collections->isEmpty()) {
+            $collections = collect([]);
+        }
 
         Validator::make($collections->toArray(), $this->rules($collections->toArray()), $this->messages())->validate();
 

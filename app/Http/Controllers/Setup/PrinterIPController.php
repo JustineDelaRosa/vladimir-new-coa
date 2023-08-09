@@ -141,25 +141,44 @@ class PrinterIPController extends Controller
         ], 200);
     }
 
-    public function activateIP(Request $request,$id)
+    public function activateIP(Request $request, $id)
     {
         $printer = PrinterIP::find($id);
 
         if (!$printer) {
             return response()->json([
-                'message' => 'Printer ip not found.'
+                'message' => 'Printer IP not found.'
             ], 404);
         }
-        $printer->is_active = true;
+
+        // Get current status
+        $currentStatus = $printer->is_active;
+
+        // if the printer is currently active, just deactivate it
+        if ($currentStatus == true) {
+            $printer->is_active = false;
+        }
+
+        // if the printer is currently inactive, activate it and if necessary, deactivate another active one
+        else {
+            // Get all active IPs
+//            $activeIPs = PrinterIP::where('is_active', true)->orderBy('updated_at', 'asc')->get();
+//            // If there are 2 or more active IPs not including the current
+//            if ($activeIPs->count() >= 2) {
+//                // Deactivate the oldest one
+//                $oldestIP = $activeIPs->first();
+//                $oldestIP->is_active = false;
+//                $oldestIP->save();
+//            }
+
+            // Activate the printer
+            $printer->is_active = true;
+        }
+
         $printer->save();
-        PrinterIP::where('id', '!=', $id)->update(['is_active' => false]);
-//       $printer = PrinterIP::where('id', '!=', $id)->get();
-//        foreach ($printer as $print) {
-//            $print->is_active = false;
-//            $print->save();
-//        }
+
         return response()->json([
-            'message' => 'Successfully activated printer ip.',
+            'message' => 'Successfully changed printer IP status.',
         ], 200);
     }
 

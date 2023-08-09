@@ -78,7 +78,7 @@ class SubCapexController extends Controller
                 'message' => 'The given data was invalid.',
                 'errors' => [
                     'sub_capex' => [
-                        'Already in exists'
+                        'Already exists'
                     ]
                 ]
             ], 422);

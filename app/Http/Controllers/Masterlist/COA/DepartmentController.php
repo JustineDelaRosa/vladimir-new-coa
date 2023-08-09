@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Masterlist\COA;
 
 use App\Http\Controllers\Controller;
+use App\Models\Company;
 use App\Models\Department;
 use App\Models\LocationDepartment;
 use Illuminate\Http\Request;
@@ -70,9 +71,17 @@ class DepartmentController extends Controller
             return response()->json(['message' => 'Data not Ready']);
         }
 
+
+
+
         foreach ($department_request as $departments) {
             foreach ($departments as $department) {
                 foreach ($department as $dept) {
+                    $company = Company::where('sync_id', $dept['company']['id'])->first();
+                    if (!$company) {
+                        return response()->json(['message' => 'Sync the company first!']);
+                    }
+
                     $sync_id = $dept['id'];
                     $code = $dept['code'];
 //                    $name = strtoupper($dept['name']);

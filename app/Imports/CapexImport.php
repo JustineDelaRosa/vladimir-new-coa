@@ -75,9 +75,16 @@ class CapexImport implements ToCollection, WithHeadingRow, WithStartRow
                 $index = array_search($value, array_column($collection, 'sub_capex'));
                 $capex = $collection[$index]['capex'];
                 $subCapex = $collection[$index]['sub_capex'];
+
+                if ($capex !== $value) {
+                    if (!preg_match('/-[A-Za-z]/', $value)) {
+                        $fail('Invalid sub capex format');
+                    }
+                }
+
                 $capex = Capex::where('capex', $capex)->first();
                 if ($capex) {
-                    $subCapex = $capex->subCapex()->where('sub_capex', $subCapex)->first();
+                    $subCapex = $capex->subCapex()->withTrashed()->where('sub_capex', $subCapex)->first();
                     if ($subCapex) {
                         $fail('Sub capex already exists');
                     }

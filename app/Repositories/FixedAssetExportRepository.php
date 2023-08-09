@@ -329,7 +329,7 @@ class FixedAssetExportRepository
         //if results are empty
         if ($results->isEmpty()) {
             return response()->json([
-                'message' => 'Invalid search',
+                'message' => 'No data found',
                 'errors' => [
                     'search' => [
                         'No data found'

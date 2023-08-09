@@ -169,14 +169,14 @@ class DivisionController extends Controller
 //                    return response()->json(['error' => 'Unable to archived , Division is still in use!'], 422);
 //                }
 
-                $removeDivision = Department::where('division_id', $id)->update([
-                    'division_id' => null
-                ]);
-                if($removeDivision){
-                    $updateStatus = $Division->where('id', $id)->update(['is_active' => false]);
-                    $Division->where('id', $id)->delete();
-                    return response()->json(['message' => 'Successfully Deactivated!'], 200);
-                }
+                $removeDivision = Department::where('division_id', $id)
+                    ->update([
+                        'division_id' => null
+                    ]);
+                $updateStatus = $Division->where('id', $id)->update(['is_active' => false]);
+                $Division->where('id', $id)->delete();
+                return response()->json(['message' => 'Successfully Deactivated!'], 200);
+
             }
         }
         if ($status == true) {
