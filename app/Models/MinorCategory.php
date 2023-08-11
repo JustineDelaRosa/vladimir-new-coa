@@ -12,6 +12,7 @@ class MinorCategory extends Model
     protected $fillable = [
         'major_category_id',
         'minor_category_name',
+        'account_title_sync_id',
         'is_active',
     ];
     protected $hidden = [
@@ -31,6 +32,10 @@ class MinorCategory extends Model
 
     public function fixedAsset()
     {
-        return $this->hasMany(Masterlist::class, 'minor_category_id', 'id');
+        return $this->hasMany(FixedAsset::class, 'minor_category_id', 'id');
+    }
+    public function accountTitle()
+    {
+        return $this->belongsTo(AccountTitle::class, 'account_title_sync_id', 'sync_id');
     }
 }

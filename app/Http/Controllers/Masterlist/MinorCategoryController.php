@@ -33,6 +33,7 @@ class MinorCategoryController extends Controller
     public function store(MinorCategoryRequest $request)
     {
         // $division_id = $request->division_id;
+        $account_title_sync_id = $request->account_title_sync_id;
         $major_cat_id = $request->major_category_id;
         $minor_cat_name = ucwords(strtolower($request->minor_category_name));
         // $minor_category_name_check = str_replace(' ', '', $minor_cat_name);
@@ -64,6 +65,7 @@ class MinorCategoryController extends Controller
 
 
         $create = MinorCategory::create([
+            'account_title_sync_id' => $account_title_sync_id,
             'major_category_id' => $major_cat_id,
             'minor_category_name' => $minor_cat_name,
             'is_active' => 1
@@ -96,6 +98,12 @@ class MinorCategoryController extends Controller
         return response()->json([
             'data' => [
                 'id' => $minorCategory->id,
+                'account_title' => [
+                    'id' => $minorCategory->accountTitle->id,
+                    'sync_id' => $minorCategory->accountTitle->sync_id,
+                    'account_title_code' => $minorCategory->accountTitle->account_title_code,
+                    'account_title_name' => $minorCategory->accountTitle->account_title_name,
+                ],
                 'major_category' => [
                     'id' => $minorCategory->majorCategory->id,
                     'major_category_name' => $minorCategory->majorCategory->major_category_name,
@@ -120,6 +128,7 @@ class MinorCategoryController extends Controller
     public function update(MinorCategoryRequest $request, $id)
     {
         $minor_category_name = ucwords(strtolower($request->minor_category_name));
+        $account_title_sync_id = $request->account_title_sync_id;
         // $minor_category_name_check = str_replace(' ', '', $minor_category_name);
 
 
@@ -133,6 +142,7 @@ class MinorCategoryController extends Controller
         if (MinorCategory::where('id', $id)->exists()) {
             $update = MinorCategory::where('id', $id)
                 ->update([
+                    'account_title_sync_id' => $account_title_sync_id,
                     'minor_category_name' => $minor_category_name,
                 ]);
             return response()->json(['message' => 'Successfully Updated!'], 200);
@@ -211,6 +221,9 @@ class MinorCategoryController extends Controller
                 $query->orWhereHas('majorCategory', function ($query) use ($search) {
                     $query->where('major_category_name', 'LIKE', "%{$search}%");
                 });
+                $query->orWhereHas('accountTitle', function ($query) use ($search) {
+                    $query->where('account_title_name', 'LIKE', "%{$search}%");
+                });
             })
             ->orderBy('created_at', 'DESC')
             ->paginate($limit);
@@ -218,6 +231,12 @@ class MinorCategoryController extends Controller
         $MinorCategory->getCollection()->transform(function ($item) {
             return [
                 'id' => $item->id,
+                'account_title' => [
+                    'id' => $item->accountTitle->id,
+                    'sync_id' => $item->accountTitle->sync_id,
+                    'account_title_code' => $item->accountTitle->account_title_code,
+                    'account_title_name' => $item->accountTitle->account_title_name,
+                ],
                 'major_category' => [
                     'id' => $item->majorCategory->id,
                     'major_category_name' => $item->majorCategory->major_category_name,
