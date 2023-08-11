@@ -52,6 +52,8 @@ class CreateFixedAssetsTable extends Migration
             $table->unsignedInteger('location_id');
             $table->unsignedInteger('account_id');
             $table->string('remarks')->nullable();
+            $table->integer('print_count')->default(0);
+            $table->timestamp('last_printed')->nullable();
             $table->unsignedInteger('formula_id');
             $table->softDeletes();
             $table->timestamps();
