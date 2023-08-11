@@ -23,6 +23,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
@@ -196,6 +197,12 @@ class AdditionalCostImport extends DefaultValueBinder implements
                             $fail('Accountable should be empty');
                         }
                     }
+
+                    if ($accountability == 'Personal Issued') {
+                        if ($value == '-') {
+                            $fail('Accountable is required');
+                        }
+                    }
                 }],
             '*.cellphone_number' => 'required',
             '*.brand' => 'required',
@@ -265,10 +272,22 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     $fail('Accumulated cost must not be negative');
                 }
             }],
-            '*.asset_status' => 'required|exists:asset_statuses,asset_status_name',
-            '*.depreciation_status' => 'required|exists:depreciation_statuses,depreciation_status_name',
-            '*.cycle_count_status' => 'required|exists:cycle_count_statuses,cycle_count_status_name',
-            '*.movement_status' => 'required|exists:movement_statuses,movement_status_name',
+            '*.asset_status' => [
+                'required',
+                Rule::exists('asset_statuses', 'asset_status_name')->whereNull('deleted_at'),
+            ],
+            '*.depreciation_status' => [
+                'required',
+                Rule::exists('depreciation_statuses', 'depreciation_status_name')->whereNull('deleted_at'),
+            ],
+            '*.cycle_count_status' => [
+                'required',
+                Rule::exists('cycle_count_statuses', 'cycle_count_status_name')->whereNull('deleted_at'),
+            ],
+            '*.movement_status' => [
+                'required',
+                Rule::exists('movement_statuses', 'movement_status_name')->whereNull('deleted_at'),
+            ],
             '*.care_of' => 'required',
             '*.end_depreciation' => 'required',
             '*.depreciation_per_year' => ['required'],

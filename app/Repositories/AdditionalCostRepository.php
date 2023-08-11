@@ -386,6 +386,8 @@ class AdditionalCostRepository
                     'account_title_name' => $additional_cost->fixedAsset->accountTitle->account_title_name ?? '-',
                 ],
                 'remarks' => $additional_cost->fixedAsset->remarks,
+                'print_count' => $additional_cost->fixedAsset->print_count,
+                'last_printed' => $additional_cost->fixedAsset->last_printed,
             ],
         ];
     }
