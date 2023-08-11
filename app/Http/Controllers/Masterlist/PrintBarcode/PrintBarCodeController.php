@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Masterlist\PrintBarcode;
 use App\Http\Controllers\Controller;
 use App\Models\FixedAsset;
 use App\Models\PrinterIP;
+use Carbon\Carbon;
 use DateTime;
 use Exception;
 use Illuminate\Http\Request;
@@ -17,10 +18,25 @@ use Mike42\Escpos\Printer;
 
 class PrintBarCodeController extends Controller
 {
+
+
+//    function getClientName() {
+//        $clientIP = $_SERVER['REMOTE_ADDR'];
+//        $clientName = gethostbyaddr($clientIP);
+//        $clientNameParts = explode('.', $clientName);
+//
+//        // Returns the computer name without domain
+//        return $clientNameParts[0];
+//    }
+
     public function printBarcode(Request $request)
     {
-       $tagNumber = $this->search($request);
+       $tagNumber = $this->searchPrint($request);
         $clientIP = request()->ip();
+        //get computer name of the client do not include the domain name
+//        return $this->getClientName();
+
+
 //        //accept only the ip address with 10.10.x.x
 //        if (substr($clientIP, 0, 7) === "10.10.1") {
 //            // print the barcode
@@ -62,6 +78,13 @@ class PrintBarCodeController extends Controller
             $printer = new Printer($connector);
 
             foreach ($tagNumber as $VDM) {
+
+                $fixedAsset = FixedAsset::where('vladimir_tag_number', $VDM['vladimir_tag_number'])->first();
+
+                if ($fixedAsset) {
+                    $fixedAsset->increment('print_count',1);
+                    $fixedAsset->update(['last_printed' => Carbon::now()]);
+                }
 
                 $zplCode = "^XA
                             ~TA000
@@ -106,18 +129,18 @@ class PrintBarCodeController extends Controller
             }
 
             return response()->json(
-                ['message' => 'ZPL code printed successfully!',
+                ['message' => 'Barcode printed successfully!',
                     'data' => $tagNumber
                 ], 200);
         } catch (Exception $e) {
             // Handle any exceptions that may occur during the printing process
-            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
+//            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
 
-//            return response()->json(['message' => 'Unable to Print'],422);
+            return response()->json(['message' => 'Unable to Print'],422);
         }
     }
 
-    public function search(Request $request)
+    public function searchPrint(Request $request)
     {
         //  $id = $request->get('id');
         $search = $request->get('search');
@@ -202,6 +225,8 @@ class PrintBarCodeController extends Controller
                     'id' => $asset->id,
                     'vladimir_tag_number' => $asset->vladimir_tag_number,
                     'asset_description' => $asset->asset_description,
+                    'print_count' => $asset->print_count,
+                    'last_printed' => $asset->last_printed,
 //                    'location_name' => $asset->location_name,
 //                    //if the department has 10 characters or more, then make it an acronym
 //                    'department_name' => strlen($asset->department_name) > 10 ? $this->acronym($asset->department_name) : $asset->department_name
@@ -211,7 +236,6 @@ class PrintBarCodeController extends Controller
 
         // Return the result array
         return $result;
-
     }
 
     private function acronym($department_name): string

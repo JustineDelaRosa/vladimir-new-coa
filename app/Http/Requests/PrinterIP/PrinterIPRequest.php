@@ -25,8 +25,8 @@ class PrinterIPRequest extends FormRequest
     {
         if($this->isMethod('post')){
             return [
-                //only allow ip with 10.10.x.x format
-                'ip' => 'required|unique:printer_i_p_s,ip|ip|regex:/^10\.10\.\d{1,3}\.\d{1,3}$/',
+                //only allow ip with 10.10.x.x format |regex:/^10\.10\.\d{1,3}\.\d{1,3}$/
+                'ip' => 'required|unique:printer_i_p_s,ip|ip',
                 'name' => 'required|unique:printer_i_p_s,name',
             ];
         }
