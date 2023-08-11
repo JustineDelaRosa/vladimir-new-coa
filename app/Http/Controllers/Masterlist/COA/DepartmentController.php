@@ -44,16 +44,12 @@ class DepartmentController extends Controller
 //            }
 //        }
 
-        $department = Department::get();
+        $department = Department::where('is_active', 1)->get();
         return $department;
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
+     * Stores the department data*/
 
 //    public function store(Request $request)
 //    {
@@ -66,21 +62,19 @@ class DepartmentController extends Controller
 
     public function store(Request $request)
     {
+        $company = Company::all()->isEmpty();
+        if ($company) {
+            return response()->json(['message' => 'Company Data not Ready'], 422);
+        }
+
         $department_request = $request->all('result.departments');
         if (empty($request->all())) {
             return response()->json(['message' => 'Data not Ready']);
         }
 
-
-
-
         foreach ($department_request as $departments) {
             foreach ($departments as $department) {
                 foreach ($department as $dept) {
-                    $company = Company::where('sync_id', $dept['company']['id'])->first();
-                    if (!$company) {
-                        return response()->json(['message' => 'Sync the company first!']);
-                    }
 
                     $sync_id = $dept['id'];
                     $code = $dept['code'];

@@ -63,15 +63,21 @@ class LocationController extends Controller
 
     public function store(Request $request)
     {
+
+        $departmentsExist = Department::all()->isEmpty();
+        if ($departmentsExist) {
+            return response()->json(['message' => 'Sync the department first!'], 422);
+        }
+
         $location_request = $request->all('result.locations');
         if (empty($request->all())) {
             return response()->json(['message' => 'Data not Ready']);
         }
 
         //check if the department table is not empty
-        if (Department::all()->isEmpty()) {
-            return response()->json(['message' => 'Sync the department first!']);
-        }
+//        if (Department::all()->isEmpty()) {
+//            return response()->json(['message' => 'Sync the department first!'], 422);
+//        }
 
         foreach ($location_request as $locations) {
             foreach ($locations as $location) {
