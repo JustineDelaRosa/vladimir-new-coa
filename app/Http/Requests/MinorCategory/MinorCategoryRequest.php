@@ -48,9 +48,7 @@ class MinorCategoryRequest extends FormRequest
 //                'major_category_id' => 'required|exists:major_categories,id,deleted_at,NULL',
             //based on the id of the minor category, if the minor category name and major category id has duplicate
                     'account_title_sync_id'=>'required|exists:account_titles,sync_id,is_active,1',
-                    'minor_category_name' => ['required',new UniqueMajorMinorAccTitle() , Rule::unique('minor_categories')->where(function ($query) use ($id) {
-                        return $query->where('id', '!=', $id);
-                    })],
+                    'minor_category_name' => ['required',new UniqueMajorMinorAccTitle($id)],
             ];
         }
 

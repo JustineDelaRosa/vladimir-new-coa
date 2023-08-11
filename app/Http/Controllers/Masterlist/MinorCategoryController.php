@@ -133,7 +133,7 @@ class MinorCategoryController extends Controller
 
 
         if (MinorCategory::where('id', $id)
-            ->where(['minor_category_name' => $minor_category_name])
+            ->where(['minor_category_name' => $minor_category_name, 'account_title_sync_id' => $account_title_sync_id])
             ->exists()
         ) {
             return response()->json(['message' => 'No Changes'], 200);
