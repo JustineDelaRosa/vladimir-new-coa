@@ -15,7 +15,7 @@ class AccountTitleController extends Controller
      */
     public function index()
     {
-        $accountTitle = AccountTitle::get();
+        $accountTitle = AccountTitle::where('is_active', 1)->get();
         return $accountTitle;
     }
 

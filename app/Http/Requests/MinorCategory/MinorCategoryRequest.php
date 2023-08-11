@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\MinorCategory;
 
+use App\Rules\UniqueMajorMinorAccTitle;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -34,9 +35,10 @@ class MinorCategoryRequest extends FormRequest
     {
         if ($this->isMethod('post')) {
             return [
-                'major_category_id' => 'required|exists:major_categories,id,deleted_at,NULL',
+                'account_title_sync_id'=>'required|exists:account_titles,sync_id,is_active,1',
+                'major_category_id' => ['required','exists:major_categories,id,deleted_at,NULL'],
                 //if minor category name and major category id has duplicate
-                'minor_category_name' => 'required',
+                'minor_category_name' => ['required',new UniqueMajorMinorAccTitle()],
             ];
         }
 
@@ -45,9 +47,8 @@ class MinorCategoryRequest extends FormRequest
             return [
 //                'major_category_id' => 'required|exists:major_categories,id,deleted_at,NULL',
             //based on the id of the minor category, if the minor category name and major category id has duplicate
-                    'minor_category_name' => ['required', Rule::unique('minor_categories')->where(function ($query) use ($id) {
-                        return $query->where('id', '!=', $id);
-                    })],
+                    'account_title_sync_id'=>'required|exists:account_titles,sync_id,is_active,1',
+                    'minor_category_name' => ['required',new UniqueMajorMinorAccTitle($id)],
             ];
         }
 
@@ -68,6 +69,8 @@ class MinorCategoryRequest extends FormRequest
     function messages()
     {
         return [
+            'account_title_sync_id.required'=>'Account Title is required',
+            'account_title_sync_id.exists'=>'Account Title does not exist',
             'major_category_id.required' => 'Major Category is required',
             'major_category_id.exists' => 'Major Category does not exist',
             'minor_category_name.required' => 'Minor Category Name is required',

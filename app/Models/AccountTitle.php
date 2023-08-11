@@ -22,4 +22,8 @@ class AccountTitle extends Model
     {
         return $this->hasMany(FixedAsset::class, 'account_sync_id', 'sync_id');
     }
+    public function minorCategory()
+    {
+        return $this->hasOne(MinorCategory::class, 'account_title_sync_id', 'sync_id');
+    }
 }

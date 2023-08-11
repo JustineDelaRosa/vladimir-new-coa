@@ -110,7 +110,7 @@ class FixedAssetRepository
             'accountability' => $request['accountability'],
             'accountable' => $request['accountable'] ?? '-',
             'cellphone_number' => $request['cellphone_number'] ?? '-',
-            'brand' => ucwords(strtolower($request['brand'])) ?? '-',
+            'brand' => ucwords(strtolower($request['brand'] ?? '-')) ,
             'major_category_id' => $request['major_category_id'],
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
@@ -422,6 +422,8 @@ class FixedAssetRepository
                 'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
             ],
             'remarks' => $fixed_asset->remarks,
+            'print_count' => $fixed_asset->print_count,
+            'last_printed' => $fixed_asset->last_printed,
             'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
                 return [
                     'id' => $additional_cost->id,
@@ -599,6 +601,8 @@ class FixedAssetRepository
                 'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
             ],
             'remarks' => $fixed_asset->remarks,
+            'print_count' => $fixed_asset->print_count,
+            'last_printed' => $fixed_asset->last_printed,
         ];
     }
 
@@ -608,7 +612,7 @@ class FixedAssetRepository
             'vladimir_tag_number',
             'tag_number',
             'tag_number_old',
-            'type_of_request_id',
+            'asset_description',
             'accountability',
             'accountable',
             'brand',
@@ -620,7 +624,6 @@ class FixedAssetRepository
                 return true;
             }
         }
-
         return false;
     }
 
@@ -632,6 +635,7 @@ class FixedAssetRepository
             'minorCategory' => ['minor_category_name'],
             'department' => ['division', 'department_name'],
             'assetStatus' => ['asset_status_name'],
+            'typeOfRequest' => ['type_of_request_name'],
             'cycleCountStatus' => ['cycle_count_status_name'],
             'depreciationStatus' => ['depreciation_status_name'],
             'movementStatus' => ['movement_status_name'],

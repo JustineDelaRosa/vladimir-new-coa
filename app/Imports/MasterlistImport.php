@@ -7,6 +7,7 @@ use App\Models\AccountTitle;
 use App\Models\Capex;
 use App\Models\Company;
 use App\Models\FixedAsset;
+use App\Models\Formula;
 use App\Models\Location;
 use App\Models\Department;
 use App\Models\MajorCategory;
@@ -17,10 +18,12 @@ use App\Models\Status\DepreciationStatus;
 use App\Models\Status\MovementStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
+use App\Repositories\CalculationRepository;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
@@ -44,6 +47,13 @@ class MasterlistImport extends DefaultValueBinder implements
     WithCalculatedFormulas
 {
     use Importable;
+
+    private $calculationRepository;
+
+    public function __construct()
+    {
+        $this->calculationRepository = new CalculationRepository();
+    }
 
     function headingRow(): int
     {
@@ -102,6 +112,10 @@ class MasterlistImport extends DefaultValueBinder implements
 //            }
 //        }
 
+        //if collection is empty pass an empty array
+        if ($collections->isEmpty()) {
+            $collections = collect([]);
+        }
 
         Validator::make($collections->toArray(), $this->rules($collections->toArray()), $this->messages())->validate();
 
@@ -109,8 +123,8 @@ class MasterlistImport extends DefaultValueBinder implements
             $majorCategoryId = $this->getMajorCategoryId($collection['major_category']);
             $minorCategoryId = $this->getMinorCategoryId($collection['minor_category'], $majorCategoryId);
             $est_useful_life = $this->getEstUsefulLife($majorCategoryId);
-            $fixedAsset = $this->createFixedAsset($collection, $majorCategoryId, $minorCategoryId, $est_useful_life);
-            $this->createFormula($fixedAsset, $collection, $est_useful_life);
+            $formula = $this->createFormula($collection, $est_useful_life);
+            $this->createFixedAsset($formula, $collection, $majorCategoryId, $minorCategoryId);
         }
     }
 
@@ -141,7 +155,29 @@ class MasterlistImport extends DefaultValueBinder implements
         return $minorCategory ? $minorCategory->id : null;
     }
 
-    private function createFixedAsset($collection, $majorCategoryId, $minorCategoryId, $est_useful_life)
+    private function createFormula($collection, $est_useful_life)
+    {
+        return Formula::create([
+            'depreciation_method' => strtoupper($collection['depreciation_method']) == 'STL'
+                ? strtoupper($collection['depreciation_method'])
+                : ucwords(strtolower($collection['depreciation_method'])),
+            'acquisition_date' => $collection['acquisition_date'],
+            'acquisition_cost' => $collection['acquisition_cost'],
+            'scrap_value' => $collection['scrap_value'],
+            'depreciable_basis' => $collection['depreciable_basis'],
+            'accumulated_cost' => $collection['accumulated_cost'],
+            'months_depreciated' => $this->calculationRepository->getMonthDifference(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
+//            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life,$collection['depreciation_method']),
+            'depreciation_per_year' => $collection['depreciation_per_year'],
+            'depreciation_per_month' => $collection['depreciation_per_month'],
+            'remaining_book_value' => $collection['remaining_book_value'],
+            'release_date' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->subMonth()->format('Y-m-d'),
+            'start_depreciation' => substr_replace($collection['start_depreciation'], '-', 4, 0),
+        ]);
+    }
+
+    private function createFixedAsset($formula, $collection, $majorCategoryId, $minorCategoryId)
     {
         // Check if necessary IDs exist before creating FixedAsset
         if ($majorCategoryId == null || $minorCategoryId == null) {
@@ -150,7 +186,7 @@ class MasterlistImport extends DefaultValueBinder implements
         //get est_useful_life from major category
 
 
-        return FixedAsset::create([
+        $formula->fixedAsset()->create([
             'capex_id' => Capex::where('capex', $collection['capex'])->first()->id ?? null,
             'sub_capex_id' => SubCapex::where('sub_capex', $collection['sub_capex'])->first()->id ?? null,
             'vladimir_tag_number' => $this->vladimirTagGenerator(),
@@ -185,27 +221,7 @@ class MasterlistImport extends DefaultValueBinder implements
         ]);
     }
 
-    private function createFormula($fixedAsset, $collection, $est_useful_life)
-    {
-        $faController = new FixedAssetController();
-        //current date
-        $fixedAsset->formula()->create([
-            'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
-            'acquisition_date' => $collection['acquisition_date'],
-            'acquisition_cost' => $collection['acquisition_cost'],
-            'scrap_value' => $collection['scrap_value'],
-            'depreciable_basis' => $collection['depreciable_basis'],
-            'accumulated_cost' => $collection['accumulated_cost'],
-            'months_depreciated' => $faController->getMonthsDepreciated(substr_replace($collection['start_depreciation'], '-', 4, 0),Carbon::now()),
-//            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
-            'end_depreciation' => $faController->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life),
-            'depreciation_per_year' => $collection['depreciation_per_year'],
-            'depreciation_per_month' => $collection['depreciation_per_month'],
-            'remaining_book_value' => $collection['remaining_book_value'],
-            'release_date' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->subMonth()->format('Y-m-d'),
-            'start_depreciation' => substr_replace($collection['start_depreciation'], '-', 4, 0),
-        ]);
-    }
+
 
 //Todo: if the id is trashed then what should i do with the id?
     function rules($collection): array
@@ -225,7 +241,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $capexValue = $collections[$index]['capex'];
                 $typeOfRequest = $collections[$index]['type_of_request'];
-                if (ucwords(strtolower($typeOfRequest)) != 'Capex') {
+                if (ucwords(strtolower($typeOfRequest)) != 'Capex' ) {
                     if ($value != '-') {
                         $fail('Capex and Sub Capex should be empty');
                         return true;
@@ -325,6 +341,11 @@ class MasterlistImport extends DefaultValueBinder implements
                             $fail('Accountable should be empty');
                         }
                     }
+                    if ($accountability == 'Personal Issued') {
+                        if ($value == '-') {
+                            $fail('Accountable is required');
+                        }
+                    }
                 }],
             '*.cellphone_number' => 'required',
             '*.brand' => 'required',
@@ -381,10 +402,22 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Accumulated cost must not be negative');
                 }
             }],
-            '*.asset_status' => 'required|exists:asset_statuses,asset_status_name',
-            '*.depreciation_status' => 'required|exists:depreciation_statuses,depreciation_status_name',
-            '*.cycle_count_status' => 'required|exists:cycle_count_statuses,cycle_count_status_name',
-            '*.movement_status' => 'required|exists:movement_statuses,movement_status_name',
+            '*.asset_status' => [
+                'required',
+                Rule::exists('asset_statuses', 'asset_status_name')->whereNull('deleted_at'),
+            ],
+            '*.depreciation_status' => [
+                'required',
+                Rule::exists('depreciation_statuses', 'depreciation_status_name')->whereNull('deleted_at'),
+            ],
+            '*.cycle_count_status' => [
+                'required',
+                Rule::exists('cycle_count_statuses', 'cycle_count_status_name')->whereNull('deleted_at'),
+            ],
+            '*.movement_status' => [
+                'required',
+                Rule::exists('movement_statuses', 'movement_status_name')->whereNull('deleted_at'),
+            ],
             '*.care_of' => 'required',
             '*.end_depreciation' => 'required',
             '*.depreciation_per_year' => ['required'],

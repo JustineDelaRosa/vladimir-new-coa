@@ -17,7 +17,7 @@ class CreatePrinterIPSTable extends Migration
             $table->increments('id');
             $table->string('ip');
             $table->string('name');
-            $table->boolean('is_active')->default(0);
+            $table->boolean('is_active')->default(1);
             $table->timestamps();
         });
     }
