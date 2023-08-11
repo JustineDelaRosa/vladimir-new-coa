@@ -23,6 +23,7 @@ use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
@@ -240,7 +241,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $capexValue = $collections[$index]['capex'];
                 $typeOfRequest = $collections[$index]['type_of_request'];
-                if (ucwords(strtolower($typeOfRequest)) != 'Capex') {
+                if (ucwords(strtolower($typeOfRequest)) != 'Capex' ) {
                     if ($value != '-') {
                         $fail('Capex and Sub Capex should be empty');
                         return true;
@@ -340,6 +341,11 @@ class MasterlistImport extends DefaultValueBinder implements
                             $fail('Accountable should be empty');
                         }
                     }
+                    if ($accountability == 'Personal Issued') {
+                        if ($value == '-') {
+                            $fail('Accountable is required');
+                        }
+                    }
                 }],
             '*.cellphone_number' => 'required',
             '*.brand' => 'required',
@@ -396,10 +402,22 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Accumulated cost must not be negative');
                 }
             }],
-            '*.asset_status' => 'required|exists:asset_statuses,asset_status_name',
-            '*.depreciation_status' => 'required|exists:depreciation_statuses,depreciation_status_name',
-            '*.cycle_count_status' => 'required|exists:cycle_count_statuses,cycle_count_status_name',
-            '*.movement_status' => 'required|exists:movement_statuses,movement_status_name',
+            '*.asset_status' => [
+                'required',
+                Rule::exists('asset_statuses', 'asset_status_name')->whereNull('deleted_at'),
+            ],
+            '*.depreciation_status' => [
+                'required',
+                Rule::exists('depreciation_statuses', 'depreciation_status_name')->whereNull('deleted_at'),
+            ],
+            '*.cycle_count_status' => [
+                'required',
+                Rule::exists('cycle_count_statuses', 'cycle_count_status_name')->whereNull('deleted_at'),
+            ],
+            '*.movement_status' => [
+                'required',
+                Rule::exists('movement_statuses', 'movement_status_name')->whereNull('deleted_at'),
+            ],
             '*.care_of' => 'required',
             '*.end_depreciation' => 'required',
             '*.depreciation_per_year' => ['required'],

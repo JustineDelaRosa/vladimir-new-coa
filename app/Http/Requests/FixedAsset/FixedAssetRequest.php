@@ -31,7 +31,7 @@ class FixedAssetRequest extends FormRequest
         if ($this->isMethod('post') &&
             ($this->sub_capex_id === null)) {
             return [
-//                'capex_id' => 'nullable',
+//              'capex_id' => 'nullable',
                 'sub_capex_id' => 'nullable',
                 'tag_number' => ['nullable', 'max:13', function ($attribute, $value, $fail) {
                     //if the value id "-" and the is_old_asset is true return fail error
