@@ -192,12 +192,14 @@ class DepartmentController extends Controller
                     'company_code' => $department->company->company_code ?? "-",
                     'company_name' => $department->company->company_name ?? "-",
                 ],
-                'location' => [
-                    'location_id' => $department->location->id ?? "-",
-                    'location_sync_id' => $department->location->sync_id ?? "-",
-                    'location_code' => $department->location->location_code ?? "-",
-                    'location_name' => $department->location->location_name ?? "-",
-                ],
+                'locations' => $department->location->map(function ($locations) {
+                    return [
+                        'location_id' => $locations->id ?? "-",
+                        'location_sync_id' => $locations->sync_id ?? "-",
+                        'location_code' => $locations->location_code ?? "-",
+                        'location_name' => $locations->location_name ?? "-",
+                    ];
+                }),
                 'division' => [
                     'division_id' => $department->division->id ?? "-",
                     'division_name' => $department->division->division_name ?? "-",
@@ -207,7 +209,6 @@ class DepartmentController extends Controller
                 'is_active' => $department->is_active,
                 'created_at' => $department->created_at,
                 'updated_at' => $department->updated_at,
-
             ];
         });
         return $Department;

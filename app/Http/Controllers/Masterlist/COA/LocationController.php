@@ -16,7 +16,7 @@ class LocationController extends Controller
      */
     public function index()
     {
-        $location = Location::get();
+        $location = Location::with('departments')->where('is_active', 1)->get();
 //        return $location;
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
@@ -31,90 +31,85 @@ class LocationController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
 
-//    public function store(Request $request)
-//    {
-//        $sync_all = $request->all();
-//
-//
-//        foreach ($sync_all as $location) {
-//            $sync_id = $location["sync_id"];
-//            $code = $location["code"];
-//            $name = $location["name"];
-//            $is_active = $location["is_active"];
-//
-//            $locations = Location::updateOrCreate(
-//                [
-//                    "sync_id" => $sync_id,
-//                ],
-//                [
-//                    "sync_id" => $sync_id,
-//                    "location_code" => $code,
-//                    "location_name" => $name,
-//                    "is_active" => $is_active,
-//                ]
-//            );
-//
-//            $locations->departments()->sync($location["departments"]);
-//        }
-//
-//        return response()->json(['message' => 'Successfully Synced!']);
-//    }
-
-
     public function store(Request $request)
     {
+        $locations = $request->input('result.locations');
 
-        $departmentsExist = Department::all()->isEmpty();
-        if ($departmentsExist) {
-            return response()->json(['message' => 'Sync the department first!'], 422);
-        }
-
-        $location_request = $request->all('result.locations');
-        if (empty($request->all())) {
+        if (!$locations) {
             return response()->json(['message' => 'Data not Ready']);
         }
 
-        //check if the department table is not empty
-//        if (Department::all()->isEmpty()) {
-//            return response()->json(['message' => 'Sync the department first!'], 422);
-//        }
-
-        foreach ($location_request as $locations) {
-            foreach ($locations as $location) {
-                foreach ($location as $loc) {
-                    $sync_id = $loc['id'];
-                    $code = $loc['code'];
-//                    $name = strtoupper($loc['name']);
-                    $name = $loc['name'];
-                    $is_active = $loc['status'];
-                    //one location has many departments
-                    $departments = [];
-                    foreach ($loc['departments'] as $department) {
-                        $departments[] = $department['id'];
-                    }
-
-                    $sync = Location::updateOrCreate(
-                        [
-                            'sync_id' => $sync_id,
-                        ],
-                        [
-                            'location_code' => $code,
-                            'location_name' => $name,
-                            'is_active' => $is_active
-                        ],
-                    );
-
-                    //if sync is successful, insert this location_sync_id to department table as a foreign key
-                    if ($sync) {
-                        Department::WhereIn('sync_id', $departments)->update(['location_sync_id' => $sync_id]);
-                    }
-
-
-                }
-            }
+        if (Department::all()->isEmpty()) {
+            return response()->json(['message' => 'Department data not ready'], 422);
         }
+
+        foreach ($locations as $location) {
+            $locationInDB = Location::updateOrCreate(
+                ['sync_id' => $location['id']],
+                [
+                    'location_code' => $location['code'],
+                    'location_name' => $location['name'],
+                    'is_active' => $location['status']
+                ]
+            );
+
+            $department_ids = array_column($location['departments'], 'id');
+            $locationInDB->departments()->sync($department_ids);
+        }
+
         return response()->json(['message' => 'Successfully Synced!']);
     }
+
+//    public function store(Request $request)
+//    {
+//
+//        $departmentsExist = Department::all()->isEmpty();
+//        if ($departmentsExist) {
+//            return response()->json(['message' => 'Sync the department first!'], 422);
+//        }
+//
+//        $location_request = $request->all('result.locations');
+//        if (empty($request->all())) {
+//            return response()->json(['message' => 'Data not Ready']);
+//        }
+//
+//        //check if the department table is not empty
+////        if (Department::all()->isEmpty()) {
+////            return response()->json(['message' => 'Sync the department first!'], 422);
+////        }
+//
+//        foreach ($location_request as $locations) {
+//            foreach ($locations as $location) {
+//                foreach ($location as $loc) {
+//                    $sync_id = $loc['id'];
+//                    $code = $loc['code'];
+////                    $name = strtoupper($loc['name']);
+//                    $name = $loc['name'];
+//                    $is_active = $loc['status'];
+//                    //one location has many departments
+////                    $departments = [];
+////                    foreach ($loc['departments'] as $department) {
+////                        $departments[] = $department['id'];
+////                    }
+//
+//                    $sync = Location::updateOrCreate(
+//                        [
+//                            'sync_id' => $sync_id,
+//                        ],
+//                        [
+//                            'location_code' => $code,
+//                            'location_name' => $name,
+//                            'is_active' => $is_active
+//                        ],
+//                    );
+//
+//                    //sync the both department and location table in the pivot table
+//                    $sync->departments()->sync($loc['departments']);
+//                }
+//            }
+//        }
+//        return response()->json(['message' => 'Successfully Synced!']);
+//    }
 
     /**
      * Display the specified resource.
@@ -178,6 +173,27 @@ class LocationController extends Controller
             })
             ->orderby('created_at', 'DESC')
             ->paginate($limit);
+
+        $Location->getCollection()->transform(function ($location){
+            return [
+                'id' => $location->id,
+                'sync_id' => $location->sync_id,
+                'location_code' => $location->location_code,
+                'location_name' => $location->location_name,
+                'departments' => $location->departments->map(function ($departments){
+                    return[
+                        'department_id' => $departments->id ?? '-',
+                        'department_sync_id' => $departments->sync_id ?? '-',
+                        'department_code' => $departments->department_code ?? '-',
+                        'department_name' => $departments->department_name ?? '-',
+                    ];
+                }),
+                'is_active' => $location->is_active,
+                'created_at' => $location->created_at,
+                'updated_at' => $location->updated_at,
+            ];
+
+    });
         return $Location; //Todo: Add all the departments tagged to this location
     }
 
