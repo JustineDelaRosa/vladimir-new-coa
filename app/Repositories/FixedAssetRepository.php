@@ -26,7 +26,7 @@ class FixedAssetRepository
 
     public function storeFixedAsset($request, $vladimirTagNumber, $departmentQuery)
     {
-
+        return $departmentQuery;
         $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
 //        $fixedAsset = FixedAsset::create([
 //            'capex_id' => isset($request['sub_capex_id']) ? SubCapex::find($request['sub_capex_id'])->capex_id : null,
@@ -129,7 +129,7 @@ class FixedAssetRepository
             'care_of' => ucwords(strtolower($request['care_of'] ?? '-')),
             'company_id' => Company::where('sync_id', $departmentQuery->company_sync_id)->first()->id ?? null,
             'department_id' => $request['department_id'],
-            'location_id' => Location::where('sync_id', $departmentQuery->location_sync_id)->first()->id ?? null,
+            'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
         ]);
         return $formula->fixedAsset->with('formula')->first();
@@ -169,7 +169,7 @@ class FixedAssetRepository
             'care_of' => ucwords(strtolower($request['care_of'] ?? '-')),
             'company_id' => Company::where('sync_id', $departmentQuery->company_sync_id)->first()->id ?? null,
             'department_id' => $request['department_id'],
-            'location_id' => Location::where('sync_id', $departmentQuery->location_sync_id)->first()->id ?? null,
+            'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
         ]);
 

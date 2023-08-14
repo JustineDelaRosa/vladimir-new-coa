@@ -3,7 +3,9 @@
 namespace App\Http\Requests\FixedAsset;
 
 use App\Models\Capex;
+use App\Models\Department;
 use App\Models\FixedAsset;
+use App\Models\Location;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
 use Illuminate\Foundation\Http\FormRequest;
@@ -58,29 +60,30 @@ class FixedAssetRequest extends FormRequest
                 'asset_specification' => 'required',
                 'accountability' => 'required',
                 'accountable' => [
-                    'required_if:accountability,Personal Issued',                    function ($attribute, $value, $fail) {
-                        $accountability = request()->input('accountable');
-                        //if accountable is null continue
-                        if ($value == null) {
-                            return;
-                        }
-
-                        // Check if necessary keys exist to avoid undefined index
-                        if (isset($accountability['general_info']['full_id_number_full_name'])) {
-                            $full_id_number_full_name = $accountability['general_info']['full_id_number_full_name'];
-                            request()->merge(['accountable' => $full_id_number_full_name]);
-                        } else {
-                            // Fail validation if keys don't exist
-                            $fail('The accountable person\'s full name is required.');
-                            return;
-                        }
-
-                        // Validate full name
-                        if ($full_id_number_full_name === '') {
-                            $fail('The accountable person\'s full name cannot be empty.');
-                            return;
-                        }
-                    },
+                    'required_if:accountability,Personal Issued',
+//                    function ($attribute, $value, $fail) {
+//                        $accountability = request()->input('accountable');
+//                        //if accountable is null continue
+//                        if ($value == null) {
+//                            return;
+//                        }
+//
+//                        // Check if necessary keys exist to avoid undefined index
+//                        if (isset($accountability['general_info']['full_id_number_full_name'])) {
+//                            $full_id_number_full_name = $accountability['general_info']['full_id_number_full_name'];
+//                            request()->merge(['accountable' => $full_id_number_full_name]);
+//                        } else {
+//                            // Fail validation if keys don't exist
+//                            $fail('The accountable person\'s full name is required.');
+//                            return;
+//                        }
+//
+//                        // Validate full name
+//                        if ($full_id_number_full_name === '') {
+//                            $fail('The accountable person\'s full name cannot be empty.');
+//                            return;
+//                        }
+//                    },
 
                 ],
                 'cellphone_number' => 'nullable|numeric|digits:11',
@@ -125,6 +128,31 @@ class FixedAssetRequest extends FormRequest
                 'release_date' => ['required', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'department_id' => 'required|exists:departments,id',
+                'location_id' => [
+                    'required',
+                    'exists:locations,id',
+                    function ($attribute, $value, $fail) {
+                        // Fetch the location and associated departments only once
+                        $location = Location::query()->find($value);
+
+                        // Check if the location is active
+                        if (!$location || !$location->is_active) {
+                            $fail('Location is not active or does not exist.');
+                            return; // No point in proceeding if the location is not active
+                        }
+
+                        // Get the sync_id of the department
+                        $department_sync_id = Department::query()->where('id', request()->department_id)->value('sync_id');
+
+                        // Get sync_id's of all locations associated with the department
+                        $associated_location_sync_ids = $location->departments->pluck('sync_id');
+//                        dd($associated_location_sync_ids);
+                        // Check if department's sync_id exists in associated_location_sync_ids
+                        if (!$associated_location_sync_ids->contains($department_sync_id)) {
+                            $fail('Location is not tagged to the department selected.');
+                        }
+                    }
+                ],
                 'account_title_id' => 'required|exists:account_titles,id',
             ];
         }
@@ -229,6 +257,31 @@ class FixedAssetRequest extends FormRequest
                 'release_date' => ['required', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'department_id' => 'required|exists:departments,id',
+                'location_id' => [
+                    'required',
+                    'exists:locations,id',
+                    function ($attribute, $value, $fail) {
+                        // Fetch the location and associated departments only once
+                        $location = Location::query()->find($value);
+
+                        // Check if the location is active
+                        if (!$location || !$location->is_active) {
+                            $fail('Location is not active or does not exist.');
+                            return; // No point in proceeding if the location is not active
+                        }
+
+                        // Get the sync_id of the department
+                        $department_sync_id = Department::query()->where('id', request()->department_id)->value('sync_id');
+
+                        // Get sync_id's of all locations associated with the department
+                        $associated_location_sync_ids = $location->departments->pluck('sync_id');
+//                        dd($associated_location_sync_ids);
+                        // Check if department's sync_id exists in associated_location_sync_ids
+                        if (!$associated_location_sync_ids->contains($department_sync_id)) {
+                            $fail('Location is not tagged to the department selected.');
+                        }
+                    }
+                ],
                 'account_title_id' => 'required|exists:account_titles,id',
             ];
         }

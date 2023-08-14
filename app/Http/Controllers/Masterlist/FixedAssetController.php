@@ -78,7 +78,7 @@ class FixedAssetController extends Controller
                 422
             );
         }
-        $departmentQuery = Department::where('id', $request->department_id)->first();
+        $departmentQuery = Department::with('location')->where('id', $request->department_id)->first();
         $fixedAsset = $this->fixedAssetRepository->storeFixedAsset($request->all(), $vladimirTagNumber, $departmentQuery);
 
         //return the fixed asset and formula
