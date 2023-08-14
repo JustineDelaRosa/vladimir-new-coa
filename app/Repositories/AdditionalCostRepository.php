@@ -24,53 +24,6 @@ class AdditionalCostRepository
     {
 
         $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
-//        $additionalCost = AdditionalCost::create([
-//            'fixed_asset_id' => $request['fixed_asset_id'],
-//            'asset_description' => $request['asset_description'],
-//            'type_of_request_id' => $request['type_of_request_id'],
-//            'asset_specification' => $request['asset_specification'],
-//            'accountability' => $request['accountability'],
-//            'accountable' => $request['accountable'] ?? '-',
-//            'cellphone_number' => $request['cellphone_number'] ?? '-',
-//            'brand' => ucwords(strtolower($request['brand'])) ?? '-',
-//            'major_category_id' => $request['major_category_id'],
-//            'minor_category_id' => $request['minor_category_id'],
-//            'voucher' => $request['voucher'] ?? '-',
-//            'receipt' => $request['receipt'] ?? '-',
-//            'quantity' => $request['quantity'],
-//            'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
-//                ? strtoupper($request['depreciation_method'])
-//                : ucwords(strtolower($request['depreciation_method'])),
-//            'acquisition_date' => $request['acquisition_date'],
-//            'acquisition_cost' => $request['acquisition_cost'],
-//            'asset_status_id' => $request['asset_status_id'],
-//            'depreciation_status_id' => $request['depreciation_status_id'],
-//            'cycle_count_status_id' => $request['cycle_count_status_id'],
-//            'movement_status_id' => $request['movement_status_id'],
-//            'care_of' => ucwords(strtolower($request['care_of'] ?? '-')),
-//            'company_id' => Company::where('sync_id', $departmentQuery->company_sync_id)->first()->id ?? null,
-//            'department_id' => $request['department_id'],
-//            'location_id' => Location::where('sync_id', $departmentQuery->location_sync_id)->first()->id ?? null,
-//            'account_id' => $request['account_title_id'],
-//        ]);
-//
-//        $additionalCost->formula()->create([
-//            'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
-//                ? strtoupper($request['depreciation_method'])
-//                : ucwords(strtolower($request['depreciation_method'])),
-//            'acquisition_date' => $request['acquisition_date'],
-//            'acquisition_cost' => $request['acquisition_cost'],
-//            'scrap_value' => $request['scrap_value'],
-//            'depreciable_basis' => $request['depreciable_basis'],
-//            'accumulated_cost' => $request['accumulated_cost'] ?? 0,
-//            'months_depreciated' => $request['months_depreciated'],
-//            'end_depreciation' => $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])),),
-//            'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
-//            'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
-//            'remaining_book_value' => $request['remaining_book_value'] ?? 0,
-//            'release_date' => $request['release_date'],
-//            'start_depreciation' => $this->calculationRepository->getStartDepreciation($request['release_date'])
-//        ]);
 
         $formula = Formula::create([
             'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
@@ -116,7 +69,7 @@ class AdditionalCostRepository
             'care_of' => ucwords(strtolower($request['care_of'] ?? '-')),
             'company_id' => Company::where('sync_id', $departmentQuery->company_sync_id)->first()->id ?? null,
             'department_id' => $request['department_id'],
-            'location_id' => Location::where('sync_id', $departmentQuery->location_sync_id)->first()->id ?? null,
+            'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
         ]);
 
@@ -155,7 +108,7 @@ class AdditionalCostRepository
             'care_of' => ucwords(strtolower($request['care_of'] ?? '-')),
             'company_id' => Company::where('sync_id', $departmentQuery->company_sync_id)->first()->id ?? null,
             'department_id' => $request['department_id'],
-            'location_id' => Location::where('sync_id', $departmentQuery->location_sync_id)->first()->id ?? null,
+            'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
         ]);
 

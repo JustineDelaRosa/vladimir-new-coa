@@ -85,6 +85,31 @@ class AdditionalCostRequest extends FormRequest
                 'remaining_book_value' => ['nullable', 'numeric'],
                 'release_date' => ['required', 'date_format:Y-m-d'],
                 'department_id' => 'required|exists:departments,id',
+                'location_id' => [
+                    'required',
+                    'exists:locations,id',
+                    function ($attribute, $value, $fail) {
+                        // Fetch the location and associated departments only once
+                        $location = Location::query()->find($value);
+
+                        // Check if the location is active
+                        if (!$location || !$location->is_active) {
+                            $fail('Location is not active or does not exist.');
+                            return; // No point in proceeding if the location is not active
+                        }
+
+                        // Get the sync_id of the department
+                        $department_sync_id = Department::query()->where('id', request()->department_id)->value('sync_id');
+
+                        // Get sync_id's of all locations associated with the department
+                        $associated_location_sync_ids = $location->departments->pluck('sync_id');
+//                        dd($associated_location_sync_ids);
+                        // Check if department's sync_id exists in associated_location_sync_ids
+                        if (!$associated_location_sync_ids->contains($department_sync_id)) {
+                            $fail('Location is not tagged to the department selected.');
+                        }
+                    }
+                ],
                 'account_title_id' => 'required|exists:account_titles,id',
             ];
         }
@@ -219,6 +244,31 @@ class AdditionalCostRequest extends FormRequest
             'remaining_book_value' => ['nullable', 'numeric'],
             'release_date' => ['required', 'date_format:Y-m-d'],
             'department_id' => 'required|exists:departments,id',
+            'location_id' => [
+                'required',
+                'exists:locations,id',
+                function ($attribute, $value, $fail) {
+                    // Fetch the location and associated departments only once
+                    $location = Location::query()->find($value);
+
+                    // Check if the location is active
+                    if (!$location || !$location->is_active) {
+                        $fail('Location is not active or does not exist.');
+                        return; // No point in proceeding if the location is not active
+                    }
+
+                    // Get the sync_id of the department
+                    $department_sync_id = Department::query()->where('id', request()->department_id)->value('sync_id');
+
+                    // Get sync_id's of all locations associated with the department
+                    $associated_location_sync_ids = $location->departments->pluck('sync_id');
+//                        dd($associated_location_sync_ids);
+                    // Check if department's sync_id exists in associated_location_sync_ids
+                    if (!$associated_location_sync_ids->contains($department_sync_id)) {
+                        $fail('Location is not tagged to the department selected.');
+                    }
+                }
+            ],
             'account_title_id' => 'required|exists:account_titles,id',
         ];
     }
