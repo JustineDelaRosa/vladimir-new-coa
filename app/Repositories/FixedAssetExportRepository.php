@@ -398,6 +398,7 @@ class FixedAssetExportRepository
                 'company_code' => $fixed_asset->company->company_code,
                 'company_name' => $fixed_asset->company->company_name,
                 'department_code' => $fixed_asset->department->department_code,
+                'charged_department' => $fixed_asset->department->department_name,
                 'department_name' => $fixed_asset->department->department_name,
                 'location_code' => $fixed_asset->location->location_code,
                 'location_name' => $fixed_asset->location->location_name,

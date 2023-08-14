@@ -193,10 +193,11 @@ class MasterlistImport extends DefaultValueBinder implements
             'tag_number' => $collection['tag_number'] ?? '-',
             'tag_number_old' => $collection['tag_number_old'] ?? '-',
             'asset_description' => ucwords(strtolower($collection['description'])),
+            'charged_department' => Department::where('department_code', $collection['department_code'])->first()->id,
             'type_of_request_id' => TypeOfRequest::where('type_of_request_name', ($collection['type_of_request']))->first()->id,
             'asset_specification' => ucwords(strtolower($collection['additional_description'])),
             'accountability' => ucwords(strtolower($collection['accountability'])),
-            'accountable' => ucwords(strtolower($collection['accountable'] ?? '-')),
+            'accountable' => strtoupper($collection['accountable'] ?? '-'),
             'cellphone_number' => $collection['cellphone_number'],
             'brand' => ucwords(strtolower($collection['brand'])),
             'major_category_id' => $majorCategoryId,
@@ -329,6 +330,7 @@ class MasterlistImport extends DefaultValueBinder implements
             }],
             '*.description' => 'required', //todo: changing asset_description to description
             '*.type_of_request' => 'required|exists:type_of_requests,type_of_request_name',
+            '*.charged_department' => 'required',
             '*.additional_description' => 'required', //Todo changing asset_specification to Additional Description
             '*.accountability' => 'required',
             //required if accountability is personally issued and if accountability is common, it should be empty
@@ -378,7 +380,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.receipt' => 'required',
             '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required|in:STL,One Time',
-            '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date'],
+            '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],
             '*.acquisition_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $scrap_value = $collections[$index]['scrap_value'];
@@ -409,6 +411,22 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.depreciation_status' => [
                 'required',
                 Rule::exists('depreciation_statuses', 'depreciation_status_name')->whereNull('deleted_at'),
+                function ($attribute, $value, $fail) use ($collections) {
+                    $index = array_search($attribute, array_keys($collections->toArray()));
+                    //allow only fully depreciated and running depreciation
+                     $depreciation = DepreciationStatus::where('depreciation_status_name', $value)->first();
+                        if($depreciation->depreciation_status_name != 'Fully Depreciated' && $depreciation->depreciation_status_name != 'Running Depreciation'){
+                            $fail('Invalid depreciation status');
+                        }
+
+//                    $depreciation_method = $collections[$index]['depreciation_method'];
+//                    if ($depreciation_method == 'One Time') {
+//                        if ($value != 'Fully Depreciated') {
+//                            $fail('Depreciation status should be fully depreciated');
+//                        }
+//                    }
+
+                }
             ],
             '*.cycle_count_status' => [
                 'required',
@@ -419,7 +437,17 @@ class MasterlistImport extends DefaultValueBinder implements
                 Rule::exists('movement_statuses', 'movement_status_name')->whereNull('deleted_at'),
             ],
             '*.care_of' => 'required',
-            '*.end_depreciation' => 'required',
+            '*.end_depreciation' => ['required', function($attribute, $value, $fail) use ($collections){
+                $index = array_search($attribute, array_keys($collections->toArray()));
+                $depreciation_status_name = $collections[$index]['depreciation_status'];
+                $depreciation_status = DepreciationStatus::where('depreciation_status_name', $depreciation_status_name)->first();
+                if($depreciation_status->depreciation_status_name == 'Fully Depreciated'){
+                    //if the date value is not yet passed the current date
+                    if(Carbon::parse($value)->isAfter(Carbon::now())){
+                        $fail('not yet fully depreciated');
+                    }
+                }
+            }],
             '*.depreciation_per_year' => ['required'],
             '*.depreciation_per_month' => ['required'],
             '*.remaining_book_value' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
@@ -428,23 +456,62 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
             }],
             '*.start_depreciation' => ['required'],
-            '*.company_code' => 'required|exists:companies,company_code',
+            '*.company_code' => ['required','exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
+                $index = array_search($attribute, array_keys($collections->toArray()));
+                $company_name = $collections[$index]['company'];
+                $company = Company::query()
+                    ->where('company_code', $value)
+                    ->where('company_name', $company_name)
+                    ->where('is_active', '!=', 0)
+                    ->first();
+                if (!$company) {
+                    $fail('Invalid company');
+                }
+            }],
             '*.department_code' => ['required','exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $company_code = $collections[$index]['company_code'];
-                $location_code = $collections[$index]['location_code'];
-                $location_sync_id = Location::where('location_code', $location_code)->first()->sync_id ?? 0;
                 $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
                 $department = Department::where('department_code', $value)
-                    ->where('location_sync_id', $location_sync_id)
                     ->where('company_sync_id', $company_sync_id)
                     ->first();
                 if (!$department) {
                     $fail('Invalid location, company and department combination');
                 }
             }],
-            '*.location_code' => 'required|exists:locations,location_code',
-            '*.account_code' => 'required|exists:account_titles,account_title_code',
+            '*.location_code' => ['required','exists:locations,location_code', function($attribute, $value, $fail) use ($collections){
+                $index = array_search($attribute, array_keys($collections->toArray()));
+                //check if the code is correct on the database
+                $location_name = $collections[$index]['location'];
+                $location = Location::query()
+                    ->where('location_code', $value)
+                    ->where('location_name', $location_name)
+                    ->where('is_active', '!=', 0)
+                    ->first();
+                if(!$location){
+                    $fail('Invalid location');
+                    return;
+                }
+                $department_code = $collections[$index]['department_code'];
+                $department_sync_id = Department::where('department_code', $department_code)->first()->sync_id ?? 0;
+                $associated_location_sync_id = $location->departments->pluck('sync_id')->toArray();
+                if(!in_array($department_sync_id, $associated_location_sync_id)){
+                    $fail('Invalid location, company and department combination');
+                }
+
+            }],
+            '*.account_code' => ['required','exists:account_titles,account_title_code', function($attribute, $value, $fail) use ($collections){
+                $index = array_search($attribute, array_keys($collections->toArray()));
+                $account_title_name = $collections[$index]['account_title'];
+                $account_title = AccountTitle::query()
+                    ->where('account_title_code', $value)
+                    ->where('account_title_name', $account_title_name)
+                    ->where('is_active', '!=', 0)
+                    ->first();
+                if(!$account_title){
+                    $fail('Invalid account title');
+                }
+            }],
         ];
     }
 
@@ -473,6 +540,9 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.depreciation_method.required' => 'Depreciation Method is required',
             '*.depreciation_method.in' => 'The selected depreciation method is invalid.',
             '*.acquisition_date.required' => 'Acquisition Date is required',
+            '*.acquisition_date.date_format' => 'Invalid date format',
+            '*.acquisition_date.date' => 'Invalid date',
+            '*.acquisition_date.before_or_equal' => 'Acquisition Date must be a date before or equal to today.',
             '*.acquisition_cost.required' => 'Acquisition Cost is required',
             '*.scrap_value.required' => 'Scrap Value is required',
             '*.depreciable_basis.required' => 'Depreciable basis is required',

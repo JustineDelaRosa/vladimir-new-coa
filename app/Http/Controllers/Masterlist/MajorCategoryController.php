@@ -159,11 +159,35 @@ class MajorCategoryController extends Controller
         $majorCategory->major_category_name = $major_category_name;
         $majorCategory->est_useful_life = $est_useful_life;
 
-        $fixedAsset = FixedAsset::withTrashed()->where('major_category_id', $id)->get();
-        $additionalCost = AdditionalCost::withTrashed()->where('major_category_id', $id)->get();
+//        $fixedAsset = FixedAsset::withTrashed()->where('major_category_id', $id)->get();
+//        $additionalCost = AdditionalCost::withTrashed()->where('major_category_id', $id)->get();
+//
+//        $this->applyEndDepreciation($fixedAsset, $majorCategory);
+//        $this->applyEndDepreciation($additionalCost, $majorCategory);
+//
+//        $majorCategory->save();
 
-        $this->applyEndDepreciation($fixedAsset, $majorCategory);
-        $this->applyEndDepreciation($additionalCost, $majorCategory);
+        $fixedAsset = FixedAsset::withTrashed()
+            ->where('major_category_id', $id)
+            ->with('depreciationStatus')
+            ->get();
+
+        $additionalCost = AdditionalCost::withTrashed()
+            ->where('major_category_id', $id)
+            ->with('depreciationStatus')
+            ->get();
+
+        foreach ($fixedAsset as $item) {
+            if ($item->depreciationStatus->depreciation_status_name != 'For Depreciation') {
+                $this->applyEndDepreciation($item, $majorCategory);
+            }
+        }
+
+        foreach ($additionalCost as $item) {
+            if ($item->depreciationStatus->depreciation_status_name != 'For Depreciation') {
+                $this->applyEndDepreciation($item, $majorCategory);
+            }
+        }
 
         $majorCategory->save();
 

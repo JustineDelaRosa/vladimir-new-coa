@@ -64,4 +64,15 @@ class CalculationRepository
             return false;
         }
     }
+    //get the total cost of the main asset and its additional costs
+    public function getTotalCost($additional_costs, $asset = 0 )
+    {
+        $total_cost = $asset;
+        foreach ($additional_costs as $additional_cost) {
+            $total_cost += $additional_cost->formula->acquisition_cost;
+        }
+        return $total_cost;
+    }
+
+
 }

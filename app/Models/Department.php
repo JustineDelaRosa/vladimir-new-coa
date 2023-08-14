@@ -13,7 +13,6 @@ class Department extends Model
         'company_sync_id',
         'department_code',
         'division_id',
-        'location_sync_id',
         'is_active',
         'department_name'
     ];

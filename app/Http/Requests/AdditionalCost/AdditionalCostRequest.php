@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests\AdditionalCost;
 
+use App\Models\Department;
+use App\Models\Location;
+use App\Models\Status\DepreciationStatus;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AdditionalCostRequest extends FormRequest
@@ -73,17 +76,69 @@ class AdditionalCostRequest extends FormRequest
                 'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
                 'movement_status_id' => 'required|exists:movement_statuses,id',
                 'depreciation_method' => 'required',
-                'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
-                'acquisition_cost' => ['required', 'numeric'],
-                'scrap_value' => ['required', 'numeric'],
-                'depreciable_basis' => ['required', 'numeric'],
-                'accumulated_cost' => ['nullable', 'numeric'],
+                'acquisition_date' => ['required', 'date_format:Y-m-d', 'date','before_or_equal:today'],
+                //acquisition cost should not be less than or equal to 0
+                'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
+                    if (request()->depreciation_method == 'Donated') {
+                        if ($value != 0) {
+                            $fail('Acquisition cost should be 0');
+                        }
+                    }
+                    if ($value <= 0) {
+                        $fail('Invalid acquisition cost');
+                    }
+                }],
+                'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail){
+                    if (request()->depreciation_method == 'Donated') {
+                        if ($value != 0) {
+                            $fail('Scrap value should be 0');
+                        }
+                    }
+                }],
+                'depreciable_basis' => ['required', 'numeric',function ($attribute, $value, $fail) {
+                    if (request()->depreciation_method == 'Donated') {
+                        if ($value != 0) {
+                            $fail('Depreciable basis should be 0');
+                        }
+                    }
+                    if ($value <= 0) {
+                        $fail('Invalid depreciable basis');
+                    }
+                }],
+//                'accumulated_cost' => ['nullable', 'numeric'],
                 'care_of' => 'nullable',
-                'months_depreciated' => 'required|numeric',
-                'depreciation_per_year' => ['nullable', 'numeric'],
-                'depreciation_per_month' => ['nullable', 'numeric'],
-                'remaining_book_value' => ['nullable', 'numeric'],
-                'release_date' => ['required', 'date_format:Y-m-d'],
+                'months_depreciated' => ['required', 'numeric', function ($attribute, $value, $fail) {
+
+                    //    if depreciation method is Donated, and no more months depreciated acquisition cost, scrap value and depreciable basis
+                    if (request()->depreciation_method == 'Donated') {
+                        if ($value != 0) {
+                            $fail('Months depreciated should be 0');
+                        }
+                    }
+
+                    //get what is the depreciation status is for depreciation
+                    $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                    if ($depreciation_status->depreciation_status_name == 'For Depreciation') {
+                        if ($value != 0) {
+                            $fail('Months depreciated should be 0');
+                        }
+                    }
+                }],
+                'release_date' => ['date_format:Y-m-d', function ($attribute, $value, $fail) {
+                    //get what is the depreciation status is for depreciation
+                    $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                    if ($depreciation_status && $depreciation_status->depreciation_status_name == 'For Depreciation') {
+                        if ($value != null || $value != '') {
+                            $fail('Release date should be empty for depreciation status \'For Depreciation\'');
+                        }
+                        request()->merge([$attribute => null]); // Set the release_date attribute to null
+                    }else{
+                        if ($value == null || $value == '') {
+                            $fail('Release date is required');
+                        }
+                    }
+                }],
+//                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'department_id' => 'required|exists:departments,id',
                 'location_id' => [
                     'required',
@@ -106,7 +161,7 @@ class AdditionalCostRequest extends FormRequest
 //                        dd($associated_location_sync_ids);
                         // Check if department's sync_id exists in associated_location_sync_ids
                         if (!$associated_location_sync_ids->contains($department_sync_id)) {
-                            $fail('Location is not tagged to the department selected.');
+                            $fail('Invalid location for the department');
                         }
                     }
                 ],
@@ -232,17 +287,69 @@ class AdditionalCostRequest extends FormRequest
             'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
             'movement_status_id' => 'required|exists:movement_statuses,id',
             'depreciation_method' => 'required',
-            'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
-            'acquisition_cost' => ['required', 'numeric'],
-            'scrap_value' => ['required', 'numeric'],
-            'depreciable_basis' => ['required', 'numeric'],
-            'accumulated_cost' => ['nullable', 'numeric'],
+            'acquisition_date' => ['required', 'date_format:Y-m-d', 'date','before_or_equal:today'],
+            //acquisition cost should not be less than or equal to 0
+            'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
+                if (request()->depreciation_method == 'Donated') {
+                    if ($value != 0) {
+                        $fail('Acquisition cost should be 0');
+                    }
+                }
+                if ($value <= 0) {
+                    $fail('Invalid acquisition cost');
+                }
+            }],
+            'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail){
+                if (request()->depreciation_method == 'Donated') {
+                    if ($value != 0) {
+                        $fail('Scrap value should be 0');
+                    }
+                }
+            }],
+            'depreciable_basis' => ['required', 'numeric',function ($attribute, $value, $fail) {
+                if (request()->depreciation_method == 'Donated') {
+                    if ($value != 0) {
+                        $fail('Depreciable basis should be 0');
+                    }
+                }
+                if ($value <= 0) {
+                    $fail('Invalid depreciable basis');
+                }
+            }],
+//                'accumulated_cost' => ['nullable', 'numeric'],
             'care_of' => 'nullable',
-            'months_depreciated' => 'required|numeric',
-            'depreciation_per_year' => ['nullable', 'numeric'],
-            'depreciation_per_month' => ['nullable', 'numeric'],
-            'remaining_book_value' => ['nullable', 'numeric'],
-            'release_date' => ['required', 'date_format:Y-m-d'],
+            'months_depreciated' => ['required', 'numeric', function ($attribute, $value, $fail) {
+
+                //    if depreciation method is Donated, and no more months depreciated acquisition cost, scrap value and depreciable basis
+                if (request()->depreciation_method == 'Donated') {
+                    if ($value != 0) {
+                        $fail('Months depreciated should be 0');
+                    }
+                }
+
+                //get what is the depreciation status is for depreciation
+                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                if ($depreciation_status->depreciation_status_name == 'For Depreciation') {
+                    if ($value != 0) {
+                        $fail('Months depreciated should be 0');
+                    }
+                }
+            }],
+            'release_date' => ['date_format:Y-m-d', function ($attribute, $value, $fail) {
+                //get what is the depreciation status is for depreciation
+                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                if ($depreciation_status && $depreciation_status->depreciation_status_name == 'For Depreciation') {
+                    if ($value != null || $value != '') {
+                        $fail('Release date should be empty for depreciation status \'For Depreciation\'');
+                    }
+                    request()->merge([$attribute => null]); // Set the release_date attribute to null
+                }else{
+                    if ($value == null || $value == '') {
+                        $fail('Release date is required');
+                    }
+                }
+            }],
+//                'start_depreciation' => ['required', 'date_format:Y-m'],
             'department_id' => 'required|exists:departments,id',
             'location_id' => [
                 'required',
@@ -265,7 +372,7 @@ class AdditionalCostRequest extends FormRequest
 //                        dd($associated_location_sync_ids);
                     // Check if department's sync_id exists in associated_location_sync_ids
                     if (!$associated_location_sync_ids->contains($department_sync_id)) {
-                        $fail('Location is not tagged to the department selected.');
+                        $fail('Invalid location for the department');
                     }
                 }
             ],

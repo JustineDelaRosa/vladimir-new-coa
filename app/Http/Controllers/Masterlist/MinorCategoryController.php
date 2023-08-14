@@ -18,7 +18,7 @@ class MinorCategoryController extends Controller
      */
     public function index()
     {
-        $MinorCategory = MinorCategory::with('majorCategory')->get();
+        $MinorCategory = MinorCategory::with('majorCategory','accountTitle')->get();
         return response()->json([
             'data' => $MinorCategory
         ], 200);
