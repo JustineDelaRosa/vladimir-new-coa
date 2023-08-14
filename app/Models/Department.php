@@ -36,10 +36,17 @@ class Department extends Model
         return $this->belongsTo(Company::class, 'company_sync_id', 'sync_id');
     }
 
-    public function location(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+//    public function location(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+//    {
+//        return $this->belongsToMany(Location::class, 'location_sync_id', 'sync_id');
+//    }
+    public function location()
     {
-        return $this->belongsTo(Location::class, 'location_sync_id', 'sync_id');
+        return $this->belongsToMany(Location::class, 'department_location',
+            'department_sync_id',
+            'location_sync_id',
+            'sync_id',
+            'sync_id');
     }
-
 
 }
