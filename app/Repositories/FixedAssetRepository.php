@@ -11,6 +11,7 @@ use App\Models\Location;
 use App\Models\MajorCategory;
 use App\Models\Status\DepreciationStatus;
 use App\Models\SubCapex;
+use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -28,18 +29,23 @@ class FixedAssetRepository
     public function storeFixedAsset($request, $vladimirTagNumber, $departmentQuery)
     {
         $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
-        $depstatus = DepreciationStatus::where('id',$request['depreciation_status_id'])->first();
-        //if the depreciation status name id Fully depreciated, run end depreciation to check the validity
-        if($depstatus->depreciation_status_name == 'Fully Depreciated'){
-            //check if release date is not null
-            if(isset($request['release_date'])){
-                $end_depreciation = $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])));
-                //check if it really fully depreciated and passed the date today
-                if($end_depreciation >= date('Y-m')){
-                    return 'Not yet fully depreciated';
+        $depreciationMethod = strtoupper($request['depreciation_method']);
+        if ($depreciationMethod !== 'DONATION') {
+            $depstatus = DepreciationStatus::where('id',$request['depreciation_status_id'])->first();
+            //if the depreciation status name id Fully depreciated, run end depreciation to check the validity
+            if($depstatus->depreciation_status_name == 'Fully Depreciated'){
+                //check if release date is not null
+                if(isset($request['release_date'])){
+                    $end_depreciation = $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])));
+//                    dd($end_depreciation);
+                    //check if it really fully depreciated and passed the date today
+                    if($end_depreciation >= Carbon::now()){
+                        return 'Not yet fully depreciated';
+                    }
                 }
             }
         }
+
 //        return $request['release_date'] ?? Null;
 //        return $departmentQuery;
 
@@ -109,15 +115,19 @@ class FixedAssetRepository
     public function updateFixedAsset($request, $departmentQuery, $id)
     {
         $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
-        $depstatus = DepreciationStatus::where('id',$request['depreciation_status_id'])->first();
-        //if the depreciation status name id Fully depreciated, run end depreciation to check the validity
-        if($depstatus->depreciation_status_name == 'Fully Depreciated'){
-            //check if release date is not null
-            if(isset($request['release_date'])){
-                $end_depreciation = $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])));
-                //check if it really fully depreciated and passed the date today
-                if($end_depreciation >= date('Y-m')){
-                    return 'Not yet fully depreciated';
+        $depreciationMethod = strtoupper($request['depreciation_method']);
+        if ($depreciationMethod !== 'DONATION') {
+            $depstatus = DepreciationStatus::where('id',$request['depreciation_status_id'])->first();
+            //if the depreciation status name id Fully depreciated, run end depreciation to check the validity
+            if($depstatus->depreciation_status_name == 'Fully Depreciated'){
+                //check if release date is not null
+                if(isset($request['release_date'])){
+                    $end_depreciation = $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])));
+//                    dd($end_depreciation);
+                    //check if it really fully depreciated and passed the date today
+                    if($end_depreciation >= Carbon::now()){
+                        return 'Not yet fully depreciated';
+                    }
                 }
             }
         }
@@ -234,6 +244,7 @@ class FixedAssetRepository
             'care_of',
             'company_id',
             'department_id',
+            'charged_department',
             'location_id',
             'account_id',
             'remarks',
@@ -272,6 +283,7 @@ class FixedAssetRepository
             'additional_costs.care_of',
             'additional_costs.company_id',
             'additional_costs.department_id',
+            'fixed_assets.charged_department as charged_department',
             'additional_costs.location_id',
             'additional_costs.account_id',
             'additional_costs.remarks',
@@ -406,6 +418,11 @@ class FixedAssetRepository
                 'department_code' => $fixed_asset->department->department_code ?? '-',
                 'department_name' => $fixed_asset->department->department_name ?? '-',
             ],
+            'charged_department' => [
+                'id' => $additional_cost->department->id ?? '-',
+                'charged_department_code' => $additional_cost->department->department_code ?? '-',
+                'charged_department_name' => $additional_cost->department->department_name ?? '-',
+            ],
             'location' => [
                 'id' => $fixed_asset->location->id ?? '-',
                 'location_code' => $fixed_asset->location->location_code ?? '-',
@@ -490,6 +507,11 @@ class FixedAssetRepository
                         'id' => $additional_cost->department->id ?? '-',
                         'department_code' => $additional_cost->department->department_code ?? '-',
                         'department_name' => $additional_cost->department->department_name ?? '-',
+                    ],
+                    'charged_department' => [
+                        'id' => $additional_cost->department->id ?? '-',
+                        'charged_department_code' => $additional_cost->department->department_code ?? '-',
+                        'charged_department_name' => $additional_cost->department->department_name ?? '-',
                     ],
                     'location' => [
                         'id' => $additional_cost->location->id ?? '-',
@@ -585,6 +607,11 @@ class FixedAssetRepository
                 'id' => $fixed_asset->department->id ?? '-',
                 'department_code' => $fixed_asset->department->department_code ?? '-',
                 'department_name' => $fixed_asset->department->department_name ?? '-',
+            ],
+            'charged_department' => [
+                'id' => $additional_cost->department->id ?? '-',
+                'charged_department_code' => $additional_cost->department->department_code ?? '-',
+                'charged_department_name' => $additional_cost->department->department_name ?? '-',
             ],
             'location' => [
                 'id' => $fixed_asset->location->id ?? '-',

@@ -8,7 +8,9 @@ use App\Models\FixedAsset;
 use App\Models\Formula;
 use App\Models\Location;
 use App\Models\MajorCategory;
+use App\Models\Status\DepreciationStatus;
 use App\Models\SubCapex;
+use Carbon\Carbon;
 
 class AdditionalCostRepository
 {
@@ -24,6 +26,22 @@ class AdditionalCostRepository
     {
 
         $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
+        $depreciationMethod = strtoupper($request['depreciation_method']);
+        if ($depreciationMethod !== 'DONATION') {
+            $depstatus = DepreciationStatus::where('id',$request['depreciation_status_id'])->first();
+            //if the depreciation status name id Fully depreciated, run end depreciation to check the validity
+            if($depstatus->depreciation_status_name == 'Fully Depreciated'){
+                //check if release date is not null
+                if(isset($request['release_date'])){
+                    $end_depreciation = $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])));
+//                    dd($end_depreciation);
+                    //check if it really fully depreciated and passed the date today
+                    if($end_depreciation >= Carbon::now()){
+                        return 'Not yet fully depreciated';
+                    }
+                }
+            }
+        }
 
         $formula = Formula::create([
             'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
@@ -91,6 +109,22 @@ class AdditionalCostRepository
     {
 
         $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
+        $depreciationMethod = strtoupper($request['depreciation_method']);
+        if ($depreciationMethod !== 'DONATION') {
+            $depstatus = DepreciationStatus::where('id',$request['depreciation_status_id'])->first();
+            //if the depreciation status name id Fully depreciated, run end depreciation to check the validity
+            if($depstatus->depreciation_status_name == 'Fully Depreciated'){
+                //check if release date is not null
+                if(isset($request['release_date'])){
+                    $end_depreciation = $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])));
+//                    dd($end_depreciation);
+                    //check if it really fully depreciated and passed the date today
+                    if($end_depreciation >= Carbon::now()){
+                        return 'Not yet fully depreciated';
+                    }
+                }
+            }
+        }
         $additionalCost = AdditionalCost::find($id);
         $additionalCost->update([
 //            'fixed_asset_id' => $request['fixed_asset_id'],
@@ -254,6 +288,11 @@ class AdditionalCostRepository
                 'department_code' => $additional_cost->department->department_code ?? '-',
                 'department_name' => $additional_cost->department->department_name ?? '-',
             ],
+            'charged_department' => [
+                'id' => $additional_cost->department->id ?? '-',
+                'charged_department_code' => $additional_cost->department->department_code ?? '-',
+                'charged_department_name' => $additional_cost->department->department_name ?? '-',
+            ],
             'location' => [
                 'id' => $additional_cost->location->id ?? '-',
                 'location_code' => $additional_cost->location->location_code ?? '-',
@@ -348,6 +387,11 @@ class AdditionalCostRepository
                     'id' => $additional_cost->fixedAsset->department->id ?? '-',
                     'department_code' => $additional_cost->fixedAsset->department->department_code ?? '-',
                     'department_name' => $additional_cost->fixedAsset->department->department_name ?? '-',
+                ],
+                'charged_department' => [
+                    'id' => $additional_cost->department->id ?? '-',
+                    'charged_department_code' => $additional_cost->department->department_code ?? '-',
+                    'charged_department_name' => $additional_cost->department->department_name ?? '-',
                 ],
                 'location' => [
                     'id' => $additional_cost->fixedAsset->location->id ?? '-',

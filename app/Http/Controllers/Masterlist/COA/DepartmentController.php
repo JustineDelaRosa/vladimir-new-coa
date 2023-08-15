@@ -14,7 +14,7 @@ class DepartmentController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Database\Eloquent\Builder[]|\Illuminate\Database\Eloquent\Collection|\Illuminate\Http\Response
      */
     public function index()
     {
@@ -43,9 +43,38 @@ class DepartmentController extends Controller
 //                }
 //            }
 //        }
-
-        $department = Department::where('is_active', 1)->get();
-        return $department;
+        $results = [];
+        $department = Department::with('location')->where('is_active', 1)->get();
+        foreach ($department as $departments) {
+            $results[] = [
+                'id' => $departments->id,
+                'sync_id' => $departments->sync_id,
+                'company' => [
+                    'company_id' => $departments->company->id ?? "-",
+                    'company_sync_id' => $departments->company->sync_id ?? "-",
+                    'company_code' => $departments->company->company_code ?? "-",
+                    'company_name' => $departments->company->company_name ?? "-",
+                ],
+                'locations' => $departments->location->map(function ($locations) {
+                    return [
+                        'location_id' => $locations->id ?? "-",
+                        'location_sync_id' => $locations->sync_id ?? "-",
+                        'location_code' => $locations->location_code ?? "-",
+                        'location_name' => $locations->location_name ?? "-",
+                    ];
+                }),
+                'division' => [
+                    'division_id' => $departments->division->id ?? "-",
+                    'division_name' => $departments->division->division_name ?? "-",
+                ],
+                'department_code' => $departments->department_code,
+                'department_name' => $departments->department_name,
+                'is_active' => $departments->is_active,
+                'created_at' => $departments->created_at,
+                'updated_at' => $departments->updated_at,
+            ];
+        }
+        return $results;
     }
 
     /**

@@ -87,8 +87,26 @@ class FixedAssetUpdateRequest extends FormRequest
             'brand' => 'nullable',
             'major_category_id' => 'required|exists:major_categories,id',
             'minor_category_id' => 'required|exists:minor_categories,id',
-            'voucher' => 'nullable',
-            'receipt' => 'nullable',
+            'voucher' => ['nullable', function($attribute, $value, $fail){
+                //if the depreciation status is running depreciation and fully depreciated required voucher
+                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+                    if ($value == null) {
+                        $fail('Voucher is required');
+                    }
+                }
+
+            }],
+            'receipt' => ['nullable', function($attribute, $value, $fail){
+                //if the depreciation status is running depreciation and fully depreciated required voucher
+                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+                    if ($value == null) {
+                        $fail('Voucher is required');
+                    }
+                }
+
+            }],
             'quantity' => 'required',
             //if any of tag_number and tag_number_old is not null, then is_old_asset is true else false
             'is_old_asset' =>  ['required','boolean', function ($attribute, $value, $fail) {
@@ -152,20 +170,22 @@ class FixedAssetUpdateRequest extends FormRequest
                 }
             }],
 
-            'release_date' => ['date_format:Y-m-d', function ($attribute, $value, $fail) {
-                //get what is the depreciation status is for depreciation
-                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
-                if ($depreciation_status && $depreciation_status->depreciation_status_name == 'For Depreciation') {
-                    if ($value != null || $value != '') {
-                        $fail('Release date should be empty for depreciation status \'For Depreciation\'');
-                    }
-                    request()->merge([$attribute => null]); // Set the release_date attribute to null
-                }else{
-                    if ($value == null || $value == '') {
-                        $fail('Release date is required');
-                    }
-                }
-            }],
+            'release_date' => ['nullable','date_format:Y-m-d',
+//                function ($attribute, $value, $fail) {
+//                //get what is the depreciation status is for depreciation
+//                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+//                if ($depreciation_status && $depreciation_status->depreciation_status_name == 'For Depreciation') {
+//                    if ($value != null || $value != '') {
+//                        $fail('Release date should be empty for depreciation status \'For Depreciation\'');
+//                    }
+//                    request()->merge([$attribute => null]); // Set the release_date attribute to null
+//                }else{
+//                    if ($value == null || $value == '') {
+//                        $fail('Release date is required');
+//                    }
+//                }
+//            }
+            ],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
             'department_id' => 'required|exists:departments,id',
             'location_id' => [

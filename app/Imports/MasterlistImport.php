@@ -376,8 +376,16 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
 
             }],
-            '*.voucher' => 'required',
-            '*.receipt' => 'required',
+            '*.voucher' => ['required', function($attribute, $value, $fail){
+                if ($value == '-') {
+                    $fail('Voucher is required');
+                }
+            }],
+            '*.receipt' => ['required',function($attribute, $value, $fail){
+                if ($value == '-') {
+                    $fail('Receipt is required');
+                }
+            }],
             '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required|in:STL,One Time',
             '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],

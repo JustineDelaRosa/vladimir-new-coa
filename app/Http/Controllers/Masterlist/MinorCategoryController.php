@@ -18,9 +18,31 @@ class MinorCategoryController extends Controller
      */
     public function index()
     {
+        $results = [];
         $MinorCategory = MinorCategory::with('majorCategory','accountTitle')->get();
+
+        foreach ($MinorCategory as $item){
+            $results[] = [
+                'id' => $item->id,
+                'account_title' => [
+                    'id' => $item->accountTitle->id ?? '-',
+                    'sync_id' => $item->accountTitle->sync_id ?? '-',
+                    'account_title_code' => $item->accountTitle->account_title_code ?? '-',
+                    'account_title_name' => $item->accountTitle->account_title_name ?? '-',
+                ],
+                'major_category' => [
+                    'id' => $item->majorCategory->id,
+                    'major_category_name' => $item->majorCategory->major_category_name,
+                ],
+                'minor_category_name' => $item->minor_category_name,
+                'is_active' => $item->is_active,
+                'created_at' => $item->created_at,
+                'updated_at' => $item->updated_at,
+                'deleted_at' => $item->deleted_at
+            ];
+        }
         return response()->json([
-            'data' => $MinorCategory
+            'data' => $results
         ], 200);
     }
 
