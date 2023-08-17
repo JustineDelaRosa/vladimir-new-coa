@@ -183,7 +183,6 @@ class MasterlistImport extends DefaultValueBinder implements
         if ($majorCategoryId == null || $minorCategoryId == null) {
             throw new Exception('Unable to create FixedAsset due to missing Major/Minor category ID.');
         }
-        //get est_useful_life from major category
 
 
         $formula->fixedAsset()->create([
@@ -213,7 +212,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', $collection['cycle_count_status'])->first()->id,
             'depreciation_status_id' => DepreciationStatus::where('depreciation_status_name', $collection['depreciation_status'])->first()->id,
             'movement_status_id' => MovementStatus::where('movement_status_name', $collection['movement_status'])->first()->id,
-            'is_old_asset' => $collection['tag_number'] != '-' || $collection['tag_number_old'] != '-',
+            'is_old_asset' => $collection['tag_n umber'] != '-' || $collection['tag_number_old'] != '-',
             'care_of' => ucwords(strtolower($collection['care_of'])),
             'company_id' => Company::where('company_code', $collection['company_code'])->first()->id,
             'department_id' => Department::where('department_code', $collection['department_code'])->first()->id,

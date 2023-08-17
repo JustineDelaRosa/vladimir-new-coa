@@ -344,7 +344,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     ->where('company_sync_id', $company_sync_id)
                     ->first();
                 if (!$department) {
-                    $fail('Invalid location, company and department combination');
+                    $fail('Invalid department, company combination');
                 }
             }],
             '*.location_code' => ['required','exists:locations,location_code', function($attribute, $value, $fail) use ($collections){
@@ -364,7 +364,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
                 $department_sync_id = Department::where('department_code', $department_code)->first()->sync_id ?? 0;
                 $associated_location_sync_id = $location->departments->pluck('sync_id')->toArray();
                 if(!in_array($department_sync_id, $associated_location_sync_id)){
-                    $fail('Invalid location, company and department combination');
+                    $fail('Invalid location, department combination');
                 }
 
             }],
