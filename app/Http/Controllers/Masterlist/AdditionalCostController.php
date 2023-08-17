@@ -241,14 +241,14 @@ class AdditionalCostController extends Controller
 
         //calculation variables
         $custom_age = $this->calculationRepository->getMonthDifference($properties->start_depreciation, $custom_end_depreciation);
-        $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $est_useful_life);
-        $yearly_depreciation = $this->calculationRepository->getYearlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $est_useful_life);
+        $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->depreciable_basis, $properties->scrap_value, $est_useful_life);
+        $yearly_depreciation = $this->calculationRepository->getYearlyDepreciation($properties->depreciable_basis, $properties->scrap_value, $est_useful_life);
         $accumulated_cost = $this->calculationRepository->getAccumulatedCost($monthly_depreciation, $custom_age);
-        $remaining_book_value = $this->calculationRepository->getRemainingBookValue($properties->acquisition_cost, $accumulated_cost);
+        $remaining_book_value = $this->calculationRepository->getRemainingBookValue($properties->depreciable_basis, $accumulated_cost);
 
         if ($depreciation_method === 'One Time') {
             $age = 0.08333333333333;
-            $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $age);
+            $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->depreciable_basis, $properties->scrap_value, $age);
         }
 
         return [
