@@ -27,7 +27,37 @@ class MajorCategoryController extends Controller
      */
     public function index()
     {
+        $results = [];
         $major_category = MajorCategory::with('minorCategory')->get();
+        foreach ($major_category as $item){
+            $results[] = [
+                'id' => $item->id,
+                'major_category_name' => $item->major_category_name,
+                'est_useful_life' => $item->est_useful_life,
+                'minor_categories' => $item->minorCategory->map(function ($minorCategory) {
+                    return [
+                        'id' => $minorCategory->id,
+                        'account_title' => [
+                            'id' => $minorCategory->accountTitle->id ?? '-',
+                            'sync_id' => $minorCategory->accountTitle->sync_id ?? '-',
+                            'account_title_code' => $minorCategory->accountTitle->account_title_code ?? '-',
+                            'account_title_name' => $minorCategory->accountTitle->account_title_name ?? '-',
+                        ],
+                        'minor_category_name' => $minorCategory->minor_category_name,
+                        'is_active' => $minorCategory->is_active,
+                        'created_at' => $minorCategory->created_at,
+                        'updated_at' => $minorCategory->updated_at,
+                        'deleted_at' => $minorCategory->deleted_at
+                    ];
+                }),
+                'is_active' => $item->is_active,
+                'created_at' => $item->created_at,
+                'updated_at' => $item->updated_at,
+                'deleted_at' => $item->deleted_at,
+                'minor_category' => $item->minorCategory
+            ];
+
+        }
         return response()->json([
             'data' => $major_category
         ], 200);
@@ -159,11 +189,35 @@ class MajorCategoryController extends Controller
         $majorCategory->major_category_name = $major_category_name;
         $majorCategory->est_useful_life = $est_useful_life;
 
-        $fixedAsset = FixedAsset::withTrashed()->where('major_category_id', $id)->get();
-        $additionalCost = AdditionalCost::withTrashed()->where('major_category_id', $id)->get();
+//        $fixedAsset = FixedAsset::withTrashed()->where('major_category_id', $id)->get();
+//        $additionalCost = AdditionalCost::withTrashed()->where('major_category_id', $id)->get();
+//
+//        $this->applyEndDepreciation($fixedAsset, $majorCategory);
+//        $this->applyEndDepreciation($additionalCost, $majorCategory);
+//
+//        $majorCategory->save();
 
-        $this->applyEndDepreciation($fixedAsset, $majorCategory);
-        $this->applyEndDepreciation($additionalCost, $majorCategory);
+        $fixedAsset = FixedAsset::withTrashed()
+            ->where('major_category_id', $id)
+            ->with('depreciationStatus')
+            ->get();
+
+        $additionalCost = AdditionalCost::withTrashed()
+            ->where('major_category_id', $id)
+            ->with('depreciationStatus')
+            ->get();
+
+        foreach ($fixedAsset as $item) {
+            if ($item->depreciationStatus->depreciation_status_name != 'For Depreciation') {
+                $this->applyEndDepreciation($item, $majorCategory);
+            }
+        }
+
+        foreach ($additionalCost as $item) {
+            if ($item->depreciationStatus->depreciation_status_name != 'For Depreciation') {
+                $this->applyEndDepreciation($item, $majorCategory);
+            }
+        }
 
         $majorCategory->save();
 

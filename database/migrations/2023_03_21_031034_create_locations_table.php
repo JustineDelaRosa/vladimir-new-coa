@@ -15,7 +15,7 @@ class CreateLocationsTable extends Migration
     {
         Schema::create('locations', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('sync_id')->unique();
+            $table->unsignedInteger('sync_id')->unique()->index();
             $table->string('location_code')->unique();
             $table->longText('location_name');
             $table->boolean('is_active');

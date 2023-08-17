@@ -24,6 +24,7 @@ class CreateFixedAssetsTable extends Migration
             $table->string('tag_number_old');
             $table->string('asset_description');
             $table->unsignedInteger('type_of_request_id');
+            $table->string('charged_department');
             $table->string('asset_specification');
             $table->string('accountability');
             $table->string('accountable')->nullable();

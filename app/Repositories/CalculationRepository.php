@@ -51,7 +51,7 @@ class CalculationRepository
     public function getStartDepreciation($release_date): string
     {
         $release_date = Carbon::parse($release_date);
-        return $release_date->addMonth(1)->format('Y-m');
+        return $release_date->addMonth(0)->format('Y-m'); //TODO: Monitor this one if there are errors in calculations
     }
     public function dateValidation($date, $start_depreciation, $end_depreciation): bool
     {
@@ -64,4 +64,15 @@ class CalculationRepository
             return false;
         }
     }
+    //get the total cost of the main asset and its additional costs
+    public function getTotalCost($additional_costs, $asset = 0 )
+    {
+        $total_cost = $asset;
+        foreach ($additional_costs as $additional_cost) {
+            $total_cost += $additional_cost->formula->acquisition_cost;
+        }
+        return $total_cost;
+    }
+
+
 }

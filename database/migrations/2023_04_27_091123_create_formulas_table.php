@@ -23,12 +23,12 @@ class CreateFormulasTable extends Migration
             $table->bigInteger('depreciable_basis');
             $table->bigInteger('accumulated_cost');
             $table->integer('months_depreciated'); //months
-            $table->string('end_depreciation'); //date format yyyy-mm
+            $table->string('end_depreciation')->nullable(); //date format yyyy-mm
             $table->BigInteger('depreciation_per_year');
             $table->BigInteger('depreciation_per_month');
             $table->BigInteger('remaining_book_value');
-            $table->string('release_date'); //date format yyyy-mm-dd
-            $table->string('start_depreciation'); //date format yyyy-mm
+            $table->string('release_date')->nullable(); //date format yyyy-mm-dd
+            $table->string('start_depreciation')->nullable(); //date format yyyy-mm
             $table->softDeletes();
             $table->timestamps();
         });

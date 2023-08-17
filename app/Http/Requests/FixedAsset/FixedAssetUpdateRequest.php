@@ -2,7 +2,12 @@
 
 namespace App\Http\Requests\FixedAsset;
 
+use App\Models\Department;
 use App\Models\FixedAsset;
+use App\Models\Location;
+use App\Models\Status\DepreciationStatus;
+use App\Models\SubCapex;
+use App\Models\TypeOfRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
 class FixedAssetUpdateRequest extends FormRequest
@@ -26,7 +31,23 @@ class FixedAssetUpdateRequest extends FormRequest
     {
         $id = $this->route()->parameter('fixed_asset');
         return [
-            'sub_capex_id' => 'nullable|exists:sub_capexes,id',
+            'sub_capex_id' => ['nullable', function ($attribute, $value, $fail){
+                // Get the type_of_request_id from request
+                $type_of_request_id = request()->input('type_of_request_id');
+//                $sub_capex = SubCapex::where('id', $value)->exists();
+//                if(!$sub_capex){
+//                    $fail('Sub capex does not exist');
+//                }
+                // Fetch the TypeOfRequest object based on the id
+                $typeOFRequest = TypeOfRequest::find($type_of_request_id);
+
+                // If the sub capex is '-' and the type of request is not 'Capex', then do nothing and let the validation continue
+                // If the conditions are not met, the validation will fail
+                if ($value == '-' && ucwords(strtolower($typeOFRequest->type_of_request_name)) != 'Capex') {
+                    //make it null
+                    request()->merge([$attribute => null]);
+                }
+            }],
             'tag_number' => ['nullable', 'max:13', function ($attribute, $value, $fail) use ($id) {
                 //if the value id "-" and the is_old_asset is true return fail error
                 if($value == "-" && $this->is_old_asset){
@@ -51,31 +72,31 @@ class FixedAssetUpdateRequest extends FormRequest
             }],
             'asset_description' => 'required',
             'type_of_request_id' => 'required',
+//            'charged_department' => 'required',
             'asset_specification' => 'required',
             'accountability' => 'required',
-            'accountable' => ['required_if:accountability,Personal Issued',
+            'accountable' => [
+                'required_if:accountability,Personal Issued',
                 function ($attribute, $value, $fail) {
                     $accountability = request()->input('accountable');
-                    //if accountable is null, continue
+                    //if accountable is null continue
                     if ($value == null) {
                         return;
                     }
 
                     // Check if necessary keys exist to avoid undefined index
-                    if (isset($accountability['general_info']['full_id_number_full_name'])) {
-                        $full_id_number_full_name = $accountability['general_info']['full_id_number_full_name'];
-                        request()->merge(['accountable' => $full_id_number_full_name]);
-                    }
-                    else {
+                    if (isset($accountability['general_info']['full_id_number'])) {
+                        $full_id_number = $accountability['general_info']['full_id_number'];
+                        request()->merge(['accountable' => $full_id_number]);
+                    } else {
                         // Fail validation if keys don't exist
                         $fail('The accountable person\'s full name is required.');
                         return;
                     }
 
                     // Validate full name
-                    if ($full_id_number_full_name === '') {
+                    if ($full_id_number === '') {
                         $fail('The accountable person\'s full name cannot be empty.');
-                        return;
                     }
                 },
             ],
@@ -83,8 +104,26 @@ class FixedAssetUpdateRequest extends FormRequest
             'brand' => 'nullable',
             'major_category_id' => 'required|exists:major_categories,id',
             'minor_category_id' => 'required|exists:minor_categories,id',
-            'voucher' => 'nullable',
-            'receipt' => 'nullable',
+            'voucher' => ['nullable', function($attribute, $value, $fail){
+                //if the depreciation status is running depreciation and fully depreciated required voucher
+                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+                    if ($value == null) {
+                        $fail('Voucher is required');
+                    }
+                }
+
+            }],
+            'receipt' => ['nullable', function($attribute, $value, $fail){
+                //if the depreciation status is running depreciation and fully depreciated required voucher
+                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+                    if ($value == null) {
+                        $fail('Voucher is required');
+                    }
+                }
+
+            }],
             'quantity' => 'required',
             //if any of tag_number and tag_number_old is not null, then is_old_asset is true else false
             'is_old_asset' =>  ['required','boolean', function ($attribute, $value, $fail) {
@@ -99,20 +138,98 @@ class FixedAssetUpdateRequest extends FormRequest
             'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
             'movement_status_id' => 'required|exists:movement_statuses,id',
             'depreciation_method' => 'required',
-            'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
-            'acquisition_cost' => ['required', 'numeric'],
-            'scrap_value' => ['required', 'numeric'],
-            'depreciable_basis' => ['required', 'numeric'],
-            'accumulated_cost' => ['nullable', 'numeric'],
+            'acquisition_date' => ['required', 'date_format:Y-m-d', 'date','before_or_equal:today'],
+            //acquisition cost should not be less than or equal to 0
+            'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
+                if (request()->depreciation_method == 'Donated') {
+                    if ($value != 0) {
+                        $fail('Acquisition cost should be 0');
+                    }
+                }
+                if ($value <= 0) {
+                    $fail('Invalid acquisition cost');
+                }
+            }],
+            'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail){
+                if (request()->depreciation_method == 'Donated') {
+                    if ($value != 0) {
+                        $fail('Scrap value should be 0');
+                    }
+                }
+            }],
+            'depreciable_basis' => ['required', 'numeric',function ($attribute, $value, $fail) {
+                if (request()->depreciation_method == 'Donated') {
+                    if ($value != 0) {
+                        $fail('Depreciable basis should be 0');
+                    }
+                }
+                if ($value <= 0) {
+                    $fail('Invalid depreciable basis');
+                }
+            }],
+//                'accumulated_cost' => ['nullable', 'numeric'],
             'care_of' => 'nullable',
-            'months_depreciated' => 'required|numeric',
-//            'end_depreciation' => 'required|date_format:Y-m',
-            'depreciation_per_year' => ['nullable', 'numeric'],
-            'depreciation_per_month' => ['nullable', 'numeric'],
-            'remaining_book_value' => ['nullable', 'numeric'],
-            'release_date' => ['required', 'date_format:Y-m-d'],
-//            'start_depreciation' => ['required', 'date_format:Y-m'],
+            'months_depreciated' => ['required', 'numeric', function ($attribute, $value, $fail) {
+
+                //    if depreciation method is Donated, and no more months depreciated acquisition cost, scrap value and depreciable basis
+                if (request()->depreciation_method == 'Donated') {
+                    if ($value != 0) {
+                        $fail('Months depreciated should be 0');
+                    }
+                }
+
+                //get what is the depreciation status is for depreciation
+                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                if ($depreciation_status->depreciation_status_name == 'For Depreciation') {
+                    if ($value != 0) {
+                        $fail('Months depreciated should be 0');
+                    }
+                }
+            }],
+
+            'release_date' => ['nullable','date_format:Y-m-d',
+//                function ($attribute, $value, $fail) {
+//                //get what is the depreciation status is for depreciation
+//                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+//                if ($depreciation_status && $depreciation_status->depreciation_status_name == 'For Depreciation') {
+//                    if ($value != null || $value != '') {
+//                        $fail('Release date should be empty for depreciation status \'For Depreciation\'');
+//                    }
+//                    request()->merge([$attribute => null]); // Set the release_date attribute to null
+//                }else{
+//                    if ($value == null || $value == '') {
+//                        $fail('Release date is required');
+//                    }
+//                }
+//            }
+            ],
+//                'start_depreciation' => ['required', 'date_format:Y-m'],
             'department_id' => 'required|exists:departments,id',
+            'location_id' => [
+                'required',
+                'exists:locations,id',
+                function ($attribute, $value, $fail) {
+                    // Fetch the location and associated departments only once
+                    $location = Location::query()->find($value);
+
+                    // Check if the location is active
+                    if (!$location || !$location->is_active) {
+                        $fail('Location is not active or does not exist.');
+                        return; // No point in proceeding if the location is not active
+                    }
+
+                    // Get the sync_id of the department
+                    $department_sync_id = Department::query()->where('id', request()->department_id)->value('sync_id');
+
+                    // Get sync_id's of all locations associated with the department
+                    $associated_location_sync_ids = $location->departments->pluck('sync_id');
+//                        dd($associated_location_sync_ids);
+                    // Check if department's sync_id exists in associated_location_sync_ids
+                    if (!$associated_location_sync_ids->contains($department_sync_id)) {
+                        $fail('Invalid location for the department');
+                    }
+                }
+            ],
             'account_title_id' => 'required|exists:account_titles,id',
         ];
     }
