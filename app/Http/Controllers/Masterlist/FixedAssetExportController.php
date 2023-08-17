@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Masterlist;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdditionalCost;
 use App\Models\FixedAsset;
 use App\Repositories\FixedAssetExportRepository;
 use App\Repositories\FixedAssetRepository;

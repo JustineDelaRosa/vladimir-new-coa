@@ -16,11 +16,26 @@ class FixedAssetImportController extends Controller
         ]);
 
         $file = $request->file('file');
-
         Excel::import(new MasterlistImport, $file);
 
         //put into an array the data from the Excel file
         $data = Excel::toArray(new MasterlistImport, $file);
+
+        //if the data is empty collection
+//        if (empty($data[0])) {
+//            return response()->json(
+//                [
+//                    'message' => 'No data found.',
+//                    'errors' => [
+//                        'file' => [
+//                            'Thw file is empty.'
+//                        ]
+//                    ]
+//                ],
+//                422
+//            );
+//        }
+
         return response()->json(
             [
                 'message' => 'Fixed Asset imported successfully.',

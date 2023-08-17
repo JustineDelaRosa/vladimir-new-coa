@@ -31,7 +31,7 @@ class FixedAssetRequest extends FormRequest
         if ($this->isMethod('post') &&
             ($this->sub_capex_id === null)) {
             return [
-//                'capex_id' => 'nullable',
+//              'capex_id' => 'nullable',
                 'sub_capex_id' => 'nullable',
                 'tag_number' => ['nullable', 'max:13', function ($attribute, $value, $fail) {
                     //if the value id "-" and the is_old_asset is true return fail error
@@ -103,16 +103,25 @@ class FixedAssetRequest extends FormRequest
                 }],
                 'depreciation_method' => 'required',
                 'acquisition_date' => ['required', 'date_format:Y-m-d', 'date'],
-                'acquisition_cost' => ['required', 'numeric'],
+                //acquisition cost should not be less than or equal to 0
+                'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
+                    if ($value <= 0) {
+                        $fail('Invalid acquisition cost');
+                    }
+                }],
                 'scrap_value' => ['required', 'numeric'],
-                'depreciable_basis' => ['required', 'numeric'],
-                'accumulated_cost' => ['nullable', 'numeric'],
+                'depreciable_basis' => ['required', 'numeric',function ($attribute, $value, $fail) {
+                    if ($value <= 0) {
+                        $fail('Invalid depreciable basis');
+                    }
+                }],
+//                'accumulated_cost' => ['nullable', 'numeric'],
                 'care_of' => 'nullable',
                 'months_depreciated' => 'required|numeric',
 //                'end_depreciation' => 'required|date_format:Y-m',
-                'depreciation_per_year' => ['nullable', 'numeric'],
-                'depreciation_per_month' => ['nullable', 'numeric'],
-                'remaining_book_value' => ['nullable', 'numeric'],
+//                'depreciation_per_year' => ['nullable', 'numeric'],
+//                'depreciation_per_month' => ['nullable', 'numeric'],
+//                'remaining_book_value' => ['nullable', 'numeric'],
                 'release_date' => ['required', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'department_id' => 'required|exists:departments,id',
@@ -228,7 +237,7 @@ class FixedAssetRequest extends FormRequest
             $id = $this->route()->parameter('id');
             return[
               'status' => 'required|boolean',
-                'remarks' => 'required|string|max:255',
+//                'remarks' => 'required_if:status,false|string|max:255',
             ];
         }
     }
@@ -321,7 +330,7 @@ class FixedAssetRequest extends FormRequest
 
             'status.required' => 'Status is required',
             'status.boolean' => 'Status must be a boolean',
-            'remarks.required' => 'Remarks is required',
+            'remarks.required_if' => 'Remarks is required',
             'remarks.string' => 'Remarks must be a string',
             'remarks.max' => 'Remarks must not exceed 255 characters',
 

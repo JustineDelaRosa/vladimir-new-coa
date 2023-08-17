@@ -90,8 +90,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::patch('account-title/archived-account-title/{id}', [AccountTitleController::class, 'archived']);
 
 
-
-
     ///AUTH//
     Route::put('auth/reset/{id}', [AuthController::class, 'resetPassword']);
     Route::post('auth/change_password', [AuthController::class, 'changedPassword']);
@@ -169,6 +167,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //BARCODE//
     Route::post('fixed-asset/barcode', [PrintBarCodeController::class, 'printBarcode']);
+    Route::get('print-barcode-show', [PrintBarCodeController::class, 'searchPrint']);
 
     //TYPE OF REQUEST//
     Route::resource('type-of-request', TypeOfRequestController::class);
@@ -193,8 +192,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //MOVEMENT STATUS
     Route::resource('movement-status', MovementStatusController::class);
     Route::patch('movement-status/archived-movement-status/{id}', [MovementStatusController::class, 'archived']);
-
-
 });
 
 

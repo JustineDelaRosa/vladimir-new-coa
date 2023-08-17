@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Masterlist\COA;
 
 use App\Http\Controllers\Controller;
+use App\Models\Company;
 use App\Models\Department;
 use App\Models\LocationDepartment;
 use Illuminate\Http\Request;
@@ -43,16 +44,12 @@ class DepartmentController extends Controller
 //            }
 //        }
 
-        $department = Department::get();
+        $department = Department::where('is_active', 1)->get();
         return $department;
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
+     * Stores the department data*/
 
 //    public function store(Request $request)
 //    {
@@ -65,6 +62,11 @@ class DepartmentController extends Controller
 
     public function store(Request $request)
     {
+        $company = Company::all()->isEmpty();
+        if ($company) {
+            return response()->json(['message' => 'Company Data not Ready'], 422);
+        }
+
         $department_request = $request->all('result.departments');
         if (empty($request->all())) {
             return response()->json(['message' => 'Data not Ready']);
@@ -73,6 +75,7 @@ class DepartmentController extends Controller
         foreach ($department_request as $departments) {
             foreach ($departments as $department) {
                 foreach ($department as $dept) {
+
                     $sync_id = $dept['id'];
                     $code = $dept['code'];
 //                    $name = strtoupper($dept['name']);

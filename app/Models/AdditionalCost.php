@@ -33,7 +33,7 @@ class AdditionalCost extends Model
 
     public function formula()
     {
-        return $this->hasOne(Formula::class, 'additional_cost_id', 'id');
+        return $this->belongsTo(Formula::class, 'formula_id', 'id');
     }
 
     public function typeOfRequest()

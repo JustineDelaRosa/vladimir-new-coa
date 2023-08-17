@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Masterlist\PrintBarcode;
 use App\Http\Controllers\Controller;
 use App\Models\FixedAsset;
 use App\Models\PrinterIP;
+use Carbon\Carbon;
+use DateTime;
 use Exception;
 use Illuminate\Http\Request;
+use Mike42\Escpos\PrintConnectors\FilePrintConnector;
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 use Mike42\Escpos\Printer;
 
@@ -15,10 +18,25 @@ use Mike42\Escpos\Printer;
 
 class PrintBarCodeController extends Controller
 {
+
+
+//    function getClientName() {
+//        $clientIP = $_SERVER['REMOTE_ADDR'];
+//        $clientName = gethostbyaddr($clientIP);
+//        $clientNameParts = explode('.', $clientName);
+//
+//        // Returns the computer name without domain
+//        return $clientNameParts[0];
+//    }
+
     public function printBarcode(Request $request)
     {
-        $tagNumber = $this->search($request);
+       $tagNumber = $this->searchPrint($request);
         $clientIP = request()->ip();
+        //get computer name of the client do not include the domain name
+//        return $this->getClientName();
+
+
 //        //accept only the ip address with 10.10.x.x
 //        if (substr($clientIP, 0, 7) === "10.10.1") {
 //            // print the barcode
@@ -27,11 +45,16 @@ class PrintBarCodeController extends Controller
 //            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
 //        }
 //        return $tagNumber;
+//        where('ip', $clientIP)->
         $printerIP = PrinterIP::where('ip', $clientIP)->first();
-        //check status on printerIP table
-        if (!$printerIP->is_active) {
+        if (!$printerIP || !$printerIP->is_active) {
             return response()->json(['message' => 'You are not allowed to print barcode'], 403);
         }
+
+        //check status on printerIP table
+//        if (!$printerIP->is_active) {
+//            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
+//        }
 
         if (!$tagNumber) {
             return response()->json(['message' => 'No data found'], 404);
@@ -39,7 +62,7 @@ class PrintBarCodeController extends Controller
 
 
         try {
-            //get the ip from ative printerIP table in a database
+            //get the ip from active printerIP table in a database
 //$printerIP = PrinterIP::where('is_active', true)->first()->ip;
             // Initialize the WindowsPrintConnector with the COM port and baud rate
             //$connector = new WindowsPrintConnector("COM1");
@@ -48,11 +71,20 @@ class PrintBarCodeController extends Controller
             //$printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
             $connector = new WindowsPrintConnector("smb://{$printerIP->ip}/ZDesigner ZD230-203dpi ZPL");
             //check if the smb://10.10.10.11 is available
+//            $printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
+//            $connector = new FilePrintConnector($printer);
 
             // Create a new Printer object and assign the connector to it
             $printer = new Printer($connector);
 
             foreach ($tagNumber as $VDM) {
+
+                $fixedAsset = FixedAsset::where('vladimir_tag_number', $VDM['vladimir_tag_number'])->first();
+
+                if ($fixedAsset) {
+                    $fixedAsset->increment('print_count',1);
+                    $fixedAsset->update(['last_printed' => Carbon::now()]);
+                }
 
                 $zplCode = "^XA
                             ~TA000
@@ -97,16 +129,18 @@ class PrintBarCodeController extends Controller
             }
 
             return response()->json(
-                ['message' => 'ZPL code printed successfully!',
+                ['message' => 'Barcode printed successfully!',
                     'data' => $tagNumber
                 ], 200);
         } catch (Exception $e) {
             // Handle any exceptions that may occur during the printing process
+//            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
+
             return response()->json(['message' => 'Unable to Print'],422);
         }
     }
 
-    public function search(Request $request)
+    public function searchPrint(Request $request)
     {
         //  $id = $request->get('id');
         $search = $request->get('search');
@@ -124,7 +158,14 @@ class PrintBarCodeController extends Controller
 
         // Add date filter if both startDate and endDate are given
         if ($startDate && $endDate) {
-            $fixedAssetQuery->whereBetween('created_at', [$startDate, $endDate]);
+            //Ensure the dates are in Y-m-d H:i:s format
+            $startDate = new DateTime($startDate);
+            $endDate = new DateTime($endDate);
+
+            //set time to end of day
+            $endDate->setTime(23, 59, 59);
+
+            $fixedAssetQuery->whereBetween('created_at', [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
         }
 
         // Add search filter if search is given
@@ -184,9 +225,11 @@ class PrintBarCodeController extends Controller
                     'id' => $asset->id,
                     'vladimir_tag_number' => $asset->vladimir_tag_number,
                     'asset_description' => $asset->asset_description,
-                    'location_name' => $asset->location_name,
-                    //if the department has 10 characters or more, then make it an acronym
-                    'department_name' => strlen($asset->department_name) > 10 ? $this->acronym($asset->department_name) : $asset->department_name
+                    'print_count' => $asset->print_count,
+                    'last_printed' => $asset->last_printed,
+//                    'location_name' => $asset->location_name,
+//                    //if the department has 10 characters or more, then make it an acronym
+//                    'department_name' => strlen($asset->department_name) > 10 ? $this->acronym($asset->department_name) : $asset->department_name
                 ];
             }
         });

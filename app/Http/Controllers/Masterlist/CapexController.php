@@ -55,17 +55,33 @@ class CapexController extends Controller
             $result = $capexQuery->get();
         }
 
+//        $result->transform(function ($capex) {
+//            $capex->sub_capex =
+//                $capex->subCapex
+//                    ->map(function ($sub_capex) {
+//                        $subCapexParts = explode('-', $sub_capex->sub_capex);
+//                        if (count($subCapexParts) > 1) {
+//                            $sub_capex->sub_capex = end($subCapexParts);
+//                        }
+//                        return $sub_capex;
+//                    });
+//            $capex->sub_capex_count = $capex->subCapex->count();
+//            return $capex;
+//        });
+
         $result->transform(function ($capex) {
-            $capex->sub_capex =
-                $capex->subCapex
-                    ->map(function ($sub_capex) {
-                        $subCapexParts = explode('-', $sub_capex->sub_capex);
-                        if (count($subCapexParts) > 1) {
-                            $sub_capex->sub_capex = end($subCapexParts);
-                        }
-                        return $sub_capex;
-                    });
-            $capex->sub_capex_count = $capex->subCapex->count();
+            $capex->sub_capex = $capex->subCapex->map(function ($sub_capex) {
+                $subCapexParts = explode('-', $sub_capex->sub_capex);
+                if (count($subCapexParts) > 1) {
+                    $sub_capex->sub_capex = end($subCapexParts);
+                }
+                return $sub_capex;
+            });
+
+            $capex->sub_capex_count = $capex->subCapex->filter(function ($sub_capex) {
+                return $sub_capex->is_active == 1;
+            })->count();
+
             return $capex;
         });
 

@@ -52,6 +52,9 @@ class CreateFixedAssetsTable extends Migration
             $table->unsignedInteger('location_id');
             $table->unsignedInteger('account_id');
             $table->string('remarks')->nullable();
+            $table->integer('print_count')->default(0);
+            $table->timestamp('last_printed')->nullable();
+            $table->unsignedInteger('formula_id');
             $table->softDeletes();
             $table->timestamps();
             $table->foreign('capex_id')
@@ -106,6 +109,11 @@ class CreateFixedAssetsTable extends Migration
                 ->references('id')
                 ->on('movement_statuses')
                 ->onDelete('cascade');
+            $table->foreign('formula_id')
+                ->references('id')
+                ->on('formulas')
+                ->onDelete('cascade');
+
         });
     }
 

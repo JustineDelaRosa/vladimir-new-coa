@@ -68,7 +68,14 @@ class AdditionalCostController extends Controller
      */
     public function show($id)
     {
-        $additional_cost = AdditionalCost::withTrashed()->with('formula')->where('id', $id)->first();
+        $additional_cost = AdditionalCost::withTrashed()->with([
+            'formula'=> function($query) {
+                $query->withTrashed();
+            },
+            'fixedAsset'=> function($query) {
+                $query->withTrashed();
+            },
+        ])->where('id', $id)->first();
 
         if(!$additional_cost) {
             return response()->json([
@@ -132,8 +139,9 @@ class AdditionalCostController extends Controller
                 }
 
                 $additionalCost->where('id', $id)->update(['remarks' => $remarks, 'is_active' => false]);
+                Formula::where('id',AdditionalCost::where('id', $id)->first()->formula_id)->delete();
                 $additionalCost->where('id', $id)->delete();
-                $formula->where('additional_cost_id', $id)->delete();
+//                $formula->where('additional_cost_id', $id)->delete();
                 return response()->json(['message' => 'Successfully Deactivated!'], 200);
             }
         }
@@ -153,7 +161,8 @@ class AdditionalCostController extends Controller
 
                 $additionalCost->withTrashed()->where('id', $id)->restore();
                 $additionalCost->update(['is_active' => true,'remarks' => null]);
-                $formula->where('additional_cost_id', $id)->restore();
+//                $formula->where('additional_cost_id', $id)->restore();
+                Formula::where('id',AdditionalCost::where('id', $id)->first()->formula_id)->restore();
                 return response()->json(['message' => 'Successfully Activated!'], 200);
             }
         }
@@ -192,7 +201,6 @@ class AdditionalCostController extends Controller
         ],
             [
                 'date.required' => 'Date is required.',
-                'date.date_format' => 'Date format is invalid.',
                 'date.date_format' => 'Date format is invalid.',
             ]);
     }
@@ -239,7 +247,7 @@ class AdditionalCostController extends Controller
         $remaining_book_value = $this->calculationRepository->getRemainingBookValue($properties->depreciable_basis, $accumulated_cost);
 
         if ($depreciation_method === 'One Time') {
-            $age = 0.083333333333333;
+            $age = 0.08333333333333;
             $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->depreciable_basis, $properties->scrap_value, $age);
         }
 
@@ -300,14 +308,13 @@ class AdditionalCostController extends Controller
         return response()->json(
             [
                 'message' => 'Additional Cost imported successfully.',
-                'data' => $data
             ],
             200
         );
     }
 
-    public function sampleAdditionalCostDownload(){
-
+    public function sampleAdditionalCostDownload(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
         $path = storage_path('app/sample/additionalCost.xlsx');
         return response()->download($path);
     }
