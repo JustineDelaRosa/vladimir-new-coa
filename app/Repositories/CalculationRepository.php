@@ -13,24 +13,24 @@ class CalculationRepository
         return $start_depreciation->diffInMonths($current_month->addMonth(1));
     }
 
-    public function getMonthlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life): float
+    public function getMonthlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life): float
     {
         $est_useful_life = floor($est_useful_life) * 12 + (($est_useful_life - floor($est_useful_life)) * 12);
-        return round(($depreciable_basis - $scrap_value) / $est_useful_life,2);
+        return round(($acquisition_cost - $scrap_value) / $est_useful_life,2);
     }
-    public function getYearlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life): float
+    public function getYearlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life): float
     {
         $est_useful_life = floor($est_useful_life) + (($est_useful_life - floor($est_useful_life)) * 12) / 12;
-        return round(($depreciable_basis - $scrap_value) / $est_useful_life,2);
+        return round(($acquisition_cost - $scrap_value) / $est_useful_life,2);
     }
     public function getAccumulatedCost($monthly_depreciation, float $custom_age): float
     {
         $accumulated_cost = $monthly_depreciation * $custom_age;
         return round($accumulated_cost);
     }
-    public function getRemainingBookValue($depreciable_basis, float $accumulated_cost): float
+    public function getRemainingBookValue($acquisition_cost, float $accumulated_cost): float
     {
-        $remaining_book_value = $depreciable_basis - $accumulated_cost;
+        $remaining_book_value = $acquisition_cost - $accumulated_cost;
         return round($remaining_book_value);
     }
     public function getEndDepreciation($start_depreciation, $est_useful_life, $depreciation_method): string
@@ -73,6 +73,4 @@ class CalculationRepository
         }
         return $total_cost;
     }
-
-
 }
