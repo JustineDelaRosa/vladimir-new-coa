@@ -83,34 +83,34 @@ class MasterlistImport extends DefaultValueBinder implements
     public function collection(Collection $collections)
     {
 
-//        $client = new Client();
-//        $token = '9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4';
-//        $response = $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
-//            'headers' => [
-//                'Authorization' => 'Bearer ' . $token,
-//                'Accept' => 'application/json',
-//            ],
-//        ]);
-//
-//// Get the body content from the response
-//        $body = $response->getBody()->getContents();
-//
-//// Decode the JSON response into an associative array
-//        $data = json_decode($body, true);
-//        $nameToCheck = [
-//            'Perona, jerome',
-//            'Dela Rosa, Justine',
-//            'Nucum, Caren'
-//        ];
-//
-//        if (!empty($data['data']) && is_array($data['data'])) {
-//            foreach ($data['data'] as $employee) {
-//                if (!empty($employee['general_info']) && in_array($employee['general_info']['full_name'], $nameToCheck)) {
-//                    echo $employee['general_info']['full_id_number'] . PHP_EOL;
-//                    break;
-//                }
-//            }
-//        }
+        //        $client = new Client();
+        //        $token = '9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4';
+        //        $response = $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
+        //            'headers' => [
+        //                'Authorization' => 'Bearer ' . $token,
+        //                'Accept' => 'application/json',
+        //            ],
+        //        ]);
+        //
+        //// Get the body content from the response
+        //        $body = $response->getBody()->getContents();
+        //
+        //// Decode the JSON response into an associative array
+        //        $data = json_decode($body, true);
+        //        $nameToCheck = [
+        //            'Perona, jerome',
+        //            'Dela Rosa, Justine',
+        //            'Nucum, Caren'
+        //        ];
+        //
+        //        if (!empty($data['data']) && is_array($data['data'])) {
+        //            foreach ($data['data'] as $employee) {
+        //                if (!empty($employee['general_info']) && in_array($employee['general_info']['full_name'], $nameToCheck)) {
+        //                    echo $employee['general_info']['full_id_number'] . PHP_EOL;
+        //                    break;
+        //                }
+        //            }
+        //        }
 
         //if a collection is empty, pass an empty array
         if ($collections->isEmpty()) {
@@ -167,8 +167,8 @@ class MasterlistImport extends DefaultValueBinder implements
             'depreciable_basis' => $collection['depreciable_basis'],
             'accumulated_cost' => $collection['accumulated_cost'],
             'months_depreciated' => $this->calculationRepository->getMonthDifference(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
-//            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life,$collection['depreciation_method']),
+            //            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life, $collection['depreciation_method']),
             'depreciation_per_year' => $collection['depreciation_per_year'],
             'depreciation_per_month' => $collection['depreciation_per_month'],
             'remaining_book_value' => $collection['remaining_book_value'],
@@ -224,7 +224,7 @@ class MasterlistImport extends DefaultValueBinder implements
 
 
 
-//Todo: if the id is trashed then what should i do with the id?
+    //Todo: if the id is trashed then what should i do with the id?
     function rules($collection): array
     {
         $collections = collect($collection);
@@ -242,7 +242,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $capexValue = $collections[$index]['capex'];
                 $typeOfRequest = $collections[$index]['type_of_request'];
-                if (ucwords(strtolower($typeOfRequest)) != 'Capex' ) {
+                if (ucwords(strtolower($typeOfRequest)) != 'Capex') {
                     if ($value != '-') {
                         $fail('Capex and Sub Capex should be empty');
                         return true;
@@ -270,42 +270,42 @@ class MasterlistImport extends DefaultValueBinder implements
                     }
                 }
             }],
-//            '*.project_name' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
-//                //check if the value of project name is null or '-'
-//                if ($value == null || $value == '-') {
-//                    return true;
-//                }
-//                //check in the capex table if the project name is the same with the capex
-//                $index = array_search($attribute, array_keys($collections->toArray()));
-//                $capex = Capex::where('capex', $collections[$index]['capex'])->first();
-//                if ($capex) {
-//                    $project = $capex->where('project_name', $value)->first();
-//                    if (!$project) {
-//                        $fail('Project name does not exist in the capex');
-//                    }
-//                }
-//            }],
-//            '*.sub_project' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
-//                if ($value == '' || $value == '-') {
-//                    return true;
-//                }
-//                $index = array_search($attribute, array_keys($collections->toArray()));
-//                $subCapexValue = $collections[$index]['sub_capex'];
-//                if($subCapexValue != '' && $subCapexValue != '-'){
-//                    if ($value == '' || $value == '-') {
-//                        $fail('Sub Project is required');
-//                        return true;
-//                    }
-//                }
-//                //check in the sub capex table if the subproject is the same with the capex
-//                $subCapex = SubCapex::where('sub_capex', $subCapexValue)->first();
-//                if ($subCapex) {
-//                    $subProject = $subCapex->where('sub_project', $value)->first();
-//                    if (!$subProject) {
-//                        $fail('Sub project does not exist in the sub capex');
-//                    }
-//                }
-//            }],
+            //            '*.project_name' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
+            //                //check if the value of project name is null or '-'
+            //                if ($value == null || $value == '-') {
+            //                    return true;
+            //                }
+            //                //check in the capex table if the project name is the same with the capex
+            //                $index = array_search($attribute, array_keys($collections->toArray()));
+            //                $capex = Capex::where('capex', $collections[$index]['capex'])->first();
+            //                if ($capex) {
+            //                    $project = $capex->where('project_name', $value)->first();
+            //                    if (!$project) {
+            //                        $fail('Project name does not exist in the capex');
+            //                    }
+            //                }
+            //            }],
+            //            '*.sub_project' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
+            //                if ($value == '' || $value == '-') {
+            //                    return true;
+            //                }
+            //                $index = array_search($attribute, array_keys($collections->toArray()));
+            //                $subCapexValue = $collections[$index]['sub_capex'];
+            //                if($subCapexValue != '' && $subCapexValue != '-'){
+            //                    if ($value == '' || $value == '-') {
+            //                        $fail('Sub Project is required');
+            //                        return true;
+            //                    }
+            //                }
+            //                //check in the sub capex table if the subproject is the same with the capex
+            //                $subCapex = SubCapex::where('sub_capex', $subCapexValue)->first();
+            //                if ($subCapex) {
+            //                    $subProject = $subCapex->where('sub_project', $value)->first();
+            //                    if (!$subProject) {
+            //                        $fail('Sub project does not exist in the sub capex');
+            //                    }
+            //                }
+            //            }],
             '*.tag_number' => ['required', 'regex:/^([0-9-]{6,13}|-)$/', function ($attribute, $value, $fail) use ($collections) {
                 $duplicate = $collections->where('tag_number', $value)->where('tag_number', '!=', '-')->count();
                 if ($duplicate > 1) {
@@ -334,7 +334,8 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.additional_description' => 'required', //Todo changing asset_specification to Additional Description
             '*.accountability' => 'required',
             //required if accountability is personally issued and if accountability is common, it should be empty
-            '*.accountable' => ['required_if:*.accountability,Personal Issued',
+            '*.accountable' => [
+                'required_if:*.accountability,Personal Issued',
                 function ($attribute, $value, $fail) use ($collections) {
                     $index = array_search($attribute, array_keys($collections->toArray()));
                     $accountability = $collections[$index]['accountability'];
@@ -348,40 +349,40 @@ class MasterlistImport extends DefaultValueBinder implements
                             $fail('Accountable is required');
                         }
                     }
-                }],
+                }
+            ],
             '*.cellphone_number' => 'required',
             '*.brand' => 'required',
             '*.major_category' => [
                 'required', 'exists:major_categories,major_category_name'
-//                function ($attribute, $value, $fail) use ($collections) {
-//                    $major_category = MajorCategory::withTrashed()->where('major_category_name', $value)->first();
-//                    if (!$major_category) {
-//                        $fail('Major Category does not exist');
-//                    }
-//                }
+                //                function ($attribute, $value, $fail) use ($collections) {
+                //                    $major_category = MajorCategory::withTrashed()->where('major_category_name', $value)->first();
+                //                    if (!$major_category) {
+                //                        $fail('Major Category does not exists');
+                //                    }
+                //                }
             ],
             '*.minor_category' => ['required', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
-//                $status = $collections[$index]['asset_status'];
+                //                $status = $collections[$index]['asset_status'];
                 $major_category = $collections[$index]['major_category'];
                 $major_category = MajorCategory::withTrashed()->where('major_category_name', $major_category)->first()->id ?? 0;
                 $minor_category = MinorCategory::withTrashed()->where('minor_category_name', $value)
                     ->where('major_category_id', $major_category)->first();
 
-//                if($minor_category->trashed()){
-//                    $fail('Minor Category does not exist');
-//                }
+                //                if($minor_category->trashed()){
+                //                    $fail('Minor Category does not exist');
+                //                }
                 if (!$minor_category) {
                     $fail('Minor Category does not exist');
                 }
-
             }],
-            '*.voucher' => ['required', function($attribute, $value, $fail){
+            '*.voucher' => ['required', function ($attribute, $value, $fail) {
                 if ($value == '-') {
                     $fail('Voucher is required');
                 }
             }],
-            '*.receipt' => ['required',function($attribute, $value, $fail){
+            '*.receipt' => ['required', function ($attribute, $value, $fail) {
                 if ($value == '-') {
                     $fail('Receipt is required');
                 }
@@ -393,7 +394,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $scrap_value = $collections[$index]['scrap_value'];
 
-                if($value < $scrap_value){
+                if ($value < $scrap_value) {
                     $fail('Acquisition cost must not be less than scrap value');
                 }
 
@@ -422,17 +423,17 @@ class MasterlistImport extends DefaultValueBinder implements
                 function ($attribute, $value, $fail) use ($collections) {
                     $index = array_search($attribute, array_keys($collections->toArray()));
                     //allow only fully depreciated and running depreciation
-                     $depreciation = DepreciationStatus::where('depreciation_status_name', $value)->first();
-                        if($depreciation->depreciation_status_name != 'Fully Depreciated' && $depreciation->depreciation_status_name != 'Running Depreciation'){
-                            $fail('Invalid depreciation status');
-                        }
+                    $depreciation = DepreciationStatus::where('depreciation_status_name', $value)->first();
+                    if ($depreciation->depreciation_status_name != 'Fully Depreciated' && $depreciation->depreciation_status_name != 'Running Depreciation') {
+                        $fail('Invalid depreciation status');
+                    }
 
-//                    $depreciation_method = $collections[$index]['depreciation_method'];
-//                    if ($depreciation_method == 'One Time') {
-//                        if ($value != 'Fully Depreciated') {
-//                            $fail('Depreciation status should be fully depreciated');
-//                        }
-//                    }
+                    //                    $depreciation_method = $collections[$index]['depreciation_method'];
+                    //                    if ($depreciation_method == 'One Time') {
+                    //                        if ($value != 'Fully Depreciated') {
+                    //                            $fail('Depreciation status should be fully depreciated');
+                    //                        }
+                    //                    }
 
                 }
             ],
@@ -445,13 +446,13 @@ class MasterlistImport extends DefaultValueBinder implements
                 Rule::exists('movement_statuses', 'movement_status_name')->whereNull('deleted_at'),
             ],
             '*.care_of' => 'required',
-            '*.end_depreciation' => ['required', function($attribute, $value, $fail) use ($collections){
+            '*.end_depreciation' => ['required', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $depreciation_status_name = $collections[$index]['depreciation_status'];
                 $depreciation_status = DepreciationStatus::where('depreciation_status_name', $depreciation_status_name)->first();
-                if($depreciation_status->depreciation_status_name == 'Fully Depreciated'){
+                if ($depreciation_status->depreciation_status_name == 'Fully Depreciated') {
                     //if the date value is not yet passed the current date
-                    if(!Carbon::parse($value)->isAfter(Carbon::now())){
+                    if (!Carbon::parse($value)->isAfter(Carbon::now())) {
                         $fail('not yet fully depreciated');
                     }
                 }
@@ -464,7 +465,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
             }],
             '*.start_depreciation' => ['required'],
-            '*.company_code' => ['required','exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
+            '*.company_code' => ['required', 'exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $company_name = $collections[$index]['company'];
                 $company = Company::query()
@@ -476,7 +477,7 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Invalid company');
                 }
             }],
-            '*.department_code' => ['required','exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
+            '*.department_code' => ['required', 'exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $company_code = $collections[$index]['company_code'];
                 $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
@@ -487,7 +488,7 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Invalid location, company and department combination');
                 }
             }],
-            '*.location_code' => ['required','exists:locations,location_code', function($attribute, $value, $fail) use ($collections){
+            '*.location_code' => ['required', 'exists:locations,location_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 //check if the code is correct on the database
                 $location_name = $collections[$index]['location'];
@@ -496,19 +497,18 @@ class MasterlistImport extends DefaultValueBinder implements
                     ->where('location_name', $location_name)
                     ->where('is_active', '!=', 0)
                     ->first();
-                if(!$location){
+                if (!$location) {
                     $fail('Invalid location');
                     return;
                 }
                 $department_code = $collections[$index]['department_code'];
                 $department_sync_id = Department::where('department_code', $department_code)->first()->sync_id ?? 0;
                 $associated_location_sync_id = $location->departments->pluck('sync_id')->toArray();
-                if(!in_array($department_sync_id, $associated_location_sync_id)){
+                if (!in_array($department_sync_id, $associated_location_sync_id)) {
                     $fail('Invalid location, company and department combination');
                 }
-
             }],
-            '*.account_code' => ['required','exists:account_titles,account_title_code', function($attribute, $value, $fail) use ($collections){
+            '*.account_code' => ['required', 'exists:account_titles,account_title_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $account_title_name = $collections[$index]['account_title'];
                 $account_title = AccountTitle::query()
@@ -516,7 +516,7 @@ class MasterlistImport extends DefaultValueBinder implements
                     ->where('account_title_name', $account_title_name)
                     ->where('is_active', '!=', 0)
                     ->first();
-                if(!$account_title){
+                if (!$account_title) {
                     $fail('Invalid account title');
                 }
             }],
@@ -581,97 +581,5 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.account_code.required' => 'Account Code is required',
             '*.account_code.exists' => 'Account Code does not exist',
         ];
-
-    }
-
-
-//  GENERATING VLADIMIR TAG NUMBER
-    public function vladimirTagGenerator(): string
-    {
-        $generatedEan13Result = $this->generateEan13();
-        // Check if the generated number is a duplicate or already exists in the database
-        while ($this->checkDuplicateEan13($generatedEan13Result)) {
-            $generatedEan13Result = $this->generateEan13();
-        }
-
-        return $generatedEan13Result;
-    }
-
-    public function generateEan13(): string
-    {
-        $date = date('ymd');
-        static $lastRandom = 0;
-        do {
-            $random = mt_rand(1, 9) . mt_rand(1000, 9999);
-        } while ($random === $lastRandom);
-        $lastRandom = $random;
-
-        $number = "5$date$random";
-
-        if (strlen($number) !== 12) {
-            return 'Invalid Number';
-        }
-
-        //Calculate checkDigit
-        $checkDigit = $this->calculateCheckDigit($number);
-
-        $ean13Result = $number . $checkDigit;
-
-        return $ean13Result;
-    }
-
-    public function calculateCheckDigit(string $number): int
-    {
-        $evenSum = $this->calculateEvenSum($number);
-        $oddSum = $this->calculateOddSum($number);
-
-        $totalSum = $evenSum + $oddSum;
-        $remainder = $totalSum % 10;
-        $checkDigit = ($remainder === 0) ? 0 : 10 - $remainder;
-
-        return $checkDigit;
-    }
-
-    public function calculateEvenSum(string $number): int
-    {
-        $evenSum = 0;
-        for ($i = 1; $i < 12; $i += 2) {
-            $evenSum += (int)$number[$i];
-        }
-        return $evenSum * 3;
-    }
-
-    public function calculateOddSum(string $number): int
-    {
-        $oddSum = 0;
-        for ($i = 0; $i < 12; $i += 2) {
-            $oddSum += (int)$number[$i];
-        }
-        return $oddSum;
-    }
-
-    public function checkDuplicateEan13(string $ean13Result): bool
-    {
-        $generated = [];
-        return in_array($ean13Result, $generated) || FixedAsset::where('vladimir_tag_number', $ean13Result)->exists();
-    }
-    function getEmployeeData($client, $token){
-        return $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $token,
-                'Accept' => 'application/json',
-            ],
-        ])->getBody()->getContents();
-    }
-
-    function findEmployee($data, $value){
-        if (!empty($data['data']) && is_array($data['data'])) {
-            foreach ($data['data'] as $employee) {
-                if (!empty($employee['general_info']) && in_array($employee['general_info']['full_name'], $value)) {
-                    echo $employee['general_info']['full_id_number'] . PHP_EOL;
-                    break;
-                }
-            }
-        }
     }
 }
