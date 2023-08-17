@@ -215,7 +215,14 @@ class PrintBarCodeController extends Controller
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
-        $typeOfRequest = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
+//        $typeOfRequest = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
+        $typeOfRequestRecord = TypeOfRequest::where('type_of_request_name', 'Capex')->first();
+
+        if ($typeOfRequestRecord) {
+            $typeOfRequest = $typeOfRequestRecord->id;
+        } else {
+            $typeOfRequest = 0;
+        }
 
         // Define the common query for fixed assets
         $fixedAssetQuery = FixedAsset::with([
@@ -244,6 +251,7 @@ class PrintBarCodeController extends Controller
                     ->orWhere('tag_number', 'LIKE', "%$search%")
                     ->orWhere('tag_number_old', 'LIKE', "%$search%")
                     ->orWhere('accountability', 'LIKE', "%$search%")
+                    ->orWhere('asset_description', 'LIKE', "%$search%")
                     ->orWhere('accountable', 'LIKE', "%$search%")
                     ->orWhere('brand', 'LIKE', "%$search%")
                     ->orWhere('depreciation_method', 'LIKE', "%$search%");
@@ -362,6 +370,7 @@ class PrintBarCodeController extends Controller
                 $query->Where('vladimir_tag_number', '=', $search)
                     ->orWhere('tag_number', 'LIKE', "%$search%")
                     ->orWhere('tag_number_old', 'LIKE', "%$search%")
+                    ->orWhere('asset_description', 'LIKE', "%$search%")
                     ->orWhere('accountability', 'LIKE', "%$search%")
                     ->orWhere('accountable', 'LIKE', "%$search%")
                     ->orWhere('brand', 'LIKE', "%$search%")

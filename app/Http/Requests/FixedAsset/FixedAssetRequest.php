@@ -71,9 +71,9 @@ class FixedAssetRequest extends FormRequest
                         }
 
                         // Check if necessary keys exist to avoid undefined index
-                        if (isset($accountability['general_info']['full_id_number_full_name'])) {
-                            $full_id_number_full_name = $accountability['general_info']['full_id_number_full_name'];
-                            request()->merge(['accountable' => $full_id_number_full_name]);
+                        if (isset($accountability['general_info']['full_id_number'])) {
+                            $full_id_number = $accountability['general_info']['full_id_number'];
+                            request()->merge(['accountable' => $full_id_number]);
                         } else {
                             // Fail validation if keys don't exist
                             $fail('The accountable person\'s full name is required.');
@@ -81,12 +81,10 @@ class FixedAssetRequest extends FormRequest
                         }
 
                         // Validate full name
-                        if ($full_id_number_full_name === '') {
+                        if ($full_id_number === '') {
                             $fail('The accountable person\'s full name cannot be empty.');
-                            return;
                         }
                     },
-
                 ],
                 'cellphone_number' => 'nullable|numeric|digits:11',
                 'brand' => 'nullable',
@@ -265,9 +263,9 @@ class FixedAssetRequest extends FormRequest
                         }
 
                         // Check if necessary keys exist to avoid undefined index
-                        if (isset($accountability['general_info']['full_id_number_full_name'])) {
-                            $full_id_number_full_name = $accountability['general_info']['full_id_number_full_name'];
-                            request()->merge(['accountable' => $full_id_number_full_name]);
+                        if (isset($accountability['general_info']['full_id_number'])) {
+                            $full_id_number = $accountability['general_info']['full_id_number'];
+                            request()->merge(['accountable' => $full_id_number]);
                         } else {
                             // Fail validation if keys don't exist
                             $fail('The accountable person\'s full name is required.');
@@ -275,9 +273,8 @@ class FixedAssetRequest extends FormRequest
                         }
 
                         // Validate full name
-                        if ($full_id_number_full_name === '') {
+                        if ($full_id_number === '') {
                             $fail('The accountable person\'s full name cannot be empty.');
-                            return;
                         }
                     },
                 ],

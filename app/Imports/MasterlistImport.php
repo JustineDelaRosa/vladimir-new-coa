@@ -112,7 +112,7 @@ class MasterlistImport extends DefaultValueBinder implements
 //            }
 //        }
 
-        //if collection is empty pass an empty array
+        //if a collection is empty, pass an empty array
         if ($collections->isEmpty()) {
             $collections = collect([]);
         }
@@ -193,7 +193,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'tag_number' => $collection['tag_number'] ?? '-',
             'tag_number_old' => $collection['tag_number_old'] ?? '-',
             'asset_description' => ucwords(strtolower($collection['description'])),
-            'charged_department' => Department::where('department_code', $collection['department_code'])->first()->id,
+            'charged_department' => Department::where('department_name', $collection['charged_department'])->first()->id,
             'type_of_request_id' => TypeOfRequest::where('type_of_request_name', ($collection['type_of_request']))->first()->id,
             'asset_specification' => ucwords(strtolower($collection['additional_description'])),
             'accountability' => ucwords(strtolower($collection['accountability'])),
@@ -330,7 +330,7 @@ class MasterlistImport extends DefaultValueBinder implements
             }],
             '*.description' => 'required', //todo: changing asset_description to description
             '*.type_of_request' => 'required|exists:type_of_requests,type_of_request_name',
-            '*.charged_department' => 'required',
+            '*.charged_department' => 'required|exists:departments,department_name',
             '*.additional_description' => 'required', //Todo changing asset_specification to Additional Description
             '*.accountability' => 'required',
             //required if accountability is personally issued and if accountability is common, it should be empty
@@ -451,7 +451,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 $depreciation_status = DepreciationStatus::where('depreciation_status_name', $depreciation_status_name)->first();
                 if($depreciation_status->depreciation_status_name == 'Fully Depreciated'){
                     //if the date value is not yet passed the current date
-                    if(Carbon::parse($value)->isAfter(Carbon::now())){
+                    if(!Carbon::parse($value)->isAfter(Carbon::now())){
                         $fail('not yet fully depreciated');
                     }
                 }
@@ -574,6 +574,8 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.company_code.exists' => 'Company Code does not exist',
             '*.department_code.required' => 'Department Code is required',
             '*.department_code.exists' => 'Department Code does not exist',
+            '*.charged_department.required' => 'Charge Department is required',
+            '*.charged_department.exists' => 'Charge Department does not exist',
             '*.location_code.required' => 'Location Code is required',
             '*.location_code.exists' => 'Location Code does not exist',
             '*.account_code.required' => 'Account Code is required',

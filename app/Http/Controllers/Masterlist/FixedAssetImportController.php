@@ -28,7 +28,7 @@ class FixedAssetImportController extends Controller
 //                    'message' => 'No data found.',
 //                    'errors' => [
 //                        'file' => [
-//                            'Thw file is empty.'
+//                            'The file is empty.'
 //                        ]
 //                    ]
 //                ],

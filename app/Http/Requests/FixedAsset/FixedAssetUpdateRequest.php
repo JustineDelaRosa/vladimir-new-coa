@@ -6,6 +6,8 @@ use App\Models\Department;
 use App\Models\FixedAsset;
 use App\Models\Location;
 use App\Models\Status\DepreciationStatus;
+use App\Models\SubCapex;
+use App\Models\TypeOfRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
 class FixedAssetUpdateRequest extends FormRequest
@@ -29,7 +31,23 @@ class FixedAssetUpdateRequest extends FormRequest
     {
         $id = $this->route()->parameter('fixed_asset');
         return [
-            'sub_capex_id' => 'nullable|exists:sub_capexes,id',
+            'sub_capex_id' => ['nullable', function ($attribute, $value, $fail){
+                // Get the type_of_request_id from request
+                $type_of_request_id = request()->input('type_of_request_id');
+//                $sub_capex = SubCapex::where('id', $value)->exists();
+//                if(!$sub_capex){
+//                    $fail('Sub capex does not exist');
+//                }
+                // Fetch the TypeOfRequest object based on the id
+                $typeOFRequest = TypeOfRequest::find($type_of_request_id);
+
+                // If the sub capex is '-' and the type of request is not 'Capex', then do nothing and let the validation continue
+                // If the conditions are not met, the validation will fail
+                if ($value == '-' && ucwords(strtolower($typeOFRequest->type_of_request_name)) != 'Capex') {
+                    //make it null
+                    request()->merge([$attribute => null]);
+                }
+            }],
             'tag_number' => ['nullable', 'max:13', function ($attribute, $value, $fail) use ($id) {
                 //if the value id "-" and the is_old_asset is true return fail error
                 if($value == "-" && $this->is_old_asset){
@@ -54,32 +72,31 @@ class FixedAssetUpdateRequest extends FormRequest
             }],
             'asset_description' => 'required',
             'type_of_request_id' => 'required',
-            'charged_department' => 'required',
+//            'charged_department' => 'required',
             'asset_specification' => 'required',
             'accountability' => 'required',
-            'accountable' => ['required_if:accountability,Personal Issued',
+            'accountable' => [
+                'required_if:accountability,Personal Issued',
                 function ($attribute, $value, $fail) {
                     $accountability = request()->input('accountable');
-                    //if accountable is null, continue
+                    //if accountable is null continue
                     if ($value == null) {
                         return;
                     }
 
                     // Check if necessary keys exist to avoid undefined index
-                    if (isset($accountability['general_info']['full_id_number_full_name'])) {
-                        $full_id_number_full_name = $accountability['general_info']['full_id_number_full_name'];
-                        request()->merge(['accountable' => $full_id_number_full_name]);
-                    }
-                    else {
+                    if (isset($accountability['general_info']['full_id_number'])) {
+                        $full_id_number = $accountability['general_info']['full_id_number'];
+                        request()->merge(['accountable' => $full_id_number]);
+                    } else {
                         // Fail validation if keys don't exist
                         $fail('The accountable person\'s full name is required.');
                         return;
                     }
 
                     // Validate full name
-                    if ($full_id_number_full_name === '') {
+                    if ($full_id_number === '') {
                         $fail('The accountable person\'s full name cannot be empty.');
-                        return;
                     }
                 },
             ],
