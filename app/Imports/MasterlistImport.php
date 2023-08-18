@@ -562,6 +562,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.cycle_count_status.in' => 'The selected cycle count status is invalid.',
             '*.movement_status.required' => 'Movement Status is required',
             '*.movement_status.in' => 'The selected movement status is invalid.',
+            '*.movement_status.exists' => 'Movement Status does not exist',
             '*.care_of.required' => 'Care Of is required',
             '*.end_depreciation.required' => 'End Depreciation is required',
             '*.depreciation_per_year.required' => 'Depreciation Per Year is required',

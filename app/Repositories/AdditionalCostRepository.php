@@ -54,7 +54,7 @@ class AdditionalCostRepository
             'accumulated_cost' => $request['accumulated_cost'] ?? 0,
             'months_depreciated' => $request['months_depreciated'] ?? 0,
             'release_date' => $request['release_date'] ?? Null,
-            'end_depreciation' => isset($request['release_date'])
+            'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
                     strtoupper($request['depreciation_method']) == 'STL'
@@ -64,7 +64,7 @@ class AdditionalCostRepository
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
-            'start_depreciation' => isset($request['release_date'])
+            'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getStartDepreciation($request['release_date'])
                 : null
         ]);
@@ -169,7 +169,7 @@ class AdditionalCostRepository
             'accumulated_cost' => $request['accumulated_cost'] ?? 0,
             'months_depreciated' => $request['months_depreciated'] ?? 0,
             'release_date' => $request['release_date'] ?? Null,
-            'end_depreciation' => isset($request['release_date'])
+            'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
                     strtoupper($request['depreciation_method']) == 'STL'
@@ -179,7 +179,7 @@ class AdditionalCostRepository
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
-            'start_depreciation' => isset($request['release_date'])
+            'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getStartDepreciation($request['release_date'])
                 : null
         ]);

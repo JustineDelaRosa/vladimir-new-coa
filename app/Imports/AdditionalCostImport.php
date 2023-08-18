@@ -203,7 +203,23 @@ class AdditionalCostImport extends DefaultValueBinder implements
                             $fail('Accountable is required');
                         }
                     }
-                }],
+//                    $index = array_search($attribute, array_keys($collections));
+//                    $vladimirTagNumber = $collections[$index]['vladimir_tag_number'];
+//                    $fixedAsset = FixedAsset::where('vladimir_tag_number', $vladimirTagNumber)->first();
+//                    $fixedAssetId = $fixedAsset->id ?? 0;
+//
+//                    // Processing of the fixed assets continues regardless
+//                    $processedFixedAssets[$fixedAssetId][$value] = ['vladimir_tag_number' => $vladimirTagNumber];
+//
+//                    $additionalCost = AdditionalCost::where('fixed_asset_id', $fixedAssetId)
+//                        ->where('voucher', $value)
+//                        ->first();
+//
+//                    if ($additionalCost) {
+//                        $fail('Voucher already exists with different tag number '. $additionalCost->fixedAsset->vladimir_tag_number);
+//                    }
+                }
+            ],
             '*.cellphone_number' => 'required',
             '*.brand' => 'required',
             '*.major_category' => [
@@ -253,7 +269,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
                 $index = array_search($attribute, array_keys($collections));
                 $scrap_value = $collections[$index]['scrap_value'];
 
-                if($value < $scrap_value){
+                if ($value < $scrap_value) {
                     $fail('Acquisition cost must not be less than scrap value');
                 }
 
@@ -283,7 +299,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     $index = array_search($attribute, array_keys($collections));
                     //allow only fully depreciated and running depreciation
                     $depreciation = DepreciationStatus::where('depreciation_status_name', $value)->first();
-                    if($depreciation->depreciation_status_name != 'Fully Depreciated' && $depreciation->depreciation_status_name != 'Running Depreciation'){
+                    if ($depreciation->depreciation_status_name != 'Fully Depreciated' && $depreciation->depreciation_status_name != 'Running Depreciation') {
                         $fail('Invalid depreciation status');
                     }
 
@@ -305,13 +321,13 @@ class AdditionalCostImport extends DefaultValueBinder implements
                 Rule::exists('movement_statuses', 'movement_status_name')->whereNull('deleted_at'),
             ],
             '*.care_of' => 'required',
-            '*.end_depreciation' => ['required', function($attribute, $value, $fail) use ($collections){
+            '*.end_depreciation' => ['required', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections));
                 $depreciation_status_name = $collections[$index]['depreciation_status'];
                 $depreciation_status = DepreciationStatus::where('depreciation_status_name', $depreciation_status_name)->first();
-                if($depreciation_status->depreciation_status_name == 'Fully Depreciated'){
+                if ($depreciation_status->depreciation_status_name == 'Fully Depreciated') {
                     //if the date value is not yet passed the current date
-                    if(Carbon::parse($value)->isAfter(Carbon::now())){
+                    if (Carbon::parse($value)->isAfter(Carbon::now())) {
                         $fail('not yet fully depreciated');
                     }
                 }
@@ -324,7 +340,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
                 }
             }],
             '*.start_depreciation' => ['required'],
-            '*.company_code' => ['required','exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
+            '*.company_code' => ['required', 'exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections));
                 $company_name = $collections[$index]['company'];
                 $company = Company::query()
@@ -336,7 +352,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     $fail('Invalid company');
                 }
             }],
-            '*.department_code' => ['required','exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
+            '*.department_code' => ['required', 'exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections));
                 $company_code = $collections[$index]['company_code'];
                 $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
@@ -347,7 +363,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     $fail('Invalid department, company combination');
                 }
             }],
-            '*.location_code' => ['required','exists:locations,location_code', function($attribute, $value, $fail) use ($collections){
+            '*.location_code' => ['required', 'exists:locations,location_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections));
                 //check if the code is correct on the database
                 $location_name = $collections[$index]['location'];
@@ -356,19 +372,19 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     ->where('location_name', $location_name)
                     ->where('is_active', '!=', 0)
                     ->first();
-                if(!$location){
+                if (!$location) {
                     $fail('Invalid location');
                     return;
                 }
                 $department_code = $collections[$index]['department_code'];
                 $department_sync_id = Department::where('department_code', $department_code)->first()->sync_id ?? 0;
                 $associated_location_sync_id = $location->departments->pluck('sync_id')->toArray();
-                if(!in_array($department_sync_id, $associated_location_sync_id)){
+                if (!in_array($department_sync_id, $associated_location_sync_id)) {
                     $fail('Invalid location, department combination');
                 }
 
             }],
-            '*.account_code' => ['required','exists:account_titles,account_title_code', function($attribute, $value, $fail) use ($collections){
+            '*.account_code' => ['required', 'exists:account_titles,account_title_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections));
                 $account_title_name = $collections[$index]['account_title'];
                 $account_title = AccountTitle::query()
@@ -376,7 +392,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     ->where('account_title_name', $account_title_name)
                     ->where('is_active', '!=', 0)
                     ->first();
-                if(!$account_title){
+                if (!$account_title) {
                     $fail('Invalid account title');
                 }
             }],

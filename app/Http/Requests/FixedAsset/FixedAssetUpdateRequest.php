@@ -5,6 +5,7 @@ namespace App\Http\Requests\FixedAsset;
 use App\Models\Department;
 use App\Models\FixedAsset;
 use App\Models\Location;
+use App\Models\MajorCategory;
 use App\Models\Status\DepreciationStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
@@ -141,7 +142,7 @@ class FixedAssetUpdateRequest extends FormRequest
             'acquisition_date' => ['required', 'date_format:Y-m-d', 'date','before_or_equal:today'],
             //acquisition cost should not be less than or equal to 0
             'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
-                if (request()->depreciation_method == 'Donated') {
+                if (request()->depreciation_method == 'Supplier\'s Rebase') {
                     if ($value != 0) {
                         $fail('Acquisition cost should be 0');
                     }
@@ -149,16 +150,26 @@ class FixedAssetUpdateRequest extends FormRequest
                 if ($value <= 0) {
                     $fail('Invalid acquisition cost');
                 }
+                $major_category = request()->major_category_id;
+                $major_category = MajorCategory::where('id', $major_category)->first();
+                if ($major_category->est_useful_life == 0 || $major_category->est_useful_life == 0.0) {
+                    request()->merge(['acquisition_cost' => 0]);
+                }
             }],
             'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail){
-                if (request()->depreciation_method == 'Donated') {
+                if (request()->depreciation_method == 'Supplier\'s Rebase') {
                     if ($value != 0) {
                         $fail('Scrap value should be 0');
                     }
                 }
+                $major_category = request()->major_category_id;
+                $major_category = MajorCategory::where('id', $major_category)->first();
+                if ($major_category->est_useful_life == 0 || $major_category->est_useful_life == 0.0) {
+                    request()->merge(['scrap_value' => 0]);
+                }
             }],
             'depreciable_basis' => ['required', 'numeric',function ($attribute, $value, $fail) {
-                if (request()->depreciation_method == 'Donated') {
+                if (request()->depreciation_method == 'Supplier\'s Rebase') {
                     if ($value != 0) {
                         $fail('Depreciable basis should be 0');
                     }
@@ -166,13 +177,18 @@ class FixedAssetUpdateRequest extends FormRequest
                 if ($value <= 0) {
                     $fail('Invalid depreciable basis');
                 }
+                $major_category = request()->major_category_id;
+                $major_category = MajorCategory::where('id', $major_category)->first();
+                if ($major_category->est_useful_life == 0 || $major_category->est_useful_life == 0.0) {
+                    request()->merge(['depreciable_basis' => 0]);
+                }
             }],
 //                'accumulated_cost' => ['nullable', 'numeric'],
             'care_of' => 'nullable',
             'months_depreciated' => ['required', 'numeric', function ($attribute, $value, $fail) {
 
-                //    if depreciation method is Donated, and no more months depreciated acquisition cost, scrap value and depreciable basis
-                if (request()->depreciation_method == 'Donated') {
+                //    if depreciation method is Supplier\'s Rebase, and no more months depreciated acquisition cost, scrap value and depreciable basis
+                if (request()->depreciation_method == 'Supplier\'s Rebase') {
                     if ($value != 0) {
                         $fail('Months depreciated should be 0');
                     }
@@ -184,6 +200,11 @@ class FixedAssetUpdateRequest extends FormRequest
                     if ($value != 0) {
                         $fail('Months depreciated should be 0');
                     }
+                }
+                $major_category = request()->major_category_id;
+                $major_category = MajorCategory::where('id', $major_category)->first();
+                if ($major_category->est_useful_life == 0 || $major_category->est_useful_life == 0.0) {
+                    request()->merge(['months_depreciated' => 0]);
                 }
             }],
 
