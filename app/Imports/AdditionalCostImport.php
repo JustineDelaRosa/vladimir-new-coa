@@ -246,23 +246,23 @@ class AdditionalCostImport extends DefaultValueBinder implements
 
             '*.voucher' => [
                 'required',
-                function ($attribute, $value, $fail) use ($collections, &$processedFixedAssets) {
-                    $index = array_search($attribute, array_keys($collections));
-                    $vladimirTagNumber = $collections[$index]['vladimir_tag_number'];
-                    $fixedAsset = FixedAsset::where('vladimir_tag_number', $vladimirTagNumber)->first();
-                    $fixedAssetId = $fixedAsset->id ?? 0;
-                    if (isset($processedFixedAssets[$fixedAssetId][$value])) {
-                        $fail('Duplicate voucher');
-                        return;
-                    }
-                    $processedFixedAssets[$fixedAssetId][$value] = true;
-                    $additionalCost = AdditionalCost::where('fixed_asset_id', $fixedAssetId)
-                        ->where('voucher', $value)
-                        ->first();
-                    if ($additionalCost) {
-                        $fail('Voucher already exists');
-                    }
-                }
+//                function ($attribute, $value, $fail) use ($collections, &$processedFixedAssets) {
+//                    $index = array_search($attribute, array_keys($collections));
+//                    $vladimirTagNumber = $collections[$index]['vladimir_tag_number'];
+//                    $fixedAsset = FixedAsset::where('vladimir_tag_number', $vladimirTagNumber)->first();
+//                    $fixedAssetId = $fixedAsset->id ?? 0;
+//                    if (isset($processedFixedAssets[$fixedAssetId][$value])) {
+//                        $fail('Duplicate voucher');
+//                        return;
+//                    }
+//                    $processedFixedAssets[$fixedAssetId][$value] = true;
+//                    $additionalCost = AdditionalCost::where('fixed_asset_id', $fixedAssetId)
+//                        ->where('voucher', $value)
+//                        ->first();
+//                    if ($additionalCost) {
+//                        $fail('Voucher already exists');
+//                    }
+//                }
             ],
             '*.receipt' => 'required',
             '*.quantity' => 'required|numeric',
