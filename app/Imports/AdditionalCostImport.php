@@ -268,7 +268,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required|in:STL,One Time',
             '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],
-            '*.acquisition_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) use ($collections) {
+            '*.acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections));
                 $scrap_value = $collections[$index]['scrap_value'];
 
@@ -281,12 +281,12 @@ class AdditionalCostImport extends DefaultValueBinder implements
                 }
             }],
             '*.scrap_value' => ['required',],
-            '*.depreciable_basis' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+            '*.depreciable_basis' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Depreciation basis must not be negative');
                 }
             }],
-            '*.accumulated_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+            '*.accumulated_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Accumulated cost must not be negative');
                 }
@@ -337,7 +337,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             }],
             '*.depreciation_per_year' => ['required'],
             '*.depreciation_per_month' => ['required'],
-            '*.remaining_book_value' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+            '*.remaining_book_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Remaining book value must not be negative');
                 }

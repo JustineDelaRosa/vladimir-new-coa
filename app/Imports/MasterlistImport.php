@@ -388,7 +388,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required|in:STL,One Time',
             '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],
-            '*.acquisition_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) use ($collections) {
+            '*.acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $scrap_value = $collections[$index]['scrap_value'];
 
@@ -401,12 +401,13 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
             }],
             '*.scrap_value' => ['required',],
-            '*.depreciable_basis' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+            '*.depreciable_basis' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Depreciation basis must not be negative');
                 }
             }],
-            '*.accumulated_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+//            ''regex:/^\d+(\.\d{1,2})?$/''
+            '*.accumulated_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Accumulated cost must not be negative');
                 }
@@ -457,7 +458,7 @@ class MasterlistImport extends DefaultValueBinder implements
             }],
             '*.depreciation_per_year' => ['required'],
             '*.depreciation_per_month' => ['required'],
-            '*.remaining_book_value' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+            '*.remaining_book_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Remaining book value must not be negative');
                 }
@@ -525,61 +526,66 @@ class MasterlistImport extends DefaultValueBinder implements
     function messages(): array
     {
         return [
-            '*.capex_id.exists' => 'Capex does not exist',
-            '*.vladimir_tag_number.required' => 'Vladimir Tag Number is required',
-            '*.tag_number.required' => 'Tag Number is required',
-            '*.tag_number_old.required' => 'Tag Number Old is required',
-            '*.asset_description.required' => 'Description is required',
-            '*.type_of_request.required' => 'Type of Request is required',
-            '*.type_of_request.in' => 'Invalid Type of Request',
-            '*.additional_description.required' => 'Additional Description is required',
-            '*.accountability.required' => 'Accountability is required',
-            '*.accountable.required_if' => 'Accountable is required',
-            '*.cellphone_number.required' => 'Cellphone Number is required',
-            '*.brand.required' => 'Brand is required',
-            '*.major_category.required' => 'Major Category is required',
+            '*.capex.exists' => 'Capex does not exist',
+            '*.sub_capex.exists' => 'Sub Capex does not exist',
+            '*.project_name.exists' => 'Project name does not exist',
+            '*.sub_project.exists' => 'Sub project does not exist',
             '*.major_category.exists' => 'Major Category does not exist',
-            '*.minor_category.required' => 'Minor Category is required',
+            '*.minor_category.exists' => 'Minor Category does not exist',
             '*.voucher.required' => 'Voucher is required',
             '*.receipt.required' => 'Receipt is required',
+            '*.tag_number.required' => 'Tag number is required',
+            '*.tag_number.regex' => 'Tag number must be 6 to 13 digits',
+            '*.tag_number_old.required' => 'Tag number old is required',
+            '*.tag_number_old.regex' => 'Tag number old must be 6 to 13 digits',
+            '*.description.required' => 'Description is required',
+            '*.type_of_request.required' => 'Type of request is required',
+            '*.type_of_request.exists' => 'Type of request does not exist',
+            '*.charged_department.required' => 'Charged department is required',
+            '*.charged_department.exists' => 'Charged department does not exist',
+            '*.additional_description.required' => 'Additional description is required',
+            '*.accountability.required' => 'Accountability is required',
+            '*.accountable.required_if' => 'Accountable is required',
+            '*.cellphone_number.required' => 'Cellphone number is required',
+            '*.brand.required' => 'Brand is required',
+            '*.major_category.required' => 'Major category is required',
+            '*.minor_category.required' => 'Minor category is required',
             '*.quantity.required' => 'Quantity is required',
-            '*.quantity.numeric' => 'Quantity must be a number',
-            '*.depreciation_method.required' => 'Depreciation Method is required',
-            '*.depreciation_method.in' => 'The selected depreciation method is invalid.',
-            '*.acquisition_date.required' => 'Acquisition Date is required',
-            '*.acquisition_date.date_format' => 'Invalid date format',
-            '*.acquisition_date.date' => 'Invalid date',
-            '*.acquisition_date.before_or_equal' => 'Acquisition Date must be a date before or equal to today.',
-            '*.acquisition_cost.required' => 'Acquisition Cost is required',
-            '*.scrap_value.required' => 'Scrap Value is required',
+            '*.depreciation_method.required' => 'Depreciation method is required',
+            '*.acquisition_date.required' => 'Acquisition date is required',
+            '*.acquisition_date.date_format' => 'Acquisition date must be in Y-m-d format',
+            '*.acquisition_date.date' => 'Acquisition date must be a valid date',
+            '*.acquisition_date.before_or_equal' => 'Acquisition date must be before or equal to today',
+            '*.acquisition_cost.required' => 'Acquisition cost is required',
+            '*.acquisition_cost.regex' => 'Acquisition cost must be a number',
+            '*.scrap_value.required' => 'Scrap value is required',
             '*.depreciable_basis.required' => 'Depreciable basis is required',
-            '*.accumulated_cost.required' => 'Accumulated Cost is required',
-            '*.asset_status.required' => 'Status is required',
-            '*.asset_status.in' => 'The selected status is invalid.',
-            '*.depreciation_status.required' => 'Depreciation Status is required',
-            '*.depreciation_status.in' => 'The selected depreciation status is invalid.',
-            '*.cycle_count_status.required' => 'Cycle Count Status is required',
-            '*.cycle_count_status.in' => 'The selected cycle count status is invalid.',
-            '*.movement_status.required' => 'Movement Status is required',
-            '*.movement_status.in' => 'The selected movement status is invalid.',
-            '*.movement_status.exists' => 'Movement Status does not exist',
-            '*.care_of.required' => 'Care Of is required',
-            '*.end_depreciation.required' => 'End Depreciation is required',
-            '*.depreciation_per_year.required' => 'Depreciation Per Year is required',
-            '*.depreciation_per_month.required' => 'Depreciation Per Month is required',
-            '*.remaining_book_value.required' => 'Remaining Book Value is required',
-            '*.start_depreciation.required' => 'Start Depreciation is required',
-            '*.start_depreciation.date_format' => 'Invalid date format',
-            '*.company_code.required' => 'Company Code is required',
-            '*.company_code.exists' => 'Company Code does not exist',
-            '*.department_code.required' => 'Department Code is required',
-            '*.department_code.exists' => 'Department Code does not exist',
-            '*.charged_department.required' => 'Charge Department is required',
-            '*.charged_department.exists' => 'Charge Department does not exist',
-            '*.location_code.required' => 'Location Code is required',
-            '*.location_code.exists' => 'Location Code does not exist',
-            '*.account_code.required' => 'Account Code is required',
-            '*.account_code.exists' => 'Account Code does not exist',
+            '*.depreciable_basis.regex' => 'Depreciable basis must be a number',
+            '*.accumulated_cost.required' => 'Accumulated cost is required',
+            '*.accumulated_cost.regex' => 'Accumulated cost must be a number',
+            '*.asset_status.required' => 'Asset status is required',
+            '*.asset_status.exists' => 'Asset status does not exist',
+            '*.depreciation_status.required' => 'Depreciation status is required',
+            '*.depreciation_status.exists' => 'Depreciation status does not exist',
+            '*.cycle_count_status.required' => 'Cycle count status is required',
+            '*.cycle_count_status.exists' => 'Cycle count status does not exist',
+            '*.movement_status.required' => 'Movement status is required',
+            '*.movement_status.exists' => 'Movement status does not exist',
+            '*.care_of.required' => 'Care of is required',
+            '*.end_depreciation.required' => 'End depreciation is required',
+            '*.depreciation_per_year.required' => 'Depreciation per year is required',
+            '*.depreciation_per_month.required' => 'Depreciation per month is required',
+            '*.remaining_book_value.required' => 'Remaining book value is required',
+            '*.remaining_book_value.regex' => 'Remaining book value must be a number',
+            '*.start_depreciation.required' => 'Start depreciation is required',
+            '*.company_code.required' => 'Company code is required',
+            '*.company_code.exists' => 'Company code does not exist',
+            '*.department_code.required' => 'Department code is required',
+            '*.department_code.exists' => 'Department code does not exist',
+            '*.location_code.required' => 'Location code is required',
+            '*.location_code.exists' => 'Location code does not exist',
+            '*.account_code.required' => 'Account code is required',
+            '*.account_code.exists' => 'Account code does not exist',
         ];
 
     }
