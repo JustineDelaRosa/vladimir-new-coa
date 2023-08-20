@@ -18,6 +18,7 @@ use App\Models\Status\DepreciationStatus;
 use App\Models\Status\MovementStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
+use App\Repositories\AdditionalCostRepository;
 use App\Repositories\CalculationRepository;
 use Carbon\Carbon;
 use Exception;
@@ -44,11 +45,12 @@ class AdditionalCostImport extends DefaultValueBinder implements
 {
     use importable;
 
-    private $calculationRepository;
+    private $calculationRepository, $additionalCostRepository;
 
     public function __construct()
     {
         $this->calculationRepository = new CalculationRepository();
+        $this->additionalCostRepository = new AdditionalCostRepository();
     }
 
     public function startRow(): int
@@ -145,9 +147,10 @@ class AdditionalCostImport extends DefaultValueBinder implements
         if ($majorCategoryId == null || $minorCategoryId == null) {
             throw new Exception('Unable to create FixedAsset due to missing Major/Minor category ID.');
         }
-
+        $fixedAssetId = FixedAsset::where('vladimir_tag_number', $collection['vladimir_tag_number'])->first()->id;
         $formula->additionalCost()->create([
-            'fixed_asset_id' => FixedAsset::where('vladimir_tag_number', $collection['vladimir_tag_number'])->first()->id,
+            'fixed_asset_id' => $fixedAssetId,
+            'add_cost_sequence' => $this->additionalCostRepository->getAddCostSequence($fixedAssetId),
             'asset_description' => ucwords(strtolower($collection['description'])),
             'type_of_request_id' => TypeOfRequest::where('type_of_request_name', ($collection['type_of_request']))->first()->id,
             'asset_specification' => ucwords(strtolower($collection['additional_description'])),

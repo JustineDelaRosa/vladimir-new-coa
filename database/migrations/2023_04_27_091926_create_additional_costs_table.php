@@ -21,6 +21,7 @@ class CreateAdditionalCostsTable extends Migration
                 ->references('id')
                 ->on('fixed_assets')
                 ->onDelete('cascade');
+            $table->string('add_cost_sequence');
             $table->boolean('is_additional_cost')->default(true);
             $table->boolean('is_active')->default(true);
             $table->string('asset_description');

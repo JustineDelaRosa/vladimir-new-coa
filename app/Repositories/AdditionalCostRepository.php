@@ -71,6 +71,7 @@ class AdditionalCostRepository
 
         $formula->additionalCost()->create([
             'fixed_asset_id' => $request['fixed_asset_id'],
+            'add_cost_sequence' => $this->getAddCostSequence($request['fixed_asset_id']) ?? '-',
             'asset_description' => $request['asset_description'],
             'type_of_request_id' => $request['type_of_request_id'],
 //            'charged_department'=> ucwords(strtolower($collection['charged_department'] ?? '-')) ,
@@ -202,6 +203,7 @@ class AdditionalCostRepository
         return [
 //            'total_adcost' => $this->calculationRepository->getTotalCost($additional_cost->fixedAsset->additionalCosts),
             'id' => $additional_cost->id,
+            'add_cost_sequence' => $additional_cost->add_cost_sequence,
             'fixed_asset' => [
                 'id' => $additional_cost->fixedAsset->id,
                 'vladimir_tag_number' => $additional_cost->fixedAsset->vladimir_tag_number,
@@ -408,5 +410,29 @@ class AdditionalCostRepository
                 'last_printed' => $additional_cost->fixedAsset->last_printed,
             ],
         ];
+    }
+
+    public function getAddCostSequence($fixed_asset_id) {
+        // Get all the additional costs for the given fixed asset
+        $additional_costs = AdditionalCost::where('fixed_asset_id', $fixed_asset_id)
+            ->orderBy('id')->get();
+
+        // Default next letter is 'A'
+        $next_letter = 'A';
+
+        if(!$additional_costs->isEmpty()){
+            // Get the sequence of the last additional cost
+            $last_sequence = $additional_costs->last()->add_cost_sequence;
+
+            // Get the last letter of the sequence
+            $last_letter = strtoupper(substr($last_sequence, -1));
+
+            // If the last letter isn't 'Z', get the next letter in the alphabet
+            if($last_letter !== 'Z'){
+                $next_letter = chr(ord($last_letter) + 1);
+            }
+        }
+
+        return $next_letter;
     }
 }

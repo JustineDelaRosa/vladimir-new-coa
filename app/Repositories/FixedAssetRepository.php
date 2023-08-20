@@ -249,6 +249,7 @@ class FixedAssetRepository
             'account_id',
             'remarks',
             'created_at',
+            DB::raw("NULL as add_cost_sequence"),
         ];
 
         $additionalCostFields = [
@@ -287,7 +288,8 @@ class FixedAssetRepository
             'additional_costs.location_id',
             'additional_costs.account_id',
             'additional_costs.remarks',
-            'fixed_assets.created_at'
+            'fixed_assets.created_at',
+            'additional_costs.add_cost_sequence',
         ];
         $firstQuery = ($status === 'deactivated')
             ? FixedAsset::onlyTrashed()->select($fixedAssetFields)
@@ -298,7 +300,7 @@ class FixedAssetRepository
             : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
 
-        $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'desc')->get();
+        $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'asc')->get();
 
         //if search is not empty
         if (!empty($search)) {
@@ -439,6 +441,7 @@ class FixedAssetRepository
             'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
                 return [
                     'id' => $additional_cost->id,
+                    'add_cost_sequence' => $additional_cost->add_cost_sequence,
                     'asset_description' => $additional_cost->asset_description,
                     'type_of_request' => [
                         'id' => $additional_cost->typeOfRequest->id ?? '-',
@@ -627,6 +630,7 @@ class FixedAssetRepository
             'print_count' => $fixed_asset->print_count,
             'last_printed' => $fixed_asset->last_printed,
             'created_at' => $fixed_asset->created_at,
+            'add_cost_sequence' => $fixed_asset->add_cost_sequence ?? null,
         ];
     }
 
