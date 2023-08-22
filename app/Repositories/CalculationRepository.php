@@ -15,11 +15,18 @@ class CalculationRepository
 
     public function getMonthlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life): float
     {
+        //if acquisition cost and scrap value are equal to zero, return zero
+        if ($acquisition_cost == 0 && $scrap_value == 0) {
+            return 0;
+        }
         $est_useful_life = floor($est_useful_life) * 12 + (($est_useful_life - floor($est_useful_life)) * 12);
         return round(($acquisition_cost - $scrap_value) / $est_useful_life,2);
     }
     public function getYearlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life): float
     {
+        if ($acquisition_cost == 0 && $scrap_value == 0) {
+            return 0;
+        }
         $est_useful_life = floor($est_useful_life) + (($est_useful_life - floor($est_useful_life)) * 12) / 12;
         return round(($acquisition_cost - $scrap_value) / $est_useful_life,2);
     }

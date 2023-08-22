@@ -56,6 +56,7 @@ class FixedAssetExportRepository
             'account_id',
             'formula_id',
             'created_at',
+            DB::raw("NULL as add_cost_sequence"),
         ])->where('is_active', 1);
 
         $secondQuery = AdditionalCost::select([
@@ -93,7 +94,8 @@ class FixedAssetExportRepository
             'additional_costs.location_id',
             'additional_costs.account_id',
             'additional_costs.formula_id',
-            'fixed_assets.created_at'
+            'fixed_assets.created_at',
+            'additional_costs.add_cost_sequence',
         ])->where('additional_costs.is_active', 1)
             ->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
@@ -347,8 +349,6 @@ class FixedAssetExportRepository
 
     private function refactorExport($fixedAssets): array
     {
-
-
         $fixed_assets_arr = [];
         foreach ($fixedAssets as $fixed_asset) {
             $formula = Formula::where('id', $fixed_asset->formula_id)->first();
@@ -356,6 +356,7 @@ class FixedAssetExportRepository
             $accumulated_cost = $this->calculateAccumulatedCost($fixed_asset, $depreciation_rate);
 
             $fixed_assets_arr[] = [
+                'add_cost_sequence' => $fixed_asset->add_cost_sequence ?? null,
                 'id' => $fixed_asset->id,
                 'type_of_request' => $fixed_asset->typeOfRequest->type_of_request_name,
                 'capex' => $fixed_asset->capex->capex ?? '-',
