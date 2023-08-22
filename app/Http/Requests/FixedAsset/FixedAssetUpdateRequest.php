@@ -147,7 +147,7 @@ class FixedAssetUpdateRequest extends FormRequest
                         $fail('Acquisition cost should be 0');
                     }
                 }
-                if ($value <= 0) {
+                if ($value < 0) {
                     $fail('Invalid acquisition cost');
                 }
                 $major_category = request()->major_category_id;
@@ -174,7 +174,7 @@ class FixedAssetUpdateRequest extends FormRequest
                         $fail('Depreciable basis should be 0');
                     }
                 }
-                if ($value <= 0) {
+                if ($value < 0) {
                     $fail('Invalid depreciable basis');
                 }
                 $major_category = request()->major_category_id;

@@ -132,7 +132,7 @@ class FixedAssetRequest extends FormRequest
                             $fail('Acquisition cost should be 0');
                         }
                     }
-                    if ($value <= 0) {
+                    if ($value < 0) {
                         $fail('Invalid acquisition cost');
                     }
 
@@ -163,7 +163,7 @@ class FixedAssetRequest extends FormRequest
                             $fail('Depreciable basis should be 0');
                         }
                     }
-                    if ($value <= 0) {
+                    if ($value < 0) {
                         $fail('Invalid depreciable basis');
                     }
                     //if the value est useful life on major category is 0 0.0 then merge the value of acquisition cost to 0
@@ -342,7 +342,7 @@ class FixedAssetRequest extends FormRequest
                             $fail('Acquisition cost should be 0');
                         }
                     }
-                    if ($value <= 0) {
+                    if ($value < 0) {
                         $fail('Invalid acquisition cost');
                     }
                     //if the value est useful life on major category is 0 0.0 then merge the value of acquisition cost to 0
@@ -371,7 +371,7 @@ class FixedAssetRequest extends FormRequest
                             $fail('Depreciable basis should be 0');
                         }
                     }
-                    if ($value <= 0) {
+                    if ($value < 0) {
                         $fail('Invalid depreciable basis');
                     }
                     //if the value est useful life on major category is 0 0.0 then merge the value of acquisition cost to 0

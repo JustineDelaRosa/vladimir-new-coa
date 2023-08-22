@@ -83,7 +83,7 @@ class AdditionalCostRequest extends FormRequest
                             $fail('Acquisition cost should be 0');
                         }
                     }
-                    if ($value <= 0) {
+                    if ($value < 0) {
                         $fail('Invalid acquisition cost');
                     }
                 }],
@@ -100,7 +100,7 @@ class AdditionalCostRequest extends FormRequest
                             $fail('Depreciable basis should be 0');
                         }
                     }
-                    if ($value <= 0) {
+                    if ($value < 0) {
                         $fail('Invalid depreciable basis');
                     }
                 }],
@@ -280,7 +280,7 @@ class AdditionalCostRequest extends FormRequest
                         $fail('Acquisition cost should be 0');
                     }
                 }
-                if ($value <= 0) {
+                if ($value < 0) {
                     $fail('Invalid acquisition cost');
                 }
             }],
@@ -297,7 +297,7 @@ class AdditionalCostRequest extends FormRequest
                         $fail('Depreciable basis should be 0');
                     }
                 }
-                if ($value <= 0) {
+                if ($value < 0) {
                     $fail('Invalid depreciable basis');
                 }
             }],
