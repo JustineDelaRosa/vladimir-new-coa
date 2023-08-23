@@ -39,7 +39,7 @@ class FixedAssetImportController extends Controller
         return response()->json(
             [
                 'message' => 'Fixed Asset imported successfully.',
-                'data' => $data
+//                'data' => $data
             ],
             200
         );

@@ -80,6 +80,10 @@ class MasterlistImport extends DefaultValueBinder implements
         return parent::bindValue($cell, $value);
     }
 
+    /**
+     * @throws Exception
+     * @throws ValidationException
+     */
     public function collection(Collection $collections)
     {
 
@@ -111,7 +115,6 @@ class MasterlistImport extends DefaultValueBinder implements
 //                }
 //            }
 //        }
-
         //if a collection is empty, pass an empty array
         if ($collections->isEmpty()) {
             $collections = collect([]);
@@ -148,6 +151,7 @@ class MasterlistImport extends DefaultValueBinder implements
 
     private function getMinorCategoryId($minorCategoryName, $majorCategoryId)
     {
+
         $minorCategory = MinorCategory::withTrashed()
             ->where('minor_category_name', $minorCategoryName)
             ->where('major_category_id', $majorCategoryId)
@@ -177,6 +181,9 @@ class MasterlistImport extends DefaultValueBinder implements
         ]);
     }
 
+    /**
+     * @throws Exception
+     */
     private function createFixedAsset($formula, $collection, $majorCategoryId, $minorCategoryId)
     {
         // Check if necessary IDs exist before creating FixedAsset
@@ -212,7 +219,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', $collection['cycle_count_status'])->first()->id,
             'depreciation_status_id' => DepreciationStatus::where('depreciation_status_name', $collection['depreciation_status'])->first()->id,
             'movement_status_id' => MovementStatus::where('movement_status_name', $collection['movement_status'])->first()->id,
-            'is_old_asset' => $collection['tag_n umber'] != '-' || $collection['tag_number_old'] != '-',
+            'is_old_asset' => $collection['tag_number'] != '-' || $collection['tag_number_old'] != '-',
             'care_of' => ucwords(strtolower($collection['care_of'])),
             'company_id' => Company::where('company_code', $collection['company_code'])->first()->id,
             'department_id' => Department::where('department_code', $collection['department_code'])->first()->id,
@@ -680,4 +687,5 @@ class MasterlistImport extends DefaultValueBinder implements
             }
         }
     }
+
 }

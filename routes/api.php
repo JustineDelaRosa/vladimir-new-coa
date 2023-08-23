@@ -61,7 +61,7 @@ Route::get('capex-sample-file', [CapexController::class, 'sampleCapexDownload'])
 Route::get('fixed-asset-sample-file', [FixedAssetController::class, 'sampleFixedAssetDownload']);
 Route::get('additional-cost-sample-file', [AdditionalCostController::class, 'sampleAdditionalCostDownload']);
 
-
+Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
 
@@ -176,7 +176,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //PRINT IP//
     Route::resource('printer-ip', PrinterIpController::class);
     Route::patch('activateIp/{id}', [PrinterIpController::class, 'activateIP']);
-    Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
+//    Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
 
 
     //STATUS//
