@@ -41,25 +41,26 @@ class AdditionalCostRequest extends FormRequest
                 'accountable' => [
                     'required_if:accountability,Personal Issued',
                     function ($attribute, $value, $fail) {
-                        $accountability = request()->input('accountable');
-                        //if accountable is null continue
-                        if ($value == null) {
+                        $accountable = request()->input('accountable');
+                        //if the value of accountability is not Personal Issued, continue
+                        if (request()->accountability != 'Personal Issued') {
+                            request()->merge(['accountable' => null]);
                             return;
                         }
 
                         // Check if necessary keys exist to avoid undefined index
-                        if (isset($accountability['general_info']['full_id_number'])) {
-                            $full_id_number = $accountability['general_info']['full_id_number'];
+                        if (isset($accountable['general_info']['full_id_number'])) {
+                            $full_id_number = $accountable['general_info']['full_id_number'];
                             request()->merge(['accountable' => $full_id_number]);
                         } else {
                             // Fail validation if keys don't exist
-                            $fail('The accountable person\'s full name is required.');
+                            $fail('The accountable person is required.');
                             return;
                         }
 
                         // Validate full name
                         if ($full_id_number === '') {
-                            $fail('The accountable person\'s full name cannot be empty.');
+                            $fail('The accountable person cannot be empty.');
                         }
                     },
                 ],
@@ -238,25 +239,25 @@ class AdditionalCostRequest extends FormRequest
             'accountable' => [
                 'required_if:accountability,Personal Issued',
                 function ($attribute, $value, $fail) {
-                    $accountability = request()->input('accountable');
+                    $accountable = request()->input('accountable');
                     //if accountable is null continue
                     if ($value == null) {
                         return;
                     }
 
                     // Check if necessary keys exist to avoid undefined index
-                    if (isset($accountability['general_info']['full_id_number'])) {
-                        $full_id_number = $accountability['general_info']['full_id_number'];
+                    if (isset($accountable['general_info']['full_id_number'])) {
+                        $full_id_number = $accountable['general_info']['full_id_number'];
                         request()->merge(['accountable' => $full_id_number]);
                     } else {
                         // Fail validation if keys don't exist
-                        $fail('The accountable person\'s full name is required.');
+                        $fail('The accountable person is required.');
                         return;
                     }
 
                     // Validate full name
                     if ($full_id_number === '') {
-                        $fail('The accountable person\'s full name cannot be empty.');
+                        $fail('The accountable person cannot be empty.');
                     }
                 },
             ],
