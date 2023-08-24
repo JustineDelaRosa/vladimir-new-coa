@@ -382,9 +382,20 @@ class MasterlistImport extends DefaultValueBinder implements
 
             }],
             '*.voucher' => ['required', function ($attribute, $value, $fail) {
-//                if ($value == '-') {
+                if ($value == '-') {
 //                    $fail('Voucher is required');
-//                }
+                    return;
+                }
+                $voucher = FixedAsset::where('voucher', $value)->first();
+                //check the created_at if it is the same date with the uploaded date of the voucher if it is the same then it will pass the validation
+                if ($voucher) {
+                    $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
+                    $current_date = Carbon::now()->format('Y-m-d');
+                    if ($uploaded_date != $current_date) {
+                        $fail('This Voucher is already uploaded in different date');
+                    }
+                }
+
             }],
             '*.receipt' => ['required', function ($attribute, $value, $fail) {
 //                if ($value == '-') {

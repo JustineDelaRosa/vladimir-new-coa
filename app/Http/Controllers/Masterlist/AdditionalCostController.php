@@ -267,7 +267,7 @@ class AdditionalCostController extends Controller
                 'depreciable_basis' => $properties->depreciable_basis,
                 'est_useful_life' => $est_useful_life,
                 'months_depreciated' => $custom_age,
-                'scarp_value' => $properties->scrap_value,
+                'scrap_value' => $properties->scrap_value,
                 'start_depreciation' => $properties->start_depreciation,
                 'end_depreciation' => $properties->end_depreciation,
                 'depreciation_per_month' => $monthly_depreciation,

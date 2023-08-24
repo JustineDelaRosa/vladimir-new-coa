@@ -425,6 +425,8 @@ class FixedAssetController extends Controller
         $properties = $fixedAsset->formula;
         $depreciation_method = $fixedAsset->depreciation_method;
         $est_useful_life = $fixedAsset->majorCategory->est_useful_life;
+        $start_depreciation = $fixedAsset->formula->start_depreciation;
+        $end_depreciation = $fixedAsset->formula->end_depreciation;
         $custom_end_depreciation = $validator->validated()['date'];
 
         //calculation variables
@@ -456,7 +458,7 @@ class FixedAssetController extends Controller
                 'depreciable_basis' => $properties->depreciable_basis,
                 'est_useful_life' => $est_useful_life,
                 'months_depreciated' => $custom_age,
-                'scarp_value' => $properties->scrap_value,
+                'scrap_value' => $properties->scrap_value,
                 'start_depreciation' => $properties->start_depreciation,
                 'end_depreciation' => $properties->end_depreciation,
                 'depreciation_per_month' => $monthly_depreciation,

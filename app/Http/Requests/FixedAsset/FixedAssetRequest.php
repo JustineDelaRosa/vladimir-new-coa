@@ -10,6 +10,7 @@ use App\Models\MajorCategory;
 use App\Models\Status\DepreciationStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 
 class FixedAssetRequest extends FormRequest
@@ -95,8 +96,18 @@ class FixedAssetRequest extends FormRequest
                     //if the depreciation status is running depreciation and fully depreciated required voucher
                     $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
                     if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+
                         if ($value == null) {
                             $fail('Voucher is required');
+                            return;
+                        }
+                        $voucher = FixedAsset::where('voucher', $value)->first();
+                        if ($voucher) {
+                            $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
+                            $current_date = Carbon::now()->format('Y-m-d');
+                            if ($uploaded_date != $current_date) {
+                                $fail('This Voucher is already uploaded in different date');
+                            }
                         }
                     }
 
@@ -305,8 +316,18 @@ class FixedAssetRequest extends FormRequest
                     //if the depreciation status is running depreciation and fully depreciated required voucher
                     $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
                     if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+
                         if ($value == null) {
                             $fail('Voucher is required');
+                            return;
+                        }
+                        $voucher = FixedAsset::where('voucher', $value)->first();
+                        if ($voucher) {
+                            $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
+                            $current_date = Carbon::now()->format('Y-m-d');
+                            if ($uploaded_date != $current_date) {
+                                $fail('This Voucher is already uploaded in different date');
+                            }
                         }
                     }
                 }],
