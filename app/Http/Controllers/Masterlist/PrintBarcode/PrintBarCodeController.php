@@ -81,11 +81,6 @@ class PrintBarCodeController extends Controller
 
                 $fixedAsset = FixedAsset::where('vladimir_tag_number', $VDM['vladimir_tag_number'])->first();
 
-                if ($fixedAsset) {
-                    $fixedAsset->increment('print_count', 1);
-                    $fixedAsset->update(['last_printed' => Carbon::now()]);
-                }
-
 //                $zplCode = "^XA
 //                            ~TA000
 //                            ~JSN
@@ -150,6 +145,10 @@ class PrintBarCodeController extends Controller
                                 ^FT0,22^APN,20,6^FB161,1,4,C^FH\^FD".$VDM['accountable']."^FS
                                 ^PQ1,0,1,Y
                                 ^XZ";
+                    if ($fixedAsset) {
+                        $fixedAsset->increment('print_count', 1);
+                        $fixedAsset->update(['last_printed' => Carbon::now()]);
+                    }
                 }else{
                     //Copy
                     $zplCode = "^XA
@@ -184,6 +183,10 @@ class PrintBarCodeController extends Controller
                             ^FO0,0^GFA,705,10556,52,:Z64:eJzt2rFOwlAUBuDe1FBNgJq4aETQxIQV48LGC/gQbG6GUROkNQxsxsQHwEfwDWRjIfIKTSCySUkHSkRqEcLc/088qaRn/3J77j3nNLep5WpYFOaahZrK3xsrCCOuxswf9UHT2MnutUFTH34M31AzG15VcJO2YNNboPtW7/XmqGnkTmAjVQeVkCwEeiExidlEwcdNGDLGxY1BGLND7BuRj2njRify0Woy52M6xL4R+RSIdXJEPow5JMwus9dC58P0D9VzTO0Q/ZMWmlUmU9dCJlfCTVboTA1i9qoYzypmHU0oH6ZGFTMPmGcjept5bzP5MPvGGG3LZpVYL0jlQxidmL3mq8yzZYTOR8rE9NtTYhKTmH9kHNzAQZrsKW7C67OIObYJAxLJfOAgTZKPoLFxoxPrmIQpgCSpHd7AERrDxk14RYUNk89hVcbE+XwYoxzcUL3dIYwtYwwHNxpjqttl4twL+4TJE4aZb8z7lDFUz4Hkd44SBoocYW6V46D3H1cNUKMGkxFq9P5sZKOm/T1G73NGOfOJmlRHwUYv34/RPUjdBbDRvnCjvC6eT7eJm9Z63ybLH198zHhLE62+9ZZGGGYd9b4yfrl0U49ommszObg8j7hOM3hcGW/6fBbRPATZlZmOni4iGnuxMS8eMEtWz1YswsatXU9R4/tj2EQ/040BanRjiO9IP2rLWtM=:E347
                             ^PQ1,0,1,Y
                             ^XZ";
+                    if ($fixedAsset) {
+                        $fixedAsset->increment('print_count', 1);
+                        $fixedAsset->update(['last_printed' => Carbon::now()]);
+                    }
                 }
                 $printer->textRaw($zplCode);
 
