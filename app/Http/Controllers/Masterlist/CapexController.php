@@ -25,13 +25,13 @@ class CapexController extends Controller
     {
         $search = $request->input('search', '');
         $status = $request->input('status', '');
-        $limit  = $request->input('limit', null);
+        $limit = $request->input('limit', null);
 
         $capexQuery = Capex::withTrashed()->with([
-                'subCapex' => function ($query) {
-                    $query->withTrashed();
-                },
-            ])
+            'subCapex' => function ($query) {
+                $query->withTrashed();
+            },
+        ])
             ->where(function ($query) use ($search) {
                 $query->where('capex', 'like', "%$search%")
                     ->orWhere('project_name', 'like', "%$search%");
@@ -41,15 +41,15 @@ class CapexController extends Controller
                 });
             });
 
-        if($status === "deactivated") {
+        if ($status === "deactivated") {
             $capexQuery->onlyTrashed();
-        } elseif($status === 'active') {
+        } elseif ($status === 'active') {
             $capexQuery->whereNull('deleted_at');
         }
 
         $capexQuery->orderByDesc('created_at');
 
-        if($limit !== null) {
+        if ($limit !== null) {
             $result = is_numeric($limit) ? $capexQuery->paginate($limit) : $capexQuery->paginate(PHP_INT_MAX);
         } else {
             $result = $capexQuery->get();
@@ -255,7 +255,8 @@ class CapexController extends Controller
         return response()->download($path);
     }
 
-    public function capexExport(Request $request){
+    public function capexExport(Request $request)
+    {
         $search = $request->search;
         $status = $request->status;
         $startDate = $request->startDate;
@@ -282,15 +283,15 @@ class CapexController extends Controller
             ->when($request->status === 'active', function ($query) {
                 return $query->whereNull('deleted_at');
             })
-            ->when($startDate && $endDate, function ($query) use($startDate, $endDate) {
+            ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
                 return $query->whereBetween('created_at', [$startDate, $endDate]);
             })
             ->orderByDesc('created_at')
             ->get();
 
         //refactor capex response
-        return  $capex->map(function ($capex) {
-            return[
+        return $capex->map(function ($capex) {
+            return [
                 'id' => $capex->id,
                 'capex' => $capex->capex,
                 'project_name' => $capex->project_name,

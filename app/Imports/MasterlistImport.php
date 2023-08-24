@@ -172,7 +172,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'accumulated_cost' => $collection['accumulated_cost'],
             'months_depreciated' => $this->calculationRepository->getMonthDifference(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
 //            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life,$collection['depreciation_method']),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life, $collection['depreciation_method']),
             'depreciation_per_year' => $collection['depreciation_per_year'],
             'depreciation_per_month' => $collection['depreciation_per_month'],
             'remaining_book_value' => $collection['remaining_book_value'],
@@ -229,7 +229,6 @@ class MasterlistImport extends DefaultValueBinder implements
     }
 
 
-
 //Todo: if the id is trashed then what should i do with the id?
     function rules($collection): array
     {
@@ -248,7 +247,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $capexValue = $collections[$index]['capex'];
                 $typeOfRequest = $collections[$index]['type_of_request'];
-                if (ucwords(strtolower($typeOfRequest)) != 'Capex' ) {
+                if (ucwords(strtolower($typeOfRequest)) != 'Capex') {
                     if ($value != '-') {
                         $fail('Capex and Sub Capex should be empty');
                         return true;
@@ -382,12 +381,12 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
 
             }],
-            '*.voucher' => ['required', function($attribute, $value, $fail){
+            '*.voucher' => ['required', function ($attribute, $value, $fail) {
 //                if ($value == '-') {
 //                    $fail('Voucher is required');
 //                }
             }],
-            '*.receipt' => ['required',function($attribute, $value, $fail){
+            '*.receipt' => ['required', function ($attribute, $value, $fail) {
 //                if ($value == '-') {
 //                    $fail('Receipt is required');
 //                }
@@ -399,7 +398,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $scrap_value = $collections[$index]['scrap_value'];
 
-                if($value < $scrap_value){
+                if ($value < $scrap_value) {
                     $fail('Acquisition cost must not be less than scrap value');
                 }
 
@@ -429,10 +428,10 @@ class MasterlistImport extends DefaultValueBinder implements
                 function ($attribute, $value, $fail) use ($collections) {
                     $index = array_search($attribute, array_keys($collections->toArray()));
                     //allow only fully depreciated and running depreciation
-                     $depreciation = DepreciationStatus::where('depreciation_status_name', $value)->first();
-                        if($depreciation->depreciation_status_name != 'Fully Depreciated' && $depreciation->depreciation_status_name != 'Running Depreciation'){
-                            $fail('Invalid depreciation status');
-                        }
+                    $depreciation = DepreciationStatus::where('depreciation_status_name', $value)->first();
+                    if ($depreciation->depreciation_status_name != 'Fully Depreciated' && $depreciation->depreciation_status_name != 'Running Depreciation') {
+                        $fail('Invalid depreciation status');
+                    }
 
 //                    $depreciation_method = $collections[$index]['depreciation_method'];
 //                    if ($depreciation_method == 'One Time') {
@@ -452,28 +451,28 @@ class MasterlistImport extends DefaultValueBinder implements
                 Rule::exists('movement_statuses', 'movement_status_name')->whereNull('deleted_at'),
             ],
             '*.care_of' => 'required',
-            '*.end_depreciation' => ['required', function($attribute, $value, $fail) use ($collections){
-            if(strlen($value) !== 6){
-                $fail('Invalid end depreciation format');
-                return;
-            }
+            '*.end_depreciation' => ['required', function ($attribute, $value, $fail) use ($collections) {
+                if (strlen($value) !== 6) {
+                    $fail('Invalid end depreciation format');
+                    return;
+                }
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $depreciation_status_name = $collections[$index]['depreciation_status'];
                 $depreciation_status = DepreciationStatus::where('depreciation_status_name', $depreciation_status_name)->first();
-                if($depreciation_status->depreciation_status_name == 'Fully Depreciated'){
+                if ($depreciation_status->depreciation_status_name == 'Fully Depreciated') {
                     //check if the value of end depreciation is not yet passed the current date (yyyymm)
                     $current_date = Carbon::now()->format('Y-m');
                     $value = substr_replace($value, '-', 4, 0);
                     //check if the value is parsable or not
-                    if(Carbon::parse($value)->isAfter($current_date)){
+                    if (Carbon::parse($value)->isAfter($current_date)) {
                         $fail('Not yet fully depreciated');
                     }
-                } elseif($depreciation_status->depreciation_status_name == 'Running Depreciation'){
+                } elseif ($depreciation_status->depreciation_status_name == 'Running Depreciation') {
                     //check if the value of end depreciation is not yet passed the current date (yyyymm)
                     $current_date = Carbon::now()->format('Y-m');
                     $value = substr_replace($value, '-', 4, 0);
                     //check if the value is parsable or not
-                    if(Carbon::parse($value)->isBefore($current_date)){
+                    if (Carbon::parse($value)->isBefore($current_date)) {
                         $fail('The asset is fully depreciated');
                     }
                 }
@@ -486,7 +485,7 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
             }],
             '*.start_depreciation' => ['required'],
-            '*.company_code' => ['required','exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
+            '*.company_code' => ['required', 'exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $company_name = $collections[$index]['company'];
                 $company = Company::query()
@@ -498,7 +497,7 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Invalid company');
                 }
             }],
-            '*.department_code' => ['required','exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
+            '*.department_code' => ['required', 'exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $company_code = $collections[$index]['company_code'];
                 $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
@@ -509,7 +508,7 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Invalid location, company and department combination');
                 }
             }],
-            '*.location_code' => ['required','exists:locations,location_code', function($attribute, $value, $fail) use ($collections){
+            '*.location_code' => ['required', 'exists:locations,location_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 //check if the code is correct on the database
                 $location_name = $collections[$index]['location'];
@@ -518,19 +517,19 @@ class MasterlistImport extends DefaultValueBinder implements
                     ->where('location_name', $location_name)
                     ->where('is_active', '!=', 0)
                     ->first();
-                if(!$location){
+                if (!$location) {
                     $fail('Invalid location');
                     return;
                 }
                 $department_code = $collections[$index]['department_code'];
                 $department_sync_id = Department::where('department_code', $department_code)->first()->sync_id ?? 0;
                 $associated_location_sync_id = $location->departments->pluck('sync_id')->toArray();
-                if(!in_array($department_sync_id, $associated_location_sync_id)){
+                if (!in_array($department_sync_id, $associated_location_sync_id)) {
                     $fail('Invalid location, company and department combination');
                 }
 
             }],
-            '*.account_code' => ['required','exists:account_titles,account_title_code', function($attribute, $value, $fail) use ($collections){
+            '*.account_code' => ['required', 'exists:account_titles,account_title_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $account_title_name = $collections[$index]['account_title'];
                 $account_title = AccountTitle::query()
@@ -538,7 +537,7 @@ class MasterlistImport extends DefaultValueBinder implements
                     ->where('account_title_name', $account_title_name)
                     ->where('is_active', '!=', 0)
                     ->first();
-                if(!$account_title){
+                if (!$account_title) {
                     $fail('Invalid account title');
                 }
             }],
@@ -683,7 +682,9 @@ class MasterlistImport extends DefaultValueBinder implements
         $generated = [];
         return in_array($ean13Result, $generated) || FixedAsset::where('vladimir_tag_number', $ean13Result)->exists();
     }
-    function getEmployeeData($client, $token){
+
+    function getEmployeeData($client, $token)
+    {
         return $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $token,
@@ -692,7 +693,8 @@ class MasterlistImport extends DefaultValueBinder implements
         ])->getBody()->getContents();
     }
 
-    function findEmployee($data, $value){
+    function findEmployee($data, $value)
+    {
         if (!empty($data['data']) && is_array($data['data'])) {
             foreach ($data['data'] as $employee) {
                 if (!empty($employee['general_info']) && in_array($employee['general_info']['full_name'], $value)) {

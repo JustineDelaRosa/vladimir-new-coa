@@ -111,7 +111,7 @@ class PrintBarCodeController extends Controller
 //                            ^FO2,1^GFA,793,10452,52,:Z64:eJzt2M9q1EAcB/AJAx1PzqGXHsR5BXtS6bLTN/AVfAyFkqwU3It0z158Eg8TVsxFzCvsksNes+yhEcL8mmxYKYp1vj8hxDa/cz7M/P4l7NJKQBGRE/RwzYRqopRtJP0SJcNUD9Bs6crSmoQtUtILYRCjO6P/ZPbRzYGs6KklR0YVqdcLPUfMsnCNMVmw+UZmDZg6nlr6kJht4epXsPlykSPm008TVAM/iW2TUmO+vskDa33LvAw1NPHWC9Oa03yhw8zJwWSnoTW4ZY6DzUdv62RhiiKTweZdZ5ZFdhlsLr1pjFZFNv+raaM1Sy9OKGt2ATe2yPLGbO42SiC73YVhGM8wFdfc+cTvYRlGMYxgGBqwcffMlAzje5o3jkkYhrM/btwFsWSYTU93ixnm0YBrzTFiwHczA95tzuxw8hnyHHDMmA/PnPVk+srn+5B7Osj/akYzmtHcc4MG1zw5x40Fj+Ka5zOGwUiv+aDBNWM+TIORvTEMoxzjHIaZYmScnX8waLRGz3DDmQNOPs96MkPujzjHjQSPYvd01o8xDMOpAafWLOP6MX3tKWD2nx1wF4yIyseteRFu4sZMwe9p3Zh4/04Mvl5U2XTrsXmTJa07E36O3NF2V2L7Izf0Y7dqzSSUCJW7t9cO64/6LCLUHL0+mPDfJdE82l57zCijCTVHiYGNIAubiBLcVBcKrZssKwmbVQX3R65K3KQDNq6MNrCp5MEkNKf3QaZWB0OUUx5kYp3BxhJuDM1ho0nBRtWo6aJf0/b0CjTBj/8X5gas119Y:227E
 //                            ^PQ1,0,1,Y
 //                            ^XZ";
-                if($VDM['print_count'] == 0) {
+                if ($VDM['print_count'] == 0) {
                     //original
                     $zplCode = "^XA
                                 ~TA000
@@ -136,20 +136,20 @@ class PrintBarCodeController extends Controller
                                 ^LL203
                                 ^LS0
                                 ^BY3,2,53^FT69,92^BEN,,Y,N
-                                ^FH\^".$VDM['vladimir_tag_number']."^FS
+                                ^FH\^" . $VDM['vladimir_tag_number'] . "^FS
                                 ^FT210,34^A0N,17,18^FH\^CI28^FDPROPERTY RECORD^FS^CI27
                                 ^FO131,174^GFA,229,320,20,:Z64:eJxjYCAFWHybPKe48SyKmOakTyJOjq4CyGKWk5PnFDkeQxFTnJwk4nQwCUWvwuPkacWNh1DUkQd8nFxsnpzzPjyp+Jya8p1Pjresz/nkPPZLaDuR2Sjl5mVW2DnZmSuxI6dm8amc5+cqG+XK/OwCOycfPGPZVxP76F5K64nIRjE3L72PnZMOuHB2xPgaXQaaF9k8zblbbeacR4ePVPb5YLMXACYPQTo=:7CBE
-                                ^FT3,163^APN,20,6^FB403,1,4,C^FH\^FD".$VDM['department_name']." - ".$VDM['location_name']."^FS
+                                ^FT3,163^APN,20,6^FB403,1,4,C^FH\^FD" . $VDM['department_name'] . " - " . $VDM['location_name'] . "^FS
                                 ^FO2,1^GFA,597,10452,52,:Z64:eJzt1z9qwzAUBnAJQbSUOnuhvkKhQwsNVY/Sk9ju0m7tlRw65BoKGbzKmwPGapzQzP4+6EOkfrN/POn9EVgpPGLAvtex/t9GN3E9m4TNBjcq4XmbzWzOpoLNGCImI0xJmJ4wQShPThgj1J8oZOqETSWUpyNMIbQ/UjvnheaaMVK78C1kmLMx87YizDLh/qgLmzcntNvM+8acTapuw4XNgbqw+9wQ5inh+3wm3FPCpP3PNJvZzEbceNygwZorwtyCqUbjCPNQ4eYeI/TZnMdNTuRBg83D1ODS7kPVACNHY4k8GWEcRkTrhgZrUr6PJQyzC4y5Y4zHDfOOpjxvGmT0blcyJicM874pxrwImVfCeNz88S4c2wLOtVPaX49mOd0UB1OM5nm66Q9mwHZBd+Xb9miMn2pMiNtdj+Uxu9juArY/dhPbxo9mNZUo+1Xvmxrrj31UGjUL/2tKP9WYd9M2A/b/s3BZRM1VmcNGRQcbPZSx6UHT9VlTYcaEzsJmGwxs1kGjxlLGC+XBa2Dr7mzivp5q7OZk2rj3E02R46aMH7Bx0cImH3BjO9ScQtSE2NawAYC08bj5ATJ72rI=:9AAB
-                                ^FT155,142^A0N,21,20^FH\^CI28^FD".$VDM['asset_description']."^FS^CI27
-                                ^FT0,22^APN,20,6^FB161,1,4,C^FH\^FD".$VDM['accountable']."^FS
+                                ^FT155,142^A0N,21,20^FH\^CI28^FD" . $VDM['asset_description'] . "^FS^CI27
+                                ^FT0,22^APN,20,6^FB161,1,4,C^FH\^FD" . $VDM['accountable'] . "^FS
                                 ^PQ1,0,1,Y
                                 ^XZ";
                     if ($fixedAsset) {
                         $fixedAsset->increment('print_count', 1);
                         $fixedAsset->update(['last_printed' => Carbon::now()]);
                     }
-                }else{
+                } else {
                     //Copy
                     $zplCode = "^XA
                             ~TA000
@@ -174,12 +174,12 @@ class PrintBarCodeController extends Controller
                             ^LL203
                             ^LS0
                             ^BY3,2,53^FT69,92^BEN,,Y,N
-                            ^FH\^FD".$VDM['vladimir_tag_number']."^FS
+                            ^FH\^FD" . $VDM['vladimir_tag_number'] . "^FS
                             ^FT210,34^A0N,17,18^FH\^CI28^FDPROPERTY RECORD^FS^CI27
                             ^FO131,174^GFA,229,320,20,:Z64:eJxjYCAFWHybPKe48SyKmOakTyJOjq4CyGKWk5PnFDkeQxFTnJwk4nQwCUWvwuPkacWNh1DUkQd8nFxsnpzzPjyp+Jya8p1Pjresz/nkPPZLaDuR2Sjl5mVW2DnZmSuxI6dm8amc5+cqG+XK/OwCOycfPGPZVxP76F5K64nIRjE3L72PnZMOuHB2xPgaXQaaF9k8zblbbeacR4ePVPb5YLMXACYPQTo=:7CBE
-                            ^FT3,163^APN,20,6^FB403,1,4,C^FH\^".$VDM['department_name']." - ".$VDM['location_name']."^FS
+                            ^FT3,163^APN,20,6^FB403,1,4,C^FH\^" . $VDM['department_name'] . " - " . $VDM['location_name'] . "^FS
                             ^FO24,7^GFA,97,144,12,:Z64:eJxjYCAMfvyo+dn8vKHCAAjPnEk42MzMcKYACM8cg7ANgPDHMaCaxzJg9gck8RtnEOwzPxIOfmZvqAABXHYBACKcLfg=:E7DF
-                            ^FT155,142^A0N,21,20^FH\^CI28^FD".$VDM['asset_description']."^FS^CI27
+                            ^FT155,142^A0N,21,20^FH\^CI28^FD" . $VDM['asset_description'] . "^FS^CI27
                             ^FO0,0^GFA,705,10556,52,:Z64:eJzt2rFOwlAUBuDe1FBNgJq4aETQxIQV48LGC/gQbG6GUROkNQxsxsQHwEfwDWRjIfIKTSCySUkHSkRqEcLc/088qaRn/3J77j3nNLep5WpYFOaahZrK3xsrCCOuxswf9UHT2MnutUFTH34M31AzG15VcJO2YNNboPtW7/XmqGnkTmAjVQeVkCwEeiExidlEwcdNGDLGxY1BGLND7BuRj2njRify0Woy52M6xL4R+RSIdXJEPow5JMwus9dC58P0D9VzTO0Q/ZMWmlUmU9dCJlfCTVboTA1i9qoYzypmHU0oH6ZGFTMPmGcjept5bzP5MPvGGG3LZpVYL0jlQxidmL3mq8yzZYTOR8rE9NtTYhKTmH9kHNzAQZrsKW7C67OIObYJAxLJfOAgTZKPoLFxoxPrmIQpgCSpHd7AERrDxk14RYUNk89hVcbE+XwYoxzcUL3dIYwtYwwHNxpjqttl4twL+4TJE4aZb8z7lDFUz4Hkd44SBoocYW6V46D3H1cNUKMGkxFq9P5sZKOm/T1G73NGOfOJmlRHwUYv34/RPUjdBbDRvnCjvC6eT7eJm9Z63ybLH198zHhLE62+9ZZGGGYd9b4yfrl0U49ommszObg8j7hOM3hcGW/6fBbRPATZlZmOni4iGnuxMS8eMEtWz1YswsatXU9R4/tj2EQ/040BanRjiO9IP2rLWtM=:E347
                             ^PQ1,0,1,Y
                             ^XZ";
@@ -419,7 +419,6 @@ class PrintBarCodeController extends Controller
 
         }
         $assets = $fixedAssetQuery->paginate($limit);
-
 
 
         // Return the result array

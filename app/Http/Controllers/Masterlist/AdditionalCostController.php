@@ -21,7 +21,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class AdditionalCostController extends Controller
 {
-    protected $additionalCostRepository,$calculationRepository;
+    protected $additionalCostRepository, $calculationRepository;
 
     public function __construct()
     {
@@ -46,7 +46,7 @@ class AdditionalCostController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(AdditionalCostRequest $request)
@@ -63,21 +63,21 @@ class AdditionalCostController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
         $additional_cost = AdditionalCost::withTrashed()->with([
-            'formula'=> function($query) {
+            'formula' => function ($query) {
                 $query->withTrashed();
             },
-            'fixedAsset'=> function($query) {
+            'fixedAsset' => function ($query) {
                 $query->withTrashed();
             },
         ])->where('id', $id)->first();
 
-        if(!$additional_cost) {
+        if (!$additional_cost) {
             return response()->json([
                 'message' => 'Additional Cost route not found!',
             ], 404);
@@ -92,8 +92,8 @@ class AdditionalCostController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(AdditionalCostRequest $request, $id)
@@ -101,13 +101,13 @@ class AdditionalCostController extends Controller
         $request->validated();
         $departmentQuery = Department::where('id', $request->department_id)->first();
         $additionalCost = AdditionalCost::where('id', $id)->first();
-        if($additionalCost) {
+        if ($additionalCost) {
             $additionalCost = $this->additionalCostRepository->updateAdditionalCost($request->all(), $departmentQuery, $id);
             return response()->json([
                 'message' => 'Additional Cost successfully updated!',
                 'data' => $additionalCost->load('formula'),
             ], 201);
-        }else{
+        } else {
             return response()->json([
                 'message' => 'Additional Cost not found!',
             ], 404);
@@ -139,7 +139,7 @@ class AdditionalCostController extends Controller
                 }
 
                 $additionalCost->where('id', $id)->update(['remarks' => $remarks, 'is_active' => false]);
-                Formula::where('id',AdditionalCost::where('id', $id)->first()->formula_id)->delete();
+                Formula::where('id', AdditionalCost::where('id', $id)->first()->formula_id)->delete();
                 $additionalCost->where('id', $id)->delete();
 //                $formula->where('additional_cost_id', $id)->delete();
                 return response()->json(['message' => 'Successfully Deactivated!'], 200);
@@ -160,14 +160,13 @@ class AdditionalCostController extends Controller
                 }
 
                 $additionalCost->withTrashed()->where('id', $id)->restore();
-                $additionalCost->update(['is_active' => true,'remarks' => null]);
+                $additionalCost->update(['is_active' => true, 'remarks' => null]);
 //                $formula->where('additional_cost_id', $id)->restore();
-                Formula::where('id',AdditionalCost::where('id', $id)->first()->formula_id)->restore();
+                Formula::where('id', AdditionalCost::where('id', $id)->first()->formula_id)->restore();
                 return response()->json(['message' => 'Successfully Activated!'], 200);
             }
         }
     }
-
 
 
     function assetDepreciation(Request $request, $id)

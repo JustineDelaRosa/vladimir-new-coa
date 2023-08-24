@@ -81,14 +81,14 @@ class FixedAssetController extends Controller
         $departmentQuery = Department::with('location')->where('id', $request->department_id)->first();
         $fixedAsset = $this->fixedAssetRepository->storeFixedAsset($request->all(), $vladimirTagNumber, $departmentQuery);
         if ($fixedAsset == "Not yet fully depreciated") {
-                return response()->json([
-                    'message' => 'The given data was invalid.',
-                    'errors' => [
-                        'end_depreciation' => [
-                            $fixedAsset
-                        ]
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => [
+                    'end_depreciation' => [
+                        $fixedAsset
                     ]
-                ], 422
+                ]
+            ], 422
             );
         }
         //return the fixed asset and formula
@@ -155,7 +155,7 @@ class FixedAssetController extends Controller
         $departmentQuery = Department::where('id', $request->department_id)->first();
         $fixedAsset = FixedAsset::where('id', $id)->first();
         if ($fixedAsset) {
-            $fixed_asset =  $this->fixedAssetRepository->updateFixedAsset($request->all(), $departmentQuery, $id);
+            $fixed_asset = $this->fixedAssetRepository->updateFixedAsset($request->all(), $departmentQuery, $id);
             if ($fixed_asset == "Not yet fully depreciated") {
                 return response()->json([
                     'message' => 'The given data was invalid.',

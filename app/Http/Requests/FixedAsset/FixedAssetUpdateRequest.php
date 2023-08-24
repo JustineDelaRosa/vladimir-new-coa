@@ -32,7 +32,7 @@ class FixedAssetUpdateRequest extends FormRequest
     {
         $id = $this->route()->parameter('fixed_asset');
         return [
-            'sub_capex_id' => ['nullable', function ($attribute, $value, $fail){
+            'sub_capex_id' => ['nullable', function ($attribute, $value, $fail) {
                 // Get the type_of_request_id from request
                 $type_of_request_id = request()->input('type_of_request_id');
 //                $sub_capex = SubCapex::where('id', $value)->exists();
@@ -51,7 +51,7 @@ class FixedAssetUpdateRequest extends FormRequest
             }],
             'tag_number' => ['nullable', 'max:13', function ($attribute, $value, $fail) use ($id) {
                 //if the value id "-" and the is_old_asset is true return fail error
-                if($value == "-" && $this->is_old_asset){
+                if ($value == "-" && $this->is_old_asset) {
                     $fail('This is required for old asset');
                 }
                 $tag_number = FixedAsset::withTrashed()->where('tag_number', $value)
@@ -105,7 +105,7 @@ class FixedAssetUpdateRequest extends FormRequest
             'brand' => 'nullable',
             'major_category_id' => 'required|exists:major_categories,id',
             'minor_category_id' => 'required|exists:minor_categories,id',
-            'voucher' => ['nullable', function($attribute, $value, $fail){
+            'voucher' => ['nullable', function ($attribute, $value, $fail) {
                 //if the depreciation status is running depreciation and fully depreciated required voucher
                 $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
                 if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
@@ -115,7 +115,7 @@ class FixedAssetUpdateRequest extends FormRequest
                 }
 
             }],
-            'receipt' => ['nullable', function($attribute, $value, $fail){
+            'receipt' => ['nullable', function ($attribute, $value, $fail) {
                 //if the depreciation status is running depreciation and fully depreciated required voucher
                 $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
                 if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
@@ -127,7 +127,7 @@ class FixedAssetUpdateRequest extends FormRequest
             }],
             'quantity' => 'required',
             //if any of tag_number and tag_number_old is not null, then is_old_asset is true else false
-            'is_old_asset' =>  ['required','boolean', function ($attribute, $value, $fail) {
+            'is_old_asset' => ['required', 'boolean', function ($attribute, $value, $fail) {
                 if ($value == 1) {
                     if (request()->tag_number == null && request()->tag_number_old == null) {
                         $fail('Either tag number or tag number old is required');
@@ -139,7 +139,7 @@ class FixedAssetUpdateRequest extends FormRequest
             'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
             'movement_status_id' => 'required|exists:movement_statuses,id',
             'depreciation_method' => 'required',
-            'acquisition_date' => ['required', 'date_format:Y-m-d', 'date','before_or_equal:today'],
+            'acquisition_date' => ['required', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],
             //acquisition cost should not be less than or equal to 0
             'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if (request()->depreciation_method == 'Supplier\'s Rebase') {
@@ -156,7 +156,7 @@ class FixedAssetUpdateRequest extends FormRequest
                     request()->merge(['acquisition_cost' => 0]);
                 }
             }],
-            'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail){
+            'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if (request()->depreciation_method == 'Supplier\'s Rebase') {
                     if ($value != 0) {
                         $fail('Scrap value should be 0');
@@ -168,7 +168,7 @@ class FixedAssetUpdateRequest extends FormRequest
                     request()->merge(['scrap_value' => 0]);
                 }
             }],
-            'depreciable_basis' => ['required', 'numeric',function ($attribute, $value, $fail) {
+            'depreciable_basis' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if (request()->depreciation_method == 'Supplier\'s Rebase') {
                     if ($value != 0) {
                         $fail('Depreciable basis should be 0');
@@ -208,7 +208,7 @@ class FixedAssetUpdateRequest extends FormRequest
                 }
             }],
 
-            'release_date' => ['nullable','date_format:Y-m-d',
+            'release_date' => ['nullable', 'date_format:Y-m-d',
 //                function ($attribute, $value, $fail) {
 //                //get what is the depreciation status is for depreciation
 //                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();

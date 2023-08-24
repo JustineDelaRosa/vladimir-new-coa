@@ -28,6 +28,7 @@ class CategoryListRequest extends FormRequest
         $this->merge(['id' => $this->route()->parameter('id')]);
         $this->merge(['categorylist' => $this->request->get('service_provider_id')]);
     }
+
     public function rules()
     {
         if ($this->isMethod('post')) {
@@ -40,7 +41,7 @@ class CategoryListRequest extends FormRequest
             ];
         }
 
-        if ($this->isMethod('put') &&  ($this->route()->parameter('category_list'))) {
+        if ($this->isMethod('put') && ($this->route()->parameter('category_list'))) {
             $id = $this->route()->parameter('category_list');
             return [
                 'categorylist' => Rule::unique('category_lists', 'service_provider_id')

@@ -26,11 +26,11 @@ class AdditionalCostRequest extends FormRequest
      */
     public function rules()
     {
-        if($this->isMethod('post')){
+        if ($this->isMethod('post')) {
             return $this->getArr();
         }
 
-        if($this->isMethod('put') && ($this->route()->parameter('additional_cost'))){
+        if ($this->isMethod('put') && ($this->route()->parameter('additional_cost'))) {
             $id = $this->route()->parameter('additional_cost');
             return [
 //                'fixed_asset_id' => 'required|exists:fixed_assets,id',
@@ -76,7 +76,7 @@ class AdditionalCostRequest extends FormRequest
                 'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
                 'movement_status_id' => 'required|exists:movement_statuses,id',
                 'depreciation_method' => 'required',
-                'acquisition_date' => ['required', 'date_format:Y-m-d', 'date','before_or_equal:today'],
+                'acquisition_date' => ['required', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],
                 //acquisition cost should not be less than or equal to 0
                 'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
                     if (request()->depreciation_method == 'Supplier\'s Rebase') {
@@ -88,14 +88,14 @@ class AdditionalCostRequest extends FormRequest
                         $fail('Invalid acquisition cost');
                     }
                 }],
-                'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail){
+                'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
                     if (request()->depreciation_method == 'Supplier\'s Rebase') {
                         if ($value != 0) {
                             $fail('Scrap value should be 0');
                         }
                     }
                 }],
-                'depreciable_basis' => ['required', 'numeric',function ($attribute, $value, $fail) {
+                'depreciable_basis' => ['required', 'numeric', function ($attribute, $value, $fail) {
                     if (request()->depreciation_method == 'Supplier\'s Rebase') {
                         if ($value != 0) {
                             $fail('Depreciable basis should be 0');
@@ -124,7 +124,7 @@ class AdditionalCostRequest extends FormRequest
                         }
                     }
                 }],
-                'release_date' => ['nullable','date_format:Y-m-d'],
+                'release_date' => ['nullable', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'department_id' => 'required|exists:departments,id',
                 'location_id' => [
@@ -155,9 +155,9 @@ class AdditionalCostRequest extends FormRequest
                 'account_title_id' => 'required|exists:account_titles,id',
             ];
         }
-        if($this->isMethod('patch') && ($this->route()->parameter('id'))){
+        if ($this->isMethod('patch') && ($this->route()->parameter('id'))) {
             $id = $this->route()->parameter('id');
-            return[
+            return [
                 'status' => 'required|boolean',
 //                'remarks' => 'required_if:status,false|string|max:255',
             ];
@@ -166,7 +166,7 @@ class AdditionalCostRequest extends FormRequest
 
     function messages()
     {
-        return[
+        return [
             'fixed_asset_id.required' => 'The fixed asset id is required.',
             'fixed_asset_id.exists' => 'The fixed asset id must be a valid fixed asset id.',
             'asset_description.required' => 'The asset description is required.',
@@ -273,7 +273,7 @@ class AdditionalCostRequest extends FormRequest
             'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
             'movement_status_id' => 'required|exists:movement_statuses,id',
             'depreciation_method' => 'required',
-            'acquisition_date' => ['required', 'date_format:Y-m-d', 'date','before_or_equal:today'],
+            'acquisition_date' => ['required', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],
             //acquisition cost should not be less than or equal to 0
             'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if (request()->depreciation_method == 'Supplier\'s Rebase') {
@@ -285,14 +285,14 @@ class AdditionalCostRequest extends FormRequest
                     $fail('Invalid acquisition cost');
                 }
             }],
-            'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail){
+            'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if (request()->depreciation_method == 'Supplier\'s Rebase') {
                     if ($value != 0) {
                         $fail('Scrap value should be 0');
                     }
                 }
             }],
-            'depreciable_basis' => ['required', 'numeric',function ($attribute, $value, $fail) {
+            'depreciable_basis' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if (request()->depreciation_method == 'Supplier\'s Rebase') {
                     if ($value != 0) {
                         $fail('Depreciable basis should be 0');
@@ -321,7 +321,7 @@ class AdditionalCostRequest extends FormRequest
                     }
                 }
             }],
-            'release_date' => ['nullable','date_format:Y-m-d'],
+            'release_date' => ['nullable', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
             'department_id' => 'required|exists:departments,id',
             'location_id' => [
