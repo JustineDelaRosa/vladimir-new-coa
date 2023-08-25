@@ -255,7 +255,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
                     $current_date = Carbon::now()->format('Y-m-d');
                     if ($uploaded_date != $current_date) {
-                        $fail('This voucher has already been uploaded on a different date.');
+                        $fail('Voucher previously uploaded.');
                     }
                 }
 
@@ -269,7 +269,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
                 $scrap_value = $collections[$index]['scrap_value'];
 
                 if ($value < $scrap_value) {
-                    $fail('Acquisition cost must not be less than scrap value');
+                    $fail('Acquisition cost should exceed scrap value.');
                 }
 
                 if ($value < 0) {

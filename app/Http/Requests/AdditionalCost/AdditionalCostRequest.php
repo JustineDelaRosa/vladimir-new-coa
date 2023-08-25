@@ -87,7 +87,7 @@ class AdditionalCostRequest extends FormRequest
                             $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
                             $current_date = Carbon::now()->format('Y-m-d');
                             if ($uploaded_date != $current_date) {
-                                $fail("This voucher has already been uploaded on a different date.");
+                                $fail("Voucher previously uploaded.");
                             }
                         }
                     }
@@ -306,7 +306,7 @@ class AdditionalCostRequest extends FormRequest
                         $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
                         $current_date = Carbon::now()->format('Y-m-d');
                         if ($uploaded_date != $current_date) {
-                            $fail("This voucher has already been uploaded on a different date.");
+                            $fail("Voucher previously uploaded.");
                         }
                     }
                 }
