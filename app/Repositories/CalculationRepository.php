@@ -30,14 +30,22 @@ class CalculationRepository
         $est_useful_life = floor($est_useful_life) + (($est_useful_life - floor($est_useful_life)) * 12) / 12;
         return round(($acquisition_cost - $scrap_value) / $est_useful_life,2);
     }
-    public function getAccumulatedCost($monthly_depreciation, float $custom_age): float
+    public function getAccumulatedCost($monthly_depreciation, float $custom_age, $depreciable_basis): float
     {
         $accumulated_cost = $monthly_depreciation * $custom_age;
+        //if the accumulated cost is greater than the depreciable basis, return the depreciable basis
+        if ($accumulated_cost > $depreciable_basis) {
+            return $depreciable_basis;
+        }
         return round($accumulated_cost);
     }
     public function getRemainingBookValue($acquisition_cost, float $accumulated_cost): float
     {
         $remaining_book_value = $acquisition_cost - $accumulated_cost;
+        //if the remaining book value is less than zero, return zero
+        if ($remaining_book_value < 0) {
+            return 0;
+        }
         return round($remaining_book_value);
     }
     public function getEndDepreciation($start_depreciation, $est_useful_life, $depreciation_method): string

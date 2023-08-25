@@ -70,21 +70,24 @@ class AdditionalCostRequest extends FormRequest
                 'brand' => 'nullable',
                 'major_category_id' => 'required|exists:major_categories,id',
                 'minor_category_id' => 'required|exists:minor_categories,id',
-                'voucher' => ['nullable', function ($attribute, $value, $fail) {
+                'voucher' => [function ($attribute, $value, $fail) {
                     //if the depreciation status is running depreciation and fully depreciated required voucher
                     $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
                     if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
-
-                        if ($value == null) {
+                        if ($value == null || $value == '-') {
                             $fail('Voucher is required');
                             return;
                         }
+//                        if ($value == '-') {
+////                            $fail('Voucher is required');
+//                            return;
+//                        }
                         $voucher = FixedAsset::where('voucher', $value)->first();
                         if ($voucher) {
                             $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
                             $current_date = Carbon::now()->format('Y-m-d');
                             if ($uploaded_date != $current_date) {
-                                $fail('This voucher has already been uploaded on a different date.');
+                                $fail("This voucher has already been uploaded on a different date.");
                             }
                         }
                     }
@@ -285,15 +288,19 @@ class AdditionalCostRequest extends FormRequest
             'brand' => 'nullable',
             'major_category_id' => 'required|exists:major_categories,id',
             'minor_category_id' => 'required|exists:minor_categories,id',
-            'voucher' => ['nullable', function ($attribute, $value, $fail) {
+            'voucher' => [function ($attribute, $value, $fail) {
                 //if the depreciation status is running depreciation and fully depreciated required voucher
                 $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
                 if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
 
-                    if ($value == null) {
+                    if ($value == null || $value == '-') {
                         $fail('Voucher is required');
                         return;
                     }
+//                    if ($value == '-') {
+////                            $fail('Voucher is required');
+//                        return;
+//                    }
                     $voucher = FixedAsset::where('voucher', $value)->first();
                     if ($voucher) {
                         $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');

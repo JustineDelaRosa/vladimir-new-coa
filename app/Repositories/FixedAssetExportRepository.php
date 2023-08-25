@@ -424,7 +424,7 @@ class FixedAssetExportRepository
 
     private function calculateAccumulatedCost($fixed_asset, $depreciation_rate)
     {
-        return $this->calculationRepository->getAccumulatedCost($depreciation_rate['monthly'], $this->monthDepreciated($fixed_asset->formula->start_depreciation));
+        return $this->calculationRepository->getAccumulatedCost($depreciation_rate['monthly'], $this->monthDepreciated($fixed_asset->formula->start_depreciation), $fixed_asset->formula->depreciable_basis);
     }
 
     private function calculateRemainingBookValue($fixed_asset, $accumulated_cost)
