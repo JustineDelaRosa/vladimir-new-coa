@@ -63,16 +63,16 @@ class PrintBarCodeController extends Controller
 
         try {
             //get the ip from active printerIP table in a database
-//$printerIP = PrinterIP::where('is_active', true)->first()->ip;
+            //$printerIP = PrinterIP::where('is_active', true)->first()->ip;
             // Initialize the WindowsPrintConnector with the COM port and baud rate
             //$connector = new WindowsPrintConnector("COM1");
             // $connector = new NetworkPrintConnector("10.10.10.11" , 8000);
-//$connector = new WindowsPrintConnector("ZDesigner ZD230-203dpi ZPL");
+            //$connector = new WindowsPrintConnector("ZDesigner ZD230-203dpi ZPL");
             //$printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
             $connector = new WindowsPrintConnector("smb://{$printerIP->ip}/ZDesigner ZD230-203dpi ZPL");
             //check if the smb://10.10.10.11 is available
-//            $printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
-//            $connector = new FilePrintConnector($printer);
+            //$printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
+            //$connector = new FilePrintConnector($printer);
 
             // Create a new Printer object and assign the connector to it
             $printer = new Printer($connector);
