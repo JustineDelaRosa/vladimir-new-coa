@@ -321,30 +321,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             ],
             '*.care_of' => 'required',
             '*.end_depreciation' => ['required', function ($attribute, $value, $fail) use ($collections) {
-                if (strlen($value) !== 6) {
-                    $fail('Invalid end depreciation format');
-                    return;
-                }
-                $index = array_search($attribute, array_keys($collections));
-                $depreciation_status_name = $collections[$index]['depreciation_status'];
-                $depreciation_status = DepreciationStatus::where('depreciation_status_name', $depreciation_status_name)->first();
-                if ($depreciation_status->depreciation_status_name == 'Fully Depreciated') {
-                    //check if the value of end depreciation is not yet passed the current date (yyyymm)
-                    $current_date = Carbon::now()->format('Y-m');
-                    $value = substr_replace($value, '-', 4, 0);
-                    //check if the value is parsable or not
-                    if (Carbon::parse($value)->isAfter($current_date)) {
-                        $fail('Not yet fully depreciated');
-                    }
-                } elseif ($depreciation_status->depreciation_status_name == 'Running Depreciation') {
-                    //check if the value of end depreciation is not yet passed the current date (yyyymm)
-                    $current_date = Carbon::now()->format('Y-m');
-                    $value = substr_replace($value, '-', 4, 0);
-                    //check if the value is parsable or not
-                    if (Carbon::parse($value)->isBefore($current_date)) {
-                        $fail('The asset is fully depreciated');
-                    }
-                }
+                $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
             }],
             '*.depreciation_per_year' => ['required'],
             '*.depreciation_per_month' => ['required'],
@@ -353,7 +330,9 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     $fail('Remaining book value must not be negative');
                 }
             }],
-            '*.start_depreciation' => ['required'],
+            '*.start_depreciation' => ['required', function($attribute, $value, $fail) {
+                $this->calculationRepository->validationForDate($attribute, $value, $fail);
+            }],
             '*.company_code' => ['required', 'exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections));
                 $company_name = $collections[$index]['company'];

@@ -19,6 +19,7 @@ use App\Models\Status\MovementStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
 use App\Repositories\CalculationRepository;
+use App\Repositories\VladimirTagGeneratorRepository;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
@@ -48,11 +49,12 @@ class MasterlistImport extends DefaultValueBinder implements
 {
     use Importable;
 
-    private $calculationRepository;
+    private $calculationRepository, $vladimirTagGeneratorRepository;
 
     public function __construct()
     {
         $this->calculationRepository = new CalculationRepository();
+        $this->vladimirTagGeneratorRepository = new VladimirTagGeneratorRepository();
     }
 
     function headingRow(): int
@@ -195,7 +197,7 @@ class MasterlistImport extends DefaultValueBinder implements
         $formula->fixedAsset()->create([
             'capex_id' => Capex::where('capex', $collection['capex'])->first()->id ?? null,
             'sub_capex_id' => SubCapex::where('sub_capex', $collection['sub_capex'])->first()->id ?? null,
-            'vladimir_tag_number' => $this->vladimirTagGenerator(),
+            'vladimir_tag_number' => $this->vladimirTagGeneratorRepository->vladimirTagGenerator(),
             'tag_number' => $collection['tag_number'] ?? '-',
             'tag_number_old' => $collection['tag_number_old'] ?? '-',
             'asset_description' => ucwords(strtolower($collection['description'])),
@@ -463,30 +465,7 @@ class MasterlistImport extends DefaultValueBinder implements
             ],
             '*.care_of' => 'required',
             '*.end_depreciation' => ['required', function ($attribute, $value, $fail) use ($collections) {
-                if (strlen($value) !== 6) {
-                    $fail('Invalid end depreciation format');
-                    return;
-                }
-                $index = array_search($attribute, array_keys($collections->toArray()));
-                $depreciation_status_name = $collections[$index]['depreciation_status'];
-                $depreciation_status = DepreciationStatus::where('depreciation_status_name', $depreciation_status_name)->first();
-                if ($depreciation_status->depreciation_status_name == 'Fully Depreciated') {
-                    //check if the value of end depreciation is not yet passed the current date (yyyymm)
-                    $current_date = Carbon::now()->format('Y-m');
-                    $value = substr_replace($value, '-', 4, 0);
-                    //check if the value is parsable or not
-                    if (Carbon::parse($value)->isAfter($current_date)) {
-                        $fail('Not yet fully depreciated');
-                    }
-                } elseif ($depreciation_status->depreciation_status_name == 'Running Depreciation') {
-                    //check if the value of end depreciation is not yet passed the current date (yyyymm)
-                    $current_date = Carbon::now()->format('Y-m');
-                    $value = substr_replace($value, '-', 4, 0);
-                    //check if the value is parsable or not
-                    if (Carbon::parse($value)->isBefore($current_date)) {
-                        $fail('The asset is fully depreciated');
-                    }
-                }
+                $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
             }],
             '*.depreciation_per_year' => ['required'],
             '*.depreciation_per_month' => ['required'],
@@ -495,7 +474,9 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Remaining book value must not be negative');
                 }
             }],
-            '*.start_depreciation' => ['required'],
+            '*.start_depreciation' => ['required', function($attribute, $value, $fail) {
+                $this->calculationRepository->validationForDate($attribute, $value, $fail);
+            }],
             '*.company_code' => ['required', 'exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $company_name = $collections[$index]['company'];
@@ -620,100 +601,6 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.account_code.exists' => 'Account code does not exist',
         ];
 
-    }
-
-
-//  GENERATING VLADIMIR TAG NUMBER
-    public function vladimirTagGenerator(): string
-    {
-        $generatedEan13Result = $this->generateEan13();
-        // Check if the generated number is a duplicate or already exists in the database
-        while ($this->checkDuplicateEan13($generatedEan13Result)) {
-            $generatedEan13Result = $this->generateEan13();
-        }
-
-        return $generatedEan13Result;
-    }
-
-    public function generateEan13(): string
-    {
-        $date = date('ymd');
-        static $lastRandom = 0;
-        do {
-            $random = mt_rand(1, 9) . mt_rand(1000, 9999);
-        } while ($random === $lastRandom);
-        $lastRandom = $random;
-
-        $number = "5$date$random";
-
-        if (strlen($number) !== 12) {
-            return 'Invalid Number';
-        }
-
-        //Calculate checkDigit
-        $checkDigit = $this->calculateCheckDigit($number);
-
-        $ean13Result = $number . $checkDigit;
-
-        return $ean13Result;
-    }
-
-    public function calculateCheckDigit(string $number): int
-    {
-        $evenSum = $this->calculateEvenSum($number);
-        $oddSum = $this->calculateOddSum($number);
-
-        $totalSum = $evenSum + $oddSum;
-        $remainder = $totalSum % 10;
-        $checkDigit = ($remainder === 0) ? 0 : 10 - $remainder;
-
-        return $checkDigit;
-    }
-
-    public function calculateEvenSum(string $number): int
-    {
-        $evenSum = 0;
-        for ($i = 1; $i < 12; $i += 2) {
-            $evenSum += (int)$number[$i];
-        }
-        return $evenSum * 3;
-    }
-
-    public function calculateOddSum(string $number): int
-    {
-        $oddSum = 0;
-        for ($i = 0; $i < 12; $i += 2) {
-            $oddSum += (int)$number[$i];
-        }
-        return $oddSum;
-    }
-
-    public function checkDuplicateEan13(string $ean13Result): bool
-    {
-        $generated = [];
-        return in_array($ean13Result, $generated) || FixedAsset::where('vladimir_tag_number', $ean13Result)->exists();
-    }
-
-    function getEmployeeData($client, $token)
-    {
-        return $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $token,
-                'Accept' => 'application/json',
-            ],
-        ])->getBody()->getContents();
-    }
-
-    function findEmployee($data, $value)
-    {
-        if (!empty($data['data']) && is_array($data['data'])) {
-            foreach ($data['data'] as $employee) {
-                if (!empty($employee['general_info']) && in_array($employee['general_info']['full_name'], $value)) {
-                    echo $employee['general_info']['full_id_number'] . PHP_EOL;
-                    break;
-                }
-            }
-        }
     }
 
 }

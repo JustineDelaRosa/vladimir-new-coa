@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\Status\DepreciationStatus;
 use Carbon\Carbon;
 
 class CalculationRepository
@@ -87,5 +88,61 @@ class CalculationRepository
             $total_cost += $additional_cost->formula->acquisition_cost;
         }
         return $total_cost;
+    }
+
+
+   public function validationForDate($attribute, $value, $fail, $collections = null) {
+        $newAttribute = preg_replace('/^\d+\./', '', $attribute);
+        $newAttribute = str_replace('_', ' ', $newAttribute);
+        // Validate the year and month format
+        if (strlen($value) !== 6) {
+            $fail('Invalid format');
+            return;
+        }
+
+        // Extract the year and month
+        $year = substr($value, 0, 4);
+        $month = substr($value, 4, 2);
+
+        // Check if the year is a valid number
+        if (!is_numeric($year) || (int)$year < 1900 || (int)$year > 2100) {
+            $fail("Invalid year in the $newAttribute format");
+            return;
+        }
+
+        // Check if the month is a valid number
+        if (!is_numeric($month) || (int)$month < 1 || (int)$month > 12) {
+            $fail("Invalid month in the $newAttribute format");
+            return;
+        }
+
+//        // Check if the date actually exists (e.g. not February 30)
+//        if (!checkdate((int)$month, 1, (int)$year)) {
+//            $fail("Invalid $newAttribute format");
+//            return;
+//        }
+        //if the $newAttribute is then add this validation
+        if ($newAttribute == 'end depreciation') {
+            $index = array_search($attribute, array_keys($collections->toArray()));
+            $depreciation_status_name = $collections[$index]['depreciation_status'];
+            $depreciation_status = DepreciationStatus::where('depreciation_status_name', $depreciation_status_name)->first();
+            if ($depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+                //check if the value of end depreciation is not yet passed the current date (yyyymm)
+                $current_date = Carbon::now()->format('Y-m');
+                $value = substr_replace($value, '-', 4, 0);
+                //check if the value is parsable or not
+                if (Carbon::parse($value)->isAfter($current_date)) {
+                    $fail('Not yet fully depreciated');
+                }
+            } elseif ($depreciation_status->depreciation_status_name == 'Running Depreciation') {
+                //check if the value of end depreciation is not yet passed the current date (yyyymm)
+                $current_date = Carbon::now()->format('Y-m');
+                $value = substr_replace($value, '-', 4, 0);
+                //check if the value is parsable or not
+                if (Carbon::parse($value)->isBefore($current_date)) {
+                    $fail('The asset is fully depreciated');
+                }
+            }
+        }
     }
 }
