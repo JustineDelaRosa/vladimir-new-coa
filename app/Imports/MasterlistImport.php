@@ -89,6 +89,8 @@ class MasterlistImport extends DefaultValueBinder implements
     public function collection(Collection $collections)
     {
 
+//        dd($collections);
+
 //        $client = new Client();
 //        $token = '9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4';
 //        $response = $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
@@ -491,13 +493,22 @@ class MasterlistImport extends DefaultValueBinder implements
             }],
             '*.department_code' => ['required', 'exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
-                $company_code = $collections[$index]['company_code'];
-                $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
-                $department = Department::where('department_code', $value)
-                    ->where('company_sync_id', $company_sync_id)
+                $department_name = $collections[$index]['department'];
+                $department = Department::query()
+                    ->where('department_code', $value)
+                    ->where('department_name', $department_name)
+                    ->where('is_active', '!=', 0)
                     ->first();
                 if (!$department) {
-                    $fail('Invalid location, company and department combination');
+                    $fail('Invalid department');
+                }
+                $company_code = $collections[$index]['company_code'];
+                $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
+                $departmentCompCheck = Department::where('department_code', $value)
+                    ->where('company_sync_id', $company_sync_id)
+                    ->first();
+                if (!$departmentCompCheck) {
+                    $fail('Invalid department and company combination');
                 }
             }],
             '*.location_code' => ['required', 'exists:locations,location_code', function ($attribute, $value, $fail) use ($collections) {
