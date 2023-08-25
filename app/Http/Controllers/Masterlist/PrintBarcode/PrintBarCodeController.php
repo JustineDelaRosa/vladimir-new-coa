@@ -206,9 +206,9 @@ class PrintBarCodeController extends Controller
                 ], 200);
         } catch (Exception $e) {
             // Handle any exceptions that may occur during the printing process
-            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
+//            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
 
-//            return response()->json(['message' => 'Unable to Print'], 422);
+            return response()->json(['message' => 'Unable to Print'], 422);
         }
     }
 
