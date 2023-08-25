@@ -387,7 +387,7 @@ class AdditionalCostRequest extends FormRequest
 
                     // Get sync_id's of all locations associated with the department
                     $associated_location_sync_ids = $location->departments->pluck('sync_id');
-//                        dd($associated_location_sync_ids);
+                    //dd($associated_location_sync_ids);
                     // Check if department's sync_id exists in associated_location_sync_ids
                     if (!$associated_location_sync_ids->contains($department_sync_id)) {
                         $fail('Invalid location for the department');
