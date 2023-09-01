@@ -41,6 +41,37 @@ class AuthController extends Controller
             'token' => $token
         ];
         $cookie = cookie('authcookie', $token);
+//        return response()->json([
+//            'data' => [
+//                'user' => [
+//                    'id' => $user->id,
+//                    'employee_id' => $user->employee_id,
+//                    'firstname' => $user->firstname,
+//                    'lastname' => $user->lastname,
+//                    'username' => $user->username,
+//                    'role_id' => $user->role_id,
+//                    'is_active' => $user->is_active,
+//                    'created_at' => $user->created_at,
+//                    'updated_at' => $user->updated_at,
+//                    'deleted_at' => $user->deleted_at,
+//                    'role' => [
+//                        'id' => $user->role->id,
+//                        'role_name' => $user->role->role_name,
+//                        'access_permission' => $user->role->access_permission . ', requester, approver',
+//                        'is_active' => $user->role->is_active,
+//                        'created_at' => $user->role->created_at,
+//                        'updated_at' => $user->role->updated_at,
+//                        'deleted_at' => $user->role->deleted_at,
+//                    ],
+//                ],
+//                'token' => $token
+//            ],
+//            'message' => 'Successfully Logged In'
+//        ], 200)->withCookie($cookie);
+
+
+
+        $cookie = cookie('authcookie', $token);
         return response()->json([
             'data' => $response,
             'message' => 'Successfully Logged In'

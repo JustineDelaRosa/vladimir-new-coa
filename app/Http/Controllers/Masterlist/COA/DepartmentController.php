@@ -55,7 +55,7 @@ class DepartmentController extends Controller
                     'company_code' => $departments->company->company_code ?? "-",
                     'company_name' => $departments->company->company_name ?? "-",
                 ],
-                'locations' => $departments->location->map(function ($locations) {
+                'locations' => $departments->location->isEmpty() ? '-' : $departments->location->map(function ($locations) {
                     return [
                         'location_id' => $locations->id ?? "-",
                         'location_sync_id' => $locations->sync_id ?? "-",
@@ -63,6 +63,7 @@ class DepartmentController extends Controller
                         'location_name' => $locations->location_name ?? "-",
                     ];
                 }),
+
                 'division' => [
                     'division_id' => $departments->division->id ?? "-",
                     'division_name' => $departments->division->division_name ?? "-",
@@ -129,6 +130,11 @@ class DepartmentController extends Controller
 //                        if ($department->is_active == 0) {
 //                            $is_active = 0;
 //                        }
+//                    }
+
+//                    //if the status is false, detach the location in the pivot table
+//                    if ($dept['status'] == false) {
+//                        $sync->locations()->detach();
 //                    }
                 }
             }
@@ -221,7 +227,7 @@ class DepartmentController extends Controller
                     'company_code' => $department->company->company_code ?? "-",
                     'company_name' => $department->company->company_name ?? "-",
                 ],
-                'locations' => $department->location->map(function ($locations) {
+                'locations' => $department->location->isEmpty() ? '-' : $department->location->map(function ($locations) {
                     return [
                         'location_id' => $locations->id ?? "-",
                         'location_sync_id' => $locations->sync_id ?? "-",

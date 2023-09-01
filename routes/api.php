@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApproverSettingController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CategoryListController;
 use App\Http\Controllers\Masterlist\AdditionalCostController;
@@ -192,6 +193,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //MOVEMENT STATUS
     Route::resource('movement-status', MovementStatusController::class);
     Route::patch('movement-status/archived-movement-status/{id}', [MovementStatusController::class, 'archived']);
+
+    //APPROVER SETTING//
+    Route::resource('approver-setting', ApproverSettingController::class);
+    Route::get('requester-view', [ApproverSettingController::class, 'requesterView']);
 });
 
 
