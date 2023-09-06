@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\ApproverSetting;
 
+use App\Models\Approvers;
 use App\Models\UserApprover;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -25,43 +26,39 @@ class ApproverSettingRequest extends FormRequest
      */
     public function rules()
     {
-        if($this->isMethod("POST")){
+        if ($this->isMethod("POST")) {
             return [
-                'requester_id' => [
+                'approver_id' => [
                     'required',
-                    'exists:users,id',
-                    Rule::notIn($this->approver_id),
-                ],
-                'approver_id' =>[
-                    'required',
-                    'exists:users,id',
-                    'array',
-                    'unique_in_array'
+                    'exists:users,id,deleted_at,NULL',
+                    function ($attribute, $value, $fail) {
+                        //check if this approver is already axist in the approvers table
+                        $approver = Approvers::withTrashed()->where('approver_id', $value)->first();
+                        if ($approver) {
+                            $fail('Approver already exists.');
+                        }
+                    },
                 ],
             ];
         }
-        if($this->isMethod("PUT") && ($this->route()->parameter('approver_setting'))){
+        if ($this->isMethod("PUT") && ($this->route()->parameter('approver_setting'))) {
             $id = $this->route()->parameter('approver_setting');
             return [
-                'approver_id' =>[
+                'approver_id' => [
                     'required',
-                    'exists:users,id',
+                    'exists:users,id,deleted_at,NULL',
                     function ($attribute, $value, $fail) use ($id) {
-                        $userApprover = UserApprover::where('approver_id', $value)->where('id', '!=', $id)->first();
-                        if ($userApprover) {
+                        //check if this approver is already axist in the approvers table except the current id
+                        $approver = Approvers::withTrashed()->where('approver_id', $value)->where('id', '!=', $id)->first();
+                        if ($approver) {
                             $fail('Approver already exists.');
-                        }
-                        //cannot be his own approver
-                        $approver = UserApprover::where('id', $id)->first();
-                        if ($approver->requester_id == $value) {
-                            $fail('Requester cannot be his own approver.');
                         }
                     },
                 ],
             ];
         }
 
-        if($this->isMethod("PATCH") && ($this->route()->parameter('id'))){
+        if ($this->isMethod("PATCH") && ($this->route()->parameter('id'))) {
             return [
                 'status' => 'required|boolean'
             ];
@@ -71,13 +68,10 @@ class ApproverSettingRequest extends FormRequest
     function messages()
     {
         return [
-            'requester_id.required' => 'Requester is required',
-            'requester_id.exists' => 'Requester does not exist',
-            'requester_id.not_in' => 'Requester cannot add himself as approver',
-            'approver_id.required' => 'Approver is required',
-            'approver_id.exists' => 'Approver does not exist',
-            'approver_id.array' => 'Approver must be an array',
-            'approver_id.unique_in_array' => 'Approvers must be unique',
+            'approver_id.required' => 'Approver is required.',
+            'approver_id.exists' => 'User does not exist.',
+            'status.required' => 'Status is required.',
+            'status.boolean' => 'Status must be a boolean.',
         ];
     }
 }

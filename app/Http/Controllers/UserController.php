@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Approvers;
 use App\Models\Test;
 use App\Models\User;
 use App\Models\Sedar;
@@ -25,6 +26,8 @@ class UserController extends Controller
     public function index()
     {
         $user = User::with('role')->get();
+        //display only the user that is not on approvers table
+
         return $user;
     }
 
@@ -37,8 +40,8 @@ class UserController extends Controller
     public function store(UserRequest $request)
     {
         $employee_id = $request->employee_id;
-        $firstname = strtoupper($request->firstname);
-        $lastname = strtoupper($request->lastname);
+        $firstname = ucwords(strtolower($request->firstname));
+        $lastname = ucwords(strtolower($request->lastname));
         $username = $request->username;
         $role_id = $request->role_id;
 
@@ -111,8 +114,8 @@ class UserController extends Controller
     public function update(UserRequest $request, $id)
     {
         $employee_id = $request->employee_id;
-        $firstname = strtoupper($request->firstname);
-        $lastname = strtoupper($request->lastname);
+        $firstname = ucwords(strtolower($request->firstname));
+        $lastname = ucwords(strtolower($request->lastname));
         $username = $request->username;
         $role_id = $request->role_id;
         $User = User::find($id);
@@ -227,41 +230,45 @@ class UserController extends Controller
     }
 
     public function archived(UserRequest $request, $id)
-{
-    $auth_id = auth('sanctum')->user()->id;
-    if ($id == $auth_id) {
-        return response()->json(['message' => 'Unable to Archive, User already in used!'], 409);
-    }
-    $status = $request->status;
-    $User = User::query();
-    if (!$User->withTrashed()->where('id', $id)->exists()) {
-        return response()->json(['error' => 'User Route Not Found'], 404);
-    }
-    if ($status == false) {
-        if (!User::where('id', $id)->where('is_active', true)->exists()) {
-            return response()->json(['message' => 'No Changes'], 200);
-        } else {
-            $userSettingApproverCheck = UserApprover::where('requester_id', $id)->orWhere('approver_id', $id)->exists();
-            if ($userSettingApproverCheck) {
-                return response()->json(['message' => 'User Account still in use'], 409);
+    {
+        $auth_id = auth('sanctum')->user()->id;
+        if ($id == $auth_id) {
+            return response()->json(['error' => 'Unable to Archive, User already in used!'], 422);
+        }
+        $status = $request->status;
+        $User = User::query();
+        if (!$User->withTrashed()->where('id', $id)->exists()) {
+            return response()->json(['error' => 'User Route Not Found'], 404);
+        }
+        if ($status == false) {
+            if (!User::where('id', $id)->where('is_active', true)->exists()) {
+                return response()->json(['message' => 'No Changes'], 200);
+            } else {
+//            $userSettingApproverCheck = UserApprover::where('requester_id', $id)->orWhere('approver_id', $id)->exists();
+//            if ($userSettingApproverCheck) {
+//                return response()->json(['message' => 'User Account still in use'], 409);
+//            }
+                $ApproverCheck = Approvers::Where('approver_id', $id)->exists();
+                if ($ApproverCheck) {
+                    return response()->json(['error' => 'User Account still in use'], 422);
+                }
+
+                $updateStatus = $User->where('id', $id)->update(['is_active' => false]);
+                $User->where('id', $id)->delete();
+                return response()->json(['message' => 'Successfully Deactived!'], 200);
             }
-
-            $updateStatus = $User->where('id', $id)->update(['is_active' => false]);
-            $User->where('id', $id)->delete();
-            return response()->json(['message' => 'Successfully Deactived!'], 200);
         }
-    }
-    if ($status == true) {
-        if (User::where('id', $id)->where('is_active', true)->exists()) {
-            return response()->json(['message' => 'No Changes'], 200);
-        } else {
-            $restoreUser = $User->withTrashed()->where('id', $id)->restore();
-            $updateStatus = $User->update(['is_active' => true]);
-            return response()->json(['message' => 'Successfully Activated!'], 200);
+        if ($status == true) {
+            if (User::where('id', $id)->where('is_active', true)->exists()) {
+                return response()->json(['message' => 'No Changes'], 200);
+            } else {
+                $restoreUser = $User->withTrashed()->where('id', $id)->restore();
+                $updateStatus = $User->update(['is_active' => true]);
+                return response()->json(['message' => 'Successfully Activated!'], 200);
+            }
         }
-    }
 
-}
+    }
 
     public function test(Request $request)
     {

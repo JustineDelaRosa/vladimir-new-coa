@@ -46,13 +46,10 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 
 // Route::post('setup/department', [SetupController::class, 'createDepartment']);
-Route::post('setup/role', [SetupController::class, 'createRole']);
 
 
 // Route::resource('user', UserController::class);
-Route::resource('role-management', RoleManagementController::class);
-Route::put('role-management/archived-role-management/{id}', [RoleManagementController::class, 'archived']);
-Route::get('search/role-management', [RoleManagementController::class, 'search']);
+
 
 Route::post('/auth/login', [AuthController::class, 'Login']);
 // Route::resource('user', UserController::class);
@@ -66,12 +63,18 @@ Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
 
+    //ROLE MANAGEMENT
+    Route::post('setup/role', [SetupController::class, 'createRole']);
+    Route::resource('role-management', RoleManagementController::class);
+    Route::put('role-management/archived-role-management/{id}', [RoleManagementController::class, 'archived']);
+    Route::get('search/role-management', [RoleManagementController::class, 'search']);
+
     //SETUP//
     Route::post('setup/module', [SetupController::class, 'createModule']);
     Route::get('setup/get-modules', [SetupController::class, 'getModule']);
     Route::put('setup/get-modules/archived-modules/{id}', [SetupController::class, 'archived']);
     Route::get('setup/getById/{id}', [SetupController::class, 'getModuleId']);
-    Route::put('setup/update-modules/{id}',  [SetupController::class, 'updateModule']);
+    Route::put('setup/update-modules/{id}', [SetupController::class, 'updateModule']);
 
     //COMPANY//
     Route::resource('company', CompanyController::class);
@@ -196,7 +199,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //APPROVER SETTING//
     Route::resource('approver-setting', ApproverSettingController::class);
+    Route::get('setup-approver', [ApproverSettingController::class, 'approverSetting']);
     Route::get('requester-view', [ApproverSettingController::class, 'requesterView']);
+    Route::patch('approver-setting/archived-approver-setting/{id}', [ApproverSettingController::class, 'archived']);
+    //ASSIGNING APPROVER//
 });
 
 

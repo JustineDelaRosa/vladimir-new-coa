@@ -25,12 +25,13 @@ class LocationController extends Controller
                 'sync_id' => $loc->sync_id,
                 'location_code' => $loc->location_code,
                 'location_name' => $loc->location_name,
-                'departments' => $loc->departments->isEmpty() ? '-' : $loc->departments->map(function ($departments) {
+                'departments' => $loc->departments->map(function ($departments) {
                     return [
                         'department_id' => $departments->id ?? '-',
                         'department_sync_id' => $departments->sync_id ?? '-',
                         'department_code' => $departments->department_code ?? '-',
                         'department_name' => $departments->department_name ?? '-',
+                        'department_status' => $departments->is_active ?? '-',
                     ];
                 }),
                 'is_active' => $loc->is_active,
@@ -207,12 +208,13 @@ class LocationController extends Controller
                 'sync_id' => $location->sync_id,
                 'location_code' => $location->location_code,
                 'location_name' => $location->location_name,
-                'departments' => $location->departments->isEmpty() ? '-' : $location->departments->map(function ($departments) {
+                'departments' => $location->departments->map(function ($departments) {
                     return [
                         'department_id' => $departments->id ?? '-',
                         'department_sync_id' => $departments->sync_id ?? '-',
                         'department_code' => $departments->department_code ?? '-',
                         'department_name' => $departments->department_name ?? '-',
+                        'department_status' => $departments->is_active ?? '-',
                     ];
                 }),
                 'is_active' => $location->is_active,

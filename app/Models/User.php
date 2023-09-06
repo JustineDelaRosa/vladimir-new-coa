@@ -70,8 +70,8 @@ class User extends Authenticatable
         return $this->hasMany(UserApprover::class, 'requester_id', 'id');
     }
 
-    public function approver(){
-        return $this->hasMany(UserApprover::class, 'requester_id', 'id');
+    public function approvers(){
+        return $this->hasMany(Approvers::class, 'approver_id', 'id');
     }
 
 //    public function requestor(){

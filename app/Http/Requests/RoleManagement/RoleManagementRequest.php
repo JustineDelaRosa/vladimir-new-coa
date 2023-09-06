@@ -24,14 +24,14 @@ class RoleManagementRequest extends FormRequest
      */
     public function rules()
     {
-        if ($this->isMethod('post')) {
+        $masterlist_arr = [
+            'company', 'department', 'location', 'account-title', 'division', 'type-of-request', 'capex', 'category', 'status-category'
+        ];
+        $user_management_arr = [
+            'user-accounts', 'role-management'
+        ];
 
-            $masterlist_arr = [
-                'company', 'department', 'location', 'account-title', 'division', 'type-of-request', 'capex', 'category', 'status-category'
-            ];
-            $user_management_arr = [
-                'user-accounts', 'role-management'
-            ];
+        if ($this->isMethod('post')) {
 
             return [
                 'role_name' => 'required|unique:role_management,role_name',
@@ -40,14 +40,14 @@ class RoleManagementRequest extends FormRequest
                     if (in_array('masterlist', $value)) {
                         $masterlist = array_intersect($masterlist_arr, $value);
                         if (count($masterlist) == 0) {
-                            $fail('Atleast one of the masterlist should be selected');
+                            $fail('Please select at least one item from the masterlist.');
                         }
                     }
                     //check the array if it has user-management in it then atleast one of the user-management should be selected
                     if (in_array('user-management', $value)) {
                         $user_management = array_intersect($user_management_arr, $value);
                         if (count($user_management) == 0) {
-                            $fail('Atleast one of the user management should be selected');
+                            $fail('Please select at least one item from the user management');
                         }
                     }
                 }]
@@ -59,7 +59,22 @@ class RoleManagementRequest extends FormRequest
             return [
                 // 'major_category_id' => 'exists:major_categories,id,deleted_at,NULL',
                 'role_name' => ['required', Rule::unique('role_management', 'role_name')->ignore($id)],
-                'access_permission' => 'required|array'
+                'access_permission' => ['required', 'array', function ($attribute, $value, $fail) use ($masterlist_arr, $user_management_arr) {
+                    //check the array if it has masterlist in it then atleast one of the masterlist should be selected
+                    if (in_array('masterlist', $value)) {
+                        $masterlist = array_intersect($masterlist_arr, $value);
+                        if (count($masterlist) == 0) {
+                            $fail('Please select at least one item from the masterlist.');
+                        }
+                    }
+                    //check the array if it has user-management in it then atleast one of the user-management should be selected
+                    if (in_array('user-management', $value)) {
+                        $user_management = array_intersect($user_management_arr, $value);
+                        if (count($user_management) == 0) {
+                            $fail('Please select at least one item from the user management');
+                        }
+                    }
+                }]
 
             ];
         }

@@ -55,12 +55,13 @@ class DepartmentController extends Controller
                     'company_code' => $departments->company->company_code ?? "-",
                     'company_name' => $departments->company->company_name ?? "-",
                 ],
-                'locations' => $departments->location->isEmpty() ? '-' : $departments->location->map(function ($locations) {
+                'locations' => $departments->location->map(function ($locations) {
                     return [
                         'location_id' => $locations->id ?? "-",
                         'location_sync_id' => $locations->sync_id ?? "-",
                         'location_code' => $locations->location_code ?? "-",
                         'location_name' => $locations->location_name ?? "-",
+                        'location_status' => $locations->is_active ?? '-',
                     ];
                 }),
 
@@ -227,12 +228,13 @@ class DepartmentController extends Controller
                     'company_code' => $department->company->company_code ?? "-",
                     'company_name' => $department->company->company_name ?? "-",
                 ],
-                'locations' => $department->location->isEmpty() ? '-' : $department->location->map(function ($locations) {
+                'locations' => $department->location->map(function ($locations) {
                     return [
                         'location_id' => $locations->id ?? "-",
                         'location_sync_id' => $locations->sync_id ?? "-",
                         'location_code' => $locations->location_code ?? "-",
                         'location_name' => $locations->location_name ?? "-",
+                        'location_status' => $locations->is_active ?? '-',
                     ];
                 }),
                 'division' => [
