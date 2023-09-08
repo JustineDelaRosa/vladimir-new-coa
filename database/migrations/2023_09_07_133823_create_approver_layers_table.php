@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateUserApproversTable extends Migration
+class CreateApproverLayersTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,16 +13,17 @@ class CreateUserApproversTable extends Migration
      */
     public function up()
     {
-        Schema::create('user_approvers', function (Blueprint $table) {
+        Schema::create('approver_layers', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('requester_id');
             $table->unsignedInteger('approver_id');
-            $table->boolean('is_active')->default(true);
-            $table->softDeletes();
+            $table->Integer('layer')->default(1);
+//            $table->boolean('is_active')->default(true);
+//            $table->softDeletes();
             $table->timestamps();
 
             $table->foreign('requester_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('approver_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('approver_id')->references('id')->on('approvers')->onDelete('cascade');
         });
     }
 
@@ -33,6 +34,6 @@ class CreateUserApproversTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('user_approvers');
+        Schema::dropIfExists('approver_layers');
     }
 }

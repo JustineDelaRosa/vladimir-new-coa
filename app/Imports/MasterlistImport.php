@@ -73,7 +73,7 @@ class MasterlistImport extends DefaultValueBinder implements
     public function bindValue(Cell $cell, $value): bool
     {
 
-        if ($cell->getColumn() == 'V') {
+        if ($cell->getColumn() == 'W') {
             $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y-m-d'), DataType::TYPE_STRING);
             return true;
         }
@@ -213,6 +213,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'major_category_id' => $majorCategoryId,
             'minor_category_id' => $minorCategoryId,
             'voucher' => ucwords(strtolower($collection['voucher'])),
+            'voucher_date' => $collection['voucher_date'],
             //check for unnecessary spaces and trim them to one space only
             'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
             'quantity' => $collection['quantity'],
@@ -230,6 +231,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'location_id' => Location::where('location_code', $collection['location_code'])->first()->id,
             'account_id' => AccountTitle::where('account_title_code', $collection['account_code'])->first()->id,
         ]);
+//        dd($formula->fixedAsset());
     }
 
 
@@ -385,22 +387,65 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
 
             }],
+
             '*.voucher' => ['required', function ($attribute, $value, $fail) {
-                if ($value == '-') {
-//                    $fail('Voucher is required');
-                    return;
-                }
-                $voucher = FixedAsset::where('voucher', $value)->first();
-                //check the created_at if it is the same date with the uploaded date of the voucher if it is the same then it will pass the validation
-                if ($voucher) {
-                    $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
-                    $current_date = Carbon::now()->format('Y-m-d');
-                    if ($uploaded_date != $current_date) {
-                        $fail('Voucher previously uploaded.');
-                    }
-                }
+//                if ($value == '-') {
+////                    $fail('Voucher is required');
+//                }
+//                $voucher = FixedAsset::where('voucher', $value)->first();
+//                //check the created_at if it is the same date with the uploaded date of the voucher if it is the same then it will pass the validation
+//                if ($voucher) {
+//                    $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
+//                    $current_date = Carbon::now()->format('Y-m-d');
+//                    if ($uploaded_date != $current_date) {
+//                        $fail('Voucher previously uploaded.');
+//                    }
+//                }
 
             }],
+            '*.voucher_date' => [
+                'required',
+                function ($attribute, $value, $fail) use ($collections) {
+
+                    //verify if the value is eight digits and if it is a date ex. 20200101
+
+                    if (strlen($value) != 8) {
+                        $fail('Voucher date is invalid');
+                    }
+                    //validate if valid date ex. 20204040
+                    if (!checkdate(substr($value, 4, 2), substr($value, 6, 2), substr($value, 0, 4))) {
+                        $fail('Voucher date is invalid');
+                    }
+
+
+                    // Get the current index in the collections array
+                    $currentIndex = array_search($attribute, array_keys($collections->toArray()));
+
+                    // Get the current voucher details
+                    $currentVoucher = $collections[$currentIndex]['voucher'];
+                    $currentVoucherDate = Carbon::parse($collections[$currentIndex]['voucher_date'])->format('Y-m-d');
+
+                    // Internal loop to check among uploaded collection for duplicate vouchers
+                    foreach ($collections as $index => $collection) {
+                        if ($currentVoucher == $collection['voucher'] && $index != $currentIndex) {
+                            $existingVoucherDate = Carbon::parse($collection['voucher_date'])->format('Y-m-d');
+                            if ($existingVoucherDate != $currentVoucherDate) {
+                                $fail('There is a duplicate voucher with a different voucher date on the uploaded list itself.');
+                                return; // Return to stop further execution
+                            }
+                        }
+                    }
+
+                    // External loop to check within the database for duplicate vouchers
+                    $matchingAssets = FixedAsset::where('voucher', $currentVoucher)->get();
+                    foreach ($matchingAssets as $asset) {
+                        $assetVoucherDate = Carbon::parse($asset->voucher_date)->format('Y-m-d');
+                        if ($assetVoucherDate != $currentVoucherDate) {
+                            $fail('There is a duplicate voucher with a different voucher date in the database.');
+                        }
+                    }
+                }
+            ],
             '*.receipt' => ['required', function ($attribute, $value, $fail) {
 //                if ($value == '-') {
 //                    $fail('Receipt is required');
@@ -439,11 +484,15 @@ class MasterlistImport extends DefaultValueBinder implements
             ],
             '*.depreciation_status' => [
                 'required',
-                Rule::exists('depreciation_statuses', 'depreciation_status_name')->whereNull('deleted_at'),
+                'exists:depreciation_statuses,depreciation_status_name,deleted_at,NULL',
                 function ($attribute, $value, $fail) use ($collections) {
                     $index = array_search($attribute, array_keys($collections->toArray()));
                     //allow only fully depreciated and running depreciation
                     $depreciation = DepreciationStatus::where('depreciation_status_name', $value)->first();
+                    if (!$depreciation) {
+                        $fail('Invalid depreciation status');
+                        return;
+                    }
                     if ($depreciation->depreciation_status_name != 'Fully Depreciated' && $depreciation->depreciation_status_name != 'Running Depreciation') {
                         $fail('Invalid depreciation status');
                     }
@@ -476,7 +525,7 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Remaining book value must not be negative');
                 }
             }],
-            '*.start_depreciation' => ['required', function($attribute, $value, $fail) {
+            '*.start_depreciation' => ['required', function ($attribute, $value, $fail) {
                 $this->calculationRepository->validationForDate($attribute, $value, $fail);
             }],
             '*.company_code' => ['required', 'exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {

@@ -82,14 +82,14 @@ class AdditionalCostRequest extends FormRequest
 ////                            $fail('Voucher is required');
 //                            return;
 //                        }
-                        $voucher = FixedAsset::where('voucher', $value)->first();
-                        if ($voucher) {
-                            $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
-                            $current_date = Carbon::now()->format('Y-m-d');
-                            if ($uploaded_date != $current_date) {
-                                $fail("Voucher previously uploaded.");
-                            }
-                        }
+//                        $voucher = FixedAsset::where('voucher', $value)->first();
+//                        if ($voucher) {
+//                            $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
+//                            $current_date = Carbon::now()->format('Y-m-d');
+//                            if ($uploaded_date != $current_date) {
+//                                $fail("Voucher previously uploaded.");
+//                            }
+//                        }
                     }
                 }],
                 'receipt' => 'nullable',
@@ -301,14 +301,14 @@ class AdditionalCostRequest extends FormRequest
 ////                            $fail('Voucher is required');
 //                        return;
 //                    }
-                    $voucher = FixedAsset::where('voucher', $value)->first();
-                    if ($voucher) {
-                        $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
-                        $current_date = Carbon::now()->format('Y-m-d');
-                        if ($uploaded_date != $current_date) {
-                            $fail("Voucher previously uploaded.");
-                        }
-                    }
+//                    $voucher = FixedAsset::where('voucher', $value)->first();
+//                    if ($voucher) {
+//                        $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
+//                        $current_date = Carbon::now()->format('Y-m-d');
+//                        if ($uploaded_date != $current_date) {
+//                            $fail("Voucher previously uploaded.");
+//                        }
+//                    }
                 }
             }],
             'receipt' => 'nullable',

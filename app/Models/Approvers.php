@@ -16,4 +16,9 @@ class Approvers extends Model
     {
         return $this->belongsTo(User::class, 'approver_id');
     }
+
+    public function userApprover()
+    {
+        return $this->hasMany(UserApprover::class, 'approver_id');
+    }
 }

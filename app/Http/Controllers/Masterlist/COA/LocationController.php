@@ -16,6 +16,14 @@ class LocationController extends Controller
      */
     public function index()
     {
+//        $location = Location::with('departments')->where('is_active', 1)->get();
+////        return $location;
+//        return response()->json([
+//            'message' => 'Fixed Assets retrieved successfully.',
+//            'data' => $location
+//        ], 200);
+
+
         $results = [];
         $location = Location::with('departments')->where('is_active', 1)->get();
 
@@ -27,8 +35,8 @@ class LocationController extends Controller
                 'location_name' => $loc->location_name,
                 'departments' => $loc->departments->map(function ($departments) {
                     return [
-                        'department_id' => $departments->id ?? '-',
-                        'department_sync_id' => $departments->sync_id ?? '-',
+                        'id' => $departments->id ?? '-',
+                        'sync_id' => $departments->sync_id ?? '-',
                         'department_code' => $departments->department_code ?? '-',
                         'department_name' => $departments->department_name ?? '-',
                         'department_status' => $departments->is_active ?? '-',
@@ -42,7 +50,7 @@ class LocationController extends Controller
 //        return
 
         return response()->json([
-            'message' => 'Fixed Assets retrieved successfully.',
+            'message' => 'Location retrieved successfully.',
             'data' => $results
         ], 200);
     }
@@ -210,8 +218,8 @@ class LocationController extends Controller
                 'location_name' => $location->location_name,
                 'departments' => $location->departments->map(function ($departments) {
                     return [
-                        'department_id' => $departments->id ?? '-',
-                        'department_sync_id' => $departments->sync_id ?? '-',
+                        'id' => $departments->id ?? '-',
+                        'sync_id' => $departments->sync_id ?? '-',
                         'department_code' => $departments->department_code ?? '-',
                         'department_name' => $departments->department_name ?? '-',
                         'department_status' => $departments->is_active ?? '-',

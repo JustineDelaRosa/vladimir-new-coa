@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApproverSettingController;
+use App\Http\Controllers\AssigningApproverController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CategoryListController;
 use App\Http\Controllers\Masterlist\AdditionalCostController;
@@ -200,9 +201,12 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //APPROVER SETTING//
     Route::resource('approver-setting', ApproverSettingController::class);
     Route::get('setup-approver', [ApproverSettingController::class, 'approverSetting']);
-    Route::get('requester-view', [ApproverSettingController::class, 'requesterView']);
     Route::patch('approver-setting/archived-approver-setting/{id}', [ApproverSettingController::class, 'archived']);
+
     //ASSIGNING APPROVER//
+    Route::resource('assigning-approver', AssigningApproverController::class);
+    Route::get('requester-view', [AssigningApproverController::class, 'requesterView']);
+    Route::put('arrange-layer/{id}',[AssigningApproverController::class, 'arrangeLayer']);
 });
 
 

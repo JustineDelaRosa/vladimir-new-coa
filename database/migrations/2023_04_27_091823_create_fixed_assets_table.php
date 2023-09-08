@@ -34,6 +34,7 @@ class CreateFixedAssetsTable extends Migration
             $table->unsignedInteger('major_category_id');
             $table->unsignedInteger('minor_category_id');
             $table->string('voucher');
+            $table->date('voucher_date')->nullable();
             $table->string('receipt');
             $table->string('quantity');
             $table->string('depreciation_method');

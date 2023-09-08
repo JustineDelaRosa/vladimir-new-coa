@@ -193,7 +193,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             '*.accountability' => 'required',
             '*.accountable' => ['required_if:*.accountability,Personal Issued',
                 function ($attribute, $value, $fail) use ($collections) {
-                    $index = array_search($attribute, array_keys($collections));
+                    $index = array_search($attribute, array_keys($collections->toArray()));
                     $accountability = $collections[$index]['accountability'];
                     if ($accountability == 'Common') {
                         if ($value != '-') {
@@ -298,6 +298,10 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     $index = array_search($attribute, array_keys($collections));
                     //allow only fully depreciated and running depreciation
                     $depreciation = DepreciationStatus::where('depreciation_status_name', $value)->first();
+                    if (!$depreciation) {
+                        $fail('Invalid depreciation status');
+                        return;
+                    }
                     if ($depreciation->depreciation_status_name != 'Fully Depreciated' && $depreciation->depreciation_status_name != 'Running Depreciation') {
                         $fail('Invalid depreciation status');
                     }
@@ -346,7 +350,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
                 }
             }],
             '*.department_code' => ['required', 'exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
-                $index = array_search($attribute, array_keys($collections->toArray()));
+                $index = array_search($attribute, array_keys($collections));
                 $department_name = $collections[$index]['department'];
                 $department = Department::query()
                     ->where('department_code', $value)

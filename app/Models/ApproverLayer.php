@@ -4,9 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
-class UserApprover extends Model
+class ApproverLayer extends Model
 {
     use HasFactory;
     protected $guarded = [];
@@ -18,7 +17,6 @@ class UserApprover extends Model
 
     public function approver()
     {
-        return $this->belongsTo(User::class, 'approver_id');
+        return $this->belongsTo(Approvers::class, 'approver_id');
     }
-
 }

@@ -123,7 +123,11 @@ class CalculationRepository
 //        }
         //if the $newAttribute is then add this validation
         if ($newAttribute == 'end depreciation') {
-            $index = array_search($attribute, array_keys($collections->toArray()));
+            if (!is_array($collections)) {
+                $collections = $collections->toArray();
+            }
+
+            $index = array_search($attribute, array_keys($collections));
             $depreciation_status_name = $collections[$index]['depreciation_status'];
             $depreciation_status = DepreciationStatus::where('depreciation_status_name', $depreciation_status_name)->first();
             if ($depreciation_status->depreciation_status_name == 'Fully Depreciated') {
