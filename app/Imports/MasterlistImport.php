@@ -406,44 +406,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.voucher_date' => [
                 'required',
                 function ($attribute, $value, $fail) use ($collections) {
-
-                    //verify if the value is eight digits and if it is a date ex. 20200101
-
-                    if (strlen($value) != 8) {
-                        $fail('Voucher date is invalid');
-                    }
-                    //validate if valid date ex. 20204040
-                    if (!checkdate(substr($value, 4, 2), substr($value, 6, 2), substr($value, 0, 4))) {
-                        $fail('Voucher date is invalid');
-                    }
-
-
-                    // Get the current index in the collections array
-                    $currentIndex = array_search($attribute, array_keys($collections->toArray()));
-
-                    // Get the current voucher details
-                    $currentVoucher = $collections[$currentIndex]['voucher'];
-                    $currentVoucherDate = Carbon::parse($collections[$currentIndex]['voucher_date'])->format('Y-m-d');
-
-                    // Internal loop to check among uploaded collection for duplicate vouchers
-                    foreach ($collections as $index => $collection) {
-                        if ($currentVoucher == $collection['voucher'] && $index != $currentIndex) {
-                            $existingVoucherDate = Carbon::parse($collection['voucher_date'])->format('Y-m-d');
-                            if ($existingVoucherDate != $currentVoucherDate) {
-                                $fail('There is a duplicate voucher with a different voucher date on the uploaded list itself.');
-                                return; // Return to stop further execution
-                            }
-                        }
-                    }
-
-                    // External loop to check within the database for duplicate vouchers
-                    $matchingAssets = FixedAsset::where('voucher', $currentVoucher)->get();
-                    foreach ($matchingAssets as $asset) {
-                        $assetVoucherDate = Carbon::parse($asset->voucher_date)->format('Y-m-d');
-                        if ($assetVoucherDate != $currentVoucherDate) {
-                            $fail('There is a duplicate voucher with a different voucher date in the database.');
-                        }
-                    }
+                    $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
                 }
             ],
             '*.receipt' => ['required', function ($attribute, $value, $fail) {

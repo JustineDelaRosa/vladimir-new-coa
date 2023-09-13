@@ -62,7 +62,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
     public function bindValue(Cell $cell, $value): bool
     {
 
-        if ($cell->getColumn() == 'Q') {
+        if ($cell->getColumn() == 'R') {
             $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y-m-d'), DataType::TYPE_STRING);
             return true;
         }
@@ -161,6 +161,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             'major_category_id' => $majorCategoryId,
             'minor_category_id' => $minorCategoryId,
             'voucher' => ucwords(strtolower($collection['voucher'])),
+            'voucher_date' => $collection['voucher_date'],
             //check for unnecessary spaces and trim them to one space only
             'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
             'quantity' => $collection['quantity'],
@@ -193,7 +194,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             '*.accountability' => 'required',
             '*.accountable' => ['required_if:*.accountability,Personal Issued',
                 function ($attribute, $value, $fail) use ($collections) {
-                    $index = array_search($attribute, array_keys($collections->toArray()));
+                    $index = array_search($attribute, array_keys($collections));
                     $accountability = $collections[$index]['accountability'];
                     if ($accountability == 'Common') {
                         if ($value != '-') {
@@ -244,22 +245,30 @@ class AdditionalCostImport extends DefaultValueBinder implements
 
             }],
 
-            '*.voucher' => ['required', function ($attribute, $value, $fail) {
-                if ($value == '-') {
-//                    $fail('Voucher is required');
-                    return;
+            '*.voucher' => ['required',
+//                function ($attribute, $value, $fail) {
+//                    if ($value == '-') {
+////                    $fail('Voucher is required');
+//                        return;
+//                    }
+//                    $voucher = FixedAsset::where('voucher', $value)->first();
+//                    //check the created_at if it is the same date with the uploaded date of the voucher if it is the same then it will pass the validation
+//                    if ($voucher) {
+//                        $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
+//                        $current_date = Carbon::now()->format('Y-m-d');
+//                        if ($uploaded_date != $current_date) {
+//                            $fail('Voucher previously uploaded.');
+//                        }
+//                    }
+//
+//                }
+            ],
+            '*.voucher_date' => [
+                'required',
+                function ($attribute, $value, $fail) use ($collections) {
+                    $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
                 }
-                $voucher = FixedAsset::where('voucher', $value)->first();
-                //check the created_at if it is the same date with the uploaded date of the voucher if it is the same then it will pass the validation
-                if ($voucher) {
-                    $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
-                    $current_date = Carbon::now()->format('Y-m-d');
-                    if ($uploaded_date != $current_date) {
-                        $fail('Voucher previously uploaded.');
-                    }
-                }
-
-            }],
+            ],
             '*.receipt' => 'required',
             '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required|in:STL,One Time',
@@ -334,7 +343,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     $fail('Remaining book value must not be negative');
                 }
             }],
-            '*.start_depreciation' => ['required', function($attribute, $value, $fail) {
+            '*.start_depreciation' => ['required', function ($attribute, $value, $fail) {
                 $this->calculationRepository->validationForDate($attribute, $value, $fail);
             }],
             '*.company_code' => ['required', 'exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {

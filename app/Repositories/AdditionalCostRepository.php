@@ -83,6 +83,7 @@ class AdditionalCostRepository
             'major_category_id' => $request['major_category_id'],
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
+            'voucher_date' => $request['voucher_date'],
             'receipt' => $request['receipt'] ?? '-',
             'quantity' => $request['quantity'],
             'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
@@ -140,6 +141,7 @@ class AdditionalCostRepository
             'major_category_id' => $request['major_category_id'],
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
+            'voucher_date' => $request['voucher_date'],
             'receipt' => $request['receipt'] ?? '-',
             'quantity' => $request['quantity'],
             'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
@@ -246,6 +248,7 @@ class AdditionalCostRepository
             ],
             'est_useful_life' => $additional_cost->majorCategory->est_useful_life ?? '-',
             'voucher' => $additional_cost->voucher,
+            'voucher_date' => $additional_cost->voucher_date,
             'receipt' => $additional_cost->receipt,
             'quantity' => $additional_cost->quantity,
             'depreciation_method' => $additional_cost->depreciation_method,
@@ -344,6 +347,7 @@ class AdditionalCostRepository
                 ],
                 'est_useful_life' => $additional_cost->fixedAsset->majorCategory->est_useful_life ?? '-',
                 'voucher' => $additional_cost->fixedAsset->voucher,
+                'voucher_date' => $additional_cost->fixedAsset->voucher_date,
                 'receipt' => $additional_cost->fixedAsset->receipt,
                 'quantity' => $additional_cost->fixedAsset->quantity,
                 'depreciation_method' => $additional_cost->fixedAsset->depreciation_method,

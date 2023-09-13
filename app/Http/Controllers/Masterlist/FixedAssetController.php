@@ -78,6 +78,7 @@ class FixedAssetController extends Controller
                 422
             );
         }
+
         $departmentQuery = Department::with('location')->where('id', $request->department_id)->first();
         $fixedAsset = $this->fixedAssetRepository->storeFixedAsset($request->all(), $vladimirTagNumber, $departmentQuery);
         if ($fixedAsset == "Not yet fully depreciated") {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\FixedAsset;
 
+use App\Models\AdditionalCost;
 use App\Models\Department;
 use App\Models\FixedAsset;
 use App\Models\Location;
@@ -130,6 +131,29 @@ class FixedAssetUpdateRequest extends FormRequest
                 }
 
             }],
+            'voucher_date' => [function ($attribute, $value, $fail) {
+                //if the depreciation status is running depreciation and fully depreciated required voucher
+                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+                    //get the value of the voucher
+                    if ($value == null) {
+                        $fail('Voucher date is required');
+                        return;
+                    }
+
+                    $voucher = request()->voucher;
+
+                    $fa_voucher_date = FixedAsset::where('voucher', $voucher)->first()->voucher_date ?? null;
+                    $ac_voucher_date = AdditionalCost::where('voucher', $voucher)->first()->voucher_date ?? null;
+
+                    if (isset($fa_voucher_date) && ($fa_voucher_date != $value)) {
+                        $fail('Same voucher with different date found');
+                    }
+                    if(isset($ac_voucher_date) && ($ac_voucher_date != $value)) {
+                        $fail('Same voucher with different date found');
+                    }
+                }
+            }],
             'receipt' => ['nullable', function ($attribute, $value, $fail) {
                 //if the depreciation status is running depreciation and fully depreciated required voucher
                 $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
@@ -172,6 +196,12 @@ class FixedAssetUpdateRequest extends FormRequest
                 }
             }],
             'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
+                if ($value < 0) {
+                    $fail('Invalid scrap value');
+                }
+                if ($value > request()->acquisition_cost) {
+                    $fail('Must not be greater than acquisition cost');
+                }
                 if (request()->depreciation_method == 'Supplier\'s Rebase') {
                     if ($value != 0) {
                         $fail('Scrap value should be 0');

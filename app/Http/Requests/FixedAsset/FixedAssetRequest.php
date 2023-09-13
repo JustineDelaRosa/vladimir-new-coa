@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\FixedAsset;
 
+use App\Models\AdditionalCost;
 use App\Models\Capex;
 use App\Models\Department;
 use App\Models\FixedAsset;
@@ -116,6 +117,29 @@ class FixedAssetRequest extends FormRequest
                     }
 
                 }],
+                'voucher_date' => [function ($attribute, $value, $fail) {
+                    //if the depreciation status is running depreciation and fully depreciated required voucher
+                    $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                    if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+                        //get the value of the voucher
+                        if ($value == null) {
+                            $fail('Voucher date is required');
+                            return;
+                        }
+
+                        $voucher = request()->voucher;
+
+                        $fa_voucher_date = FixedAsset::where('voucher', $voucher)->first()->voucher_date ?? null;
+                        $ac_voucher_date = AdditionalCost::where('voucher', $voucher)->first()->voucher_date ?? null;
+
+                        if (isset($fa_voucher_date) && ($fa_voucher_date != $value)) {
+                            $fail('Same voucher with different date found');
+                        }
+                        if(isset($ac_voucher_date) && ($ac_voucher_date != $value)) {
+                            $fail('Same voucher with different date found');
+                        }
+                    }
+                }],
                 'receipt' => ['nullable', function ($attribute, $value, $fail) {
                     //if the depreciation status is running depreciation and fully depreciated required voucher
                     $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
@@ -160,6 +184,13 @@ class FixedAssetRequest extends FormRequest
 
                 }],
                 'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
+                //check if the value is less than 0
+                    if ($value < 0) {
+                        $fail('Invalid scrap value');
+                    }
+                    if ($value > request()->acquisition_cost) {
+                        $fail('Must not be greater than acquisition cost');
+                    }
                     if (request()->depreciation_method == 'Supplier\'s Rebase') {
                         if ($value != 0) {
                             $fail('Scrap value should be 0');
@@ -339,6 +370,29 @@ class FixedAssetRequest extends FormRequest
 //                        }
                     }
                 }],
+                'voucher_date' => [function ($attribute, $value, $fail) {
+                    //if the depreciation status is running depreciation and fully depreciated required voucher
+                    $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                    if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+                        //get the value of the voucher
+                        if ($value == null) {
+                            $fail('Voucher date is required');
+                            return;
+                        }
+
+                        $voucher = request()->voucher;
+
+                        $fa_voucher_date = FixedAsset::where('voucher', $voucher)->first()->voucher_date ?? null;
+                        $ac_voucher_date = AdditionalCost::where('voucher', $voucher)->first()->voucher_date ?? null;
+
+                        if (isset($fa_voucher_date) && ($fa_voucher_date != $value)) {
+                            $fail('Same voucher with different date found');
+                        }
+                        if(isset($ac_voucher_date) && ($ac_voucher_date != $value)) {
+                            $fail('Same voucher with different date found');
+                        }
+                    }
+                }],
                 'receipt' => ['nullable', function ($attribute, $value, $fail) {
                     //if the depreciation status is running depreciation and fully depreciated required
                     $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
@@ -347,7 +401,6 @@ class FixedAssetRequest extends FormRequest
                             $fail('Receipt is required');
                         }
                     }
-
                 }],
                 'quantity' => 'required',
                 'asset_status_id' => 'required|exists:asset_statuses,id',
@@ -381,6 +434,12 @@ class FixedAssetRequest extends FormRequest
                     }
                 }],
                 'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
+                    if ($value < 0) {
+                        $fail('Invalid scrap value');
+                    }
+                    if ($value > request()->acquisition_cost) {
+                        $fail('Must not be greater than acquisition cost');
+                    }
                     if (request()->depreciation_method == 'Supplier\'s Rebase') {
                         if ($value != 0) {
                             $fail('Scrap value should be 0');
@@ -505,6 +564,7 @@ class FixedAssetRequest extends FormRequest
             'minor_category_id.required' => 'Minor category is required',
             'minor_category_id.exists' => 'Minor category does not exist',
             'voucher.required' => 'Voucher is required',
+            'voucher_date.date' => 'Voucher date must be a date',
             'receipt.required' => 'Receipt is required',
             'quantity.required' => 'Quantity is required',
             'depreciation_method.required' => 'Depreciation method is required',
