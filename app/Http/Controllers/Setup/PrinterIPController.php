@@ -19,6 +19,7 @@ class PrinterIPController extends Controller
         $search = $request->search;
         $status = $request->status;
         $limit = $request->limit;
+        $defaultLimit = 500;
 
         $printerIP = PrinterIP::where(function ($query) use ($search) {
             $query
@@ -30,6 +31,7 @@ class PrinterIPController extends Controller
             })
             ->orderBy("is_active", "desc")
             ->orderBy('created_at', 'desc');
+        $limit = is_numeric($limit) ? $limit : $defaultLimit;
         $printerIP = $limit ? $printerIP->paginate($limit) : $printerIP->get();
 
 

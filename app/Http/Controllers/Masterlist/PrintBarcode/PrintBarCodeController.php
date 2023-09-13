@@ -33,28 +33,12 @@ class PrintBarCodeController extends Controller
     {
         $tagNumber = $this->searchPrint($request);
         $clientIP = request()->ip();
-        //get computer name of the client do not include the domain name
-//        return $this->getClientName();
 
-
-//        //accept only the ip address with 10.10.x.x
-//        if (substr($clientIP, 0, 7) === "10.10.1") {
-//            // print the barcode
-//            return $this->print($tagNumber);
-//        } else {
-//            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
-//        }
-//        return $tagNumber;
-//        where('ip', $clientIP)->
         $printerIP = PrinterIP::where('ip', $clientIP)->first();
         if (!$printerIP || !$printerIP->is_active) {
             return response()->json(['message' => 'You are not allowed to print barcode'], 403);
         }
 
-        //check status on printerIP table
-//        if (!$printerIP->is_active) {
-//            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
-//        }
 
         if (!$tagNumber) {
             return response()->json(['message' => 'No data found'], 404);
@@ -62,17 +46,7 @@ class PrintBarCodeController extends Controller
 
 
         try {
-            //get the ip from active printerIP table in a database
-            //$printerIP = PrinterIP::where('is_active', true)->first()->ip;
-            // Initialize the WindowsPrintConnector with the COM port and baud rate
-            //$connector = new WindowsPrintConnector("COM1");
-            // $connector = new NetworkPrintConnector("10.10.10.11" , 8000);
-            //$connector = new WindowsPrintConnector("ZDesigner ZD230-203dpi ZPL");
-            //$printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
             $connector = new WindowsPrintConnector("smb://{$printerIP->ip}/ZDesigner ZD230-203dpi ZPL");
-            //check if the smb://10.10.10.11 is available
-            //$printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
-            //$connector = new FilePrintConnector($printer);
 
             // Create a new Printer object and assign the connector to it
             $printer = new Printer($connector);
@@ -136,7 +110,7 @@ class PrintBarCodeController extends Controller
                                 ^LL203
                                 ^LS0
                                 ^BY3,2,53^FT69,92^BEN,,Y,N
-                                ^FH\^" . $VDM['vladimir_tag_number'] . "^FS
+                                ^FH\^FD" . $VDM['vladimir_tag_number'] . "^FS
                                 ^FT210,34^A0N,17,18^FH\^CI28^FDPROPERTY RECORD^FS^CI27
                                 ^FO131,174^GFA,229,320,20,:Z64:eJxjYCAFWHybPKe48SyKmOakTyJOjq4CyGKWk5PnFDkeQxFTnJwk4nQwCUWvwuPkacWNh1DUkQd8nFxsnpzzPjyp+Jya8p1Pjresz/nkPPZLaDuR2Sjl5mVW2DnZmSuxI6dm8amc5+cqG+XK/OwCOycfPGPZVxP76F5K64nIRjE3L72PnZMOuHB2xPgaXQaaF9k8zblbbeacR4ePVPb5YLMXACYPQTo=:7CBE
                                 ^FT3,163^APN,20,6^FB403,1,4,C^FH\^FD" . $VDM['department_name'] . " - " . $VDM['location_name'] . "^FS
