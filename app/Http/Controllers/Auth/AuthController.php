@@ -16,7 +16,7 @@ class AuthController extends Controller
         $password = $request->password;
         $user = User::with('role')->where('username', $username)->first();
         if (!$user) {
-            return response()->json(['message' => 'Username does not Exists!'], 404);
+            return response()->json(['message' => 'The Username or Password is Incorrect!'], 404);
         }
         $pass_decrypt = Crypt::decryptString($user->password);
 
