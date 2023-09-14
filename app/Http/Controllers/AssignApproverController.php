@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\AssigningApprover\AssigningApproverRequest;
+use App\Http\Requests\AssignApprover\AssignApproverRequest;
 use App\Models\User;
 use App\Models\ApproverLayer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class AssigningApproverController extends Controller
+class AssignApproverController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -84,7 +84,7 @@ class AssigningApproverController extends Controller
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function store(AssigningApproverRequest $request)
+    public function store(AssignApproverRequest $request)
     {
         $requester_id = $request->requester_id;
         $approver_id = $request->approver_id;
@@ -141,7 +141,7 @@ class AssigningApproverController extends Controller
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function update(AssigningApproverRequest $request, $id)
+    public function update(AssignApproverRequest $request, $id)
     {
         $approver_id = $request->approver_id;
 
@@ -187,7 +187,7 @@ class AssigningApproverController extends Controller
     }
 
 
-    public function archived(AssigningApproverRequest $request, $id)
+    public function archived(AssignApproverRequest $request, $id)
     {
         $status = $request->status;
 

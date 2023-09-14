@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Requests\AssigningApprover;
+namespace App\Http\Requests\AssignApprover;
 
 use App\Models\Approvers;
 use App\Models\ApproverLayer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class AssigningApproverRequest extends FormRequest
+class AssignApproverRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
