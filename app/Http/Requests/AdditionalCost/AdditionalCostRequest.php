@@ -72,11 +72,11 @@ class AdditionalCostRequest extends FormRequest
                 'major_category_id' => 'required|exists:major_categories,id',
                 'minor_category_id' => 'required|exists:minor_categories,id',
                 'voucher' => [function ($attribute, $value, $fail) {
-                    if (!request()->depreciation_method == 'Supplier\'s Rebase') {
+                    if (request()->depreciation_method != 'Supplier Rebase') {
                         //if the depreciation status is running depreciation and fully depreciated required voucher
                         $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
                         if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
-                            if ($value == null || $value == '-') {
+                            if (in_array($value, [null, '-'])) {
                                 $fail('Voucher is required');
                                 return;
                             }
@@ -96,12 +96,12 @@ class AdditionalCostRequest extends FormRequest
                     }
                 }],
                 'voucher_date' => [function ($attribute, $value, $fail) {
-                    if (!request()->depreciation_method == 'Supplier\'s Rebase') {
+                    if (request()->depreciation_method != 'Supplier Rebase') {
                         //if the depreciation status is running depreciation and fully depreciated required voucher
                         $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
                         if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
                             //get the value of the voucher
-                            if ($value == null) {
+                            if (in_array($value, [null, '-'])) {
                                 $fail('Voucher date is required');
                                 return;
                             }
@@ -131,7 +131,7 @@ class AdditionalCostRequest extends FormRequest
                 //acquisition cost should not be less than or equal to 0
                 'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
 
-                    if (request()->depreciation_method == 'Supplier\'s Rebase') {
+                    if (request()->depreciation_method == 'Supplier Rebase') {
                         if ($value != 0) {
                             $fail('Acquisition cost should be 0');
                         }
@@ -148,14 +148,14 @@ class AdditionalCostRequest extends FormRequest
                     if ($value > request()->acquisition_cost) {
                         $fail('Must not be greater than acquisition cost');
                     }
-                    if (request()->depreciation_method == 'Supplier\'s Rebase') {
+                    if (request()->depreciation_method == 'Supplier Rebase') {
                         if ($value != 0) {
                             $fail('Scrap value should be 0');
                         }
                     }
                 }],
                 'depreciable_basis' => ['required', 'numeric', function ($attribute, $value, $fail) {
-                    if (request()->depreciation_method == 'Supplier\'s Rebase') {
+                    if (request()->depreciation_method == 'Supplier Rebase') {
                         if ($value != 0) {
                             $fail('Depreciable basis should be 0');
                         }
@@ -168,8 +168,8 @@ class AdditionalCostRequest extends FormRequest
                 'care_of' => 'nullable',
                 'months_depreciated' => ['required', 'numeric', function ($attribute, $value, $fail) {
 
-                    //    if depreciation method is Supplier\'s Rebase, and no more months depreciated acquisition cost, scrap value and depreciable basis
-                    if (request()->depreciation_method == 'Supplier\'s Rebase') {
+                    //    if depreciation method is Supplier Rebase, and no more months depreciated acquisition cost, scrap value and depreciable basis
+                    if (request()->depreciation_method == 'Supplier Rebase') {
                         if ($value != 0) {
                             $fail('Months depreciated should be 0');
                         }
@@ -325,12 +325,12 @@ class AdditionalCostRequest extends FormRequest
             'major_category_id' => 'required|exists:major_categories,id',
             'minor_category_id' => 'required|exists:minor_categories,id',
             'voucher' => [function ($attribute, $value, $fail) {
-                if (!request()->depreciation_method == 'Supplier\'s Rebase') {
+                if (request()->depreciation_method != 'Supplier Rebase') {
                     //if the depreciation status is running depreciation and fully depreciated required voucher
                     $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
                     if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
 
-                        if ($value == null || $value == '-') {
+                        if (in_array($value, [null, '-'])) {
                             $fail('Voucher is required');
                             return;
                         }
@@ -350,12 +350,12 @@ class AdditionalCostRequest extends FormRequest
                 }
             }],
             'voucher_date' => [function ($attribute, $value, $fail) {
-                if (!request()->depreciation_method == 'Supplier\'s Rebase') {
+                if (request()->depreciation_method != 'Supplier Rebase') {
                     //if the depreciation status is running depreciation and fully depreciated required voucher
                     $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
                     if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
                         //get the value of the voucher
-                        if ($value == null) {
+                        if (in_array($value, [null, '-'])) {
                             $fail('Voucher date is required');
                             return;
                         }
@@ -384,7 +384,7 @@ class AdditionalCostRequest extends FormRequest
             'acquisition_date' => ['required', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],
             //acquisition cost should not be less than or equal to 0
             'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
-                if (request()->depreciation_method == 'Supplier\'s Rebase') {
+                if (request()->depreciation_method == 'Supplier Rebase') {
                     if ($value != 0) {
                         $fail('Acquisition cost should be 0');
                     }
@@ -400,14 +400,14 @@ class AdditionalCostRequest extends FormRequest
                 if ($value > request()->acquisition_cost) {
                     $fail('Must not be greater than acquisition cost');
                 }
-                if (request()->depreciation_method == 'Supplier\'s Rebase') {
+                if (request()->depreciation_method == 'Supplier Rebase') {
                     if ($value != 0) {
                         $fail('Scrap value should be 0');
                     }
                 }
             }],
             'depreciable_basis' => ['required', 'numeric', function ($attribute, $value, $fail) {
-                if (request()->depreciation_method == 'Supplier\'s Rebase') {
+                if (request()->depreciation_method == 'Supplier Rebase') {
                     if ($value != 0) {
                         $fail('Depreciable basis should be 0');
                     }
@@ -420,8 +420,8 @@ class AdditionalCostRequest extends FormRequest
             'care_of' => 'nullable',
             'months_depreciated' => ['required', 'numeric', function ($attribute, $value, $fail) {
 
-                //    if depreciation method is Supplier\'s Rebase, and no more months depreciated acquisition cost, scrap value and depreciable basis
-                if (request()->depreciation_method == 'Supplier\'s Rebase') {
+                //    if depreciation method is Supplier Rebase, and no more months depreciated acquisition cost, scrap value and depreciable basis
+                if (request()->depreciation_method == 'Supplier Rebase') {
                     if ($value != 0) {
                         $fail('Months depreciated should be 0');
                     }

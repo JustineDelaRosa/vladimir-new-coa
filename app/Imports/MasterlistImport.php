@@ -213,7 +213,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'major_category_id' => $majorCategoryId,
             'minor_category_id' => $minorCategoryId,
             'voucher' => ucwords(strtolower($collection['voucher'])),
-            'voucher_date' => $collection['voucher_date'],
+            'voucher_date' => $collection['voucher_date'] == '-' ? null : $collection['voucher_date'],
             //check for unnecessary spaces and trim them to one space only
             'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
             'quantity' => $collection['quantity'],
@@ -406,6 +406,15 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.voucher_date' => [
                 'required',
                 function ($attribute, $value, $fail) use ($collections) {
+                    $index = array_search($attribute, array_keys($collections->toArray()));
+                    $voucher = $collections[$index]['voucher'];
+                    if ($voucher == '-') {
+                        if ($value != '-') {
+                            $fail('Voucher date should be empty');
+                            return;
+                        }
+                        return;
+                    }
                     $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
                 }
             ],
@@ -569,6 +578,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.major_category.exists' => 'Major Category does not exist',
             '*.minor_category.exists' => 'Minor Category does not exist',
             '*.voucher.required' => 'Voucher is required',
+            '*.voucher_date.required' => 'Voucher date is required',
             '*.receipt.required' => 'Receipt is required',
             '*.tag_number.required' => 'Tag number is required',
             '*.tag_number.regex' => 'Tag number must be 6 to 13 digits',

@@ -51,6 +51,8 @@ class FixedAssetController extends Controller
 
     public function store(FixedAssetRequest $request)
     {
+
+//        return $request->all();
         $vladimirTagNumber = $this->vladimirTagGeneratorRepository->vladimirTagGenerator();
         if (!is_numeric($vladimirTagNumber) || strlen($vladimirTagNumber) != 13) {
             return response()->json([

@@ -118,11 +118,11 @@ class CalculationRepository
             }
         }
 
-
         // Extract the year and month
         $year = substr($value, 0, 4);
         $month = substr($value, 4, 2);
         $day = substr($value, 6, 2);
+
 
         // Check if the year is a valid number
         if (!is_numeric($year) || (int)$year < 1900 || (int)$year > 2100) {
@@ -167,6 +167,10 @@ class CalculationRepository
 
                 //Checking dates of duplicate vouchers for discrepancies
                 foreach ($duplicateVouchers as $duplicateVoucher) {
+                    // If voucher value is '-' then skip the current iteration
+                    if ($duplicateVoucher == '-') {
+                        continue;
+                    }
                     $dates = $voucherDates[$duplicateVoucher];
                     if (count(array_unique($dates)) != 1) {
                         $fail('Same voucher with different date found');
@@ -218,17 +222,36 @@ class CalculationRepository
         }
     }
 
+
     function checkVoucherDate($items, $value, $fail) {
+        $year = substr($value, 0, 4);
+        $month = substr($value, 4, 2);
+        $day = substr($value, 6, 2);
+        $formattedValue = Carbon::createFromFormat('Y-m-d', "$year-$month-$day")->format('Y-m-d');
+
         foreach ($items as $item) {
             $uploaded_date = Carbon::parse($item->voucher_date)->format('Y-m-d');
-            $year = substr($value, 0, 4);
-            $month = substr($value, 4, 2);
-            $day = substr($value, 6, 2);
-            $value = Carbon::createFromFormat('Y-m-d', "$year-$month-$day")->format('Y-m-d');
-            if ($uploaded_date != $value) {
+            if ($uploaded_date != $formattedValue) {
                 $fail('Same voucher with different date found');
                 return;
             }
         }
     }
+
+//    function checkVoucherDate($items, $value, $fail) {
+//
+//
+//        foreach ($items as $item) {
+//            $year = substr($value, 0, 4);
+//            $month = substr($value, 4, 2);
+//            $day = substr($value, 6, 2);
+//            $uploaded_date = Carbon::parse($item->voucher_date)->format('Y-m-d');
+////            echo "$value";
+//            $value = Carbon::createFromFormat('Y-m-d', "$year-$month-$day")->format('Y-m-d');
+//            if ($uploaded_date != $value) {
+//                $fail('Same voucher with different date found');
+//                return;
+//            }
+//        }
+//    }
 }
