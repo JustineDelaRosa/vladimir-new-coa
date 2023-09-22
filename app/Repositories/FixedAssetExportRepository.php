@@ -102,9 +102,9 @@ class FixedAssetExportRepository
             ->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
 
-        if ((!empty($startDate) && empty($endDate)) || (empty($startDate) && !empty($endDate))) {
-            return response()->json(['error' => 'Please fill both start date and end date'], 400);
-        }
+//        if ((!empty($startDate) && empty($endDate)) || (empty($startDate) && !empty($endDate))) {
+//            return response()->json(['error' => 'Please fill both start date and end date'], 400);
+//        }
 
 
 //        if ($search != null && ($startDate == null && $endDate == null)) {
@@ -521,17 +521,30 @@ class FixedAssetExportRepository
 //            });
 //        }
 
-        if (($startDate && $endDate) || $search) {
+        if (($startDate || $endDate) || $search) {
 
-            if ($startDate && $endDate) {
-                //Ensure the dates are in Y-m-d H:i:s format
+//            if ($startDate && $endDate) {
+//                //Ensure the dates are in Y-m-d H:i:s format
+//                $startDate = new DateTime($startDate);
+//                $endDate = new DateTime($endDate);
+//
+//                //set time to end of day
+//                $endDate->setTime(23, 59, 59);
+//
+//                $query->whereBetween($created_at, [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
+//            }
+
+            if ($startDate) {
                 $startDate = new DateTime($startDate);
+                $query->where($created_at, '>=', $startDate->format('Y-m-d H:i:s'));
+
+            }
+
+            if ($endDate) {
                 $endDate = new DateTime($endDate);
-
-                //set time to end of day
+                //set time to an end of day
                 $endDate->setTime(23, 59, 59);
-
-                $query->whereBetween($created_at, [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
+                $query->where($created_at, '<=', $endDate->format('Y-m-d H:i:s'));
             }
 
             if ($search) {

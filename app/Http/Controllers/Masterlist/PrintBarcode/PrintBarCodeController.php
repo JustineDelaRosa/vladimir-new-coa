@@ -7,6 +7,7 @@ use App\Models\PrinterIP;
 use App\Models\TypeOfRequest;
 use Carbon\Carbon;
 use DateTime;
+use Essa\APIToolKit\Api\ApiResponse;
 use Exception;
 use Illuminate\Http\Request;
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
@@ -17,6 +18,7 @@ use Mike42\Escpos\Printer;
 
 class PrintBarCodeController extends Controller
 {
+    use ApiResponse;
 
 
 //    function getClientName() {
@@ -188,19 +190,24 @@ class PrintBarCodeController extends Controller
 
     public function searchPrint(Request $request)
     {
-        $request->validate([
-            'tagNumber' => 'array|min:1',
-        ],
-            [
-                'tagNumber.required' => 'Please select at least one asset',
-                'tagNumber.array' => 'Please select at least one asset',
-                'tagNumber.min' => 'Please select at least one assets',
-            ]);
+//        $request->validate([
+//            'tagNumber' => 'array|min:1',
+//        ],
+//            [
+//                'tagNumber.required' => 'Please select at least one asset',
+//                'tagNumber.array' => 'Please select at least one asset',
+//                'tagNumber.min' => 'Please select at least one assets',
+//            ]);
 
         //array of vladimir tag number
         $vladimirTagNumbers = $request->get('tagNumber');
 
         $typeOfRequestId = TypeOfRequest::where('type_of_request_name', 'Capex')->pluck('id')->first() ?? 0;
+
+        if($vladimirTagNumbers == null){
+            //get all vladimir tag number
+            $vladimirTagNumbers = FixedAsset::where('type_of_request_id', '!=', $typeOfRequestId)->pluck('vladimir_tag_number')->toArray();
+        }
 
         $fixedAssetQuery = FixedAsset::whereIn('vladimir_tag_number', $vladimirTagNumbers)
             ->where('type_of_request_id', '!=', $typeOfRequestId);
@@ -272,17 +279,23 @@ class PrintBarCodeController extends Controller
 //            $fixedAssetQuery->whereBetween('created_at', [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
 //        }
 
+
+
         if ($startDate) {
             $startDate = new DateTime($startDate);
             $fixedAssetQuery->where('created_at', '>=', $startDate->format('Y-m-d H:i:s'));
-
         }
 
         if ($endDate) {
             $endDate = new DateTime($endDate);
-            //set time to an end of day
             $endDate->setTime(23, 59, 59);
             $fixedAssetQuery->where('created_at', '<=', $endDate->format('Y-m-d H:i:s'));
+        }
+        if($endDate && $startDate) {
+            if ($endDate > $startDate) {
+                return $this->responseUnprocessable('Start date must be less than end date');
+//               return response()->json(['message' => 'Start date must be less than end date'], 422);
+            }
         }
 
 
