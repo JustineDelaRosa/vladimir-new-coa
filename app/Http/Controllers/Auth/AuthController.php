@@ -40,7 +40,7 @@ class AuthController extends Controller
             'user' => $user,
             'token' => $token
         ];
-        $cookie = cookie('authcookie', $token);
+//        $cookie = cookie('authcookie', $token);
 //        return response()->json([
 //            'data' => [
 //                'user' => [

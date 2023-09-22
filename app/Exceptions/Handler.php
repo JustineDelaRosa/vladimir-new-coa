@@ -40,7 +40,7 @@ class Handler extends ExceptionHandler
         $this->renderable(function (\Illuminate\Auth\AuthenticationException $e, $request) {
             if ($request->is('api/*') || $request->wantsJson()) {
                 return response()->json([
-                    'message' => 'You are allowed to do this action!',
+                    'message' => 'You are not allowed to do this action!',
                 ], 401);
             }
         });

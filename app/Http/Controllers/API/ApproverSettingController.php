@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\API;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\ApproverSetting\ApproverSettingRequest;
 use App\Models\Approvers;
 use App\Models\User;
@@ -197,7 +198,9 @@ class ApproverSettingController extends Controller
 
     public function approverSetting()
     {
-        $user = User::with('role')->whereDoesntHave('approvers')->get();
+        $user = User::whereDoesntHave('approvers', function ($query) {
+            $query->withTrashed();
+        })->get();
         return $user;
     }
 }

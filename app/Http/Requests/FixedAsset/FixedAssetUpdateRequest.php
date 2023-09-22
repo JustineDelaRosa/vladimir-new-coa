@@ -302,7 +302,8 @@ class FixedAssetUpdateRequest extends FormRequest
                     }
                 }
             ],
-            'account_title_id' => 'required|exists:account_titles,id',
+//            'account_title_id' => 'required|exists:account_titles,id',
+//            'print_count' => 'nullable|numeric',
         ];
     }
 

@@ -1,15 +1,19 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\API;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\AssignApprover\AssignApproverRequest;
-use App\Models\User;
 use App\Models\ApproverLayer;
+use App\Models\User;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AssignApproverController extends Controller
 {
+
+    use ApiResponse;
     /**
      * Display a listing of the resource.
      *
@@ -28,12 +32,13 @@ class AssignApproverController extends Controller
                     ->orWhere('firstname', 'like', "%$search%")
                     ->orWhere('lastname', 'like', "%$search%");
 
-            })->orWhereHas('approver.user', function ($query) use ($search) {
-                $query->where('username', 'like', "%$search%")
-                    ->orWhere('employee_id', 'like', "%$search%")
-                    ->orWhere('firstname', 'like', "%$search%")
-                    ->orWhere('lastname', 'like', "%$search%");
-            })->orderBy('created_at', 'desc');
+            });
+//                ->orWhereHas('approver.user', function ($query) use ($search) {
+//                $query->where('username', 'like', "%$search%")
+//                    ->orWhere('employee_id', 'like', "%$search%")
+//                    ->orWhere('firstname', 'like', "%$search%")
+//                    ->orWhere('lastname', 'like', "%$search%");
+//            })->orderBy('created_at', 'desc');
         });
 
 //        if ($status === "deactivated") {
@@ -42,39 +47,34 @@ class AssignApproverController extends Controller
 //            $userApproverQuery->whereNull('deleted_at');
 //        }
 
+        $transformedResults = $userApproverQuery->get()->groupBy('requester_id')->map(function ($item) {
+            return [
+                'requester_id' => $item[0]->requester_id,
+                'requester_details' => $item[0]->requester,
+                'approvers' => $item->map(function ($item) {
+                    return [
+                        'approver_id' => $item->approver_id,
+                        'approver_details' => $item->approver->user,
+                        'layer' => $item->layer,
+                    ];
+                })->sortBy('layer')->values(),
+            ];
+        })->values();
+
+        //then check if the limit is not null then paginate the result else return all without pagination
         if ($limit !== null) {
-            $result = is_numeric($limit) ? $userApproverQuery->paginate($limit) : $userApproverQuery->paginate(PHP_INT_MAX);
-        } else {
-            $result = $userApproverQuery->get();
+            $page = $request->input('page', 1);
+            $offset = ($page * $limit) - $limit;
+            $transformedResults = new LengthAwarePaginator(
+                array_slice($transformedResults->toArray(), $offset, $limit, true),
+                count($transformedResults),
+                $limit,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
         }
 
-        $result->transform(function ($item) {
-            return [
-                'id' => $item->id,
-                'requester' => [
-                    'id' => $item->requester->id,
-                    'username' => $item->requester->username,
-                    'employee_id' => $item->requester->employee_id,
-                    'firstname' => $item->requester->firstname,
-                    'lastname' => $item->requester->lastname,
-                ],
-
-                'approver' => [
-                    'id' => $item->approver->user->id,
-                    'username' => $item->approver->user->username,
-                    'employee_id' => $item->approver->user->employee_id,
-                    'firstname' => $item->approver->user->firstname,
-                    'lastname' => $item->approver->user->lastname,
-                ],
-                'created_at' => $item->created_at,
-                'updated_at' => $item->updated_at,
-            ];
-        });
-
-        return response()->json([
-            'message' => 'Successfully Retrieved!',
-            'data' => $result
-        ], 200);
+        return $this->responseSuccess('Successfully Retrieved!', $transformedResults);
 
     }
 
@@ -127,11 +127,33 @@ class AssignApproverController extends Controller
      * Display the specified resource.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
-        //
+        $approver = ApproverLayer::where('id', $id)->first();
+        if(!$approver){
+            return $this->responseNotFound('Approver Layer Route Not Found');
+        }
+        //get the requester_id
+        $requester_id = $approver->requester_id;
+        //get all the approver of the requester
+        $userApprover = ApproverLayer::where('requester_id', $requester_id)->get();
+        $transformedResults = $userApprover->groupBy('requester_id')->map(function ($item) {
+            return [
+                'requester_id' => $item[0]->requester_id,
+                'requester_details' => $item[0]->requester,
+                'approvers' => $item->map(function ($item) {
+                    return [
+                        'approver_id' => $item->approver_id,
+                        'approver_details' => $item->approver->user,
+                        'layer' => $item->layer,
+                    ];
+                })->sortBy('layer')->values(),
+            ];
+        })->values()->first();
+
+        return $this->responseSuccess('Successfully Retrieved!', $transformedResults);
     }
 
     /**
@@ -244,7 +266,7 @@ class AssignApproverController extends Controller
     {
         $newLayer = $request->layer;
 
-        // Get the approver layer
+        // Get the approver layre
         $approver = ApproverLayer::findOrFail($id);
 
         $oldLayer = $approver->layer;

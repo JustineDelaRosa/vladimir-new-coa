@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers\Masterlist\PrintBarcode;
-//require __DIR__ . '/../../../../vendor/autoload.php';
 use App\Http\Controllers\Controller;
 use App\Models\FixedAsset;
 use App\Models\PrinterIP;
@@ -32,6 +31,7 @@ class PrintBarCodeController extends Controller
     public function printBarcode(Request $request)
     {
         $tagNumber = $this->searchPrint($request);
+
         $clientIP = request()->ip();
 
         $printerIP = PrinterIP::where('ip', $clientIP)->first();
@@ -188,90 +188,24 @@ class PrintBarCodeController extends Controller
 
     public function searchPrint(Request $request)
     {
-        //  $id = $request->get('id');
-        $search = $request->get('search');
-        $startDate = $request->get('startDate');
-        $endDate = $request->get('endDate');
-//        $typeOfRequest = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
-        $typeOfRequestRecord = TypeOfRequest::where('type_of_request_name', 'Capex')->first();
+        $request->validate([
+            'tagNumber' => 'array|min:1',
+        ],
+            [
+                'tagNumber.required' => 'Please select at least one asset',
+                'tagNumber.array' => 'Please select at least one asset',
+                'tagNumber.min' => 'Please select at least one assets',
+            ]);
 
-        if ($typeOfRequestRecord) {
-            $typeOfRequest = $typeOfRequestRecord->id;
-        } else {
-            $typeOfRequest = 0;
-        }
+        //array of vladimir tag number
+        $vladimirTagNumbers = $request->get('tagNumber');
 
-        // Define the common query for fixed assets
-        $fixedAssetQuery = FixedAsset::with([
-            'formula',
-            'majorCategory:id,major_category_name',
-            'minorCategory:id,minor_category_name',
-        ])
-            ->where('type_of_request_id', '!=', $typeOfRequest); //todo: ask if can be printed now
+        $typeOfRequestId = TypeOfRequest::where('type_of_request_name', 'Capex')->pluck('id')->first() ?? 0;
 
-        // Add date filter if both startDate and endDate are given
-        if ($startDate && $endDate) {
-            //Ensure the dates are in Y-m-d H:i:s format
-            $startDate = new DateTime($startDate);
-            $endDate = new DateTime($endDate);
+        $fixedAssetQuery = FixedAsset::whereIn('vladimir_tag_number', $vladimirTagNumbers)
+            ->where('type_of_request_id', '!=', $typeOfRequestId);
 
-            //set time to end of day
-            $endDate->setTime(23, 59, 59);
-
-            $fixedAssetQuery->whereBetween('created_at', [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
-        }
-
-        // Add search filter if search is given
-        if ($search) {
-            $fixedAssetQuery->where(function ($query) use ($search) {
-                $query->Where('vladimir_tag_number', '=', $search)
-                    ->orWhere('tag_number', 'LIKE', "%$search%")
-                    ->orWhere('tag_number_old', 'LIKE', "%$search%")
-                    ->orWhere('accountability', 'LIKE', "%$search%")
-                    ->orWhere('asset_description', 'LIKE', "%$search%")
-                    ->orWhere('accountable', 'LIKE', "%$search%")
-                    ->orWhere('brand', 'LIKE', "%$search%")
-                    ->orWhere('depreciation_method', 'LIKE', "%$search%");
-                $query->orWhereHas('subCapex', function ($query) use ($search) {
-                    $query->where('sub_capex', 'LIKE', '%' . $search . '%')
-                        ->orWhere('sub_project', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('majorCategory', function ($query) use ($search) {
-                    $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('minorCategory', function ($query) use ($search) {
-                    $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('department.division', function ($query) use ($search) {
-                    $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('assetStatus', function ($query) use ($search) {
-                    $query->where('asset_status_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('cycleCountStatus', function ($query) use ($search) {
-                    $query->where('cycle_count_status_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('depreciationStatus', function ($query) use ($search) {
-                    $query->where('depreciation_status_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('movementStatus', function ($query) use ($search) {
-                    $query->where('movement_status_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('location', function ($query) use ($search) {
-                    $query->where('location_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('company', function ($query) use ($search) {
-                    $query->where('company_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('department', function ($query) use ($search) {
-                    $query->where('department_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('accountTitle', function ($query) use ($search) {
-                    $query->where('account_title_name', 'LIKE', '%' . $search . '%');
-                });
-            });
-        }
-
+//        $result = [];
         // Chunk the results and populate the result array
         $fixedAssetQuery->chunk(500, function ($assets) use (&$result) {
             foreach ($assets as $asset) {
@@ -287,7 +221,6 @@ class PrintBarCodeController extends Controller
                 ];
             }
         });
-
         // Return the result array
         return $result;
     }
@@ -329,17 +262,29 @@ class PrintBarCodeController extends Controller
         ])
             ->where('type_of_request_id', '!=', $typeOfRequest); //todo: ask if can be printed now
 
-        // Add date filter if both startDate and endDate are given
-        if ($startDate && $endDate) {
-            //Ensure the dates are in Y-m-d H:i:s format
+//        if ($startDate && $endDate) {
+//            //Ensure the dates are in Y-m-d H:i:s format
+//            $startDate = new DateTime($startDate);
+//            $endDate = new DateTime($endDate);
+//            //set time to an end of day
+//            $endDate->setTime(23, 59, 59);
+//
+//            $fixedAssetQuery->whereBetween('created_at', [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
+//        }
+
+        if ($startDate) {
             $startDate = new DateTime($startDate);
-            $endDate = new DateTime($endDate);
+            $fixedAssetQuery->where('created_at', '>=', $startDate->format('Y-m-d H:i:s'));
 
-            //set time to end of day
-            $endDate->setTime(23, 59, 59);
-
-            $fixedAssetQuery->whereBetween('created_at', [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
         }
+
+        if ($endDate) {
+            $endDate = new DateTime($endDate);
+            //set time to an end of day
+            $endDate->setTime(23, 59, 59);
+            $fixedAssetQuery->where('created_at', '<=', $endDate->format('Y-m-d H:i:s'));
+        }
+
 
         // Add search filter if search is given
         if ($search) {
@@ -489,6 +434,7 @@ class PrintBarCodeController extends Controller
                 'remarks' => $asset->remarks,
                 'print_count' => $asset->print_count,
                 'last_printed' => $asset->last_printed,
+                'created_at' => $asset->created_at,
             ];
         });
         return $assets;

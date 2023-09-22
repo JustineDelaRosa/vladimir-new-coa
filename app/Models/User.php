@@ -74,6 +74,14 @@ class User extends Authenticatable
         return $this->hasMany(Approvers::class, 'approver_id', 'id');
     }
 
+    public function assetRequest(){
+        return $this->hasMany(AssetRequest::class, 'requester_id', 'id');
+    }
+
+    public function assetApproval(){
+        return $this->hasMany(AssetApproval::class, 'requester_id', 'id');
+    }
+
 //    public function requestor(){
 //        return $this->hasMany(ApproverLayer::class, 'user_id', 'id');
 //    }

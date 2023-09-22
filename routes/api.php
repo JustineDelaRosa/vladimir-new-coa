@@ -1,7 +1,9 @@
 <?php
 
-use App\Http\Controllers\ApproverSettingController;
-use App\Http\Controllers\AssignApproverController;
+use App\Http\Controllers\API\ApproverSettingController;
+use App\Http\Controllers\API\AssetApprovalController;
+use App\Http\Controllers\API\AssetRequestController;
+use App\Http\Controllers\API\AssignApproverController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CategoryListController;
 use App\Http\Controllers\Masterlist\AdditionalCostController;
@@ -12,9 +14,9 @@ use App\Http\Controllers\Masterlist\COA\DepartmentController;
 use App\Http\Controllers\Masterlist\COA\LocationController;
 use App\Http\Controllers\Masterlist\DivisionController;
 use App\Http\Controllers\Masterlist\FixedAssetController;
-use App\Http\Controllers\Masterlist\MajorCategoryController;
 use App\Http\Controllers\Masterlist\FixedAssetExportController;
 use App\Http\Controllers\Masterlist\FixedAssetImportController;
+use App\Http\Controllers\Masterlist\MajorCategoryController;
 use App\Http\Controllers\Masterlist\MinorCategoryController;
 use App\Http\Controllers\Masterlist\PrintBarcode\PrintBarCodeController;
 use App\Http\Controllers\Masterlist\Status\AssetStatusController;
@@ -207,6 +209,11 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('assign-approver', AssignApproverController::class);
     Route::get('requester-view', [AssignApproverController::class, 'requesterView']);
     Route::put('arrange-layer/{id}',[AssignApproverController::class, 'arrangeLayer']);
+
+    //ASSET REQUEST//
+    Route::resource('asset-request', AssetRequestController::class);
+    //ASSET APPROVAL//
+    Route::resource('asset-approval', AssetApprovalController::class);
 });
 
 

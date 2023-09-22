@@ -17,8 +17,8 @@ class Approvers extends Model
         return $this->belongsTo(User::class, 'approver_id');
     }
 
-    public function userApprover()
+    public function assetApproval()
     {
-        return $this->hasMany(UserApprover::class, 'approver_id');
+        return $this->hasMany(AssetApproval::class, 'approver_id', 'id');
     }
 }

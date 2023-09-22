@@ -168,6 +168,8 @@ class FixedAssetRepository
             'department_id' => $request['department_id'],
             'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
+//            'print_count' => $request['print_count'] ?? $fixedAsset->print_count,
+//            'last_printed' => $request['print_count'] == $fixedAsset->print_count ? $fixedAsset->last_printed : Carbon::now(),
         ]);
 
         $fixedAsset->formula()->update([
