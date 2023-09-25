@@ -22,7 +22,7 @@ class ApproverSettingController extends Controller
         $status = $request->input('status', '');
         $limit = $request->input('limit', null);
 
-        $ApproversQuery = Approvers::withTrashed()->with([
+        $ApproversQuery = Approvers::with([
             'user' => function ($query) {
                 $query->withTrashed();
             },

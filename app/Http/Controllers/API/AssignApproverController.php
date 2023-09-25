@@ -7,6 +7,7 @@ use App\Http\Requests\AssignApprover\AssignApproverRequest;
 use App\Models\ApproverLayer;
 use App\Models\User;
 use Essa\APIToolKit\Api\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -54,11 +55,27 @@ class AssignApproverController extends Controller
                 'approvers' => $item->map(function ($item) {
                     return [
                         'approver_id' => $item->approver_id,
-                        'approver_details' => $item->approver->user,
+                        'employee_id' => $item->approver->user->employee_id,
+                        'first_name' => $item->approver->user->firstname,
+                        'last_name' => $item->approver->user->lastname,
+                        'username' => $item->approver->user->username,
+                        'is_active' => $item->approver->user->is_active,
+                        'role' => $item->approver->user->role->id,
                         'layer' => $item->layer,
                     ];
                 })->sortBy('layer')->values(),
             ];
+//            return [
+//                'requester_id' => $item[0]->requester_id,
+//                'requester_details' => $item[0]->requester,
+//                'approvers' => $item->map(function ($item) {
+//                    return [
+//                        'approver_id' => $item->approver_id,
+//                        'approver_details' => $item->approver->user,
+//                        'layer' => $item->layer,
+//                    ];
+//                })->sortBy('layer')->values(),
+//            ];
         })->values();
 
         //then check if the limit is not null then paginate the result else return all without pagination
@@ -84,7 +101,7 @@ class AssignApproverController extends Controller
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function store(AssignApproverRequest $request)
+    public function store(AssignApproverRequest $request): JsonResponse
     {
         $requester_id = $request->requester_id;
         $approver_id = $request->approver_id;
@@ -129,9 +146,9 @@ class AssignApproverController extends Controller
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function show($id)
+    public function show($id): JsonResponse
     {
-        $approver = ApproverLayer::where('id', $id)->first();
+        $approver = ApproverLayer::where('requester_id', $id)->first();
         if(!$approver){
             return $this->responseNotFound('Approver Layer Route Not Found');
         }
@@ -146,7 +163,12 @@ class AssignApproverController extends Controller
                 'approvers' => $item->map(function ($item) {
                     return [
                         'approver_id' => $item->approver_id,
-                        'approver_details' => $item->approver->user,
+                        'employee_id' => $item->approver->user->employee_id,
+                        'first_name' => $item->approver->user->firstname,
+                        'last_name' => $item->approver->user->lastname,
+                        'username' => $item->approver->user->username,
+                        'is_active' => $item->approver->user->is_active,
+                        'role' => $item->approver->user->role->id,
                         'layer' => $item->layer,
                     ];
                 })->sortBy('layer')->values(),
@@ -163,7 +185,7 @@ class AssignApproverController extends Controller
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function update(AssignApproverRequest $request, $id)
+    public function update(AssignApproverRequest $request, $id): JsonResponse
     {
         $approver_id = $request->approver_id;
 
@@ -183,7 +205,7 @@ class AssignApproverController extends Controller
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function destroy($id)
+    public function destroy($id): JsonResponse
     {
         $userApprover = ApproverLayer::find($id);
 
@@ -252,7 +274,7 @@ class AssignApproverController extends Controller
 
     }
 
-    public function requesterView()
+    public function requesterView(): JsonResponse
     {
         $user_id = auth('sanctum')->user()->id;
         $userApprover = ApproverLayer::where('requester_id', $user_id)->get();
@@ -262,36 +284,52 @@ class AssignApproverController extends Controller
         ], 200);
     }
 
-    public function arrangeLayer(Request $request, int $id)
+    public function arrangeLayer(Request $request): JsonResponse
     {
-        $newLayer = $request->layer;
+        $requesterId = $request->requester_id;
+        $approverLayers = $request->approver_id;
+        $layer = 1;
 
-        // Get the approver layre
-        $approver = ApproverLayer::findOrFail($id);
+        $approverIds = ApproverLayer::where('requester_id', $requesterId)->pluck('id')->toArray();
 
-        $oldLayer = $approver->layer;
+        $deletableApproverIds = array_diff($approverIds, $approverLayers);
 
-        // Get the requester_id from the updated model instance
-        $requester_id = $approver->requester_id;
+        ApproverLayer::whereIn('id', $deletableApproverIds)->delete();
 
-        if ($newLayer > $oldLayer) {
-            // Moving layer up, so decrement layers between old layer and new layer
-            ApproverLayer::where('requester_id', $requester_id)
-                ->whereBetween('layer', [$oldLayer + 1, $newLayer])
-                ->decrement('layer');
-        } elseif ($newLayer < $oldLayer) {
-            // Moving layer down, so increment layers between new layer and old layer
-            ApproverLayer::where('requester_id', $requester_id)
-                ->whereBetween('layer', [$newLayer, $oldLayer - 1])
-                ->increment('layer');
+        foreach ($approverLayers as $approverId) {
+            ApproverLayer::where('id', $approverId)->update(['layer' => $layer++]);
         }
 
-        // Then we update the layer
-        $approver->update(['layer' => $newLayer]);
+        return response()->json(['message' => 'Successfully arranged'], 200);
 
-        return response()->json([
-            'message' => 'Successfully Updated!',
-            'data' => $approver
-        ], 200);
+//        $newLayer = $request->layer;
+//
+//        // Get the approver layer
+//        $approver = ApproverLayer::findOrFail($id);
+//
+//        $oldLayer = $approver->layer;
+//
+//        // Get the requester_id from the updated model instance
+//        $requester_id = $approver->requester_id;
+//
+//        if ($newLayer > $oldLayer) {
+//            // Moving layer up, so decrement layers between old layer and new layer
+//            ApproverLayer::where('requester_id', $requester_id)
+//                ->whereBetween('layer', [$oldLayer + 1, $newLayer])
+//                ->decrement('layer');
+//        } elseif ($newLayer < $oldLayer) {
+//            // Moving layer down, so increment layers between new layer and old layer
+//            ApproverLayer::where('requester_id', $requester_id)
+//                ->whereBetween('layer', [$newLayer, $oldLayer - 1])
+//                ->increment('layer');
+//        }
+//
+//        // Then we update the layer
+//        $approver->update(['layer' => $newLayer]);
+//
+//        return response()->json([
+//            'message' => 'Successfully Updated!',
+//            'data' => $approver
+//        ], 200);
     }
 }

@@ -186,7 +186,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 //    Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
 
 
-    //STATUS//
+    //STATUSES//
     //ASSET STATUS
     Route::resource('asset-status', AssetStatusController::class);
     Route::patch('asset-status/archived-asset-status/{id}', [AssetStatusController::class, 'archived']);
@@ -208,7 +208,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //ASSIGNING APPROVER//
     Route::resource('assign-approver', AssignApproverController::class);
     Route::get('requester-view', [AssignApproverController::class, 'requesterView']);
-    Route::put('arrange-layer/{id}',[AssignApproverController::class, 'arrangeLayer']);
+    Route::put('arrange-layer',[AssignApproverController::class, 'arrangeLayer']);
 
     //ASSET REQUEST//
     Route::resource('asset-request', AssetRequestController::class);

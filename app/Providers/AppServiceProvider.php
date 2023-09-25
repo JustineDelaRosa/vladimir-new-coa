@@ -31,5 +31,22 @@ class AppServiceProvider extends ServiceProvider
         Sanctum::$accessTokenAuthenticationCallback = function ($accessToken, $isValid){
             return !$accessToken->last_used_at || $accessToken->last_used_at->gte(now()->subMinutes(60));
         };
+//        Validator::extend('validateAccountable', function ($attribute, $value, $parameters, $validator) {
+//            $accountable = request()->input('accountable');
+//
+//            if (request()->accountability != 'Personal Issued') {
+//                request()->merge(['accountable' => null]);
+//                return true;
+//            }
+//
+//            if (!empty($accountable['general_info']['full_id_number'])) {
+//                $full_id_number = $accountable['general_info']['full_id_number'];
+//                request()->merge(['accountable' => $full_id_number]);
+//
+//                return $full_id_number !== '';
+//            }
+//
+//            return false;
+//        });
     }
 }

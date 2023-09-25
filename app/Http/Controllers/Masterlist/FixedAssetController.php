@@ -267,6 +267,8 @@ class FixedAssetController extends Controller
 
     public function search(Request $request)
     {
+//        return FixedAsset::useFilters()->dynamicPaginate();
+
         $search = $request->get('search');
         $limit = $request->get('limit');
         $page = $request->get('page');
