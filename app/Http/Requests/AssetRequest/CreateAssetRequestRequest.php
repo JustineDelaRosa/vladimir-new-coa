@@ -2,13 +2,16 @@
 
 namespace App\Http\Requests\AssetRequest;
 
+use App\Models\ApproverLayer;
 use App\Models\Capex;
 use App\Models\TypeOfRequest;
+use App\Repositories\ApprovedRequestRepository;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class CreateAssetRequestRequest extends FormRequest
 {
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -27,7 +30,9 @@ class CreateAssetRequestRequest extends FormRequest
     public function rules(): array
     {
         $typeOfRequestIdForCapex = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
+        $requesterId = auth('sanctum')->user()->id;
         return [
+            'requester_id' => [request()->merge(['requester_id' => $requesterId])],
             'type_of_request_id' => [
                 'required',
                 Rule::exists('type_of_requests', 'id')
@@ -62,12 +67,15 @@ class CreateAssetRequestRequest extends FormRequest
             ],
             'cellphone_number' => 'nullable|numeric',
             'brand' => 'nullable',
+            'quantity' => 'required|numeric|min:1',
         ];
     }
 
     function messages(): array
     {
         return [
+            'requester_id.required' => 'The requester field is required',
+            'requester_id.exists' => 'The selected requester is invalid',
             'type_of_request_id.required' => 'The type of request field is required',
             'type_of_request_id.exists' => 'The selected type of request is invalid',
             'sub_capex_id.required_if' => 'The sub capex field is required when type of request is capex',
@@ -75,7 +83,7 @@ class CreateAssetRequestRequest extends FormRequest
             'asset_description.required' => 'The asset description field is required',
             'accountability.required' => 'The accountability field is required',
             'accountability.in' => 'The selected accountability is invalid',
-            'accountable.required_if' => 'The accountable field is required when accountability is personal issued',
+            'accountable.required_if' => 'The accountable field is required',
             'accountable.exists' => 'The selected accountable is invalid',
 //            'accountable.validateAccountable' => 'The selected accountable is invalids',
             'cellphone_number.numeric' => 'The cellphone number must be a number',

@@ -29,7 +29,7 @@ return [
     |--------------------------------------------------------------------------
     | number of items per page when use dynamic pagination
     */
-    'default_pagination_number' => 20,
+    'default_pagination_number' => 5,
 
     /*
     |--------------------------------------------------------------------------

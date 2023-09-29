@@ -145,10 +145,10 @@ return [
         'attribute-name' => [
             'rule-name' => 'custom-message',
         ],
-        'validateAccountable' => [
-            'required' => 'The accountable person is required.',
-            'empty' => 'The accountable person cannot be empty.',
-        ],
+//        'validateAccountable' => [
+//            'required' => 'The accountable person is required.',
+//            'empty' => 'The accountable person cannot be empty.',
+//        ],
     ],
 
     /*

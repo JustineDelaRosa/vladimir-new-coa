@@ -17,6 +17,7 @@ class CreateAssetRequestsTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('requester_id');
             $table->string('status')->default('For Approval by Approver 1');
+//            $table->string('remarks')->nullable();
             $table->unsignedInteger('type_of_request_id');
             $table->unsignedInteger('capex_id')->nullable();
             $table->unsignedInteger('sub_capex_id')->nullable();

@@ -13,7 +13,7 @@ class CreateAssetApprovalRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,8 +23,19 @@ class CreateAssetApprovalRequest extends FormRequest
      */
     public function rules()
     {
+        if ($this->isMethod('PATCH')) {
+            return [
+                'asset_approval_id' => 'required|exists:asset_approvals,id|array',
+            ];
+        }
+    }
+
+    function messages()
+    {
         return [
-            //
+            'asset_approval_id.required' => 'The asset approval id is required',
+            'asset_approval_id.exists' => 'The asset approval id must be an existing id',
+            'asset_approval_id.array' => 'The asset approval id must be an array',
         ];
     }
 }

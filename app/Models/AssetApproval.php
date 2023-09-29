@@ -19,6 +19,7 @@ class AssetApproval extends Model
      * @var array
      */
     protected $guarded = [];
+//    protected $primaryKey = 'id';
 
     public function assetRequest()
     {

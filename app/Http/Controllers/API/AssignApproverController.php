@@ -15,6 +15,7 @@ class AssignApproverController extends Controller
 {
 
     use ApiResponse;
+
     /**
      * Display a listing of the resource.
      *
@@ -50,7 +51,7 @@ class AssignApproverController extends Controller
 
         $transformedResults = $userApproverQuery->get()->groupBy('requester_id')->map(function ($item) {
             return [
-                'requester_id' => $item[0]->requester_id,
+                'id' => $item[0]->requester_id,
                 'requester_details' => $item[0]->requester,
                 'approvers' => $item->map(function ($item) {
                     return [
@@ -149,7 +150,7 @@ class AssignApproverController extends Controller
     public function show($id): JsonResponse
     {
         $approver = ApproverLayer::where('requester_id', $id)->first();
-        if(!$approver){
+        if (!$approver) {
             return $this->responseNotFound('Approver Layer Route Not Found');
         }
         //get the requester_id
@@ -158,7 +159,7 @@ class AssignApproverController extends Controller
         $userApprover = ApproverLayer::where('requester_id', $requester_id)->get();
         $transformedResults = $userApprover->groupBy('requester_id')->map(function ($item) {
             return [
-                'requester_id' => $item[0]->requester_id,
+                'id' => $item[0]->requester_id,
                 'requester_details' => $item[0]->requester,
                 'approvers' => $item->map(function ($item) {
                     return [
@@ -207,27 +208,38 @@ class AssignApproverController extends Controller
      */
     public function destroy($id): JsonResponse
     {
-        $userApprover = ApproverLayer::find($id);
-
-        if (!$userApprover) {
-            return response()->json(['error' => 'Approver Layer Route Not Found'], 404);
+        $approverLayers = ApproverLayer::where('requester_id', $id)->get();
+        if (!$approverLayers) {
+            return $this->responseNotFound('Approver Layer Route Not Found');
         }
+        $approverLayers->each(function ($approverLayer) {
+            $approverLayer->delete();
+        });
 
-        $requester_id = $userApprover->requester_id;
-        $deletedLayer = $userApprover->layer;
-        $userApprover->delete();
+        return $this->responseSuccess('Successfully Deleted!', null, 200);
 
-        $higherLayers = ApproverLayer::where('requester_id', $requester_id)->where('layer', '>', $deletedLayer)->get();
 
-        if ($higherLayers->isNotEmpty()) {
-            $higherLayers->each(function ($approverLayer) {
-                $approverLayer->update([
-                    'layer' => $approverLayer->layer - 1,
-                ]);
-            });
-        }
-
-        return response()->json(['message' => 'Successfully Deleted!'], 200);
+//        $userApprover = ApproverLayer::find($id);
+//
+//        if (!$userApprover) {
+//            return response()->json(['error' => 'Approver Layer Route Not Found'], 404);
+//        }
+//
+//        $requester_id = $userApprover->requester_id;
+//        $deletedLayer = $userApprover->layer;
+//        $userApprover->delete();
+//
+//        $higherLayers = ApproverLayer::where('requester_id', $requester_id)->where('layer', '>', $deletedLayer)->get();
+//
+//        if ($higherLayers->isNotEmpty()) {
+//            $higherLayers->each(function ($approverLayer) {
+//                $approverLayer->update([
+//                    'layer' => $approverLayer->layer - 1,
+//                ]);
+//            });
+//        }
+//
+//        return response()->json(['message' => 'Successfully Deleted!'], 200);
     }
 
 
@@ -284,20 +296,29 @@ class AssignApproverController extends Controller
         ], 200);
     }
 
-    public function arrangeLayer(Request $request): JsonResponse
+    public function arrangeLayer(Request $request, $id): JsonResponse
     {
-        $requesterId = $request->requester_id;
+        $requesterId = $id;
         $approverLayers = $request->approver_id;
         $layer = 1;
 
-        $approverIds = ApproverLayer::where('requester_id', $requesterId)->pluck('id')->toArray();
+        $approverIds = ApproverLayer::where('requester_id', $requesterId)->pluck('approver_id')->toArray();
+
 
         $deletableApproverIds = array_diff($approverIds, $approverLayers);
-
-        ApproverLayer::whereIn('id', $deletableApproverIds)->delete();
+        if(count($deletableApproverIds) > 0) {
+            ApproverLayer::where('requester_id', $requesterId)
+                ->whereIn('approver_id', $deletableApproverIds)->delete();
+        }
 
         foreach ($approverLayers as $approverId) {
-            ApproverLayer::where('id', $approverId)->update(['layer' => $layer++]);
+            ApproverLayer::updateOrCreate(
+                [
+                    'approver_id' => $approverId,
+                    'requester_id' => $requesterId
+                ],
+                ['layer' => $layer++]
+            );
         }
 
         return response()->json(['message' => 'Successfully arranged'], 200);
