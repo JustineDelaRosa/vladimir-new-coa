@@ -19,9 +19,9 @@ class MinorCategoryController extends Controller
     public function index()
     {
         $results = [];
-        $MinorCategory = MinorCategory::with('majorCategory','accountTitle')->get();
+        $MinorCategory = MinorCategory::with('majorCategory', 'accountTitle')->get();
 
-        foreach ($MinorCategory as $item){
+        foreach ($MinorCategory as $item) {
             $results[] = [
                 'id' => $item->id,
                 'account_title' => [

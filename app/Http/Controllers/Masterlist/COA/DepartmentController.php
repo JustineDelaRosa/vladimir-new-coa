@@ -61,8 +61,10 @@ class DepartmentController extends Controller
                         'location_sync_id' => $locations->sync_id ?? "-",
                         'location_code' => $locations->location_code ?? "-",
                         'location_name' => $locations->location_name ?? "-",
+                        'location_status' => $locations->is_active ?? '-',
                     ];
                 }),
+
                 'division' => [
                     'division_id' => $departments->division->id ?? "-",
                     'division_name' => $departments->division->division_name ?? "-",
@@ -129,6 +131,11 @@ class DepartmentController extends Controller
 //                        if ($department->is_active == 0) {
 //                            $is_active = 0;
 //                        }
+//                    }
+
+//                    //if the status is false, detach the location in the pivot table
+//                    if ($dept['status'] == false) {
+//                        $sync->locations()->detach();
 //                    }
                 }
             }
@@ -227,6 +234,7 @@ class DepartmentController extends Controller
                         'location_sync_id' => $locations->sync_id ?? "-",
                         'location_code' => $locations->location_code ?? "-",
                         'location_name' => $locations->location_name ?? "-",
+                        'location_status' => $locations->is_active ?? '-',
                     ];
                 }),
                 'division' => [

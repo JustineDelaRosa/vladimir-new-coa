@@ -16,11 +16,42 @@ class LocationController extends Controller
      */
     public function index()
     {
+//        $location = Location::with('departments')->where('is_active', 1)->get();
+////        return $location;
+//        return response()->json([
+//            'message' => 'Fixed Assets retrieved successfully.',
+//            'data' => $location
+//        ], 200);
+
+
+        $results = [];
         $location = Location::with('departments')->where('is_active', 1)->get();
-//        return $location;
+
+        foreach ($location as $loc) {
+            $results[] = [
+                'id' => $loc->id,
+                'sync_id' => $loc->sync_id,
+                'location_code' => $loc->location_code,
+                'location_name' => $loc->location_name,
+                'departments' => $loc->departments->map(function ($departments) {
+                    return [
+                        'id' => $departments->id ?? '-',
+                        'sync_id' => $departments->sync_id ?? '-',
+                        'department_code' => $departments->department_code ?? '-',
+                        'department_name' => $departments->department_name ?? '-',
+                        'department_status' => $departments->is_active ?? '-',
+                    ];
+                }),
+                'is_active' => $loc->is_active,
+                'created_at' => $loc->created_at,
+                'updated_at' => $loc->updated_at,
+            ];
+        }
+//        return
+
         return response()->json([
-            'message' => 'Fixed Assets retrieved successfully.',
-            'data' => $location
+            'message' => 'Location retrieved successfully.',
+            'data' => $results
         ], 200);
     }
 
@@ -55,6 +86,11 @@ class LocationController extends Controller
 
             $department_ids = array_column($location['departments'], 'id');
             $locationInDB->departments()->sync($department_ids);
+
+//            //if the status is false, detach the department in the pivot table
+//            if ($location['status'] == false) {
+//                $locationInDB->departments()->detach();
+//            }
         }
 
         return response()->json(['message' => 'Successfully Synced!']);
@@ -174,26 +210,26 @@ class LocationController extends Controller
             ->orderby('created_at', 'DESC')
             ->paginate($limit);
 
-        $Location->getCollection()->transform(function ($location){
+        $Location->getCollection()->transform(function ($location) {
             return [
                 'id' => $location->id,
                 'sync_id' => $location->sync_id,
                 'location_code' => $location->location_code,
                 'location_name' => $location->location_name,
-                'departments' => $location->departments->map(function ($departments){
-                    return[
-                        'department_id' => $departments->id ?? '-',
-                        'department_sync_id' => $departments->sync_id ?? '-',
+                'departments' => $location->departments->map(function ($departments) {
+                    return [
+                        'id' => $departments->id ?? '-',
+                        'sync_id' => $departments->sync_id ?? '-',
                         'department_code' => $departments->department_code ?? '-',
                         'department_name' => $departments->department_name ?? '-',
+                        'department_status' => $departments->is_active ?? '-',
                     ];
                 }),
                 'is_active' => $location->is_active,
                 'created_at' => $location->created_at,
                 'updated_at' => $location->updated_at,
             ];
-
-    });
+        });
         return $Location; //Todo: Add all the departments tagged to this location
     }
 

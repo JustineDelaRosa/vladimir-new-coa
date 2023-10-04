@@ -51,6 +51,8 @@ class FixedAssetController extends Controller
 
     public function store(FixedAssetRequest $request)
     {
+
+//        return $request->all();
         $vladimirTagNumber = $this->vladimirTagGeneratorRepository->vladimirTagGenerator();
         if (!is_numeric($vladimirTagNumber) || strlen($vladimirTagNumber) != 13) {
             return response()->json([
@@ -78,17 +80,18 @@ class FixedAssetController extends Controller
                 422
             );
         }
+
         $departmentQuery = Department::with('location')->where('id', $request->department_id)->first();
         $fixedAsset = $this->fixedAssetRepository->storeFixedAsset($request->all(), $vladimirTagNumber, $departmentQuery);
         if ($fixedAsset == "Not yet fully depreciated") {
-                return response()->json([
-                    'message' => 'The given data was invalid.',
-                    'errors' => [
-                        'end_depreciation' => [
-                            $fixedAsset
-                        ]
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => [
+                    'end_depreciation' => [
+                        $fixedAsset
                     ]
-                ], 422
+                ]
+            ], 422
             );
         }
         //return the fixed asset and formula
@@ -155,7 +158,7 @@ class FixedAssetController extends Controller
         $departmentQuery = Department::where('id', $request->department_id)->first();
         $fixedAsset = FixedAsset::where('id', $id)->first();
         if ($fixedAsset) {
-            $fixed_asset =  $this->fixedAssetRepository->updateFixedAsset($request->all(), $departmentQuery, $id);
+            $fixed_asset = $this->fixedAssetRepository->updateFixedAsset($request->all(), $departmentQuery, $id);
             if ($fixed_asset == "Not yet fully depreciated") {
                 return response()->json([
                     'message' => 'The given data was invalid.',
@@ -264,6 +267,8 @@ class FixedAssetController extends Controller
 
     public function search(Request $request)
     {
+//        return FixedAsset::useFilters()->dynamicPaginate();
+
         $search = $request->get('search');
         $limit = $request->get('limit');
         $page = $request->get('page');
@@ -425,14 +430,16 @@ class FixedAssetController extends Controller
         $properties = $fixedAsset->formula;
         $depreciation_method = $fixedAsset->depreciation_method;
         $est_useful_life = $fixedAsset->majorCategory->est_useful_life;
+        $start_depreciation = $fixedAsset->formula->start_depreciation;
+        $end_depreciation = $fixedAsset->formula->end_depreciation;
         $custom_end_depreciation = $validator->validated()['date'];
 
         //calculation variables
         $custom_age = $this->calculationRepository->getMonthDifference($properties->start_depreciation, $custom_end_depreciation);
-        $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->depreciable_basis, $properties->scrap_value, $est_useful_life);
-        $yearly_depreciation = $this->calculationRepository->getYearlyDepreciation($properties->depreciable_basis, $properties->scrap_value, $est_useful_life);
-        $accumulated_cost = $this->calculationRepository->getAccumulatedCost($monthly_depreciation, $custom_age);
-        $remaining_book_value = $this->calculationRepository->getRemainingBookValue($properties->depreciable_basis, $accumulated_cost);
+        $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $est_useful_life);
+        $yearly_depreciation = $this->calculationRepository->getYearlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $est_useful_life);
+        $accumulated_cost = $this->calculationRepository->getAccumulatedCost($monthly_depreciation, $custom_age, $properties->depreciable_basis);
+        $remaining_book_value = $this->calculationRepository->getRemainingBookValue($properties->acquisition_cost, $accumulated_cost);
 
         if ($depreciation_method === 'One Time') {
             $age = 0.083333333333333;
@@ -456,7 +463,7 @@ class FixedAssetController extends Controller
                 'depreciable_basis' => $properties->depreciable_basis,
                 'est_useful_life' => $est_useful_life,
                 'months_depreciated' => $custom_age,
-                'scarp_value' => $properties->scrap_value,
+                'scrap_value' => $properties->scrap_value,
                 'start_depreciation' => $properties->start_depreciation,
                 'end_depreciation' => $properties->end_depreciation,
                 'depreciation_per_month' => $monthly_depreciation,

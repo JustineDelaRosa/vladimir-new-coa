@@ -50,43 +50,43 @@ class MasterlistExport implements
         $endDate = $this->endDate;
         $fixedAsset = FixedAsset::query()
             ->with([
-                'formula'=>function($query){
+                'formula' => function ($query) {
                     $query->withTrashed();
                 },
-                'majorCategory'=>function($query){
+                'majorCategory' => function ($query) {
                     $query->withTrashed();
                 },
-                'minorCategory'=>function($query){
+                'minorCategory' => function ($query) {
                     $query->withTrashed();
                 },
-                'division'=>function($query){
+                'division' => function ($query) {
                     $query->withTrashed();
                 },
             ])
             ->when($search, function ($query, $search) {
-                return  $query->Where('project_name',$search)
-                    ->orWhere('vladimir_tag_number',$search)
-                    ->orWhere('tag_number',$search)
-                    ->orWhere('tag_number_old',$search)
+                return $query->Where('project_name', $search)
+                    ->orWhere('vladimir_tag_number', $search)
+                    ->orWhere('tag_number', $search)
+                    ->orWhere('tag_number_old', $search)
                     //->orWhere('asset_description',$search)
-                    ->orWhere('accountability',$search)
-                    ->orWhere('accountable',$search)
-                    ->orWhere('brand',$search)
-                    ->orWhere('depreciation_method',$search)
+                    ->orWhere('accountability', $search)
+                    ->orWhere('accountable', $search)
+                    ->orWhere('brand', $search)
+                    ->orWhere('depreciation_method', $search)
                     ->orWhereHas('majorCategory', function ($query) use ($search) {
                         $query->withTrashed()->where('major_category_name', $search);
                     })
                     ->orWhereHas('minorCategory', function ($query) use ($search) {
-                        $query->withTrashed()->where('minor_category_name',  $search );
+                        $query->withTrashed()->where('minor_category_name', $search);
                     })
                     ->orWhereHas('division', function ($query) use ($search) {
-                        $query->withTrashed()->where('division_name',  $search);
+                        $query->withTrashed()->where('division_name', $search);
                     })
                     ->orWhereHas('company', function ($query) use ($search) {
                         $query->where('company_name', $search);
                     })
                     ->orWhereHas('department', function ($query) use ($search) {
-                        $query->where('department_name', $search );
+                        $query->where('department_name', $search);
                     })
                     ->orWhereHas('location', function ($query) use ($search) {
                         $query->where('location_name', $search);
@@ -225,24 +225,24 @@ class MasterlistExport implements
     public function registerEvents(): array
     {
 
-        return[
-          AfterSheet::class => function(AfterSheet $event){
-              $event->sheet->getStyle('A1:AP1')->applyFromArray([
-                  //capitalized all header
-                  'font' => [
-                      'bold' => true,
-                  ],
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
+                $event->sheet->getStyle('A1:AP1')->applyFromArray([
+                    //capitalized all header
+                    'font' => [
+                        'bold' => true,
+                    ],
 
-                  'alignment' => [
+                    'alignment' => [
                         'horizontal' => Alignment::HORIZONTAL_CENTER,
-                  ],
-                  'fill' => [
-                      'fillType' => Fill::FILL_SOLID,
-                      'startColor' => [
-                          'rgb' => 'FFFF00'
-                      ],
-                  ],
-                  //border every cell of the header
+                    ],
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => [
+                            'rgb' => 'FFFF00'
+                        ],
+                    ],
+                    //border every cell of the header
                     'borders' => [
                         'outline' => [
                             'borderStyle' => Border::BORDER_THIN,
@@ -250,15 +250,15 @@ class MasterlistExport implements
                         ],
                     ],
 
-              ]);
-              $lastRow = $event->sheet->getHighestRow();
-              //align center as long as there is data in the cell
-              $event->sheet->getStyle('A2:AO'.$lastRow)->applyFromArray([
-                  'alignment' => [
+                ]);
+                $lastRow = $event->sheet->getHighestRow();
+                //align center as long as there is data in the cell
+                $event->sheet->getStyle('A2:AO' . $lastRow)->applyFromArray([
+                    'alignment' => [
                         'horizontal' => Alignment::HORIZONTAL_CENTER,
-                  ],
-              ]);
-          }
+                    ],
+                ]);
+            }
         ];
     }
 }

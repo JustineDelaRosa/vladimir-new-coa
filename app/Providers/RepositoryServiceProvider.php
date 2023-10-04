@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Repositories\ApprovedRequestRepository;
 use App\Repositories\CalculationRepository;
 use App\Repositories\CrudRepository;
 use App\Repositories\FixedAssetExportRepository;
@@ -23,6 +24,7 @@ class RepositoryServiceProvider extends ServiceProvider
             VladimirTagGeneratorRepository::class,
             CalculationRepository::class,
             FixedAssetExportRepository::class,
+            ApprovedRequestRepository::class
         ];
 
         foreach ($repositories as $repository) {

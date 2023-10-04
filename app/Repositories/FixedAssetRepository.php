@@ -60,7 +60,7 @@ class FixedAssetRepository
             'accumulated_cost' => $request['accumulated_cost'] ?? 0,
             'months_depreciated' => $request['months_depreciated'] ?? 0,
             'release_date' => $request['release_date'] ?? Null,
-            'end_depreciation' => isset($request['release_date'])
+            'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
                     strtoupper($request['depreciation_method']) == 'STL'
@@ -70,7 +70,7 @@ class FixedAssetRepository
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
-            'start_depreciation' => isset($request['release_date'])
+            'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getStartDepreciation($request['release_date'])
                 : null
         ]);
@@ -91,6 +91,7 @@ class FixedAssetRepository
             'major_category_id' => $request['major_category_id'],
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
+            'voucher_date' => $request['voucher_date'],
             'receipt' => $request['receipt'] ?? '-',
             'quantity' => $request['quantity'],
             'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
@@ -149,6 +150,7 @@ class FixedAssetRepository
             'major_category_id' => $request['major_category_id'],
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
+            'voucher_date' => $request['voucher_date'],
             'receipt' => $request['receipt'] ?? '-',
             'quantity' => $request['quantity'],
             'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
@@ -166,6 +168,8 @@ class FixedAssetRepository
             'department_id' => $request['department_id'],
             'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
+//            'print_count' => $request['print_count'] ?? $fixedAsset->print_count,
+//            'last_printed' => $request['print_count'] == $fixedAsset->print_count ? $fixedAsset->last_printed : Carbon::now(),
         ]);
 
         $fixedAsset->formula()->update([
@@ -179,7 +183,7 @@ class FixedAssetRepository
             'accumulated_cost' => $request['accumulated_cost'] ?? 0,
             'months_depreciated' => $request['months_depreciated'] ?? 0,
             'release_date' => $request['release_date'] ?? Null,
-            'end_depreciation' => isset($request['release_date'])
+            'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
                     strtoupper($request['depreciation_method']) == 'STL'
@@ -189,7 +193,7 @@ class FixedAssetRepository
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
-            'start_depreciation' => isset($request['release_date'])
+            'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getStartDepreciation($request['release_date'])
                 : null
         ]);
@@ -230,6 +234,7 @@ class FixedAssetRepository
             'major_category_id',
             'minor_category_id',
             'voucher',
+            'voucher_date',
             'receipt',
             'quantity',
             'depreciation_method',
@@ -249,6 +254,7 @@ class FixedAssetRepository
             'account_id',
             'remarks',
             'created_at',
+            DB::raw("NULL as add_cost_sequence"),
         ];
 
         $additionalCostFields = [
@@ -269,6 +275,7 @@ class FixedAssetRepository
             'additional_costs.major_category_id',
             'additional_costs.minor_category_id',
             'additional_costs.voucher',
+            'additional_costs.voucher_date',
             'additional_costs.receipt',
             'additional_costs.quantity',
             'additional_costs.depreciation_method',
@@ -287,7 +294,8 @@ class FixedAssetRepository
             'additional_costs.location_id',
             'additional_costs.account_id',
             'additional_costs.remarks',
-            'fixed_assets.created_at'
+            'fixed_assets.created_at',
+            'additional_costs.add_cost_sequence',
         ];
         $firstQuery = ($status === 'deactivated')
             ? FixedAsset::onlyTrashed()->select($fixedAssetFields)
@@ -298,7 +306,7 @@ class FixedAssetRepository
             : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
 
-        $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'desc')->get();
+        $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'asc')->get();
 
         //if search is not empty
         if (!empty($search)) {
@@ -372,6 +380,7 @@ class FixedAssetRepository
             ],
             'est_useful_life' => $fixed_asset->majorCategory->est_useful_life ?? '-',
             'voucher' => $fixed_asset->voucher,
+            'voucher_date' => $fixed_asset->voucher_date ?? '-',
             'receipt' => $fixed_asset->receipt,
             'quantity' => $fixed_asset->quantity,
             'depreciation_method' => $fixed_asset->depreciation_method,
@@ -406,7 +415,7 @@ class FixedAssetRepository
             'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year,
             'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month,
             'remaining_book_value' => $fixed_asset->formula->remaining_book_value,
-            'release_date' => $fixed_asset->formula->release_date,
+            'release_date' => $fixed_asset->formula->release_date ?? '-',
             'start_depreciation' => $fixed_asset->formula->start_depreciation,
             'company' => [
                 'id' => $fixed_asset->department->company->id ?? '-',
@@ -439,6 +448,7 @@ class FixedAssetRepository
             'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
                 return [
                     'id' => $additional_cost->id,
+                    'add_cost_sequence' => $additional_cost->add_cost_sequence,
                     'asset_description' => $additional_cost->asset_description,
                     'type_of_request' => [
                         'id' => $additional_cost->typeOfRequest->id ?? '-',
@@ -463,6 +473,7 @@ class FixedAssetRepository
                     ],
                     'est_useful_life' => $additional_cost->majorCategory->est_useful_life ?? '-',
                     'voucher' => $additional_cost->voucher,
+                    'voucher_date' => $additional_cost->voucher_date ?? '-',
                     'receipt' => $additional_cost->receipt,
                     'quantity' => $additional_cost->quantity,
                     'depreciation_method' => $additional_cost->depreciation_method,
@@ -496,7 +507,7 @@ class FixedAssetRepository
                     'depreciation_per_year' => $additional_cost->formula->depreciation_per_year,
                     'depreciation_per_month' => $additional_cost->formula->depreciation_per_month,
                     'remaining_book_value' => $additional_cost->formula->remaining_book_value,
-                    'release_date' => $additional_cost->formula->release_date,
+                    'release_date' => $additional_cost->formula->release_date ?? '-',
                     'start_depreciation' => $additional_cost->formula->start_depreciation,
                     'company' => [
                         'id' => $additional_cost->department->company->id ?? '-',
@@ -573,6 +584,7 @@ class FixedAssetRepository
             ],
             'est_useful_life' => $fixed_asset->majorCategory->est_useful_life ?? '-',
             'voucher' => $fixed_asset->voucher,
+            'voucher_date' => $fixed_asset->voucher_date ?? '-',
             'receipt' => $fixed_asset->receipt,
             'is_additional_cost' => $fixed_asset->is_additional_cost,
             'status' => $fixed_asset->is_active,
@@ -626,6 +638,8 @@ class FixedAssetRepository
             'remarks' => $fixed_asset->remarks,
             'print_count' => $fixed_asset->print_count,
             'last_printed' => $fixed_asset->last_printed,
+            'created_at' => $fixed_asset->created_at,
+            'add_cost_sequence' => $fixed_asset->add_cost_sequence ?? null,
         ];
     }
 

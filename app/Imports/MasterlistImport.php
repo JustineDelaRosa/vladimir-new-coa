@@ -19,6 +19,7 @@ use App\Models\Status\MovementStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
 use App\Repositories\CalculationRepository;
+use App\Repositories\VladimirTagGeneratorRepository;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
@@ -48,11 +49,12 @@ class MasterlistImport extends DefaultValueBinder implements
 {
     use Importable;
 
-    private $calculationRepository;
+    private $calculationRepository, $vladimirTagGeneratorRepository;
 
     public function __construct()
     {
         $this->calculationRepository = new CalculationRepository();
+        $this->vladimirTagGeneratorRepository = new VladimirTagGeneratorRepository();
     }
 
     function headingRow(): int
@@ -71,7 +73,7 @@ class MasterlistImport extends DefaultValueBinder implements
     public function bindValue(Cell $cell, $value): bool
     {
 
-        if ($cell->getColumn() == 'V') {
+        if ($cell->getColumn() == 'W') {
             $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y-m-d'), DataType::TYPE_STRING);
             return true;
         }
@@ -80,38 +82,43 @@ class MasterlistImport extends DefaultValueBinder implements
         return parent::bindValue($cell, $value);
     }
 
+    /**
+     * @throws Exception
+     * @throws ValidationException
+     */
     public function collection(Collection $collections)
     {
 
-        //        $client = new Client();
-        //        $token = '9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4';
-        //        $response = $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
-        //            'headers' => [
-        //                'Authorization' => 'Bearer ' . $token,
-        //                'Accept' => 'application/json',
-        //            ],
-        //        ]);
-        //
-        //// Get the body content from the response
-        //        $body = $response->getBody()->getContents();
-        //
-        //// Decode the JSON response into an associative array
-        //        $data = json_decode($body, true);
-        //        $nameToCheck = [
-        //            'Perona, jerome',
-        //            'Dela Rosa, Justine',
-        //            'Nucum, Caren'
-        //        ];
-        //
-        //        if (!empty($data['data']) && is_array($data['data'])) {
-        //            foreach ($data['data'] as $employee) {
-        //                if (!empty($employee['general_info']) && in_array($employee['general_info']['full_name'], $nameToCheck)) {
-        //                    echo $employee['general_info']['full_id_number'] . PHP_EOL;
-        //                    break;
-        //                }
-        //            }
-        //        }
+//        dd($collections);
 
+//        $client = new Client();
+//        $token = '9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4';
+//        $response = $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
+//            'headers' => [
+//                'Authorization' => 'Bearer ' . $token,
+//                'Accept' => 'application/json',
+//            ],
+//        ]);
+//
+//// Get the body content from the response
+//        $body = $response->getBody()->getContents();
+//
+//// Decode the JSON response into an associative array
+//        $data = json_decode($body, true);
+//        $nameToCheck = [
+//            'Perona, jerome',
+//            'Dela Rosa, Justine',
+//            'Nucum, Caren'
+//        ];
+//
+//        if (!empty($data['data']) && is_array($data['data'])) {
+//            foreach ($data['data'] as $employee) {
+//                if (!empty($employee['general_info']) && in_array($employee['general_info']['full_name'], $nameToCheck)) {
+//                    echo $employee['general_info']['full_id_number'] . PHP_EOL;
+//                    break;
+//                }
+//            }
+//        }
         //if a collection is empty, pass an empty array
         if ($collections->isEmpty()) {
             $collections = collect([]);
@@ -148,6 +155,7 @@ class MasterlistImport extends DefaultValueBinder implements
 
     private function getMinorCategoryId($minorCategoryName, $majorCategoryId)
     {
+
         $minorCategory = MinorCategory::withTrashed()
             ->where('minor_category_name', $minorCategoryName)
             ->where('major_category_id', $majorCategoryId)
@@ -167,7 +175,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'depreciable_basis' => $collection['depreciable_basis'],
             'accumulated_cost' => $collection['accumulated_cost'],
             'months_depreciated' => $this->calculationRepository->getMonthDifference(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
-            //            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
+//            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
             'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life, $collection['depreciation_method']),
             'depreciation_per_year' => $collection['depreciation_per_year'],
             'depreciation_per_month' => $collection['depreciation_per_month'],
@@ -177,19 +185,21 @@ class MasterlistImport extends DefaultValueBinder implements
         ]);
     }
 
+    /**
+     * @throws Exception
+     */
     private function createFixedAsset($formula, $collection, $majorCategoryId, $minorCategoryId)
     {
         // Check if necessary IDs exist before creating FixedAsset
         if ($majorCategoryId == null || $minorCategoryId == null) {
             throw new Exception('Unable to create FixedAsset due to missing Major/Minor category ID.');
         }
-        //get est_useful_life from major category
 
 
         $formula->fixedAsset()->create([
             'capex_id' => Capex::where('capex', $collection['capex'])->first()->id ?? null,
             'sub_capex_id' => SubCapex::where('sub_capex', $collection['sub_capex'])->first()->id ?? null,
-            'vladimir_tag_number' => $this->vladimirTagGenerator(),
+            'vladimir_tag_number' => $this->vladimirTagGeneratorRepository->vladimirTagGenerator(),
             'tag_number' => $collection['tag_number'] ?? '-',
             'tag_number_old' => $collection['tag_number_old'] ?? '-',
             'asset_description' => ucwords(strtolower($collection['description'])),
@@ -203,6 +213,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'major_category_id' => $majorCategoryId,
             'minor_category_id' => $minorCategoryId,
             'voucher' => ucwords(strtolower($collection['voucher'])),
+            'voucher_date' => $collection['voucher_date'] == '-' ? null : $collection['voucher_date'],
             //check for unnecessary spaces and trim them to one space only
             'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
             'quantity' => $collection['quantity'],
@@ -220,11 +231,11 @@ class MasterlistImport extends DefaultValueBinder implements
             'location_id' => Location::where('location_code', $collection['location_code'])->first()->id,
             'account_id' => AccountTitle::where('account_title_code', $collection['account_code'])->first()->id,
         ]);
+//        dd($formula->fixedAsset());
     }
 
 
-
-    //Todo: if the id is trashed then what should i do with the id?
+//Todo: if the id is trashed then what should i do with the id?
     function rules($collection): array
     {
         $collections = collect($collection);
@@ -377,25 +388,51 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Minor Category does not exist');
                 }
             }],
+
             '*.voucher' => ['required', function ($attribute, $value, $fail) {
-                if ($value == '-') {
-                    $fail('Voucher is required');
-                }
+//                if ($value == '-') {
+////                    $fail('Voucher is required');
+//                }
+//                $voucher = FixedAsset::where('voucher', $value)->first();
+//                //check the created_at if it is the same date with the uploaded date of the voucher if it is the same then it will pass the validation
+//                if ($voucher) {
+//                    $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
+//                    $current_date = Carbon::now()->format('Y-m-d');
+//                    if ($uploaded_date != $current_date) {
+//                        $fail('Voucher previously uploaded.');
+//                    }
+//                }
+
             }],
-            '*.receipt' => ['required', function ($attribute, $value, $fail) {
-                if ($value == '-') {
-                    $fail('Receipt is required');
+            '*.voucher_date' => [
+                'required',
+                function ($attribute, $value, $fail) use ($collections) {
+                    $index = array_search($attribute, array_keys($collections->toArray()));
+                    $voucher = $collections[$index]['voucher'];
+                    if ($voucher == '-') {
+                        if ($value != '-') {
+                            $fail('Voucher date should be empty');
+                            return;
+                        }
+                        return;
+                    }
+                    $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
                 }
+            ],
+            '*.receipt' => ['required', function ($attribute, $value, $fail) {
+//                if ($value == '-') {
+//                    $fail('Receipt is required');
+//                }
             }],
             '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required|in:STL,One Time',
             '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],
-            '*.acquisition_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) use ($collections) {
+            '*.acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $scrap_value = $collections[$index]['scrap_value'];
 
                 if ($value < $scrap_value) {
-                    $fail('Acquisition cost must not be less than scrap value');
+                    $fail('Acquisition cost should exceed scrap value.');
                 }
 
                 if ($value < 0) {
@@ -403,12 +440,13 @@ class MasterlistImport extends DefaultValueBinder implements
                 }
             }],
             '*.scrap_value' => ['required',],
-            '*.depreciable_basis' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+            '*.depreciable_basis' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Depreciation basis must not be negative');
                 }
             }],
-            '*.accumulated_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+//            ''regex:/^\d+(\.\d{1,2})?$/''
+            '*.accumulated_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Accumulated cost must not be negative');
                 }
@@ -419,11 +457,15 @@ class MasterlistImport extends DefaultValueBinder implements
             ],
             '*.depreciation_status' => [
                 'required',
-                Rule::exists('depreciation_statuses', 'depreciation_status_name')->whereNull('deleted_at'),
+                'exists:depreciation_statuses,depreciation_status_name,deleted_at,NULL',
                 function ($attribute, $value, $fail) use ($collections) {
                     $index = array_search($attribute, array_keys($collections->toArray()));
                     //allow only fully depreciated and running depreciation
                     $depreciation = DepreciationStatus::where('depreciation_status_name', $value)->first();
+                    if (!$depreciation) {
+                        $fail('Invalid depreciation status');
+                        return;
+                    }
                     if ($depreciation->depreciation_status_name != 'Fully Depreciated' && $depreciation->depreciation_status_name != 'Running Depreciation') {
                         $fail('Invalid depreciation status');
                     }
@@ -447,24 +489,18 @@ class MasterlistImport extends DefaultValueBinder implements
             ],
             '*.care_of' => 'required',
             '*.end_depreciation' => ['required', function ($attribute, $value, $fail) use ($collections) {
-                $index = array_search($attribute, array_keys($collections->toArray()));
-                $depreciation_status_name = $collections[$index]['depreciation_status'];
-                $depreciation_status = DepreciationStatus::where('depreciation_status_name', $depreciation_status_name)->first();
-                if ($depreciation_status->depreciation_status_name == 'Fully Depreciated') {
-                    //if the date value is not yet passed the current date
-                    if (!Carbon::parse($value)->isAfter(Carbon::now())) {
-                        $fail('not yet fully depreciated');
-                    }
-                }
+                $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
             }],
             '*.depreciation_per_year' => ['required'],
             '*.depreciation_per_month' => ['required'],
-            '*.remaining_book_value' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+            '*.remaining_book_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Remaining book value must not be negative');
                 }
             }],
-            '*.start_depreciation' => ['required'],
+            '*.start_depreciation' => ['required', function ($attribute, $value, $fail) {
+                $this->calculationRepository->validationForDate($attribute, $value, $fail);
+            }],
             '*.company_code' => ['required', 'exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $company_name = $collections[$index]['company'];
@@ -479,13 +515,22 @@ class MasterlistImport extends DefaultValueBinder implements
             }],
             '*.department_code' => ['required', 'exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
-                $company_code = $collections[$index]['company_code'];
-                $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
-                $department = Department::where('department_code', $value)
-                    ->where('company_sync_id', $company_sync_id)
+                $department_name = $collections[$index]['department'];
+                $department = Department::query()
+                    ->where('department_code', $value)
+                    ->where('department_name', $department_name)
+                    ->where('is_active', '!=', 0)
                     ->first();
                 if (!$department) {
-                    $fail('Invalid location, company and department combination');
+                    $fail('Invalid department');
+                }
+                $company_code = $collections[$index]['company_code'];
+                $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
+                $departmentCompCheck = Department::where('department_code', $value)
+                    ->where('company_sync_id', $company_sync_id)
+                    ->first();
+                if (!$departmentCompCheck) {
+                    $fail('Invalid department and company combination');
                 }
             }],
             '*.location_code' => ['required', 'exists:locations,location_code', function ($attribute, $value, $fail) use ($collections) {
@@ -526,60 +571,69 @@ class MasterlistImport extends DefaultValueBinder implements
     function messages(): array
     {
         return [
-            '*.capex_id.exists' => 'Capex does not exist',
-            '*.vladimir_tag_number.required' => 'Vladimir Tag Number is required',
-            '*.tag_number.required' => 'Tag Number is required',
-            '*.tag_number_old.required' => 'Tag Number Old is required',
-            '*.asset_description.required' => 'Description is required',
-            '*.type_of_request.required' => 'Type of Request is required',
-            '*.type_of_request.in' => 'Invalid Type of Request',
-            '*.additional_description.required' => 'Additional Description is required',
+            '*.capex.exists' => 'Capex does not exist',
+            '*.sub_capex.exists' => 'Sub Capex does not exist',
+            '*.project_name.exists' => 'Project name does not exist',
+            '*.sub_project.exists' => 'Sub project does not exist',
+            '*.major_category.exists' => 'Major Category does not exist',
+            '*.minor_category.exists' => 'Minor Category does not exist',
+            '*.voucher.required' => 'Voucher is required',
+            '*.voucher_date.required' => 'Voucher date is required',
+            '*.receipt.required' => 'Receipt is required',
+            '*.tag_number.required' => 'Tag number is required',
+            '*.tag_number.regex' => 'Tag number must be 6 to 13 digits',
+            '*.tag_number_old.required' => 'Tag number old is required',
+            '*.tag_number_old.regex' => 'Tag number old must be 6 to 13 digits',
+            '*.description.required' => 'Description is required',
+            '*.type_of_request.required' => 'Type of request is required',
+            '*.type_of_request.exists' => 'Type of request does not exist',
+            '*.charged_department.required' => 'Charged department is required',
+            '*.charged_department.exists' => 'Charged department does not exist',
+            '*.additional_description.required' => 'Additional description is required',
             '*.accountability.required' => 'Accountability is required',
             '*.accountable.required_if' => 'Accountable is required',
-            '*.cellphone_number.required' => 'Cellphone Number is required',
+            '*.cellphone_number.required' => 'Cellphone number is required',
             '*.brand.required' => 'Brand is required',
-            '*.major_category.required' => 'Major Category is required',
-            '*.major_category.exists' => 'Major Category does not exist',
-            '*.minor_category.required' => 'Minor Category is required',
-            '*.voucher.required' => 'Voucher is required',
-            '*.receipt.required' => 'Receipt is required',
+            '*.major_category.required' => 'Major category is required',
+            '*.minor_category.required' => 'Minor category is required',
             '*.quantity.required' => 'Quantity is required',
-            '*.quantity.numeric' => 'Quantity must be a number',
-            '*.depreciation_method.required' => 'Depreciation Method is required',
-            '*.depreciation_method.in' => 'The selected depreciation method is invalid.',
-            '*.acquisition_date.required' => 'Acquisition Date is required',
-            '*.acquisition_date.date_format' => 'Invalid date format',
-            '*.acquisition_date.date' => 'Invalid date',
-            '*.acquisition_date.before_or_equal' => 'Acquisition Date must be a date before or equal to today.',
-            '*.acquisition_cost.required' => 'Acquisition Cost is required',
-            '*.scrap_value.required' => 'Scrap Value is required',
+            '*.depreciation_method.required' => 'Depreciation method is required',
+            '*.acquisition_date.required' => 'Acquisition date is required',
+            '*.acquisition_date.date_format' => 'Acquisition date must be in Y-m-d format',
+            '*.acquisition_date.date' => 'Acquisition date must be a valid date',
+            '*.acquisition_date.before_or_equal' => 'Acquisition date must be before or equal to today',
+            '*.acquisition_cost.required' => 'Acquisition cost is required',
+            '*.acquisition_cost.regex' => 'Acquisition cost must be a number',
+            '*.scrap_value.required' => 'Scrap value is required',
             '*.depreciable_basis.required' => 'Depreciable basis is required',
-            '*.accumulated_cost.required' => 'Accumulated Cost is required',
-            '*.asset_status.required' => 'Status is required',
-            '*.asset_status.in' => 'The selected status is invalid.',
-            '*.depreciation_status.required' => 'Depreciation Status is required',
-            '*.depreciation_status.in' => 'The selected depreciation status is invalid.',
-            '*.cycle_count_status.required' => 'Cycle Count Status is required',
-            '*.cycle_count_status.in' => 'The selected cycle count status is invalid.',
-            '*.movement_status.required' => 'Movement Status is required',
-            '*.movement_status.in' => 'The selected movement status is invalid.',
-            '*.care_of.required' => 'Care Of is required',
-            '*.end_depreciation.required' => 'End Depreciation is required',
-            '*.depreciation_per_year.required' => 'Depreciation Per Year is required',
-            '*.depreciation_per_month.required' => 'Depreciation Per Month is required',
-            '*.remaining_book_value.required' => 'Remaining Book Value is required',
-            '*.start_depreciation.required' => 'Start Depreciation is required',
-            '*.start_depreciation.date_format' => 'Invalid date format',
-            '*.company_code.required' => 'Company Code is required',
-            '*.company_code.exists' => 'Company Code does not exist',
-            '*.department_code.required' => 'Department Code is required',
-            '*.department_code.exists' => 'Department Code does not exist',
-            '*.charged_department.required' => 'Charge Department is required',
-            '*.charged_department.exists' => 'Charge Department does not exist',
-            '*.location_code.required' => 'Location Code is required',
-            '*.location_code.exists' => 'Location Code does not exist',
-            '*.account_code.required' => 'Account Code is required',
-            '*.account_code.exists' => 'Account Code does not exist',
+            '*.depreciable_basis.regex' => 'Depreciable basis must be a number',
+            '*.accumulated_cost.required' => 'Accumulated cost is required',
+            '*.accumulated_cost.regex' => 'Accumulated cost must be a number',
+            '*.asset_status.required' => 'Asset status is required',
+            '*.asset_status.exists' => 'Asset status does not exist',
+            '*.depreciation_status.required' => 'Depreciation status is required',
+            '*.depreciation_status.exists' => 'Depreciation status does not exist',
+            '*.cycle_count_status.required' => 'Cycle count status is required',
+            '*.cycle_count_status.exists' => 'Cycle count status does not exist',
+            '*.movement_status.required' => 'Movement status is required',
+            '*.movement_status.exists' => 'Movement status does not exist',
+            '*.care_of.required' => 'Care of is required',
+            '*.end_depreciation.required' => 'End depreciation is required',
+            '*.depreciation_per_year.required' => 'Depreciation per year is required',
+            '*.depreciation_per_month.required' => 'Depreciation per month is required',
+            '*.remaining_book_value.required' => 'Remaining book value is required',
+            '*.remaining_book_value.regex' => 'Remaining book value must be a number',
+            '*.start_depreciation.required' => 'Start depreciation is required',
+            '*.company_code.required' => 'Company code is required',
+            '*.company_code.exists' => 'Company code does not exist',
+            '*.department_code.required' => 'Department code is required',
+            '*.department_code.exists' => 'Department code does not exist',
+            '*.location_code.required' => 'Location code is required',
+            '*.location_code.exists' => 'Location code does not exist',
+            '*.account_code.required' => 'Account code is required',
+            '*.account_code.exists' => 'Account code does not exist',
         ];
+
     }
+
 }

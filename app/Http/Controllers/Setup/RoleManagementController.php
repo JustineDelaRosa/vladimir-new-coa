@@ -20,7 +20,7 @@ class RoleManagementController extends Controller
         $RoleManagement = RoleManagement::get();
         foreach($RoleManagement as $access){
             $access_permission = explode(", ", $access->access_permission);
-        
+
             $access['access_permission'] = $access_permission;
         }
         return $RoleManagement;
@@ -34,7 +34,7 @@ class RoleManagementController extends Controller
      */
     public function store(RoleManagementRequest $request)
     {
-        $role_name = $request->role_name;
+        $role_name = ucwords(strtolower($request->role_name));
         $access_permission = $request->access_permission;
         $accessConvertedToString = implode(", ",$access_permission);
         $create = RoleManagement::create([
@@ -69,7 +69,7 @@ class RoleManagementController extends Controller
      */
     public function update(RoleManagementRequest $request, $id)
     {
-        $role_name = $request->role_name;
+        $role_name = ucwords(strtolower($request->role_name));
         $access_permission = $request->access_permission;
         $accessConvertedToString = implode(", ",$access_permission);
         $RoleManagement = RoleManagement::find($id);
@@ -95,7 +95,7 @@ class RoleManagementController extends Controller
 
     /**
      * Remove the specified resource from storage.
-     *
+
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
@@ -105,7 +105,7 @@ class RoleManagementController extends Controller
     }
 
     public function archived(RoleManagementRequest $request, $id){
-        $status = $request->status; 
+        $status = $request->status;
         $RoleManagement = RoleManagement::query();
         if(!$RoleManagement->withTrashed()->where('id',$id)->exists()){
             return response()->json(['error' => 'Role Management Route Not Found'], 404);
@@ -118,7 +118,7 @@ class RoleManagementController extends Controller
                 return response()->json(['message' => 'Unable to Archive, Role already in used!'],409);
             }
         }
-        
+
         if($status == false){
             if(!RoleManagement::where('id', $id)->where('is_active', true)->exists()){
                 return response()->json(['message' => 'No Changes'], 200);
@@ -134,9 +134,9 @@ class RoleManagementController extends Controller
                 return response()->json(['message' => 'No Changes'], 200);
 
             }
-            else{              
+            else{
                 $restoreUser = $RoleManagement->withTrashed()->where('id',$id)->restore();
-                $updateStatus = $RoleManagement->update(['is_active' => true]); 
+                $updateStatus = $RoleManagement->update(['is_active' => true]);
                 return response()->json(['message' => 'Successfully Activated!'], 200);
             }
         }
@@ -170,7 +170,7 @@ class RoleManagementController extends Controller
         ->paginate($limit);
         foreach($RoleManagement as $access){
             $access_permission = explode(", ", $access->access_permission);
-        
+
             $access['access_permission'] = $access_permission;
         }
         return $RoleManagement;

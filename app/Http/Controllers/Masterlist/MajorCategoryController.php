@@ -15,6 +15,7 @@ class MajorCategoryController extends Controller
 {
 
     private $calculationRepository;
+
     public function __construct()
     {
         $this->calculationRepository = new CalculationRepository();
@@ -29,7 +30,7 @@ class MajorCategoryController extends Controller
     {
         $results = [];
         $major_category = MajorCategory::with('minorCategory')->get();
-        foreach ($major_category as $item){
+        foreach ($major_category as $item) {
             $results[] = [
                 'id' => $item->id,
                 'major_category_name' => $item->major_category_name,
@@ -317,8 +318,6 @@ class MajorCategoryController extends Controller
 
         return $MajorCategory;
     }
-
-
 
 
     private function applyEndDepreciation($assets, $majorCategory)

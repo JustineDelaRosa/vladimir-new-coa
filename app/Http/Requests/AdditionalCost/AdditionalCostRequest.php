@@ -2,9 +2,12 @@
 
 namespace App\Http\Requests\AdditionalCost;
 
+use App\Models\AdditionalCost;
 use App\Models\Department;
+use App\Models\FixedAsset;
 use App\Models\Location;
 use App\Models\Status\DepreciationStatus;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AdditionalCostRequest extends FormRequest
@@ -26,11 +29,11 @@ class AdditionalCostRequest extends FormRequest
      */
     public function rules()
     {
-        if($this->isMethod('post')){
+        if ($this->isMethod('post')) {
             return $this->getArr();
         }
 
-        if($this->isMethod('put') && ($this->route()->parameter('additional_cost'))){
+        if ($this->isMethod('put') && ($this->route()->parameter('additional_cost'))) {
             $id = $this->route()->parameter('additional_cost');
             return [
 //                'fixed_asset_id' => 'required|exists:fixed_assets,id',
@@ -41,25 +44,26 @@ class AdditionalCostRequest extends FormRequest
                 'accountable' => [
                     'required_if:accountability,Personal Issued',
                     function ($attribute, $value, $fail) {
-                        $accountability = request()->input('accountable');
-                        //if accountable is null continue
-                        if ($value == null) {
+                        $accountable = request()->input('accountable');
+                        //if the value of accountability is not Personal Issued, continue
+                        if (request()->accountability != 'Personal Issued') {
+                            request()->merge(['accountable' => null]);
                             return;
                         }
 
                         // Check if necessary keys exist to avoid undefined index
-                        if (isset($accountability['general_info']['full_id_number'])) {
-                            $full_id_number = $accountability['general_info']['full_id_number'];
+                        if (isset($accountable['general_info']['full_id_number'])) {
+                            $full_id_number = $accountable['general_info']['full_id_number'];
                             request()->merge(['accountable' => $full_id_number]);
                         } else {
                             // Fail validation if keys don't exist
-                            $fail('The accountable person\'s full name is required.');
+                            $fail('The accountable person is required.');
                             return;
                         }
 
                         // Validate full name
                         if ($full_id_number === '') {
-                            $fail('The accountable person\'s full name cannot be empty.');
+                            $fail('The accountable person cannot be empty.');
                         }
                     },
                 ],
@@ -67,7 +71,55 @@ class AdditionalCostRequest extends FormRequest
                 'brand' => 'nullable',
                 'major_category_id' => 'required|exists:major_categories,id',
                 'minor_category_id' => 'required|exists:minor_categories,id',
-                'voucher' => 'nullable',
+                'voucher' => [function ($attribute, $value, $fail) {
+                    if (request()->depreciation_method != 'Supplier Rebase') {
+                        //if the depreciation status is running depreciation and fully depreciated required voucher
+                        $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                        if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+                            if (in_array($value, [null, '-'])) {
+                                $fail('Voucher is required');
+                                return;
+                            }
+//                        if ($value == '-') {
+////                            $fail('Voucher is required');
+//                            return;
+//                        }
+//                        $voucher = FixedAsset::where('voucher', $value)->first();
+//                        if ($voucher) {
+//                            $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
+//                            $current_date = Carbon::now()->format('Y-m-d');
+//                            if ($uploaded_date != $current_date) {
+//                                $fail("Voucher previously uploaded.");
+//                            }
+//                        }
+                        }
+                    }
+                }],
+                'voucher_date' => [function ($attribute, $value, $fail) {
+                    if (request()->depreciation_method != 'Supplier Rebase') {
+                        //if the depreciation status is running depreciation and fully depreciated required voucher
+                        $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                        if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+                            //get the value of the voucher
+                            if (in_array($value, [null, '-'])) {
+                                $fail('Voucher date is required');
+                                return;
+                            }
+
+                            $voucher = request()->voucher;
+
+                            $fa_voucher_date = FixedAsset::where('voucher', $voucher)->first()->voucher_date ?? null;
+                            $ac_voucher_date = AdditionalCost::where('voucher', $voucher)->first()->voucher_date ?? null;
+
+                            if (isset($fa_voucher_date) && ($fa_voucher_date != $value)) {
+                                $fail('Same voucher with different date found');
+                            }
+                            if (isset($ac_voucher_date) && ($ac_voucher_date != $value)) {
+                                $fail('Same voucher with different date found');
+                            }
+                        }
+                    }
+                }],
                 'receipt' => 'nullable',
                 'quantity' => 'required',
                 'asset_status_id' => 'required|exists:asset_statuses,id',
@@ -75,32 +127,40 @@ class AdditionalCostRequest extends FormRequest
                 'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
                 'movement_status_id' => 'required|exists:movement_statuses,id',
                 'depreciation_method' => 'required',
-                'acquisition_date' => ['required', 'date_format:Y-m-d', 'date','before_or_equal:today'],
+                'acquisition_date' => ['required', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],
                 //acquisition cost should not be less than or equal to 0
                 'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
-                    if (request()->depreciation_method == 'Donated') {
+
+                    if (request()->depreciation_method == 'Supplier Rebase') {
                         if ($value != 0) {
                             $fail('Acquisition cost should be 0');
                         }
                     }
-                    if ($value <= 0) {
+                    if ($value < 0) {
                         $fail('Invalid acquisition cost');
                     }
                 }],
-                'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail){
-                    if (request()->depreciation_method == 'Donated') {
+                'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
+                    if ($value < 0) {
+                        $fail('Invalid scrap value');
+                    }
+                    //if scrap value is geater than acquisition cost fail
+                    if ($value > request()->acquisition_cost) {
+                        $fail('Must not be greater than acquisition cost');
+                    }
+                    if (request()->depreciation_method == 'Supplier Rebase') {
                         if ($value != 0) {
                             $fail('Scrap value should be 0');
                         }
                     }
                 }],
-                'depreciable_basis' => ['required', 'numeric',function ($attribute, $value, $fail) {
-                    if (request()->depreciation_method == 'Donated') {
+                'depreciable_basis' => ['required', 'numeric', function ($attribute, $value, $fail) {
+                    if (request()->depreciation_method == 'Supplier Rebase') {
                         if ($value != 0) {
                             $fail('Depreciable basis should be 0');
                         }
                     }
-                    if ($value <= 0) {
+                    if ($value < 0) {
                         $fail('Invalid depreciable basis');
                     }
                 }],
@@ -108,8 +168,8 @@ class AdditionalCostRequest extends FormRequest
                 'care_of' => 'nullable',
                 'months_depreciated' => ['required', 'numeric', function ($attribute, $value, $fail) {
 
-                    //    if depreciation method is Donated, and no more months depreciated acquisition cost, scrap value and depreciable basis
-                    if (request()->depreciation_method == 'Donated') {
+                    //    if depreciation method is Supplier Rebase, and no more months depreciated acquisition cost, scrap value and depreciable basis
+                    if (request()->depreciation_method == 'Supplier Rebase') {
                         if ($value != 0) {
                             $fail('Months depreciated should be 0');
                         }
@@ -123,7 +183,7 @@ class AdditionalCostRequest extends FormRequest
                         }
                     }
                 }],
-                'release_date' => ['nullable','date_format:Y-m-d'],
+                'release_date' => ['nullable', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
                 'department_id' => 'required|exists:departments,id',
                 'location_id' => [
@@ -154,9 +214,9 @@ class AdditionalCostRequest extends FormRequest
                 'account_title_id' => 'required|exists:account_titles,id',
             ];
         }
-        if($this->isMethod('patch') && ($this->route()->parameter('id'))){
+        if ($this->isMethod('patch') && ($this->route()->parameter('id'))) {
             $id = $this->route()->parameter('id');
-            return[
+            return [
                 'status' => 'required|boolean',
 //                'remarks' => 'required_if:status,false|string|max:255',
             ];
@@ -165,7 +225,7 @@ class AdditionalCostRequest extends FormRequest
 
     function messages()
     {
-        return[
+        return [
             'fixed_asset_id.required' => 'The fixed asset id is required.',
             'fixed_asset_id.exists' => 'The fixed asset id must be a valid fixed asset id.',
             'asset_description.required' => 'The asset description is required.',
@@ -238,25 +298,25 @@ class AdditionalCostRequest extends FormRequest
             'accountable' => [
                 'required_if:accountability,Personal Issued',
                 function ($attribute, $value, $fail) {
-                    $accountability = request()->input('accountable');
+                    $accountable = request()->input('accountable');
                     //if accountable is null continue
                     if ($value == null) {
                         return;
                     }
 
                     // Check if necessary keys exist to avoid undefined index
-                    if (isset($accountability['general_info']['full_id_number'])) {
-                        $full_id_number = $accountability['general_info']['full_id_number'];
+                    if (isset($accountable['general_info']['full_id_number'])) {
+                        $full_id_number = $accountable['general_info']['full_id_number'];
                         request()->merge(['accountable' => $full_id_number]);
                     } else {
                         // Fail validation if keys don't exist
-                        $fail('The accountable person\'s full name is required.');
+                        $fail('The accountable person is required.');
                         return;
                     }
 
                     // Validate full name
                     if ($full_id_number === '') {
-                        $fail('The accountable person\'s full name cannot be empty.');
+                        $fail('The accountable person cannot be empty.');
                     }
                 },
             ],
@@ -264,7 +324,56 @@ class AdditionalCostRequest extends FormRequest
             'brand' => 'nullable',
             'major_category_id' => 'required|exists:major_categories,id',
             'minor_category_id' => 'required|exists:minor_categories,id',
-            'voucher' => 'nullable',
+            'voucher' => [function ($attribute, $value, $fail) {
+                if (request()->depreciation_method != 'Supplier Rebase') {
+                    //if the depreciation status is running depreciation and fully depreciated required voucher
+                    $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                    if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+
+                        if (in_array($value, [null, '-'])) {
+                            $fail('Voucher is required');
+                            return;
+                        }
+//                    if ($value == '-') {
+////                            $fail('Voucher is required');
+//                        return;
+//                    }
+//                    $voucher = FixedAsset::where('voucher', $value)->first();
+//                    if ($voucher) {
+//                        $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
+//                        $current_date = Carbon::now()->format('Y-m-d');
+//                        if ($uploaded_date != $current_date) {
+//                            $fail("Voucher previously uploaded.");
+//                        }
+//                    }
+                    }
+                }
+            }],
+            'voucher_date' => [function ($attribute, $value, $fail) {
+                if (request()->depreciation_method != 'Supplier Rebase') {
+                    //if the depreciation status is running depreciation and fully depreciated required voucher
+                    $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                    if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+                        //get the value of the voucher
+                        if (in_array($value, [null, '-'])) {
+                            $fail('Voucher date is required');
+                            return;
+                        }
+
+                        $voucher = request()->voucher;
+
+                        $fa_voucher_date = FixedAsset::where('voucher', $voucher)->first()->voucher_date ?? null;
+                        $ac_voucher_date = AdditionalCost::where('voucher', $voucher)->first()->voucher_date ?? null;
+
+                        if (isset($fa_voucher_date) && ($fa_voucher_date != $value)) {
+                            $fail('Same voucher with different date found');
+                        }
+                        if (isset($ac_voucher_date) && ($ac_voucher_date != $value)) {
+                            $fail('Same voucher with different date found');
+                        }
+                    }
+                }
+            }],
             'receipt' => 'nullable',
             'quantity' => 'required',
             'asset_status_id' => 'required|exists:asset_statuses,id',
@@ -272,32 +381,38 @@ class AdditionalCostRequest extends FormRequest
             'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
             'movement_status_id' => 'required|exists:movement_statuses,id',
             'depreciation_method' => 'required',
-            'acquisition_date' => ['required', 'date_format:Y-m-d', 'date','before_or_equal:today'],
+            'acquisition_date' => ['required', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],
             //acquisition cost should not be less than or equal to 0
             'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
-                if (request()->depreciation_method == 'Donated') {
+                if (request()->depreciation_method == 'Supplier Rebase') {
                     if ($value != 0) {
                         $fail('Acquisition cost should be 0');
                     }
                 }
-                if ($value <= 0) {
+                if ($value < 0) {
                     $fail('Invalid acquisition cost');
                 }
             }],
-            'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail){
-                if (request()->depreciation_method == 'Donated') {
+            'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
+                if ($value < 0) {
+                    $fail('Invalid scrap value');
+                }
+                if ($value > request()->acquisition_cost) {
+                    $fail('Must not be greater than acquisition cost');
+                }
+                if (request()->depreciation_method == 'Supplier Rebase') {
                     if ($value != 0) {
                         $fail('Scrap value should be 0');
                     }
                 }
             }],
-            'depreciable_basis' => ['required', 'numeric',function ($attribute, $value, $fail) {
-                if (request()->depreciation_method == 'Donated') {
+            'depreciable_basis' => ['required', 'numeric', function ($attribute, $value, $fail) {
+                if (request()->depreciation_method == 'Supplier Rebase') {
                     if ($value != 0) {
                         $fail('Depreciable basis should be 0');
                     }
                 }
-                if ($value <= 0) {
+                if ($value < 0) {
                     $fail('Invalid depreciable basis');
                 }
             }],
@@ -305,8 +420,8 @@ class AdditionalCostRequest extends FormRequest
             'care_of' => 'nullable',
             'months_depreciated' => ['required', 'numeric', function ($attribute, $value, $fail) {
 
-                //    if depreciation method is Donated, and no more months depreciated acquisition cost, scrap value and depreciable basis
-                if (request()->depreciation_method == 'Donated') {
+                //    if depreciation method is Supplier Rebase, and no more months depreciated acquisition cost, scrap value and depreciable basis
+                if (request()->depreciation_method == 'Supplier Rebase') {
                     if ($value != 0) {
                         $fail('Months depreciated should be 0');
                     }
@@ -320,7 +435,7 @@ class AdditionalCostRequest extends FormRequest
                     }
                 }
             }],
-            'release_date' => ['nullable','date_format:Y-m-d'],
+            'release_date' => ['nullable', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
             'department_id' => 'required|exists:departments,id',
             'location_id' => [
@@ -341,7 +456,7 @@ class AdditionalCostRequest extends FormRequest
 
                     // Get sync_id's of all locations associated with the department
                     $associated_location_sync_ids = $location->departments->pluck('sync_id');
-//                        dd($associated_location_sync_ids);
+                    //dd($associated_location_sync_ids);
                     // Check if department's sync_id exists in associated_location_sync_ids
                     if (!$associated_location_sync_ids->contains($department_sync_id)) {
                         $fail('Invalid location for the department');

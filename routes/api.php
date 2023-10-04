@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\API\ApproverSettingController;
+use App\Http\Controllers\API\AssetApprovalController;
+use App\Http\Controllers\API\AssetRequestController;
+use App\Http\Controllers\API\AssignApproverController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CategoryListController;
 use App\Http\Controllers\Masterlist\AdditionalCostController;
@@ -10,9 +14,9 @@ use App\Http\Controllers\Masterlist\COA\DepartmentController;
 use App\Http\Controllers\Masterlist\COA\LocationController;
 use App\Http\Controllers\Masterlist\DivisionController;
 use App\Http\Controllers\Masterlist\FixedAssetController;
-use App\Http\Controllers\Masterlist\MajorCategoryController;
 use App\Http\Controllers\Masterlist\FixedAssetExportController;
 use App\Http\Controllers\Masterlist\FixedAssetImportController;
+use App\Http\Controllers\Masterlist\MajorCategoryController;
 use App\Http\Controllers\Masterlist\MinorCategoryController;
 use App\Http\Controllers\Masterlist\PrintBarcode\PrintBarCodeController;
 use App\Http\Controllers\Masterlist\Status\AssetStatusController;
@@ -45,13 +49,10 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 
 // Route::post('setup/department', [SetupController::class, 'createDepartment']);
-Route::post('setup/role', [SetupController::class, 'createRole']);
 
 
 // Route::resource('user', UserController::class);
-Route::resource('role-management', RoleManagementController::class);
-Route::put('role-management/archived-role-management/{id}', [RoleManagementController::class, 'archived']);
-Route::get('search/role-management', [RoleManagementController::class, 'search']);
+
 
 Route::post('/auth/login', [AuthController::class, 'Login']);
 // Route::resource('user', UserController::class);
@@ -61,16 +62,22 @@ Route::get('capex-sample-file', [CapexController::class, 'sampleCapexDownload'])
 Route::get('fixed-asset-sample-file', [FixedAssetController::class, 'sampleFixedAssetDownload']);
 Route::get('additional-cost-sample-file', [AdditionalCostController::class, 'sampleAdditionalCostDownload']);
 
-
+Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
+
+    //ROLE MANAGEMENT
+    Route::post('setup/role', [SetupController::class, 'createRole']);
+    Route::resource('role-management', RoleManagementController::class);
+    Route::put('role-management/archived-role-management/{id}', [RoleManagementController::class, 'archived']);
+    Route::get('search/role-management', [RoleManagementController::class, 'search']);
 
     //SETUP//
     Route::post('setup/module', [SetupController::class, 'createModule']);
     Route::get('setup/get-modules', [SetupController::class, 'getModule']);
     Route::put('setup/get-modules/archived-modules/{id}', [SetupController::class, 'archived']);
     Route::get('setup/getById/{id}', [SetupController::class, 'getModuleId']);
-    Route::put('setup/update-modules/{id}',  [SetupController::class, 'updateModule']);
+    Route::put('setup/update-modules/{id}', [SetupController::class, 'updateModule']);
 
     //COMPANY//
     Route::resource('company', CompanyController::class);
@@ -176,10 +183,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //PRINT IP//
     Route::resource('printer-ip', PrinterIpController::class);
     Route::patch('activateIp/{id}', [PrinterIpController::class, 'activateIP']);
-    Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
+//    Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
 
 
-    //STATUS//
+    //STATUSES//
     //ASSET STATUS
     Route::resource('asset-status', AssetStatusController::class);
     Route::patch('asset-status/archived-asset-status/{id}', [AssetStatusController::class, 'archived']);
@@ -192,6 +199,23 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //MOVEMENT STATUS
     Route::resource('movement-status', MovementStatusController::class);
     Route::patch('movement-status/archived-movement-status/{id}', [MovementStatusController::class, 'archived']);
+
+    //APPROVER SETTING//
+    Route::resource('approver-setting', ApproverSettingController::class);
+    Route::get('setup-approver', [ApproverSettingController::class, 'approverSetting']);
+    Route::patch('approver-setting/archived-approver-setting/{id}', [ApproverSettingController::class, 'archived']);
+
+    //ASSIGNING APPROVER//
+    Route::resource('assign-approver', AssignApproverController::class);
+    Route::get('requester-view', [AssignApproverController::class, 'requesterView']);
+    Route::put('arrange-layer/{id}',[AssignApproverController::class, 'arrangeLayer']);
+
+    //ASSET REQUEST//
+    Route::resource('asset-request', AssetRequestController::class);
+    Route::patch('resubmit-request', [AssetRequestController::class, 'resubmitRequest']);
+    //ASSET APPROVAL//
+    Route::resource('asset-approval', AssetApprovalController::class);
+    Route::patch('handle-request', [AssetApprovalController::class, 'handleRequest']);
 });
 
 

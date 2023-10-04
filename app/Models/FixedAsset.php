@@ -2,23 +2,27 @@
 
 namespace App\Models;
 
+use App\Filters\FixedAssetFilters;
 use App\Models\Status\AssetStatus;
 use App\Models\Status\CycleCountStatus;
 use App\Models\Status\DepreciationStatus;
 use App\Models\Status\MovementStatus;
+use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class FixedAsset extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Filterable;
 
     protected $guarded = [];
 
     // protected $casts =[
 
     // ]
+
+    protected string $default_filters = FixedAssetFilters::class;
 
 
     public function additionalCost()

@@ -18,6 +18,7 @@ use App\Models\Status\DepreciationStatus;
 use App\Models\Status\MovementStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
+use App\Repositories\AdditionalCostRepository;
 use App\Repositories\CalculationRepository;
 use Carbon\Carbon;
 use Exception;
@@ -44,11 +45,12 @@ class AdditionalCostImport extends DefaultValueBinder implements
 {
     use importable;
 
-    private $calculationRepository;
+    private $calculationRepository, $additionalCostRepository;
 
     public function __construct()
     {
         $this->calculationRepository = new CalculationRepository();
+        $this->additionalCostRepository = new AdditionalCostRepository();
     }
 
     public function startRow(): int
@@ -60,7 +62,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
     public function bindValue(Cell $cell, $value): bool
     {
 
-        if ($cell->getColumn() == 'Q') {
+        if ($cell->getColumn() == 'R') {
             $cell->setValueExplicit(Date::excelToDateTimeObject($value)->format('Y-m-d'), DataType::TYPE_STRING);
             return true;
         }
@@ -145,9 +147,10 @@ class AdditionalCostImport extends DefaultValueBinder implements
         if ($majorCategoryId == null || $minorCategoryId == null) {
             throw new Exception('Unable to create FixedAsset due to missing Major/Minor category ID.');
         }
-
+        $fixedAssetId = FixedAsset::where('vladimir_tag_number', $collection['vladimir_tag_number'])->first()->id;
         $formula->additionalCost()->create([
-            'fixed_asset_id' => FixedAsset::where('vladimir_tag_number', $collection['vladimir_tag_number'])->first()->id,
+            'fixed_asset_id' => $fixedAssetId,
+            'add_cost_sequence' => $this->additionalCostRepository->getAddCostSequence($fixedAssetId),
             'asset_description' => ucwords(strtolower($collection['description'])),
             'type_of_request_id' => TypeOfRequest::where('type_of_request_name', ($collection['type_of_request']))->first()->id,
             'asset_specification' => ucwords(strtolower($collection['additional_description'])),
@@ -158,6 +161,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             'major_category_id' => $majorCategoryId,
             'minor_category_id' => $minorCategoryId,
             'voucher' => ucwords(strtolower($collection['voucher'])),
+            'voucher_date' => $collection['voucher_date'] == '-' ? null : $collection['voucher_date'],
             //check for unnecessary spaces and trim them to one space only
             'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
             'quantity' => $collection['quantity'],
@@ -203,7 +207,23 @@ class AdditionalCostImport extends DefaultValueBinder implements
                             $fail('Accountable is required');
                         }
                     }
-                }],
+//                    $index = array_search($attribute, array_keys($collections));
+//                    $vladimirTagNumber = $collections[$index]['vladimir_tag_number'];
+//                    $fixedAsset = FixedAsset::where('vladimir_tag_number', $vladimirTagNumber)->first();
+//                    $fixedAssetId = $fixedAsset->id ?? 0;
+//
+//                    // Processing of the fixed assets continues regardless
+//                    $processedFixedAssets[$fixedAssetId][$value] = ['vladimir_tag_number' => $vladimirTagNumber];
+//
+//                    $additionalCost = AdditionalCost::where('fixed_asset_id', $fixedAssetId)
+//                        ->where('voucher', $value)
+//                        ->first();
+//
+//                    if ($additionalCost) {
+//                        $fail('Voucher already exists with different tag number '. $additionalCost->fixedAsset->vladimir_tag_number);
+//                    }
+                }
+            ],
             '*.cellphone_number' => 'required',
             '*.brand' => 'required',
             '*.major_category' => [
@@ -225,36 +245,49 @@ class AdditionalCostImport extends DefaultValueBinder implements
 
             }],
 
-            '*.voucher' => [
+            '*.voucher' => ['required',
+//                function ($attribute, $value, $fail) {
+//                    if ($value == '-') {
+////                    $fail('Voucher is required');
+//                        return;
+//                    }
+//                    $voucher = FixedAsset::where('voucher', $value)->first();
+//                    //check the created_at if it is the same date with the uploaded date of the voucher if it is the same then it will pass the validation
+//                    if ($voucher) {
+//                        $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
+//                        $current_date = Carbon::now()->format('Y-m-d');
+//                        if ($uploaded_date != $current_date) {
+//                            $fail('Voucher previously uploaded.');
+//                        }
+//                    }
+//
+//                }
+            ],
+            '*.voucher_date' => [
                 'required',
-                function ($attribute, $value, $fail) use ($collections, &$processedFixedAssets) {
+                function ($attribute, $value, $fail) use ($collections) {
                     $index = array_search($attribute, array_keys($collections));
-                    $vladimirTagNumber = $collections[$index]['vladimir_tag_number'];
-                    $fixedAsset = FixedAsset::where('vladimir_tag_number', $vladimirTagNumber)->first();
-                    $fixedAssetId = $fixedAsset->id ?? 0;
-                    if (isset($processedFixedAssets[$fixedAssetId][$value])) {
-                        $fail('Duplicate voucher');
+                    $voucher = $collections[$index]['voucher'];
+                    if ($voucher == '-') {
+                        if ($value != '-') {
+                            $fail('Voucher date should be empty');
+                            return;
+                        }
                         return;
                     }
-                    $processedFixedAssets[$fixedAssetId][$value] = true;
-                    $additionalCost = AdditionalCost::where('fixed_asset_id', $fixedAssetId)
-                        ->where('voucher', $value)
-                        ->first();
-                    if ($additionalCost) {
-                        $fail('Voucher already exists');
-                    }
+                    $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
                 }
             ],
             '*.receipt' => 'required',
             '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required|in:STL,One Time',
             '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],
-            '*.acquisition_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) use ($collections) {
+            '*.acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections));
                 $scrap_value = $collections[$index]['scrap_value'];
 
-                if($value < $scrap_value){
-                    $fail('Acquisition cost must not be less than scrap value');
+                if ($value < $scrap_value) {
+                    $fail('Acquisition cost should exceed scrap value.');
                 }
 
                 if ($value < 0) {
@@ -262,12 +295,12 @@ class AdditionalCostImport extends DefaultValueBinder implements
                 }
             }],
             '*.scrap_value' => ['required',],
-            '*.depreciable_basis' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+            '*.depreciable_basis' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Depreciation basis must not be negative');
                 }
             }],
-            '*.accumulated_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+            '*.accumulated_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Accumulated cost must not be negative');
                 }
@@ -283,7 +316,11 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     $index = array_search($attribute, array_keys($collections));
                     //allow only fully depreciated and running depreciation
                     $depreciation = DepreciationStatus::where('depreciation_status_name', $value)->first();
-                    if($depreciation->depreciation_status_name != 'Fully Depreciated' && $depreciation->depreciation_status_name != 'Running Depreciation'){
+                    if (!$depreciation) {
+                        $fail('Invalid depreciation status');
+                        return;
+                    }
+                    if ($depreciation->depreciation_status_name != 'Fully Depreciated' && $depreciation->depreciation_status_name != 'Running Depreciation') {
                         $fail('Invalid depreciation status');
                     }
 
@@ -305,26 +342,20 @@ class AdditionalCostImport extends DefaultValueBinder implements
                 Rule::exists('movement_statuses', 'movement_status_name')->whereNull('deleted_at'),
             ],
             '*.care_of' => 'required',
-            '*.end_depreciation' => ['required', function($attribute, $value, $fail) use ($collections){
-                $index = array_search($attribute, array_keys($collections));
-                $depreciation_status_name = $collections[$index]['depreciation_status'];
-                $depreciation_status = DepreciationStatus::where('depreciation_status_name', $depreciation_status_name)->first();
-                if($depreciation_status->depreciation_status_name == 'Fully Depreciated'){
-                    //if the date value is not yet passed the current date
-                    if(Carbon::parse($value)->isAfter(Carbon::now())){
-                        $fail('not yet fully depreciated');
-                    }
-                }
+            '*.end_depreciation' => ['required', function ($attribute, $value, $fail) use ($collections) {
+                $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
             }],
             '*.depreciation_per_year' => ['required'],
             '*.depreciation_per_month' => ['required'],
-            '*.remaining_book_value' => ['required', 'regex:/^\d+(\.\d{1,2})?$/', function ($attribute, $value, $fail) {
+            '*.remaining_book_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
                 if ($value < 0) {
                     $fail('Remaining book value must not be negative');
                 }
             }],
-            '*.start_depreciation' => ['required'],
-            '*.company_code' => ['required','exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
+            '*.start_depreciation' => ['required', function ($attribute, $value, $fail) {
+                $this->calculationRepository->validationForDate($attribute, $value, $fail);
+            }],
+            '*.company_code' => ['required', 'exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections));
                 $company_name = $collections[$index]['company'];
                 $company = Company::query()
@@ -336,18 +367,27 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     $fail('Invalid company');
                 }
             }],
-            '*.department_code' => ['required','exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
+            '*.department_code' => ['required', 'exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections));
-                $company_code = $collections[$index]['company_code'];
-                $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
-                $department = Department::where('department_code', $value)
-                    ->where('company_sync_id', $company_sync_id)
+                $department_name = $collections[$index]['department'];
+                $department = Department::query()
+                    ->where('department_code', $value)
+                    ->where('department_name', $department_name)
+                    ->where('is_active', '!=', 0)
                     ->first();
                 if (!$department) {
-                    $fail('Invalid location, company and department combination');
+                    $fail('Invalid department');
+                }
+                $company_code = $collections[$index]['company_code'];
+                $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
+                $departmentCompCheck = Department::where('department_code', $value)
+                    ->where('company_sync_id', $company_sync_id)
+                    ->first();
+                if (!$departmentCompCheck) {
+                    $fail('Invalid department and company combination');
                 }
             }],
-            '*.location_code' => ['required','exists:locations,location_code', function($attribute, $value, $fail) use ($collections){
+            '*.location_code' => ['required', 'exists:locations,location_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections));
                 //check if the code is correct on the database
                 $location_name = $collections[$index]['location'];
@@ -356,19 +396,19 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     ->where('location_name', $location_name)
                     ->where('is_active', '!=', 0)
                     ->first();
-                if(!$location){
+                if (!$location) {
                     $fail('Invalid location');
                     return;
                 }
                 $department_code = $collections[$index]['department_code'];
                 $department_sync_id = Department::where('department_code', $department_code)->first()->sync_id ?? 0;
                 $associated_location_sync_id = $location->departments->pluck('sync_id')->toArray();
-                if(!in_array($department_sync_id, $associated_location_sync_id)){
-                    $fail('Invalid location, company and department combination');
+                if (!in_array($department_sync_id, $associated_location_sync_id)) {
+                    $fail('Invalid location, department combination');
                 }
 
             }],
-            '*.account_code' => ['required','exists:account_titles,account_title_code', function($attribute, $value, $fail) use ($collections){
+            '*.account_code' => ['required', 'exists:account_titles,account_title_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections));
                 $account_title_name = $collections[$index]['account_title'];
                 $account_title = AccountTitle::query()
@@ -376,7 +416,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     ->where('account_title_name', $account_title_name)
                     ->where('is_active', '!=', 0)
                     ->first();
-                if(!$account_title){
+                if (!$account_title) {
                     $fail('Invalid account title');
                 }
             }],
@@ -400,6 +440,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             '*.major_category.exists' => 'Major Category does not exist',
             '*.minor_category.required' => 'Minor Category is required',
             '*.voucher.required' => 'Voucher is required',
+            '*.voucher_date.required' => 'Voucher date is required',
             '*.receipt.required' => 'Receipt is required',
             '*.quantity.required' => 'Quantity is required',
             '*.quantity.numeric' => 'Quantity must be a number',

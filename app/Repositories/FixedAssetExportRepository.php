@@ -38,6 +38,7 @@ class FixedAssetExportRepository
             'major_category_id',
             'minor_category_id',
             'voucher',
+            'voucher_date',
             'receipt',
             'quantity',
             'depreciation_method',
@@ -56,6 +57,7 @@ class FixedAssetExportRepository
             'account_id',
             'formula_id',
             'created_at',
+            DB::raw("NULL as add_cost_sequence"),
         ])->where('is_active', 1);
 
         $secondQuery = AdditionalCost::select([
@@ -76,6 +78,7 @@ class FixedAssetExportRepository
             'additional_costs.major_category_id',
             'additional_costs.minor_category_id',
             'additional_costs.voucher',
+            'additional_costs.voucher_date',
             'additional_costs.receipt',
             'additional_costs.quantity',
             'additional_costs.depreciation_method',
@@ -93,14 +96,15 @@ class FixedAssetExportRepository
             'additional_costs.location_id',
             'additional_costs.account_id',
             'additional_costs.formula_id',
-            'fixed_assets.created_at'
+            'fixed_assets.created_at',
+            'additional_costs.add_cost_sequence',
         ])->where('additional_costs.is_active', 1)
             ->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
 
-        if ((!empty($startDate) && empty($endDate)) || (empty($startDate) && !empty($endDate))) {
-            return response()->json(['error' => 'Please fill both start date and end date'], 400);
-        }
+//        if ((!empty($startDate) && empty($endDate)) || (empty($startDate) && !empty($endDate))) {
+//            return response()->json(['error' => 'Please fill both start date and end date'], 400);
+//        }
 
 
 //        if ($search != null && ($startDate == null && $endDate == null)) {
@@ -347,8 +351,6 @@ class FixedAssetExportRepository
 
     private function refactorExport($fixedAssets): array
     {
-
-
         $fixed_assets_arr = [];
         foreach ($fixedAssets as $fixed_asset) {
             $formula = Formula::where('id', $fixed_asset->formula_id)->first();
@@ -356,6 +358,7 @@ class FixedAssetExportRepository
             $accumulated_cost = $this->calculateAccumulatedCost($fixed_asset, $depreciation_rate);
 
             $fixed_assets_arr[] = [
+                'add_cost_sequence' => $fixed_asset->add_cost_sequence ?? null,
                 'id' => $fixed_asset->id,
                 'type_of_request' => $fixed_asset->typeOfRequest->type_of_request_name,
                 'capex' => $fixed_asset->capex->capex ?? '-',
@@ -365,8 +368,8 @@ class FixedAssetExportRepository
                 'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
                 'tag_number' => $fixed_asset->tag_number,
                 'tag_number_old' => $fixed_asset->tag_number_old,
-                'description' => $fixed_asset->asset_description,
-                'additional_description' => $fixed_asset->asset_specification,
+                'asset_description' => $fixed_asset->asset_description,
+                'asset_specification' => $fixed_asset->asset_specification,
                 'accountability' => $fixed_asset->accountability,
                 'accountable' => $fixed_asset->accountable,
                 'cellphone_number' => $fixed_asset->cellphone_number,
@@ -376,6 +379,7 @@ class FixedAssetExportRepository
                 'division' => $fixed_asset->department->division->division_name ?? '-',
                 'capitalized' => $fixed_asset->capitalized,
                 'voucher' => $fixed_asset->voucher,
+                'voucher_date' => $fixed_asset->voucher_date ?? '-',
                 'receipt' => $fixed_asset->receipt,
                 'quantity' => $fixed_asset->quantity,
                 'depreciation_method' => $fixed_asset->depreciation_method,
@@ -384,24 +388,24 @@ class FixedAssetExportRepository
                 'acquisition_cost' => $fixed_asset->formula->acquisition_cost,
                 'scrap_value' => $fixed_asset->formula->scrap_value,
                 'depreciable_basis' => $fixed_asset->formula->depreciable_basis,
-                'accumulated_cost' => $accumulated_cost,
+                'accumulated_cost' =>$fixed_asset->formula->accumulated_cost, //$accumulated_cost,
                 'asset_status' => $fixed_asset->assetStatus->asset_status_name,
                 'cycle_count_status' => $fixed_asset->cycleCountStatus->cycle_count_status_name,
                 'depreciation_status' => $fixed_asset->depreciationStatus->depreciation_status_name,
                 'movement_status' => $fixed_asset->movementStatus->movement_status_name,
                 'care_of' => $fixed_asset->care_of,
                 'months_depreciated' => $depreciation_rate['monthDepreciated'],
-                //change the format of end end Depreciation from 2025-04 to 202504 if null return "-"
                 'end_depreciation' => $fixed_asset->formula->end_depreciation ? str_replace('-', '', $fixed_asset->formula->end_depreciation) : '-',
-                'depreciation_per_year' => $depreciation_rate['yearly'],
-                'depreciation_per_month' => $depreciation_rate['monthly'],
-                'remaining_book_value' => $this->calculateRemainingBookValue($fixed_asset, $accumulated_cost),
-                'release_date' => $fixed_asset->formula->release_date,
+                'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year, //$depreciation_rate['yearly'],
+                'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month, //$depreciation_rate['monthly'],
+                'remaining_book_value' => $fixed_asset->formula->remaining_book_value,  //$this->calculateRemainingBookValue($fixed_asset, $accumulated_cost),
+                'release_date' => $fixed_asset->formula->release_date ?? '-',
                 'start_depreciation' =>$fixed_asset->formula->start_depreciation ? str_replace('-', '',$fixed_asset->formula->start_depreciation): '-',
                 'company_code' => $fixed_asset->company->company_code,
                 'company_name' => $fixed_asset->company->company_name,
                 'department_code' => $fixed_asset->department->department_code,
-                'charged_department' => $fixed_asset->department->department_name,
+                //get the department id of the charged department and get the department name
+                'charged_department' => $fixed_asset->department->where('id', $fixed_asset->charged_department)->first()->department_name ?? '-' ,
                 'department_name' => $fixed_asset->department->department_name,
                 'location_code' => $fixed_asset->location->location_code,
                 'location_name' => $fixed_asset->location->location_name,
@@ -423,7 +427,7 @@ class FixedAssetExportRepository
 
     private function calculateAccumulatedCost($fixed_asset, $depreciation_rate)
     {
-        return $this->calculationRepository->getAccumulatedCost($depreciation_rate['monthly'], $this->monthDepreciated($fixed_asset->formula->start_depreciation));
+        return $this->calculationRepository->getAccumulatedCost($depreciation_rate['monthly'], $this->monthDepreciated($fixed_asset->formula->start_depreciation), $fixed_asset->formula->depreciable_basis);
     }
 
     private function calculateRemainingBookValue($fixed_asset, $accumulated_cost)
@@ -517,17 +521,30 @@ class FixedAssetExportRepository
 //            });
 //        }
 
-        if (($startDate && $endDate) || $search) {
+        if (($startDate || $endDate) || $search) {
 
-            if ($startDate && $endDate) {
-                //Ensure the dates are in Y-m-d H:i:s format
+//            if ($startDate && $endDate) {
+//                //Ensure the dates are in Y-m-d H:i:s format
+//                $startDate = new DateTime($startDate);
+//                $endDate = new DateTime($endDate);
+//
+//                //set time to end of day
+//                $endDate->setTime(23, 59, 59);
+//
+//                $query->whereBetween($created_at, [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
+//            }
+
+            if ($startDate) {
                 $startDate = new DateTime($startDate);
+                $query->where($created_at, '>=', $startDate->format('Y-m-d H:i:s'));
+
+            }
+
+            if ($endDate) {
                 $endDate = new DateTime($endDate);
-
-                //set time to end of day
+                //set time to an end of day
                 $endDate->setTime(23, 59, 59);
-
-                $query->whereBetween($created_at, [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
+                $query->where($created_at, '<=', $endDate->format('Y-m-d H:i:s'));
             }
 
             if ($search) {

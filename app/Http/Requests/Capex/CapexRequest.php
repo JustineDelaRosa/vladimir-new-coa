@@ -24,15 +24,15 @@ class CapexRequest extends FormRequest
     public function rules(): array
     {
 
-        if($this->isMethod('post')){
+        if ($this->isMethod('post')) {
             return [
                 //do not allow letters and special characters except dash
-              'capex' => 'required|unique:capexes,capex|regex:/^[0-9-]+$/',
+                'capex' => 'required|unique:capexes,capex|regex:/^[0-9-]+$/',
                 'project_name' => 'required',
             ];
         }
 
-        if($this->isMethod('put') && ($this->route()->parameter('capex'))){
+        if ($this->isMethod('put') && ($this->route()->parameter('capex'))) {
             $id = $this->route()->parameter('capex');
             return [
                 //unique ignore his own id
@@ -40,7 +40,7 @@ class CapexRequest extends FormRequest
             ];
         }
 
-        if($this->isMethod('patch') && ($this->route()->parameter('id'))){
+        if ($this->isMethod('patch') && ($this->route()->parameter('id'))) {
             return [
                 'status' => 'required|boolean'
             ];

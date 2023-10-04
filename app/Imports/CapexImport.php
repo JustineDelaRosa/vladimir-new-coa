@@ -52,7 +52,7 @@ class CapexImport implements ToCollection, WithHeadingRow, WithStartRow
     private function rules($collection): array
     {
         return [
-            '*.capex' => ['required','regex:/^[0-9-]+$/', function ($attribute, $value, $fail) use ($collection) {
+            '*.capex' => ['required', 'regex:/^[0-9-]+$/', function ($attribute, $value, $fail) use ($collection) {
                 $index = array_search($value, array_column($collection, 'capex'));
                 $subCapex = $collection[$index]['sub_capex'];
 //                if (preg_match('/[A-Za-z]/', $value)) {

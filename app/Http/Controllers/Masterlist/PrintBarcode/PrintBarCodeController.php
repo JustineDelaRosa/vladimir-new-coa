@@ -1,13 +1,13 @@
 <?php
 
 namespace App\Http\Controllers\Masterlist\PrintBarcode;
-//require __DIR__ . '/../../../../vendor/autoload.php';
 use App\Http\Controllers\Controller;
 use App\Models\FixedAsset;
 use App\Models\PrinterIP;
 use App\Models\TypeOfRequest;
 use Carbon\Carbon;
 use DateTime;
+use Essa\APIToolKit\Api\ApiResponse;
 use Exception;
 use Illuminate\Http\Request;
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
@@ -18,6 +18,7 @@ use Mike42\Escpos\Printer;
 
 class PrintBarCodeController extends Controller
 {
+    use ApiResponse;
 
 
 //    function getClientName() {
@@ -32,29 +33,14 @@ class PrintBarCodeController extends Controller
     public function printBarcode(Request $request)
     {
         $tagNumber = $this->searchPrint($request);
+
         $clientIP = request()->ip();
-        //get computer name of the client do not include the domain name
-//        return $this->getClientName();
 
-
-//        //accept only the ip address with 10.10.x.x
-//        if (substr($clientIP, 0, 7) === "10.10.1") {
-//            // print the barcode
-//            return $this->print($tagNumber);
-//        } else {
-//            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
-//        }
-//        return $tagNumber;
-//        where('ip', $clientIP)->
         $printerIP = PrinterIP::where('ip', $clientIP)->first();
         if (!$printerIP || !$printerIP->is_active) {
             return response()->json(['message' => 'You are not allowed to print barcode'], 403);
         }
 
-        //check status on printerIP table
-//        if (!$printerIP->is_active) {
-//            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
-//        }
 
         if (!$tagNumber) {
             return response()->json(['message' => 'No data found'], 404);
@@ -62,17 +48,7 @@ class PrintBarCodeController extends Controller
 
 
         try {
-            //get the ip from active printerIP table in a database
-//$printerIP = PrinterIP::where('is_active', true)->first()->ip;
-            // Initialize the WindowsPrintConnector with the COM port and baud rate
-            //$connector = new WindowsPrintConnector("COM1");
-            // $connector = new NetworkPrintConnector("10.10.10.11" , 8000);
-//$connector = new WindowsPrintConnector("ZDesigner ZD230-203dpi ZPL");
-            //$printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
             $connector = new WindowsPrintConnector("smb://{$printerIP->ip}/ZDesigner ZD230-203dpi ZPL");
-            //check if the smb://10.10.10.11 is available
-//            $printer = '\\\\10.10.10.11\\ZDesigner ZD230-203dpi ZPL';
-//            $connector = new FilePrintConnector($printer);
 
             // Create a new Printer object and assign the connector to it
             $printer = new Printer($connector);
@@ -80,11 +56,6 @@ class PrintBarCodeController extends Controller
             foreach ($tagNumber as $VDM) {
 
                 $fixedAsset = FixedAsset::where('vladimir_tag_number', $VDM['vladimir_tag_number'])->first();
-
-                if ($fixedAsset) {
-                    $fixedAsset->increment('print_count', 1);
-                    $fixedAsset->update(['last_printed' => Carbon::now()]);
-                }
 
 //                $zplCode = "^XA
 //                            ~TA000
@@ -116,7 +87,7 @@ class PrintBarCodeController extends Controller
 //                            ^FO2,1^GFA,793,10452,52,:Z64:eJzt2M9q1EAcB/AJAx1PzqGXHsR5BXtS6bLTN/AVfAyFkqwU3It0z158Eg8TVsxFzCvsksNes+yhEcL8mmxYKYp1vj8hxDa/cz7M/P4l7NJKQBGRE/RwzYRqopRtJP0SJcNUD9Bs6crSmoQtUtILYRCjO6P/ZPbRzYGs6KklR0YVqdcLPUfMsnCNMVmw+UZmDZg6nlr6kJht4epXsPlykSPm008TVAM/iW2TUmO+vskDa33LvAw1NPHWC9Oa03yhw8zJwWSnoTW4ZY6DzUdv62RhiiKTweZdZ5ZFdhlsLr1pjFZFNv+raaM1Sy9OKGt2ATe2yPLGbO42SiC73YVhGM8wFdfc+cTvYRlGMYxgGBqwcffMlAzje5o3jkkYhrM/btwFsWSYTU93ixnm0YBrzTFiwHczA95tzuxw8hnyHHDMmA/PnPVk+srn+5B7Osj/akYzmtHcc4MG1zw5x40Fj+Ka5zOGwUiv+aDBNWM+TIORvTEMoxzjHIaZYmScnX8waLRGz3DDmQNOPs96MkPujzjHjQSPYvd01o8xDMOpAafWLOP6MX3tKWD2nx1wF4yIyseteRFu4sZMwe9p3Zh4/04Mvl5U2XTrsXmTJa07E36O3NF2V2L7Izf0Y7dqzSSUCJW7t9cO64/6LCLUHL0+mPDfJdE82l57zCijCTVHiYGNIAubiBLcVBcKrZssKwmbVQX3R65K3KQDNq6MNrCp5MEkNKf3QaZWB0OUUx5kYp3BxhJuDM1ho0nBRtWo6aJf0/b0CjTBj/8X5gas119Y:227E
 //                            ^PQ1,0,1,Y
 //                            ^XZ";
-                if($VDM['print_count'] == 0) {
+                if ($VDM['print_count'] == 0) {
                     //original
                     $zplCode = "^XA
                                 ~TA000
@@ -141,16 +112,20 @@ class PrintBarCodeController extends Controller
                                 ^LL203
                                 ^LS0
                                 ^BY3,2,53^FT69,92^BEN,,Y,N
-                                ^FH\^".$VDM['vladimir_tag_number']."^FS
+                                ^FH\^FD" . $VDM['vladimir_tag_number'] . "^FS
                                 ^FT210,34^A0N,17,18^FH\^CI28^FDPROPERTY RECORD^FS^CI27
                                 ^FO131,174^GFA,229,320,20,:Z64:eJxjYCAFWHybPKe48SyKmOakTyJOjq4CyGKWk5PnFDkeQxFTnJwk4nQwCUWvwuPkacWNh1DUkQd8nFxsnpzzPjyp+Jya8p1Pjresz/nkPPZLaDuR2Sjl5mVW2DnZmSuxI6dm8amc5+cqG+XK/OwCOycfPGPZVxP76F5K64nIRjE3L72PnZMOuHB2xPgaXQaaF9k8zblbbeacR4ePVPb5YLMXACYPQTo=:7CBE
-                                ^FT3,163^APN,20,6^FB403,1,4,C^FH\^FD".$VDM['department_name']." - ".$VDM['location_name']."^FS
+                                ^FT3,163^APN,20,6^FB403,1,4,C^FH\^FD" . $VDM['department_name'] . " - " . $VDM['location_name'] . "^FS
                                 ^FO2,1^GFA,597,10452,52,:Z64:eJzt1z9qwzAUBnAJQbSUOnuhvkKhQwsNVY/Sk9ju0m7tlRw65BoKGbzKmwPGapzQzP4+6EOkfrN/POn9EVgpPGLAvtex/t9GN3E9m4TNBjcq4XmbzWzOpoLNGCImI0xJmJ4wQShPThgj1J8oZOqETSWUpyNMIbQ/UjvnheaaMVK78C1kmLMx87YizDLh/qgLmzcntNvM+8acTapuw4XNgbqw+9wQ5inh+3wm3FPCpP3PNJvZzEbceNygwZorwtyCqUbjCPNQ4eYeI/TZnMdNTuRBg83D1ODS7kPVACNHY4k8GWEcRkTrhgZrUr6PJQyzC4y5Y4zHDfOOpjxvGmT0blcyJicM874pxrwImVfCeNz88S4c2wLOtVPaX49mOd0UB1OM5nm66Q9mwHZBd+Xb9miMn2pMiNtdj+Uxu9juArY/dhPbxo9mNZUo+1Xvmxrrj31UGjUL/2tKP9WYd9M2A/b/s3BZRM1VmcNGRQcbPZSx6UHT9VlTYcaEzsJmGwxs1kGjxlLGC+XBa2Dr7mzivp5q7OZk2rj3E02R46aMH7Bx0cImH3BjO9ScQtSE2NawAYC08bj5ATJ72rI=:9AAB
-                                ^FT155,142^A0N,21,20^FH\^CI28^FD".$VDM['asset_description']."^FS^CI27
-                                ^FT0,22^APN,20,6^FB161,1,4,C^FH\^FD".$VDM['accountable']."^FS
+                                ^FT155,142^A0N,21,20^FH\^CI28^FD" . $VDM['asset_description'] . "^FS^CI27
+                                ^FT0,22^APN,20,6^FB161,1,4,C^FH\^FD" . $VDM['accountable'] . "^FS
                                 ^PQ1,0,1,Y
                                 ^XZ";
-                }else{
+                    if ($fixedAsset) {
+                        $fixedAsset->increment('print_count', 1);
+                        $fixedAsset->update(['last_printed' => Carbon::now()]);
+                    }
+                } else {
                     //Copy
                     $zplCode = "^XA
                             ~TA000
@@ -175,15 +150,19 @@ class PrintBarCodeController extends Controller
                             ^LL203
                             ^LS0
                             ^BY3,2,53^FT69,92^BEN,,Y,N
-                            ^FH\^FD".$VDM['vladimir_tag_number']."^FS
+                            ^FH\^FD" . $VDM['vladimir_tag_number'] . "^FS
                             ^FT210,34^A0N,17,18^FH\^CI28^FDPROPERTY RECORD^FS^CI27
                             ^FO131,174^GFA,229,320,20,:Z64:eJxjYCAFWHybPKe48SyKmOakTyJOjq4CyGKWk5PnFDkeQxFTnJwk4nQwCUWvwuPkacWNh1DUkQd8nFxsnpzzPjyp+Jya8p1Pjresz/nkPPZLaDuR2Sjl5mVW2DnZmSuxI6dm8amc5+cqG+XK/OwCOycfPGPZVxP76F5K64nIRjE3L72PnZMOuHB2xPgaXQaaF9k8zblbbeacR4ePVPb5YLMXACYPQTo=:7CBE
-                            ^FT3,163^APN,20,6^FB403,1,4,C^FH\^".$VDM['department_name']." - ".$VDM['location_name']."^FS
+                            ^FT3,163^APN,20,6^FB403,1,4,C^FH\^" . $VDM['department_name'] . " - " . $VDM['location_name'] . "^FS
                             ^FO24,7^GFA,97,144,12,:Z64:eJxjYCAMfvyo+dn8vKHCAAjPnEk42MzMcKYACM8cg7ANgPDHMaCaxzJg9gck8RtnEOwzPxIOfmZvqAABXHYBACKcLfg=:E7DF
-                            ^FT155,142^A0N,21,20^FH\^CI28^FD".$VDM['asset_description']."^FS^CI27
+                            ^FT155,142^A0N,21,20^FH\^CI28^FD" . $VDM['asset_description'] . "^FS^CI27
                             ^FO0,0^GFA,705,10556,52,:Z64:eJzt2rFOwlAUBuDe1FBNgJq4aETQxIQV48LGC/gQbG6GUROkNQxsxsQHwEfwDWRjIfIKTSCySUkHSkRqEcLc/088qaRn/3J77j3nNLep5WpYFOaahZrK3xsrCCOuxswf9UHT2MnutUFTH34M31AzG15VcJO2YNNboPtW7/XmqGnkTmAjVQeVkCwEeiExidlEwcdNGDLGxY1BGLND7BuRj2njRify0Woy52M6xL4R+RSIdXJEPow5JMwus9dC58P0D9VzTO0Q/ZMWmlUmU9dCJlfCTVboTA1i9qoYzypmHU0oH6ZGFTMPmGcjept5bzP5MPvGGG3LZpVYL0jlQxidmL3mq8yzZYTOR8rE9NtTYhKTmH9kHNzAQZrsKW7C67OIObYJAxLJfOAgTZKPoLFxoxPrmIQpgCSpHd7AERrDxk14RYUNk89hVcbE+XwYoxzcUL3dIYwtYwwHNxpjqttl4twL+4TJE4aZb8z7lDFUz4Hkd44SBoocYW6V46D3H1cNUKMGkxFq9P5sZKOm/T1G73NGOfOJmlRHwUYv34/RPUjdBbDRvnCjvC6eT7eJm9Z63ybLH198zHhLE62+9ZZGGGYd9b4yfrl0U49ommszObg8j7hOM3hcGW/6fBbRPATZlZmOni4iGnuxMS8eMEtWz1YswsatXU9R4/tj2EQ/040BanRjiO9IP2rLWtM=:E347
                             ^PQ1,0,1,Y
                             ^XZ";
+                    if ($fixedAsset) {
+                        $fixedAsset->increment('print_count', 1);
+                        $fixedAsset->update(['last_printed' => Carbon::now()]);
+                    }
                 }
                 $printer->textRaw($zplCode);
 
@@ -203,98 +182,37 @@ class PrintBarCodeController extends Controller
                 ], 200);
         } catch (Exception $e) {
             // Handle any exceptions that may occur during the printing process
-            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
+//            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
 
-//            return response()->json(['message' => 'Unable to Print'], 422);
+            return response()->json(['message' => 'Unable to Print'], 422);
         }
     }
 
     public function searchPrint(Request $request)
     {
-        //  $id = $request->get('id');
-        $search = $request->get('search');
-        $startDate = $request->get('startDate');
-        $endDate = $request->get('endDate');
-//        $typeOfRequest = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
-        $typeOfRequestRecord = TypeOfRequest::where('type_of_request_name', 'Capex')->first();
+//        $request->validate([
+//            'tagNumber' => 'array|min:1',
+//        ],
+//            [
+//                'tagNumber.required' => 'Please select at least one asset',
+//                'tagNumber.array' => 'Please select at least one asset',
+//                'tagNumber.min' => 'Please select at least one assets',
+//            ]);
 
-        if ($typeOfRequestRecord) {
-            $typeOfRequest = $typeOfRequestRecord->id;
-        } else {
-            $typeOfRequest = 0;
+        //array of vladimir tag number
+        $vladimirTagNumbers = $request->get('tagNumber');
+
+        $typeOfRequestId = TypeOfRequest::where('type_of_request_name', 'Capex')->pluck('id')->first() ?? 0;
+
+        if($vladimirTagNumbers == null){
+            //get all vladimir tag number
+            $vladimirTagNumbers = FixedAsset::where('type_of_request_id', '!=', $typeOfRequestId)->pluck('vladimir_tag_number')->toArray();
         }
 
-        // Define the common query for fixed assets
-        $fixedAssetQuery = FixedAsset::with([
-            'formula',
-            'majorCategory:id,major_category_name',
-            'minorCategory:id,minor_category_name',
-        ])
-            ->where('type_of_request_id', '!=', $typeOfRequest); //todo: ask if can be printed now
+        $fixedAssetQuery = FixedAsset::whereIn('vladimir_tag_number', $vladimirTagNumbers)
+            ->where('type_of_request_id', '!=', $typeOfRequestId);
 
-        // Add date filter if both startDate and endDate are given
-        if ($startDate && $endDate) {
-            //Ensure the dates are in Y-m-d H:i:s format
-            $startDate = new DateTime($startDate);
-            $endDate = new DateTime($endDate);
-
-            //set time to end of day
-            $endDate->setTime(23, 59, 59);
-
-            $fixedAssetQuery->whereBetween('created_at', [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
-        }
-
-        // Add search filter if search is given
-        if ($search) {
-            $fixedAssetQuery->where(function ($query) use ($search) {
-                $query->Where('vladimir_tag_number', '=', $search)
-                    ->orWhere('tag_number', 'LIKE', "%$search%")
-                    ->orWhere('tag_number_old', 'LIKE', "%$search%")
-                    ->orWhere('accountability', 'LIKE', "%$search%")
-                    ->orWhere('asset_description', 'LIKE', "%$search%")
-                    ->orWhere('accountable', 'LIKE', "%$search%")
-                    ->orWhere('brand', 'LIKE', "%$search%")
-                    ->orWhere('depreciation_method', 'LIKE', "%$search%");
-                $query->orWhereHas('subCapex', function ($query) use ($search) {
-                    $query->where('sub_capex', 'LIKE', '%' . $search . '%')
-                        ->orWhere('sub_project', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('majorCategory', function ($query) use ($search) {
-                    $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('minorCategory', function ($query) use ($search) {
-                    $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('department.division', function ($query) use ($search) {
-                    $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('assetStatus', function ($query) use ($search) {
-                    $query->where('asset_status_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('cycleCountStatus', function ($query) use ($search) {
-                    $query->where('cycle_count_status_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('depreciationStatus', function ($query) use ($search) {
-                    $query->where('depreciation_status_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('movementStatus', function ($query) use ($search) {
-                    $query->where('movement_status_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('location', function ($query) use ($search) {
-                    $query->where('location_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('company', function ($query) use ($search) {
-                    $query->where('company_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('department', function ($query) use ($search) {
-                    $query->where('department_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('accountTitle', function ($query) use ($search) {
-                    $query->where('account_title_name', 'LIKE', '%' . $search . '%');
-                });
-            });
-        }
-
+//        $result = [];
         // Chunk the results and populate the result array
         $fixedAssetQuery->chunk(500, function ($assets) use (&$result) {
             foreach ($assets as $asset) {
@@ -310,7 +228,6 @@ class PrintBarCodeController extends Controller
                 ];
             }
         });
-
         // Return the result array
         return $result;
     }
@@ -352,17 +269,35 @@ class PrintBarCodeController extends Controller
         ])
             ->where('type_of_request_id', '!=', $typeOfRequest); //todo: ask if can be printed now
 
-        // Add date filter if both startDate and endDate are given
-        if ($startDate && $endDate) {
-            //Ensure the dates are in Y-m-d H:i:s format
+//        if ($startDate && $endDate) {
+//            //Ensure the dates are in Y-m-d H:i:s format
+//            $startDate = new DateTime($startDate);
+//            $endDate = new DateTime($endDate);
+//            //set time to an end of day
+//            $endDate->setTime(23, 59, 59);
+//
+//            $fixedAssetQuery->whereBetween('created_at', [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
+//        }
+
+
+
+        if ($startDate) {
             $startDate = new DateTime($startDate);
-            $endDate = new DateTime($endDate);
-
-            //set time to end of day
-            $endDate->setTime(23, 59, 59);
-
-            $fixedAssetQuery->whereBetween('created_at', [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
+            $fixedAssetQuery->where('created_at', '>=', $startDate->format('Y-m-d H:i:s'));
         }
+
+        if ($endDate) {
+            $endDate = new DateTime($endDate);
+            $endDate->setTime(23, 59, 59);
+            $fixedAssetQuery->where('created_at', '<=', $endDate->format('Y-m-d H:i:s'));
+        }
+        if($endDate && $startDate) {
+            if ($endDate > $startDate) {
+                return $this->responseUnprocessable('Start date must be less than end date');
+//               return response()->json(['message' => 'Start date must be less than end date'], 422);
+            }
+        }
+
 
         // Add search filter if search is given
         if ($search) {
@@ -416,7 +351,6 @@ class PrintBarCodeController extends Controller
 
         }
         $assets = $fixedAssetQuery->paginate($limit);
-
 
 
         // Return the result array
@@ -513,6 +447,7 @@ class PrintBarCodeController extends Controller
                 'remarks' => $asset->remarks,
                 'print_count' => $asset->print_count,
                 'last_printed' => $asset->last_printed,
+                'created_at' => $asset->created_at,
             ];
         });
         return $assets;
