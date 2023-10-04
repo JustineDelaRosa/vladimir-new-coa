@@ -242,7 +242,7 @@ class AssetApprovalController extends Controller
                 return $this->approveRequestRepository->voidRequest($assetApprovalIds);
                 break;
             default:
-                return response()->json(['error' => 'Invalid action'], 400);
+                return $this->responseUnprocessable('Invalid Action');
                 break;
         }
     }
