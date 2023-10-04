@@ -17,7 +17,7 @@ class CalculationRepository
         return $start_depreciation->diffInMonths($current_month->addMonth(1));
     }
 
-    public function getMonthlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life): float
+    public function getMonthlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life): float
     {
         //if acquisition cost and scrap value are equal to zero, return zero
         if ($acquisition_cost == 0 && $scrap_value == 0) {
