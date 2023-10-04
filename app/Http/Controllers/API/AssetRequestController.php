@@ -7,6 +7,7 @@ use App\Models\AssetApproval;
 use App\Models\AssetRequest;
 use App\Models\RoleManagement;
 use App\Models\SubCapex;
+use App\Repositories\ApprovedRequestRepository;
 use App\Transformers\AssetRequestTransformers\AssetRequestTransformers;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,13 @@ class AssetRequestController extends Controller
 {
     use ApiResponse;
 
+    private $approveRequestRepository;
+
+    public function __construct(ApprovedRequestRepository $approveRequestRepository)
+    {
+        $this->approveRequestRepository = $approveRequestRepository;
+    }
+
     public function index(): JsonResponse
     {
         $user = auth('sanctum')->user();
@@ -34,7 +42,15 @@ class AssetRequestController extends Controller
             $assetRequestsQuery->where('requester_id', $user->id);
         }
 
-        $assetRequestsQuery->orderBy(DB::raw("CASE WHEN status = 'Approved' THEN 1 ELSE 0 END"), 'ASC');
+//        $assetRequestsQuery->orderBy(DB::raw("CASE WHEN status = 'Approved' THEN 1 ELSE 0 END"), 'ASC');
+        $assetRequestsQuery->orderByRaw("
+                CASE status
+                    WHEN 'Approved' THEN 2
+                    WHEN 'Denied' THEN 1
+                    WHEN 'Void' THEN 3
+                    ELSE 0
+                END ASC
+            ");
         $assetRequests = $assetRequestsQuery->useFilters()->dynamicPaginate();
         $assetRequests->transform(function ($assetRequest) {
             $approverUser = $assetRequest->currentApprover->first()->approver->user ?? null;
@@ -43,7 +59,6 @@ class AssetRequestController extends Controller
             $typeOfRequest = $assetRequest->typeOfRequest;
             $capex = $assetRequest->capex;
             $subCapex = $assetRequest->subCapex;
-
             return [
                 'id' => $assetRequest->id,
                 'status' => $assetRequest->status,
@@ -150,6 +165,7 @@ class AssetRequestController extends Controller
                 }
             }
         }
+
 
 //        $assetRequest = AssetRequest::create([
 //            'requester_id' => $request->requester_id,
@@ -276,6 +292,13 @@ class AssetRequestController extends Controller
         $assetRequest->delete();
 
         return $this->responseDeleted();
+    }
+
+    public function resubmitRequest(CreateAssetRequestRequest $request): JsonResponse
+    {
+        $requestIds = $request->request_id;
+
+        return $this->approveRequestRepository->resubmitRequest($requestIds);
     }
 
 }

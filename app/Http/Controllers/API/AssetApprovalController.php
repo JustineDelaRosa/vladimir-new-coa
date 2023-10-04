@@ -7,6 +7,7 @@ use App\Models\AssetApproval;
 use App\Models\RoleManagement;
 use App\Repositories\ApprovedRequestRepository;
 use Essa\APIToolKit\Api\ApiResponse;
+use Essa\APIToolKit\Filters\DTO\FiltersDTO;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AssetApproval\CreateAssetApprovalRequest;
 use App\Http\Requests\AssetApproval\UpdateAssetApprovalRequest;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Spatie\Activitylog\Models\Activity;
 
 class AssetApprovalController extends Controller
 {
@@ -28,7 +30,6 @@ class AssetApprovalController extends Controller
 
     public function index()
     {
-
         $user = auth('sanctum')->user();
         $role = RoleManagement::whereId($user->role_id)->value('role_name');
         $adminRoles = ['Super Admin', 'Admin', 'ERP'];
@@ -39,7 +40,7 @@ class AssetApprovalController extends Controller
             $assetApprovalsQuery->where('approver_id', $approverId);
         }
 
-        $assetApprovals = $assetApprovalsQuery->where('status', 'For Approval')->dynamicPaginate();
+        $assetApprovals = $assetApprovalsQuery->where('status', 'For Approval')->useFilters()->dynamicPaginate();
         $assetApprovals->transform(function($assetApproval){
             return[
                 'id' => $assetApproval->id,
@@ -225,19 +226,25 @@ class AssetApprovalController extends Controller
 //        return $this->responseSuccess('Asset Request Approved Successfully');
 //    }
 
-    public function approveRequest(CreateAssetApprovalRequest $request): JsonResponse
+    public function handleRequest(CreateAssetApprovalRequest $request): JsonResponse
     {
         $assetApprovalIds = $request->asset_approval_id;
-        //TODO: Change the $id to Request $request and use an array of ids
-        return $this->approveRequestRepository->approveRequest($assetApprovalIds);
-    }
-    public function disapproveRequest($id): JsonResponse
-    {
-//        return $this->approveRequestRepository->disapproveRequest($id);
-    }
-    public function voidRequest($id): JsonResponse
-    {
-//        return $this->approveRequestRepository->voidRequest($id);
+        $action = ucwords($request->action);
+
+        switch ($action) {
+            case 'Approved':
+                return $this->approveRequestRepository->approveRequest($assetApprovalIds);
+                break;
+            case 'Denied':
+                 return $this->approveRequestRepository->disapproveRequest($assetApprovalIds);
+                break;
+            case 'Void':
+                return $this->approveRequestRepository->voidRequest($assetApprovalIds);
+                break;
+            default:
+                return response()->json(['error' => 'Invalid action'], 400);
+                break;
+        }
     }
 
 //    private function findAssetApproval(int $id)

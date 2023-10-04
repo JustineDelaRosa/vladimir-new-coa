@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Filters\AssetRequestFilter;
+use App\Filters\AssetRequestFilters;
 use App\Models\Status\AssetStatus;
 use App\Models\Status\CycleCountStatus;
 use App\Models\Status\DepreciationStatus;
@@ -20,7 +20,7 @@ class AssetRequest extends Model
 
     protected $guarded = [];
 
-    protected string $default_filters = AssetRequestFilter::class;
+    protected string $default_filters = AssetRequestFilters::class;
 
     public function currentApprover()
     {
@@ -37,6 +37,7 @@ class AssetRequest extends Model
     {
         return $this->hasMany(AssetApproval::class, 'asset_request_id', 'id');
     }
+
 
     public function typeOfRequest()
     {

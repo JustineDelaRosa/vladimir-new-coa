@@ -26,6 +26,7 @@ class CreateAssetApprovalRequest extends FormRequest
         if ($this->isMethod('PATCH')) {
             return [
                 'asset_approval_id' => 'required|exists:asset_approvals,id|array',
+                'action' => 'required|string|in:Approved,Denied,Void'
             ];
         }
     }
@@ -36,6 +37,9 @@ class CreateAssetApprovalRequest extends FormRequest
             'asset_approval_id.required' => 'The asset approval id is required',
             'asset_approval_id.exists' => 'The asset approval id must be an existing id',
             'asset_approval_id.array' => 'The asset approval id must be an array',
+            'action.required' => 'The action is required',
+            'action.string' => 'The action must be a string',
+            'action.in' => 'Invalid Selection',
         ];
     }
 }

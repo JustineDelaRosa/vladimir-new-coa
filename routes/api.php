@@ -212,9 +212,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //ASSET REQUEST//
     Route::resource('asset-request', AssetRequestController::class);
+    Route::patch('resubmit-request', [AssetRequestController::class, 'resubmitRequest']);
     //ASSET APPROVAL//
     Route::resource('asset-approval', AssetApprovalController::class);
-    Route::patch('approve-request', [AssetApprovalController::class, 'approveRequest']);
+    Route::patch('handle-request', [AssetApprovalController::class, 'handleRequest']);
 });
 
 
