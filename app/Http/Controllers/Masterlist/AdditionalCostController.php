@@ -247,7 +247,7 @@ class AdditionalCostController extends Controller
 
         if ($depreciation_method === 'One Time') {
             $age = 0.08333333333333;
-            $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->depreciable_basis, $properties->scrap_value, $age);
+            $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $age);
         }
 
         return [

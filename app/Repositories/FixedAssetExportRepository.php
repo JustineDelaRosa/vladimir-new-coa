@@ -419,8 +419,8 @@ class FixedAssetExportRepository
     private function calculateDepreciationRates($fixed_asset, $formula): array
     {
         return [
-            'monthly' => $this->depreciationPerMonth($formula->depreciable_basis, $formula->scrap_value, $fixed_asset->MajorCategory->est_useful_life),
-            'yearly' => $this->depreciationPerYear($formula->depreciable_basis, $formula->scrap_value, $fixed_asset->MajorCategory->est_useful_life),
+            'monthly' => $this->depreciationPerMonth($formula->acquisition_cost, $formula->scrap_value, $fixed_asset->MajorCategory->est_useful_life),
+            'yearly' => $this->depreciationPerYear($formula->acquisition_cost, $formula->scrap_value, $fixed_asset->MajorCategory->est_useful_life),
             'monthDepreciated' => $this->monthDepreciated($formula->start_depreciation),
         ];
     }
@@ -432,17 +432,17 @@ class FixedAssetExportRepository
 
     private function calculateRemainingBookValue($fixed_asset, $accumulated_cost)
     {
-        return $this->calculationRepository->getRemainingBookValue($fixed_asset->formula->depreciable_basis, $accumulated_cost);
+        return $this->calculationRepository->getRemainingBookValue($fixed_asset->formula->acquisition_cost, $accumulated_cost);
     }
 
-    private function depreciationPerMonth($depreciable_basis, $scrap_value, $est_useful_life)
+    private function depreciationPerMonth($acquisition_cost, $scrap_value, $est_useful_life)
     {
-        return $this->calculationRepository->getMonthlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life);
+        return $this->calculationRepository->getMonthlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life);
     }
 
-    private function depreciationPerYear($depreciable_basis, $scrap_value, $est_useful_life)
+    private function depreciationPerYear($acquisition_cost, $scrap_value, $est_useful_life)
     {
-        return $this->calculationRepository->getYearlyDepreciation($depreciable_basis, $scrap_value, $est_useful_life);
+        return $this->calculationRepository->getYearlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life);
     }
 
     private function monthDepreciated($start_depreciation)
