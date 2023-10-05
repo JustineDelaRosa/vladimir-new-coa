@@ -181,6 +181,27 @@ class AssetApprovalController extends Controller
         return $this->responseDeleted();
     }
 
+    public function handleRequest(CreateAssetApprovalRequest $request): JsonResponse
+    {
+        $assetApprovalIds = $request->asset_approval_id;
+        $action = ucwords($request->action);
+
+        switch ($action) {
+            case 'Approved':
+                return $this->approveRequestRepository->approveRequest($assetApprovalIds);
+                break;
+            case 'Denied':
+                return $this->approveRequestRepository->disapproveRequest($assetApprovalIds);
+                break;
+            case 'Void':
+                return $this->approveRequestRepository->voidRequest($assetApprovalIds);
+                break;
+            default:
+                return $this->responseUnprocessable('Invalid Action');
+                break;
+        }
+    }
+
 //    public function approveRequest(Request $request, $id)
 //    {
 //        $assetApproval = AssetApproval::find($id);
@@ -226,55 +247,4 @@ class AssetApprovalController extends Controller
 //        return $this->responseSuccess('Asset Request Approved Successfully');
 //    }
 
-    public function handleRequest(CreateAssetApprovalRequest $request): JsonResponse
-    {
-        $assetApprovalIds = $request->asset_approval_id;
-        $action = ucwords($request->action);
-
-        switch ($action) {
-            case 'Approved':
-                return $this->approveRequestRepository->approveRequest($assetApprovalIds);
-                break;
-            case 'Denied':
-                 return $this->approveRequestRepository->disapproveRequest($assetApprovalIds);
-                break;
-            case 'Void':
-                return $this->approveRequestRepository->voidRequest($assetApprovalIds);
-                break;
-            default:
-                return $this->responseUnprocessable('Invalid Action');
-                break;
-        }
-    }
-
-//    private function findAssetApproval(int $id)
-//    {
-//        return AssetApproval::find($id);
-//    }
-//
-//    private function findApproverId()
-//    {
-//        $user = auth('sanctum')->user();
-//        return Approvers::where('approver_id', $user->id)->value('id');
-//    }
-//
-//    private function isInvalidApprover($approver_id, $approverId)
-//    {
-//        return $approver_id != $approverId;
-//    }
-//
-//    private function updateAssetApprovalStatus($assetApproval, string $status)
-//    {
-//        $assetApproval->update(['status' => $status]);
-//    }
-//
-//    private function findNextLayerApprover($assetApproval)
-//    {
-//        return AssetApproval::where('requester_id', $assetApproval->requester_id)->where('layer', $assetApproval->layer + 1)->first();
-//    }
-//
-//    private function updateAssetRequestStatus($assetRequest, string $status)
-//    {
-//        $assetRequest->update(['status' => $status]);
-//    }
 }

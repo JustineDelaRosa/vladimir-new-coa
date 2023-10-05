@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\ApproverSettingController;
 use App\Http\Controllers\API\AssetApprovalController;
+use App\Http\Controllers\API\AssetApprovalLogger\AssetApprovalLoggerController;
 use App\Http\Controllers\API\AssetRequestController;
 use App\Http\Controllers\API\AssignApproverController;
 use App\Http\Controllers\Auth\AuthController;
@@ -216,6 +217,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //ASSET APPROVAL//
     Route::resource('asset-approval', AssetApprovalController::class);
     Route::patch('handle-request', [AssetApprovalController::class, 'handleRequest']);
+    //APPROVAL LOGGER//
+    Route::resource('approval-logs', AssetApprovalLoggerController::class);
+
 });
 
 

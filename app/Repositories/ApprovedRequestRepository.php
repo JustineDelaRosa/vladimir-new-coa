@@ -131,6 +131,7 @@ class ApprovedRequestRepository
                     'id' => $assetApproval->approver_id,
                     'firstname' => $assetApproval->approver->user->firstname,
                     'lastname' => $assetApproval->approver->user->lastname,
+                    'employee_id' => $assetApproval->approver->user->employee_id,
                 ],
                 'requester' => [
                     'id' => $assetApproval->requester_id,
