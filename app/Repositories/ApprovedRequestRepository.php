@@ -81,6 +81,7 @@ class ApprovedRequestRepository
 
             $this->updateAssetRequestStatus($assetApproval->assetRequest, 'For Approval of Approver ' . ($assetApproval->layer));
             $this->updateAssetApprovalStatus($assetApproval, 'For Approval');
+            $this->logActivity($assetApproval, 'Resubmitted');
         }
         return $this->responseSuccess('Asset Request Resubmitted Successfully');
     }
@@ -88,6 +89,7 @@ class ApprovedRequestRepository
     //VOID REQUEST
     public function voidRequest($assetApprovalId): JsonResponse
     {
+        $errors = [];
         foreach ($assetApprovalId as $id) {
             $assetApproval = AssetApproval::where('id', $id)
                 ->where('status', 'Denied')->first();
@@ -122,26 +124,7 @@ class ApprovedRequestRepository
     {
         $assetApproval->update(['status' => $status]);
         if ($status != 'For Approval') {
-            activity()
-                ->causedBy(auth('sanctum')->user())
-                ->performedOn($assetApproval)
-                ->withProperties([
-                    'asset_request_id' => $assetApproval->asset_request_id,
-                    'approver' => [
-                        'id' => $assetApproval->approver_id,
-                        'firstname' => $assetApproval->approver->user->firstname,
-                        'lastname' => $assetApproval->approver->user->lastname,
-                        'employee_id' => $assetApproval->approver->user->employee_id,
-                    ],
-                    'requester' => [
-                        'id' => $assetApproval->requester_id,
-                        'firstname' => $assetApproval->requester->firstname,
-                        'lastname' => $assetApproval->requester->lastname,
-                    ],
-                    'status' => $status,
-                ])
-                ->inLog($status)
-                ->log('Asset Approval Status Updated to ' . $status . ' by ' . auth('sanctum')->user()->employee_id . '.');
+            $this->logActivity($assetApproval, $status);
         }
     }
 
@@ -182,5 +165,41 @@ class ApprovedRequestRepository
             return true;
         }
         return false;
+    }
+
+
+    private function logActivity($assetApproval, $status)
+    {
+        $user = auth('sanctum')->user();
+        activity()
+            ->causedBy($user)
+            ->performedOn($assetApproval)
+            ->withProperties($this->composeLogProperties($assetApproval, $status))
+            ->inLog($status)
+            ->log('Asset Approval Status Updated to ' . $status . ' by ' . $user->employee_id . '.');
+    }
+
+    private function composeLogProperties($assetApproval, $status)
+    {
+        // Assume approver and requester are loaded with user relation
+        $approver = $assetApproval->approver->user;
+        $requester = $assetApproval->requester;
+
+        return [
+            'asset_request_id' => $assetApproval->asset_request_id,
+            'approver' => [
+                'id' => $approver->id,
+                'firstname' => $approver->firstname,
+                'lastname' => $approver->lastname,
+                'employee_id' => $approver->employee_id,
+            ],
+            'requester' => [
+                'id' => $requester->id,
+                'firstname' => $requester->firstname,
+                'lastname' => $requester->lastname,
+                'employee_id' => $requester->employee_id,
+            ],
+            'status' => $status,
+        ];
     }
 }
