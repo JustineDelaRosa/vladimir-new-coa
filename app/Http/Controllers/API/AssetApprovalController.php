@@ -41,8 +41,8 @@ class AssetApprovalController extends Controller
         }
 
         $assetApprovals = $assetApprovalsQuery->where('status', 'For Approval')->useFilters()->dynamicPaginate();
-        $assetApprovals->transform(function($assetApproval){
-            return[
+        $assetApprovals->transform(function ($assetApproval) {
+            return [
                 'id' => $assetApproval->id,
                 'status' => $assetApproval->status,
                 'requester' => [

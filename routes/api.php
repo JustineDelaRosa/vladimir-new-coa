@@ -209,7 +209,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //ASSIGNING APPROVER//
     Route::resource('assign-approver', AssignApproverController::class);
     Route::get('requester-view', [AssignApproverController::class, 'requesterView']);
-    Route::put('arrange-layer/{id}',[AssignApproverController::class, 'arrangeLayer']);
+    Route::put('arrange-layer/{id}', [AssignApproverController::class, 'arrangeLayer']);
 
     //ASSET REQUEST//
     Route::resource('asset-request', AssetRequestController::class);

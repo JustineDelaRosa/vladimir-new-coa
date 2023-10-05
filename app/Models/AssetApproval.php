@@ -12,7 +12,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class AssetApproval extends Model
 {
-    use HasFactory,Filterable;
+    use HasFactory, Filterable;
 
     /**
      * Mass-assignable attributes.
@@ -25,18 +25,19 @@ class AssetApproval extends Model
     protected static $logAttributes = ['*'];
 
     protected string $default_filters = AssetApprovalFilters::class;
+
     public function assetRequest()
     {
-        return $this->belongsTo(AssetRequest::class , 'asset_request_id' , 'id');
+        return $this->belongsTo(AssetRequest::class, 'asset_request_id', 'id');
     }
 
     public function approver()
     {
-        return $this->belongsTo(Approvers::class , 'approver_id' , 'id');
+        return $this->belongsTo(Approvers::class, 'approver_id', 'id');
     }
 
     public function requester()
     {
-        return $this->belongsTo(User::class , 'requester_id' , 'id');
+        return $this->belongsTo(User::class, 'requester_id', 'id');
     }
 }

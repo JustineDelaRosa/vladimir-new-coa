@@ -121,27 +121,27 @@ class ApprovedRequestRepository
     private function updateAssetApprovalStatus($assetApproval, string $status)
     {
         $assetApproval->update(['status' => $status]);
-        if($status != 'For Approval'){
-        activity()
-            ->causedBy(auth('sanctum')->user())
-            ->performedOn($assetApproval)
-            ->withProperties([
-                'asset_request_id' => $assetApproval->asset_request_id,
-                'approver' => [
-                    'id' => $assetApproval->approver_id,
-                    'firstname' => $assetApproval->approver->user->firstname,
-                    'lastname' => $assetApproval->approver->user->lastname,
-                    'employee_id' => $assetApproval->approver->user->employee_id,
-                ],
-                'requester' => [
-                    'id' => $assetApproval->requester_id,
-                    'firstname' => $assetApproval->requester->firstname,
-                    'lastname' => $assetApproval->requester->lastname,
-                ],
-                'status' => $status,
-            ])
-            ->inLog($status)
-            ->log('Asset Approval Status Updated to ' . $status . ' by ' . auth('sanctum')->user()->employee_id . '.');
+        if ($status != 'For Approval') {
+            activity()
+                ->causedBy(auth('sanctum')->user())
+                ->performedOn($assetApproval)
+                ->withProperties([
+                    'asset_request_id' => $assetApproval->asset_request_id,
+                    'approver' => [
+                        'id' => $assetApproval->approver_id,
+                        'firstname' => $assetApproval->approver->user->firstname,
+                        'lastname' => $assetApproval->approver->user->lastname,
+                        'employee_id' => $assetApproval->approver->user->employee_id,
+                    ],
+                    'requester' => [
+                        'id' => $assetApproval->requester_id,
+                        'firstname' => $assetApproval->requester->firstname,
+                        'lastname' => $assetApproval->requester->lastname,
+                    ],
+                    'status' => $status,
+                ])
+                ->inLog($status)
+                ->log('Asset Approval Status Updated to ' . $status . ' by ' . auth('sanctum')->user()->employee_id . '.');
         }
     }
 

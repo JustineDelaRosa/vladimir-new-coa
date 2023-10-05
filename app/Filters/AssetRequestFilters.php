@@ -27,9 +27,9 @@ class AssetRequestFilters extends QueryFilters
     ];
 
     protected array $relationSearch = [
-            'requester' => ['username', 'employee_id', 'firstname', 'lastname'],
-            'typeOfRequest' => ['type_of_request_name'],
-            'capex' => ['capex'],
-            'subCapex' => ['sub_capex'],
-        ];
+        'requester' => ['username', 'employee_id', 'firstname', 'lastname'],
+        'typeOfRequest' => ['type_of_request_name'],
+        'capex' => ['capex'],
+        'subCapex' => ['sub_capex'],
+    ];
 }
