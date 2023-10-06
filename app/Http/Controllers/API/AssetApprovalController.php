@@ -184,6 +184,7 @@ class AssetApprovalController extends Controller
     public function handleRequest(CreateAssetApprovalRequest $request): JsonResponse
     {
         $assetApprovalIds = $request->asset_approval_id;
+        $assetRequestIds = $request->asset_request_id;
         $action = ucwords($request->action);
 
         switch ($action) {
@@ -194,7 +195,7 @@ class AssetApprovalController extends Controller
                 return $this->approveRequestRepository->disapproveRequest($assetApprovalIds);
                 break;
             case 'Void':
-                return $this->approveRequestRepository->voidRequest($assetApprovalIds);
+                return $this->approveRequestRepository->voidRequest($assetRequestIds);
                 break;
             default:
                 return $this->responseUnprocessable('Invalid Action');

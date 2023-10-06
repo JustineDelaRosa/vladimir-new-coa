@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Approvers;
 use App\Models\AssetApproval;
+use App\Models\AssetRequest;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
@@ -71,14 +72,14 @@ class ApprovedRequestRepository
     //RESUBMITTING REQUEST
     public function resubmitRequest($assetApprovalId): JsonResponse
     {
+        $user = auth('sanctum')->user();
         foreach ($assetApprovalId as $id) {
             $assetApproval = AssetApproval::where('asset_request_id', $id)
                 ->where('layer', 1)->first();
-
-            if (!$assetApproval) {
+            if (!$assetApproval || $assetApproval->requester_id != $user->id) {
                 return $this->responseUnprocessable('Invalid Action');
             }
-            $this->updateToNull($id);
+            $this->updateToNullOrVoid($id);
             $this->updateAssetRequestStatus($assetApproval->assetRequest, 'For Approval of Approver ' . ($assetApproval->layer));
             $this->updateAssetApprovalStatus($assetApproval, 'For Approval');
             $this->logActivity($assetApproval, 'Resubmitted');
@@ -87,22 +88,36 @@ class ApprovedRequestRepository
     }
 
     //VOID REQUEST
-    public function voidRequest($assetApprovalId): JsonResponse
+    public function voidRequest($assetRequestIds): JsonResponse
     {
-        $errors = [];
-        foreach ($assetApprovalId as $id) {
-            $assetApproval = AssetApproval::where('id', $id)
-                ->where('status', 'Denied')->first();
-
-            if (!$assetApproval) {
+        foreach ($assetRequestIds as $id) {
+            $assetRequest = AssetRequest::where('id', $id)->where('status', 'Denied')->first();
+            if (!$assetRequest) {
                 return $this->responseUnprocessable('Invalid Action');
             }
-
-            $this->updateAssetRequestStatus($assetApproval->assetRequest, 'Void');
-            $this->updateAssetApprovalStatus($assetApproval, 'Void');
+            $this->updateAssetRequestStatus($assetRequest, 'Void');
+            $this->updateToNullOrVoid($id, 'Void');
+            activity()
+                ->causedBy(auth('sanctum')->user())
+                ->performedOn($assetRequest)
+                ->withProperties(
+                    [
+                        'asset_request_id' => $assetRequest->id,
+                        'requester' => [
+                            'id' => $assetRequest->requester->id,
+                            'firstname' => $assetRequest->requester->firstname,
+                            'lastname' => $assetRequest->requester->lastname,
+                            'employee_id' => $assetRequest->requester->employee_id,
+                        ],
+                        'status' => 'Void',
+                    ]
+                )
+                ->inLog('Void')
+                ->log('Asset Request Voided by ' . auth('sanctum')->user()->employee_id . '.');
         }
         return $this->responseSuccess('Asset Request Voided Successfully');
     }
+
 
     private function findAssetApproval(int $id)
     {
@@ -139,14 +154,6 @@ class ApprovedRequestRepository
     private function updateAssetRequestStatus($assetRequest, string $status)
     {
         $assetRequest->update(['status' => $status]);
-//        activity()
-//            ->causedBy(auth('sanctum')->user())
-//            ->performedOn($assetRequest)
-//            ->withProperties([
-//                'asset_request_id' => $assetRequest->id,
-//                'status' => $status,
-//            ])
-//            ->log('Asset Request Status Updated to ' . $status );
     }
 
     private function checkStatus($requestApprovalId): bool
@@ -203,10 +210,13 @@ class ApprovedRequestRepository
         ];
     }
 
-    private function updateToNull($requestId){
+    private function updateToNullOrVoid($requestId, $status = null){
         $assetApproval = AssetApproval::where('asset_request_id', $requestId)->get();
-        foreach ($assetApproval as $approval){
-            $approval->update(['status' => null]);
+        if($status == 'Void'){
+            $assetApproval->each->update(['status' => 'Void']);
+        }else{
+            $assetApproval->each->update(['status' => null]);
         }
     }
+
 }

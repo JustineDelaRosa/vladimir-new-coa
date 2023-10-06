@@ -28,6 +28,10 @@ class AppServiceProvider extends ServiceProvider
         Validator::extend('unique_in_array', function ($attribute, $value, $parameters, $validator) {
             return count($value) === count(array_unique($value));
         });
+        Validator::extend('one_array_present', function ($attribute, $value, $parameters, $validator) {
+            $otherArrayData = $validator->getData()[$parameters[0]] ?? [];
+            return (empty($value) && !empty($otherArrayData)) || (!empty($value) && empty($otherArrayData));
+        });
         Sanctum::$accessTokenAuthenticationCallback = function ($accessToken, $isValid){
             return !$accessToken->last_used_at || $accessToken->last_used_at->gte(now()->subMinutes(60));
         };

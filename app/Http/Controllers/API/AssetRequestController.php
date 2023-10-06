@@ -240,21 +240,24 @@ class AssetRequestController extends Controller
         ]);
     }
 
-    public function update(UpdateAssetRequestRequest $request, AssetRequest $assetRequest): JsonResponse
+    public function update(UpdateAssetRequestRequest $request, $id): JsonResponse
     {
-        $assetRequest->update($request->all());
-//        $assetRequest = AssetRequest::update([
-//            'requester_id' => $request->requester_id,
-//            'type_of_request_id' => $request->type_of_request_id,
-//            'capex_id' => isset($request['sub_capex_id']) ? SubCapex::find($request['sub_capex_id'])->capex_id : null,
-//            'sub_capex_id' => $request->sub_capex_id,
-//            'asset_description' => $request->asset_description,
-//            'asset_specification' => $request->asset_specification,
-//            'accountability' => $request->accountability,
-//            'accountable' => $request->accountable,
-//            'cellphone_number' => $request->cellphone_number,
-//            'brand' => $request->brand,
-//        ]);
+//        $assetRequest->update($request->all());
+        $assetRequest = AssetRequest::find($id);
+        if(!$assetRequest){
+            return $this->responseUnprocessable('Asset Request not found.');
+        }
+        $assetRequest->update([
+            'type_of_request_id' => $request->type_of_request_id,
+            'capex_id' => isset($request['sub_capex_id']) ? SubCapex::find($request['sub_capex_id'])->capex_id : null,
+            'sub_capex_id' => $request->sub_capex_id,
+            'asset_description' => $request->asset_description,
+            'asset_specification' => $request->asset_specification,
+            'accountability' => $request->accountability,
+            'accountable' => $request->accountable,
+            'cellphone_number' => $request->cellphone_number,
+            'brand' => $request->brand,
+        ]);
 
         return $this->responseSuccess('AssetRequest updated Successfully', [
             'id' => $assetRequest->id,
