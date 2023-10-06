@@ -73,12 +73,12 @@ class ApprovedRequestRepository
     {
         foreach ($assetApprovalId as $id) {
             $assetApproval = AssetApproval::where('asset_request_id', $id)
-                ->where('status', 'Denied')->first();
+                ->where('layer', 1)->first();
 
             if (!$assetApproval) {
                 return $this->responseUnprocessable('Invalid Action');
             }
-
+            $this->updateToNull($id);
             $this->updateAssetRequestStatus($assetApproval->assetRequest, 'For Approval of Approver ' . ($assetApproval->layer));
             $this->updateAssetApprovalStatus($assetApproval, 'For Approval');
             $this->logActivity($assetApproval, 'Resubmitted');
@@ -201,5 +201,12 @@ class ApprovedRequestRepository
             ],
             'status' => $status,
         ];
+    }
+
+    private function updateToNull($requestId){
+        $assetApproval = AssetApproval::where('asset_request_id', $requestId)->get();
+        foreach ($assetApproval as $approval){
+            $approval->update(['status' => null]);
+        }
     }
 }

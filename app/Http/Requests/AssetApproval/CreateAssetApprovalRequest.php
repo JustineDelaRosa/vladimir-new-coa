@@ -34,9 +34,9 @@ class CreateAssetApprovalRequest extends FormRequest
     function messages()
     {
         return [
-            'asset_approval_id.required' => 'The asset approval id is required',
-            'asset_approval_id.exists' => 'The asset approval id must be an existing id',
-            'asset_approval_id.array' => 'The asset approval id must be an array',
+            'asset_approval_id.required' => 'The asset approval is required',
+            'asset_approval_id.exists' => 'The asset approval does not exist',
+            'asset_approval_id.array' => 'The asset approval must be an array',
             'action.required' => 'The action is required',
             'action.string' => 'The action must be a string',
             'action.in' => 'Invalid Selection',
