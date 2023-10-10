@@ -18,6 +18,27 @@ class AssetApprovalLoggerController extends Controller
         // return Activity::all();
 
         $activityLog = Activity::useFilters()->dynamicPaginate();
+
+        $activityLog->transform(function ($item) {
+            return[
+                'id' => $item->id,
+                'log_name' => $item->log_name,
+                'description' => $item->description,
+                'subject_id' => $item->subject_id,
+                'subject_type' => $item->subject_type,
+                'causer_id' => [
+                    'id' => $item->causer->id,
+                    'username' => $item->causer->username,
+                    'employee_id' => $item->causer->employee_id,
+                    'firstname' => $item->causer->firstname,
+                    'lastname' => $item->causer->lastname,
+                ],
+                'properties' => $item->properties,
+                'created_at' => $item->created_at,
+                'updated_at' => $item->updated_at,
+            ];
+        });
+
         return $activityLog;
     }
 
