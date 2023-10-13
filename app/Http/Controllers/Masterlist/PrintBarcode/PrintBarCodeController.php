@@ -46,8 +46,9 @@ class PrintBarCodeController extends Controller
             return response()->json(['message' => 'No data found'], 404);
         }
 
-
         try {
+            //ZDesigner ZD230-203dpi ZPL
+            //ZDesigner GC420t
             $connector = new WindowsPrintConnector("smb://{$printerIP->ip}/ZDesigner ZD230-203dpi ZPL");
 
             // Create a new Printer object and assign the connector to it
@@ -182,9 +183,9 @@ class PrintBarCodeController extends Controller
                 ], 200);
         } catch (Exception $e) {
             // Handle any exceptions that may occur during the printing process
-//            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
+            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
 
-            return response()->json(['message' => 'Unable to Print'], 422);
+//            return response()->json(['message' => 'Unable to Print'], 422);
         }
     }
 
@@ -292,9 +293,8 @@ class PrintBarCodeController extends Controller
             $fixedAssetQuery->where('created_at', '<=', $endDate->format('Y-m-d H:i:s'));
         }
         if($endDate && $startDate) {
-            if ($endDate > $startDate) {
-                return $this->responseUnprocessable('Start date must be less than end date');
-//               return response()->json(['message' => 'Start date must be less than end date'], 422);
+            if (Carbon::parse($startDate)->gt(Carbon::parse($endDate))) {
+                return $this->responseUnprocessable('Invalid date range');
             }
         }
 

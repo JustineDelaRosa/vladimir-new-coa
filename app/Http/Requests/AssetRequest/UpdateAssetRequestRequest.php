@@ -61,6 +61,7 @@ class UpdateAssetRequestRequest extends FormRequest
             ],
             'cellphone_number' => 'nullable|numeric',
             'brand' => 'nullable',
+            'quantity' => 'required|numeric',
         ];
     }
 
@@ -79,6 +80,8 @@ class UpdateAssetRequestRequest extends FormRequest
 //            'accountable.validateAccountable' => 'The selected accountable is invalids',
             'cellphone_number.numeric' => 'The cellphone number must be a number',
             'brand.required' => 'The brand field is required',
+            'quantity.required' => 'The quantity field is required',
+            'quantity.numeric' => 'The quantity must be a number',
 
         ];
     }

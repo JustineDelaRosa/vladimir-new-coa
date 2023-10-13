@@ -416,7 +416,8 @@ class AdditionalCostRepository
         ];
     }
 
-    public function getAddCostSequence($fixed_asset_id) {
+    public function getAddCostSequence($fixed_asset_id): string
+    {
         // Get all the additional costs for the given fixed asset
         $additional_costs = AdditionalCost::where('fixed_asset_id', $fixed_asset_id)
             ->orderBy('id')->get();

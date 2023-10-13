@@ -94,6 +94,7 @@ class AssetRequestController extends Controller
                 'accountable' => $assetRequest->accountable ?? '-',
                 'cellphone_number' => $assetRequest->cellphone_number ?? '-',
                 'brand' => $assetRequest->brand ?? '-',
+                'quantity' => $assetRequest->quantity ?? '-',
             ];
         });
 
@@ -102,7 +103,6 @@ class AssetRequestController extends Controller
 
     public function store(CreateAssetRequestRequest $request)
     {
-        $requestCount = $request->quantity;
         $requester_id = $request->requester_id;
         $type_of_request_id = $request->type_of_request_id;
         $sub_capex_id = $request->sub_capex_id;
@@ -112,6 +112,7 @@ class AssetRequestController extends Controller
         $accountable = $request->accountable;
         $cellphone_number = $request->cellphone_number;
         $brand = $request->brand;
+        $quantity = $request->quantity;
 
         $approverLayers = ApproverLayer::where('requester_id', $request->requester_id)
             ->orderBy('layer', 'asc')
@@ -129,7 +130,7 @@ class AssetRequestController extends Controller
 
 //        $assetRequest = AssetRequest::create($request->all());
 
-        foreach (range(1, $requestCount) as $index) {
+//        foreach (range(1, $requestCount) as $index) {
             $capex_id = isset($request['sub_capex_id']) ? SubCapex::find($request['sub_capex_id'])->capex_id : null;
 
             $assetRequest = AssetRequest::create(compact(
@@ -142,7 +143,8 @@ class AssetRequestController extends Controller
                 'accountability',
                 'accountable',
                 'cellphone_number',
-                'brand'
+                'brand',
+                'quantity'
             ));
 
             if ($assetRequest) {
@@ -164,7 +166,7 @@ class AssetRequestController extends Controller
                     $firstLayerFlag = false;
                 }
             }
-        }
+//        }
 
 
 //        $assetRequest = AssetRequest::create([
@@ -237,12 +239,12 @@ class AssetRequestController extends Controller
             'accountable' => $assetRequest->accountable ?? '-',
             'cellphone_number' => $assetRequest->cellphone_number ?? '-',
             'brand' => $assetRequest->brand ?? '-',
+            'quantity' => $assetRequest->quantity ?? '-',
         ]);
     }
 
     public function update(UpdateAssetRequestRequest $request, $id): JsonResponse
     {
-//        $assetRequest->update($request->all());
         $assetRequest = AssetRequest::find($id);
         if(!$assetRequest){
             return $this->responseUnprocessable('Asset Request not found.');
@@ -257,6 +259,7 @@ class AssetRequestController extends Controller
             'accountable' => $request->accountable,
             'cellphone_number' => $request->cellphone_number,
             'brand' => $request->brand,
+            'quantity' => $request->quantity,
         ]);
 
         return $this->responseSuccess('AssetRequest updated Successfully', [
@@ -303,5 +306,4 @@ class AssetRequestController extends Controller
 
         return $this->approveRequestRepository->resubmitRequest($requestIds);
     }
-
 }
