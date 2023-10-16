@@ -406,18 +406,18 @@ class MasterlistImport extends DefaultValueBinder implements
             }],
             '*.voucher_date' => [
                 'required',
-                function ($attribute, $value, $fail) use ($collections) {
-                    $index = array_search($attribute, array_keys($collections->toArray()));
-                    $voucher = $collections[$index]['voucher'];
-                    if ($voucher == '-') {
-                        if ($value != '-') {
-                            $fail('Voucher date should be empty');
-                            return;
-                        }
-                        return;
-                    }
-                    $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
-                }
+//                function ($attribute, $value, $fail) use ($collections) {
+//                    $index = array_search($attribute, array_keys($collections->toArray()));
+//                    $voucher = $collections[$index]['voucher'];
+//                    if ($voucher == '-') {
+//                        if ($value != '-') {
+//                            $fail('Voucher date should be empty');
+//                            return;
+//                        }
+//                        return;
+//                    }
+//                    $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
+//                }
             ],
             '*.receipt' => ['required', function ($attribute, $value, $fail) {
 //                if ($value == '-') {

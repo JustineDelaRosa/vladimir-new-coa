@@ -133,50 +133,52 @@ class FixedAssetUpdateRequest extends FormRequest
                 }
 
             }],
-            'voucher_date' => [function ($attribute, $value, $fail) {
-                if (request()->depreciation_method != 'Supplier Rebase') {
-                    //if the depreciation status is running depreciation and fully depreciated required voucher
-                    $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
-                    if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
-                        //get the value of the voucher
-                        if (in_array($value, [null, '-'])) {
-                            $fail('Voucher date is required');
-                            return;
+            'voucher_date' => ['nullable',
+//                function ($attribute, $value, $fail) {
+//                if (request()->depreciation_method != 'Supplier Rebase') {
+//                    //if the depreciation status is running depreciation and fully depreciated required voucher
+//                    $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+//                    if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+//                        //get the value of the voucher
+//                        if (in_array($value, [null, '-'])) {
+//                            $fail('Voucher date is required');
+//                            return;
+//                        }
+//
+//                        $voucher = request()->voucher;
+//
+//                        $fa_voucher_date = FixedAsset::where('voucher', $voucher)->first()->voucher_date ?? null;
+//                        $ac_voucher_date = AdditionalCost::where('voucher', $voucher)->first()->voucher_date ?? null;
+//
+//                        if (isset($fa_voucher_date) && ($fa_voucher_date != $value)) {
+//                            $fail('Same voucher with different date found');
+//                        }
+//                        if (isset($ac_voucher_date) && ($ac_voucher_date != $value)) {
+//                            $fail('Same voucher with different date found');
+//                        }
+//                    }
+//                }
+//            }
+                    ],
+                    'receipt' => ['nullable', function ($attribute, $value, $fail) {
+                        //if the depreciation status is running depreciation and fully depreciated required voucher
+                        $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                        if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+                            if (in_array($value, [null, '-'])) {
+                                $fail('Receipt is required');
+                            }
                         }
 
-                        $voucher = request()->voucher;
-
-                        $fa_voucher_date = FixedAsset::where('voucher', $voucher)->first()->voucher_date ?? null;
-                        $ac_voucher_date = AdditionalCost::where('voucher', $voucher)->first()->voucher_date ?? null;
-
-                        if (isset($fa_voucher_date) && ($fa_voucher_date != $value)) {
-                            $fail('Same voucher with different date found');
-                        }
-                        if (isset($ac_voucher_date) && ($ac_voucher_date != $value)) {
-                            $fail('Same voucher with different date found');
-                        }
-                    }
-                }
-            }],
-            'receipt' => ['nullable', function ($attribute, $value, $fail) {
-                //if the depreciation status is running depreciation and fully depreciated required voucher
-                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
-                if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
-                    if (in_array($value, [null, '-'])) {
-                        $fail('Receipt is required');
-                    }
-                }
-
-            }],
+                    }],
             'quantity' => 'required',
             //if any of tag_number and tag_number_old is not null, then is_old_asset is true else false
             'is_old_asset' => ['required', 'boolean', function ($attribute, $value, $fail) {
-                if ($value == 1) {
-                    if (request()->tag_number == null && request()->tag_number_old == null) {
-                        $fail('Either tag number or tag number old is required');
-                    }
-                }
-            }],
+                        if ($value == 1) {
+                            if (request()->tag_number == null && request()->tag_number_old == null) {
+                                $fail('Either tag number or tag number old is required');
+                            }
+                        }
+                    }],
             'asset_status_id' => 'required|exists:asset_statuses,id',
             'depreciation_status_id' => 'required|exists:depreciation_statuses,id',
             'cycle_count_status_id' => 'required|exists:cycle_count_statuses,id',
@@ -185,79 +187,79 @@ class FixedAssetUpdateRequest extends FormRequest
             'acquisition_date' => ['required', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],
             //acquisition cost should not be less than or equal to 0
             'acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
-                if (request()->depreciation_method == 'Supplier Rebase') {
-                    if ($value != 0) {
-                        $fail('Acquisition cost should be 0');
-                    }
-                }
-                if ($value < 0) {
-                    $fail('Invalid acquisition cost');
-                }
-                $major_category = request()->major_category_id;
-                $major_category = MajorCategory::where('id', $major_category)->first();
-                if ($major_category->est_useful_life == 0 || $major_category->est_useful_life == 0.0) {
-                    request()->merge(['acquisition_cost' => 0]);
-                }
-            }],
+                        if (request()->depreciation_method == 'Supplier Rebase') {
+                            if ($value != 0) {
+                                $fail('Acquisition cost should be 0');
+                            }
+                        }
+                        if ($value < 0) {
+                            $fail('Invalid acquisition cost');
+                        }
+                        $major_category = request()->major_category_id;
+                        $major_category = MajorCategory::where('id', $major_category)->first();
+                        if ($major_category->est_useful_life == 0 || $major_category->est_useful_life == 0.0) {
+                            request()->merge(['acquisition_cost' => 0]);
+                        }
+                    }],
             'scrap_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
-                if ($value < 0) {
-                    $fail('Invalid scrap value');
-                }
+                        if ($value < 0) {
+                            $fail('Invalid scrap value');
+                        }
 
-                if (request()->depreciation_method == 'Supplier Rebase') {
-                    if ($value != 0) {
-                        $fail('Scrap value should be 0');
-                    }
-                }
-                $major_category = request()->major_category_id;
-                $major_category = MajorCategory::where('id', $major_category)->first();
-                if ($major_category->est_useful_life == 0 || $major_category->est_useful_life == 0.0) {
-                    request()->merge(['scrap_value' => 0]);
-                    return;
-                }
-                if ($value > request()->acquisition_cost) {
-                    $fail('Must not be greater than acquisition cost');
-                }
-            }],
+                        if (request()->depreciation_method == 'Supplier Rebase') {
+                            if ($value != 0) {
+                                $fail('Scrap value should be 0');
+                            }
+                        }
+                        $major_category = request()->major_category_id;
+                        $major_category = MajorCategory::where('id', $major_category)->first();
+                        if ($major_category->est_useful_life == 0 || $major_category->est_useful_life == 0.0) {
+                            request()->merge(['scrap_value' => 0]);
+                            return;
+                        }
+                        if ($value > request()->acquisition_cost) {
+                            $fail('Must not be greater than acquisition cost');
+                        }
+                    }],
             'depreciable_basis' => ['required', 'numeric', function ($attribute, $value, $fail) {
-                if (request()->depreciation_method == 'Supplier Rebase') {
-                    if ($value != 0) {
-                        $fail('Depreciable basis should be 0');
-                    }
-                }
-                if ($value < 0) {
-                    $fail('Invalid depreciable basis');
-                }
-                $major_category = request()->major_category_id;
-                $major_category = MajorCategory::where('id', $major_category)->first();
-                if ($major_category->est_useful_life == 0 || $major_category->est_useful_life == 0.0) {
-                    request()->merge(['depreciable_basis' => 0]);
-                }
-            }],
+                        if (request()->depreciation_method == 'Supplier Rebase') {
+                            if ($value != 0) {
+                                $fail('Depreciable basis should be 0');
+                            }
+                        }
+                        if ($value < 0) {
+                            $fail('Invalid depreciable basis');
+                        }
+                        $major_category = request()->major_category_id;
+                        $major_category = MajorCategory::where('id', $major_category)->first();
+                        if ($major_category->est_useful_life == 0 || $major_category->est_useful_life == 0.0) {
+                            request()->merge(['depreciable_basis' => 0]);
+                        }
+                    }],
 //                'accumulated_cost' => ['nullable', 'numeric'],
             'care_of' => 'nullable',
             'months_depreciated' => ['required', 'numeric', function ($attribute, $value, $fail) {
 
-                //    if depreciation method is Supplier Rebase, and no more months depreciated acquisition cost, scrap value and depreciable basis
-                if (request()->depreciation_method == 'Supplier Rebase') {
-                    if ($value != 0) {
-                        $fail('Months depreciated should be 0');
-                    }
-                }
+                        //    if depreciation method is Supplier Rebase, and no more months depreciated acquisition cost, scrap value and depreciable basis
+                        if (request()->depreciation_method == 'Supplier Rebase') {
+                            if ($value != 0) {
+                                $fail('Months depreciated should be 0');
+                            }
+                        }
 
-                //get what is the depreciation status is for depreciation
-                $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
-                if ($depreciation_status->depreciation_status_name == 'For Depreciation') {
-                    if ($value != 0) {
-                        $fail('Months depreciated should be 0');
-                    }
-                }
-                $major_category = request()->major_category_id;
-                $major_category = MajorCategory::where('id', $major_category)->first();
-                if ($major_category->est_useful_life == 0 || $major_category->est_useful_life == 0.0) {
-                    request()->merge(['months_depreciated' => 0]);
-                }
-            }],
+                        //get what is the depreciation status is for depreciation
+                        $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+                        if ($depreciation_status->depreciation_status_name == 'For Depreciation') {
+                            if ($value != 0) {
+                                $fail('Months depreciated should be 0');
+                            }
+                        }
+                        $major_category = request()->major_category_id;
+                        $major_category = MajorCategory::where('id', $major_category)->first();
+                        if ($major_category->est_useful_life == 0 || $major_category->est_useful_life == 0.0) {
+                            request()->merge(['months_depreciated' => 0]);
+                        }
+                    }],
 
             'release_date' => ['nullable', 'date_format:Y-m-d',
 //                function ($attribute, $value, $fail) {
@@ -274,34 +276,34 @@ class FixedAssetUpdateRequest extends FormRequest
 //                    }
 //                }
 //            }
-            ],
+                    ],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
             'department_id' => 'required|exists:departments,id',
             'location_id' => [
-                'required',
-                'exists:locations,id',
-                function ($attribute, $value, $fail) {
-                    // Fetch the location and associated departments only once
-                    $location = Location::query()->find($value);
+                        'required',
+                        'exists:locations,id',
+                        function ($attribute, $value, $fail) {
+                            // Fetch the location and associated departments only once
+                            $location = Location::query()->find($value);
 
-                    // Check if the location is active
-                    if (!$location || !$location->is_active) {
-                        $fail('Location is not active or does not exist.');
-                        return; // No point in proceeding if the location is not active
-                    }
+                            // Check if the location is active
+                            if (!$location || !$location->is_active) {
+                                $fail('Location is not active or does not exist.');
+                                return; // No point in proceeding if the location is not active
+                            }
 
-                    // Get the sync_id of the department
-                    $department_sync_id = Department::query()->where('id', request()->department_id)->value('sync_id');
+                            // Get the sync_id of the department
+                            $department_sync_id = Department::query()->where('id', request()->department_id)->value('sync_id');
 
-                    // Get sync_id's of all locations associated with the department
-                    $associated_location_sync_ids = $location->departments->pluck('sync_id');
+                            // Get sync_id's of all locations associated with the department
+                            $associated_location_sync_ids = $location->departments->pluck('sync_id');
 //                        dd($associated_location_sync_ids);
-                    // Check if department's sync_id exists in associated_location_sync_ids
-                    if (!$associated_location_sync_ids->contains($department_sync_id)) {
-                        $fail('Invalid location for the department');
-                    }
-                }
-            ],
+                            // Check if department's sync_id exists in associated_location_sync_ids
+                            if (!$associated_location_sync_ids->contains($department_sync_id)) {
+                                $fail('Invalid location for the department');
+                            }
+                        }
+                    ],
 //            'account_title_id' => 'required|exists:account_titles,id',
 //            'print_count' => 'nullable|numeric',
         ];

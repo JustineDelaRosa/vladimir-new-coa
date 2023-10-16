@@ -91,7 +91,7 @@ class FixedAssetRepository
             'major_category_id' => $request['major_category_id'],
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
-            'voucher_date' => $request['voucher_date'],
+            'voucher_date' => $request['voucher_date'] ?? null,
             'receipt' => $request['receipt'] ?? '-',
             'quantity' => $request['quantity'],
             'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
@@ -150,7 +150,7 @@ class FixedAssetRepository
             'major_category_id' => $request['major_category_id'],
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
-            'voucher_date' => $request['voucher_date'],
+            'voucher_date' => $request['voucher_date'] ?? null,
             'receipt' => $request['receipt'] ?? '-',
             'quantity' => $request['quantity'],
             'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
@@ -654,6 +654,7 @@ class FixedAssetRepository
             'accountable',
             'brand',
             'depreciation_method',
+
         ];
 
         foreach ($mainAttributes as $attribute) {

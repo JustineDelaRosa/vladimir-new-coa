@@ -265,18 +265,18 @@ class AdditionalCostImport extends DefaultValueBinder implements
             ],
             '*.voucher_date' => [
                 'required',
-                function ($attribute, $value, $fail) use ($collections) {
-                    $index = array_search($attribute, array_keys($collections));
-                    $voucher = $collections[$index]['voucher'];
-                    if ($voucher == '-') {
-                        if ($value != '-') {
-                            $fail('Voucher date should be empty');
-                            return;
-                        }
-                        return;
-                    }
-                    $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
-                }
+//                function ($attribute, $value, $fail) use ($collections) {
+//                    $index = array_search($attribute, array_keys($collections));
+//                    $voucher = $collections[$index]['voucher'];
+//                    if ($voucher == '-') {
+//                        if ($value != '-') {
+//                            $fail('Voucher date should be empty');
+//                            return;
+//                        }
+//                        return;
+//                    }
+//                    $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
+//                }
             ],
             '*.receipt' => 'required',
             '*.quantity' => 'required|numeric',
