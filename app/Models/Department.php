@@ -25,6 +25,10 @@ class Department extends Model
 //        return $this->hasMany(FixedAsset::class, 'department_sync_id', 'sync_id');
 //    }
 
+    public function subUnit(){
+        return $this->hasMany(SubUnit::class,'department_id','id');
+    }
+
     public function division()
     {
         return $this->belongsTo(Division::class, 'division_id', 'id');

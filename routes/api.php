@@ -5,6 +5,7 @@ use App\Http\Controllers\API\AssetApprovalController;
 use App\Http\Controllers\API\AssetApprovalLogger\AssetApprovalLoggerController;
 use App\Http\Controllers\API\AssetRequestController;
 use App\Http\Controllers\API\AssignApproverController;
+use App\Http\Controllers\API\DepartmentUnitApproversController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CategoryListController;
 use App\Http\Controllers\Masterlist\AdditionalCostController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Masterlist\COA\AccountTitleController;
 use App\Http\Controllers\Masterlist\COA\CompanyController;
 use App\Http\Controllers\Masterlist\COA\DepartmentController;
 use App\Http\Controllers\Masterlist\COA\LocationController;
+use App\Http\Controllers\Masterlist\COA\SubUnitController;
 use App\Http\Controllers\Masterlist\DivisionController;
 use App\Http\Controllers\Masterlist\FixedAssetController;
 use App\Http\Controllers\Masterlist\FixedAssetExportController;
@@ -87,6 +89,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //DEPARTMENT//
     Route::resource('department', DepartmentController::class);
     Route::get('departments/search', [DepartmentController::class, 'search']);
+
+    //SUB UNIT//
+    Route::resource('sub-unit', SubUnitController::class);
+    Route::patch('archived-sub-unit/{id}', [SubUnitController::class, 'archived']);
 
     //LOCATION//
     Route::resource('location', LocationController::class);
@@ -219,7 +225,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::patch('handle-request', [AssetApprovalController::class, 'handleRequest']);
     //APPROVAL LOGGER//
     Route::resource('approval-logs', AssetApprovalLoggerController::class);
-
+    //DEPARTMENT UNIT APPROVER LAYER SETUP//
+    Route::resource('department-unit-approvers', DepartmentUnitApproversController::class);
 });
-
-

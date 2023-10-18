@@ -20,6 +20,8 @@ class CreateUsersTable extends Migration
             $table->string('lastname');
             $table->string('username');
             $table->string('password');
+            $table->string('department_name');
+            $table->string('subunit_name');
             $table->boolean('is_active');
             $table->unsignedInteger('role_id');
             $table->rememberToken();

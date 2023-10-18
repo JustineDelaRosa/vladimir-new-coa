@@ -147,7 +147,6 @@ class DivisionController extends Controller
 
     public function archived(Request $request, $id)
     {
-
         $status = $request->status;
         $Division = Division::query();
         if (!$Division->withTrashed()->where('id', $id)->exists()) {
@@ -159,16 +158,6 @@ class DivisionController extends Controller
             if (!Division::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
-
-//                $checkFixedAsset = FixedAsset::where('division_id', $id)->exists();
-//                if ($checkFixedAsset) {
-//                    return response()->json(['error' => 'Unable to archived , Division is still in use!'], 422);
-//                }
-//                $checkDepartment = Department::where('division_id', $id)->exists();
-//                if ($checkDepartment) {
-//                    return response()->json(['error' => 'Unable to archived , Division is still in use!'], 422);
-//                }
-
                 $removeDivision = Department::where('division_id', $id)
                     ->update([
                         'division_id' => null
@@ -233,4 +222,18 @@ class DivisionController extends Controller
         });
         return $Division;
     }
+
+
+
+
+    //                $checkFixedAsset = FixedAsset::where('division_id', $id)->exists();
+//                if ($checkFixedAsset) {
+//                    return response()->json(['error' => 'Unable to archived , Division is still in use!'], 422);
+//                }
+//                $checkDepartment = Department::where('division_id', $id)->exists();
+//                if ($checkDepartment) {
+//                    return response()->json(['error' => 'Unable to archived , Division is still in use!'], 422);
+//                }
+
+
 }

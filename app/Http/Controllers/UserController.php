@@ -44,6 +44,8 @@ class UserController extends Controller
         $lastname = ucwords(strtolower($request->lastname));
         $username = $request->username;
         $role_id = $request->role_id;
+        $department_name = $request->department_name;
+        $subunit_name = $request->subunit_name;
 
         // $accessPermissionConvertedToString = implode(", ",$access_permission);
 
@@ -54,10 +56,11 @@ class UserController extends Controller
             'lastname' => $lastname,
             'username' => $username,
             'password' => Crypt::encryptString($username),
+            'department_name' => $department_name,
+            'subunit_name' => $subunit_name,
             'is_active' => 1,
             'role_id' => $role_id,
         ]);
-
 
         return response()->json(['message' => 'Successfully Created!', 'data' => $createUser], 201);
 
@@ -118,6 +121,8 @@ class UserController extends Controller
         $lastname = ucwords(strtolower($request->lastname));
         $username = $request->username;
         $role_id = $request->role_id;
+        $department_name = $request->department_name;
+        $subunit_name = $request->subunit_name;
         $User = User::find($id);
         if (!$User) {
             return response()->json(['error' => 'User Route Not Found'], 404);
@@ -129,7 +134,9 @@ class UserController extends Controller
         $update = User::where('id', $id)
             ->update([
                 'username' => $username,
-                'role_id' => $role_id
+                'role_id' => $role_id,
+                'department_name' => $department_name,
+                'subunit_name' =>$subunit_name,
             ]);
 
         return response()->json(['message' => 'Successfully Updated!'], 201);
@@ -268,16 +275,6 @@ class UserController extends Controller
             }
         }
 
-    }
-
-    public function test(Request $request)
-    {
-
-        try {
-            $find = User::find(2);
-        } catch (Exception $e) {
-            return "not exist";
-        }
     }
 }
 
