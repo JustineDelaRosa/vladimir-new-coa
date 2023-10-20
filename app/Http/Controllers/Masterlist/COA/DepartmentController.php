@@ -67,7 +67,7 @@ class DepartmentController extends Controller
                     'division_id' => $departments->division->id ?? "-",
                     'division_name' => $departments->division->division_name ?? "-",
                 ],
-                'sub_unit' => $departments->subUnit->map(function ($subUnit) {
+                'subunit' => $departments->subUnit->map(function ($subUnit) {
                     return [
                         'subunit_id' => $subUnit->id ?? "-",
                         'subunit_name' => $subUnit->sub_unit_name ?? "-",
