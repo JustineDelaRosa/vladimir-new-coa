@@ -18,7 +18,6 @@ class DepartmentController extends Controller
      */
     public function index()
     {
-
 //        $client = new Client();
 //        $token = '9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4';
 //        $response = $client->request('GET', 'http://rdfsedar.com/api/data/employees', [
@@ -44,7 +43,7 @@ class DepartmentController extends Controller
 //            }
 //        }
         $results = [];
-        $department = Department::with('location')->where('is_active', 1)->get();
+        $department = Department::where('is_active', 1)->get();
         foreach ($department as $departments) {
             $results[] = [
                 'id' => $departments->id,
@@ -64,11 +63,17 @@ class DepartmentController extends Controller
                         'location_status' => $locations->is_active ?? '-',
                     ];
                 }),
-
                 'division' => [
                     'division_id' => $departments->division->id ?? "-",
                     'division_name' => $departments->division->division_name ?? "-",
                 ],
+                'sub_unit' => $departments->subUnit->map(function ($subUnit) {
+                    return [
+                        'subunit_id' => $subUnit->id ?? "-",
+                        'subunit_name' => $subUnit->sub_unit_name ?? "-",
+                        'subunit_status' => $subUnit->is_active ?? '-',
+                    ];
+                }),
                 'department_code' => $departments->department_code,
                 'department_name' => $departments->department_name,
                 'is_active' => $departments->is_active,
