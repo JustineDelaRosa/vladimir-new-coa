@@ -97,48 +97,29 @@ class DepartmentController extends Controller
         if ($company) {
             return response()->json(['message' => 'Company Data not Ready'], 422);
         }
-
-        $department_request = $request->all('result.departments');
-        if (empty($request->all())) {
+        $departmentData = $request->input('result.departments');
+        if (empty($request->all()) || empty($request->input('result.departments'))) {
             return response()->json(['message' => 'Data not Ready']);
         }
 
-        foreach ($department_request as $departments) {
-            foreach ($departments as $department) {
-                foreach ($department as $dept) {
+        foreach ($departmentData as $departments) {
+            $sync_id = $departments['id'];
+            $code = $departments['code'];
+            $company_sync_id = $departments['company']['id'];
+            $name = $departments['name'];
+            $is_active = $departments['status'];
 
-                    $sync_id = $dept['id'];
-                    $code = $dept['code'];
-//                    $name = strtoupper($dept['name']);
-                    $company_sync_id = $dept['company']['id'];
-                    $name = $dept['name'];
-                    $is_active = $dept['status'];
-
-                    $sync = Department::updateOrCreate(
-                        [
-                            'sync_id' => $sync_id,
-                        ],
-                        [
-                            'department_code' => $code,
-                            'department_name' => $name,
-                            'company_sync_id' => $company_sync_id,
-                            'is_active' => $is_active
-                        ],
-                    );
-
-//                    $department = Department::where('sync_id', $sync_id)->first();
-//                    if ($department) {
-//                        if ($department->is_active == 0) {
-//                            $is_active = 0;
-//                        }
-//                    }
-
-//                    //if the status is false, detach the location in the pivot table
-//                    if ($dept['status'] == false) {
-//                        $sync->locations()->detach();
-//                    }
-                }
-            }
+            $sync = Department::updateOrCreate(
+                [
+                    'sync_id' => $sync_id,
+                ],
+                [
+                    'department_code' => $code,
+                    'department_name' => $name,
+                    'company_sync_id' => $company_sync_id,
+                    'is_active' => $is_active
+                ],
+            );
         }
         return response()->json(['message' => 'Successfully Synced!']);
     }
@@ -162,17 +143,6 @@ class DepartmentController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param int $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
     {
         //
     }

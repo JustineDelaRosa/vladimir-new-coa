@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Masterlist\COA;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CompanyController extends Controller
@@ -42,39 +43,27 @@ class CompanyController extends Controller
 
     public function store(Request $request)
     {
-        $company_request = $request->all('result.companies');
-        if (empty($request->all())) {
+        $companyData = $request->input('result.companies');
+        if (empty($request->all()) || empty($request->input('result.companies'))) {
             return response()->json(['message' => 'Data not Ready']);
         }
 
-        foreach ($company_request as $companies) {
-            foreach ($companies as $company) {
-                foreach ($company as $com) {
-                    $sync_id = $com['id'];
-                    $code = $com['code'];
-//                    $name = strtoupper($com['name']);
-                    $name = $com['name'];
-                    $is_active = $com['status'];
+        foreach ($companyData as $companies) {
+            $sync_id = $companies['id'];
+            $code = $companies['code'];
+            $name = $companies['name'];
+            $is_active = $companies['status'];
 
-
-                    $sync = Company::updateOrCreate(
-                        [
-                            'sync_id' => $sync_id,
-                        ],
-                        [
-                            'company_code' => $code,
-                            'company_name' => $name,
-                            'is_active' => $is_active
-                        ],
-                    );
-//                    $company = Company::where('sync_id', $sync_id)->first();
-//                    if ($company) {
-//                        if ($company->is_active == 0) {
-//                            $is_active = 0;
-//                        }
-//                    }
-                }
-            }
+            $sync = Company::updateOrCreate(
+                [
+                    'sync_id' => $sync_id,
+                ],
+                [
+                    'company_code' => $code,
+                    'company_name' => $name,
+                    'is_active' => $is_active
+                ],
+            );
         }
         return response()->json(['message' => 'Successfully Synced!']);
     }
@@ -101,7 +90,6 @@ class CompanyController extends Controller
     {
         //
     }
-
 
 
     public function search(Request $request)

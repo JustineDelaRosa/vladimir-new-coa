@@ -64,17 +64,16 @@ class LocationController extends Controller
 
     public function store(Request $request)
     {
-        $locations = $request->input('result.locations');
-
-        if (!$locations) {
-            return response()->json(['message' => 'Data not Ready']);
-        }
-
         if (Department::all()->isEmpty()) {
             return response()->json(['message' => 'Department data not ready'], 422);
         }
 
-        foreach ($locations as $location) {
+        $locationData = $request->input('result.locations');
+        if (empty($request->all()) || empty($request->input('result.locations'))) {
+            return response()->json(['message' => 'Data not Ready']);
+        }
+
+        foreach ($locationData as $location) {
             $locationInDB = Location::updateOrCreate(
                 ['sync_id' => $location['id']],
                 [

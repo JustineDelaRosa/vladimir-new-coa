@@ -27,43 +27,34 @@ class AccountTitleController extends Controller
      */
     public function store(Request $request)
     {
-        $accountitle_request = $request->all('result.account_titles');
-        if (empty($request->all())) {
+        $accountTitleData = $request->input('result.account_titles');
+        if (empty($request->all()) || empty($request->input('result.account_titles'))) {
             return response()->json(['message' => 'Data not Ready']);
         }
 
-        foreach ($accountitle_request as $accountitles) {
-            foreach ($accountitles as $accountitle) {
-                foreach ($accountitle as $accountTitle) {
-                    $sync_id = $accountTitle['id'];
-                    $code = $accountTitle['code'];
-//                    $name = strtoupper($accountTitle['name']);
-                    $name = $accountTitle['name'];
-                    $is_active = $accountTitle['status'];
+        foreach ($accountTitleData as $accountTitles) {
+            $sync_id = $accountTitles['id'];
+            $code = $accountTitles['code'];
+            $name = $accountTitles['name'];
+            $is_active = $accountTitles['status'];
 
-                    $accountTitle = AccountTitle::where('sync_id', $sync_id)->first();
-                    if ($accountTitle) {
-                        if ($accountTitle->is_active == 0) {
-                            $is_active = 0;
-                        }
-                    }
-
-                    $sync = AccountTitle::updateOrCreate(
-                        [
-                            'sync_id' => $sync_id,
-                        ],
-                        [
-                            'account_title_code' => $code, 'account_title_name' => $name, 'is_active' => $is_active
-                        ],
-                    );
-
-
-                    // $sync = AccountTitle::upsert([
-                    //     ['company_code' => $code, 'company_name' => $name,  'is_active' => $is_active]
-                    //     ], ['company_code'], ['is_active']);
-
+            $accountTitle = AccountTitle::where('sync_id', $sync_id)->first();
+            if ($accountTitle) {
+                if ($accountTitle->is_active == 0) {
+                    $is_active = 0;
                 }
             }
+
+            $sync = AccountTitle::updateOrCreate(
+                [
+                    'sync_id' => $sync_id,
+                ],
+                [
+                    'account_title_code' => $code,
+                    'account_title_name' => $name,
+                    'is_active' => $is_active
+                ],
+            );
         }
         return response()->json(['message' => 'Successfully Synched!']);
     }
