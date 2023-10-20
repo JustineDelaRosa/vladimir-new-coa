@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Filters\UserFilters;
+use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -11,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, Filterable;
 
     /**
      * The attributes that are mass assignable.
@@ -45,7 +47,7 @@ class User extends Authenticatable
         'status' => 'boolean',
     ];
 
-
+    protected string $default_filters = UserFilters::class;
     // public function modules() {
     //     return $this->belongsToMany(Module::class, 'access__permissions');
     // }
@@ -54,6 +56,12 @@ class User extends Authenticatable
     //     return $this->belongsTo(Department::class)->select('id', 'department_name');
     // }
 
+    public function department(){
+        return $this->belongsTo(Department::class, 'department_id','id');
+    }
+    public function subUnit(){
+        return $this->belongsTo(SubUnit::class, 'subunit_id','id');
+    }
     public function role(){
         return $this->belongsTo(RoleManagement::class, 'role_id','id');
     }

@@ -3,12 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Approvers;
-use App\Models\Test;
 use App\Models\User;
 use App\Models\Sedar;
 use App\Models\Module;
 use App\Models\Department;
-use App\Models\UserApprover;
 use Illuminate\Http\Request;
 use App\Models\Access_Permission;
 use App\Http\Requests\UserRequest;
@@ -23,10 +21,32 @@ class UserController extends Controller
      *
      * @return \Illuminate\Database\Eloquent\Builder[]|\Illuminate\Database\Eloquent\Collection|\Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $user = User::with('role')->get();
-        //display only the user that is not on approvers table
+//        $user = User::with('role')->get();
+//        return $user;
+
+        $userStatus = $request->status;
+        $isActiveStatus = ($userStatus === "deactivated") ? 0 : 1;
+
+        $user = User::withTrashed()->where('is_active', $isActiveStatus)->useFilters()->dynamicPaginate();
+
+        $user->transform(function ($item) {
+            return[
+                'id' => $item->id,
+                'employee_id' => $item->employee_id,
+                'firstname' => $item->firstname,
+                'lastname' => $item->lastname,
+                'username' => $item->username,
+                'role' => $item->role,
+                'department' => $item->department->department_name ?? null,
+                'subunit' => $item->subunit->sub_unit_name ?? null,
+                'is_active' => $item->is_active,
+                'created_at' => $item->created_at,
+                'updated_at' => $item->updated_at,
+                'deleted_at' => $item->deleted_at,
+            ];
+        });
 
         return $user;
     }
@@ -44,8 +64,8 @@ class UserController extends Controller
         $lastname = ucwords(strtolower($request->lastname));
         $username = $request->username;
         $role_id = $request->role_id;
-        $department_name = $request->department_name;
-        $subunit_name = $request->subunit_name;
+        $department_id = $request->department_id;
+        $subunit_id = $request->subunit_id;
 
         // $accessPermissionConvertedToString = implode(", ",$access_permission);
 
@@ -56,8 +76,8 @@ class UserController extends Controller
             'lastname' => $lastname,
             'username' => $username,
             'password' => Crypt::encryptString($username),
-            'department_name' => $department_name,
-            'subunit_name' => $subunit_name,
+            'department_id' => $department_id,
+            'subunit_id' => $subunit_id,
             'is_active' => 1,
             'role_id' => $role_id,
         ]);
@@ -121,8 +141,8 @@ class UserController extends Controller
         $lastname = ucwords(strtolower($request->lastname));
         $username = $request->username;
         $role_id = $request->role_id;
-        $department_name = $request->department_name;
-        $subunit_name = $request->subunit_name;
+        $department_id = $request->department_id;
+        $subunit_id = $request->subunit_id;
         $User = User::find($id);
         if (!$User) {
             return response()->json(['error' => 'User Route Not Found'], 404);
@@ -135,8 +155,8 @@ class UserController extends Controller
             ->update([
                 'username' => $username,
                 'role_id' => $role_id,
-                'department_name' => $department_name,
-                'subunit_name' =>$subunit_name,
+                'department_id' => $department_id,
+                'subunit_id' =>$subunit_id,
             ]);
 
         return response()->json(['message' => 'Successfully Updated!'], 201);

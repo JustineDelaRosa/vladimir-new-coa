@@ -20,8 +20,8 @@ class CreateUsersTable extends Migration
             $table->string('lastname');
             $table->string('username');
             $table->string('password');
-            $table->string('department_name');
-            $table->string('subunit_name');
+            $table->unsignedInteger('department_id')->nullable();
+            $table->unsignedInteger('subunit_id')->nullable();
             $table->boolean('is_active');
             $table->unsignedInteger('role_id');
             $table->rememberToken();
@@ -30,6 +30,14 @@ class CreateUsersTable extends Migration
             $table->foreign('role_id')
             ->references('id')
             ->on('role_management')
+            ->onDelete('cascade');
+            $table->foreign('department_id')
+            ->references('id')
+            ->on('departments')
+            ->onDelete('cascade');
+            $table->foreign('subunit_id')
+            ->references('id')
+            ->on('sub_units')
             ->onDelete('cascade');
         });
     }
