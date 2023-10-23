@@ -15,6 +15,7 @@ class CreateSubUnitsTable extends Migration
     {
         Schema::create('sub_units', function (Blueprint $table) {
             $table->increments('id');
+            $table->integer('sub_unit_code')->nullable();
             $table->unsignedInteger('department_id');
             $table->string('sub_unit_name');
             $table->boolean('is_active')->default(true);
