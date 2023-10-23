@@ -29,18 +29,26 @@ class UserController extends Controller
         $userStatus = $request->status;
         $isActiveStatus = ($userStatus === "deactivated") ? 0 : 1;
 
-        $user = User::withTrashed()->where('is_active', $isActiveStatus)->useFilters()->dynamicPaginate();
+        $user = User::withTrashed()->where('is_active', $isActiveStatus)->orderBy('created_at', 'DESC')->useFilters()->dynamicPaginate();
 
         $user->transform(function ($item) {
-            return[
+            return [
                 'id' => $item->id,
                 'employee_id' => $item->employee_id,
                 'firstname' => $item->firstname,
                 'lastname' => $item->lastname,
                 'username' => $item->username,
                 'role' => $item->role,
-                'department' => $item->department->department_name ?? null,
-                'subunit' => $item->subunit->sub_unit_name ?? null,
+                'department' => [
+                    'id' => $item->department->id ?? null,
+                    'department_code' => $item->department->department_code ?? null,
+                    'department_name' => $item->department->department_name ?? null,
+                ],
+                'subunit' => [
+                    'id' => $item->subunit->id ?? null,
+                    'sub_unit_code' => $item->subunit->sub_unit_code ?? null,
+                    'sub_unit_name' => $item->subunit->sub_unit_name ?? null,
+                ],
                 'is_active' => $item->is_active,
                 'created_at' => $item->created_at,
                 'updated_at' => $item->updated_at,
@@ -124,7 +132,28 @@ class UserController extends Controller
             return response()->json(['error' => 'User Route Not Found'], 404);
         }
         $data = User::with('role')->findOrFail($id);
-        return $data;
+        return [
+            'id' => $data->id,
+            'employee_id' => $data->employee_id,
+            'firstname' => $data->firstname,
+            'lastname' => $data->lastname,
+            'username' => $data->username,
+            'role' => $data->role,
+            'department' => [
+                'id' => $item->department->id ?? null,
+                'department_code' => $item->department->department_code ?? null,
+                'department_name' => $item->department->department_name ?? null,
+            ],
+            'subunit' => [
+                'id' => $item->subunit->id ?? null,
+                'sub_unit_code' => $item->subunit->sub_unit_code ?? null,
+                'sub_unit_name' => $item->subunit->sub_unit_name ?? null,
+            ],
+            'is_active' => $data->is_active,
+            'created_at' => $data->created_at,
+            'updated_at' => $data->updated_at,
+            'deleted_at' => $data->deleted_at,
+        ];
     }
 
     /**
@@ -156,7 +185,7 @@ class UserController extends Controller
                 'username' => $username,
                 'role_id' => $role_id,
                 'department_id' => $department_id,
-                'subunit_id' =>$subunit_id,
+                'subunit_id' => $subunit_id,
             ]);
 
         return response()->json(['message' => 'Successfully Updated!'], 201);
