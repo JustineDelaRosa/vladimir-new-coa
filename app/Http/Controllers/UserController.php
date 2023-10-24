@@ -46,8 +46,8 @@ class UserController extends Controller
                 ],
                 'subunit' => [
                     'id' => $item->subunit->id ?? null,
-                    'sub_unit_code' => $item->subunit->sub_unit_code ?? null,
-                    'sub_unit_name' => $item->subunit->sub_unit_name ?? null,
+                    'subunit_code' => $item->subunit->sub_unit_code ?? null,
+                    'subunit_name' => $item->subunit->sub_unit_name ?? null,
                 ],
                 'is_active' => $item->is_active,
                 'created_at' => $item->created_at,
@@ -165,87 +165,37 @@ class UserController extends Controller
      */
     public function update(UserRequest $request, $id)
     {
-        $employee_id = $request->employee_id;
-        $firstname = ucwords(strtolower($request->firstname));
-        $lastname = ucwords(strtolower($request->lastname));
-        $username = $request->username;
-        $role_id = $request->role_id;
-        $department_id = $request->department_id;
-        $subunit_id = $request->subunit_id;
         $User = User::find($id);
+
         if (!$User) {
-            return response()->json(['error' => 'User Route Not Found'], 404);
+            return response()->json(['error' => 'User Not Found'], 404);
         }
-        if (User::where('id', $id)->where('username', $username)->where('role_id', $role_id)->exists()) {
+
+        $originalAttributes = $User->getOriginal();
+
+        $updatedFields = [
+            'employee_id'   => $request->employee_id,
+            'firstname'     => ucwords(strtolower($request->firstname)),
+            'lastname'      => ucwords(strtolower($request->lastname)),
+            'username'      => $request->username,
+            'role_id'       => $request->role_id,
+            'department_id' => $request->department_id,
+            'subunit_id'    => $request->subunit_id,
+        ];
+
+        foreach ($updatedFields as $field => $value) {
+            if ($originalAttributes[$field] == $value) {
+                unset($updatedFields[$field]);
+            }
+        }
+
+        if (empty($updatedFields)) {
             return response()->json(['message' => 'No Changes'], 200);
         }
 
-        $update = User::where('id', $id)
-            ->update([
-                'username' => $username,
-                'role_id' => $role_id,
-                'department_id' => $department_id,
-                'subunit_id' => $subunit_id,
-            ]);
+        $User->update($updatedFields);
 
         return response()->json(['message' => 'Successfully Updated!'], 201);
-
-        //    $username = $request->username;
-        //    $accessPermission = $request->access_permission;
-        //    $user = User::where('id', $id);
-        //    $check_user =  User::where('username', $username)->exists();
-        //    if(!$check_user){
-        //     $user_update = $user->update([
-        //      "username" => $username
-        //     ]);
-        //     // $user_changed = $user_update->username->first();
-        //     $user_changed = $username;
-        // }
-        // else{
-        //  $user_changed = 'Nothing has Changed';
-        // }
-        //    $access_permission = Access_Permission::query();
-        // //    $user_update = $user->update([
-        // //     "username" => $username
-        // //    ]);
-        //     $moduleNotExist =[];
-        //     $moduleUpdated =[];
-        //     $not_included = $access_permission->where('user_id', $id)->get();
-        //     foreach($not_included as $notIncluded){
-        //      $module_id_not_exist_in_array =  "$notIncluded->module_id";
-        //      if(!in_array($module_id_not_exist_in_array, $accessPermission)){
-        //         Access_Permission::where('user_id', $id)->where('module_id', $module_id_not_exist_in_array)->delete();
-        //      }
-        //     }
-        //     foreach($accessPermission as $permission_id){
-        //         if(!Module::where('id', $permission_id)->exists()){
-        //             array_push($moduleNotExist, $permission_id);
-        //         }
-        //         else{
-        //             if(!(Access_Permission::where('module_id', $permission_id)->where('user_id', $id)->exists())){
-        //                 $access_permission_create = $access_permission->create([
-        //                     'module_id' => $permission_id,
-        //                     'user_id' => $id
-        //                 ]);
-        //                 array_push($moduleUpdated, $access_permission_create);
-        //             }
-        //         }
-        //     }
-        //     if(empty($moduleUpdated)){
-        //         $moduleUpdated ='Nothing has Changed!';
-        //     }
-        //     // 'message' => 'Successfully Updated!',
-        //     //     'username' => $user->first()->username,
-        //     //     'module_added' => $moduleUpdated
-        //     return response()->json([
-        //        'userdata' => [
-        //         'message' => 'Successfully Updated!',
-        //         // 'username' => $user->first()->username,
-        //         'username' => $user_changed,
-        //         'module_added' => $moduleUpdated
-        //        ]
-        //     ], 201);
-
     }
 
     public function search(Request $request)

@@ -31,7 +31,7 @@ class CreateDepartmentsTable extends Migration
 //                ->references('sync_id')
 //                ->on('locations')
 //                ->onDelete('cascade');
-            $table->integer('department_code')->unique();
+            $table->string('department_code')->unique();
             $table->longText('department_name');
             $table->boolean('is_active');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));

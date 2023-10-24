@@ -21,4 +21,8 @@ class Approvers extends Model
     {
         return $this->hasMany(AssetApproval::class, 'approver_id', 'id');
     }
+
+    public function departmentUnitApprovers(){
+        return $this->hasMany(DepartmentUnitApprovers::class,'approver_id','id');
+    }
 }

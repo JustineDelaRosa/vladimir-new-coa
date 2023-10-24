@@ -66,17 +66,6 @@ class AssignApproverController extends Controller
                     ];
                 })->sortBy('layer')->values(),
             ];
-//            return [
-//                'requester_id' => $item[0]->requester_id,
-//                'requester_details' => $item[0]->requester,
-//                'approvers' => $item->map(function ($item) {
-//                    return [
-//                        'approver_id' => $item->approver_id,
-//                        'approver_details' => $item->approver->user,
-//                        'layer' => $item->layer,
-//                    ];
-//                })->sortBy('layer')->values(),
-//            ];
         })->values();
 
         //then check if the limit is not null then paginate the result else return all without pagination
@@ -91,9 +80,7 @@ class AssignApproverController extends Controller
                 ['path' => $request->url(), 'query' => $request->query()]
             );
         }
-
         return $this->responseSuccess('Successfully Retrieved!', $transformedResults);
-
     }
 
     /**

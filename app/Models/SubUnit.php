@@ -25,6 +25,9 @@ protected string $default_filters = SubUnitFilters::class;
     public function department(){
         return $this->belongsTo(Department::class,'department_id','id');
     }
+    public function departmentUnitApprovers(){
+        return $this->hasMany(DepartmentUnitApprovers::class,'subunit_id','id');
+    }
 
     public function archive($id)
     {

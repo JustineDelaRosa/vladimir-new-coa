@@ -27,7 +27,7 @@ class CreateSubUnitRequest extends FormRequest
         if ($this->isMethod("POST")) {
             return [
                 'department_id' => 'required|exists:departments,id',
-                'sub_unit_name' => ['bail', 'required', 'string', 'max:255', 'unique:sub_units,sub_unit_name',
+                'subunit_name' => ['bail', 'required', 'string', 'max:255', 'unique:sub_units,sub_unit_name',
                     function ($attribute, $value, $fail) {
                         if ($this->department_id) {
                             $subUnit = SubUnit::withTrashed()->where('department_id', $this->department_id)->where('sub_unit_name', $value)->exists();
