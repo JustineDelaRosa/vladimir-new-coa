@@ -25,7 +25,7 @@ class CreateDepartmentUnitApproversRequest extends FormRequest
     public function rules()
     {
         return [
-            'department_id' => ['required', 'integer', 'exists:departments,id'],
+//            'department_id' => ['required', 'integer', 'exists:departments,id'],
             'subunit_id' => ['required', 'integer', 'exists:sub_units,id',
                 function ($attribute, $value, $fail) {
                     $DepartmentUnitApprovers = DepartmentUnitApprovers::where('department_id', $this->department_id)

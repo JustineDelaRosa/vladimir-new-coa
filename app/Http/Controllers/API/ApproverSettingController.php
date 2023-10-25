@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ApproverSetting\ApproverSettingRequest;
 use App\Models\Approvers;
 use App\Models\User;
-use App\Models\UserApprover;
 use Illuminate\Http\Request;
 
 class ApproverSettingController extends Controller
@@ -54,9 +53,18 @@ class ApproverSettingController extends Controller
                     'employee_id' => $item->user->employee_id,
                     'firstname' => $item->user->firstname,
                     'lastname' => $item->user->lastname,
+
                 ],
-//                'full_name' => $item->full_name,
-                'full_name' => $item->user->firstname . ' ' . $item->user->lastname,
+                'department' => [
+                    'id' => $item->user->department->id ?? '-',
+                    'department_code' => $item->user->department->department_code ?? '-',
+                    'department_name' => $item->user->department->department_name ?? '-',
+                ],
+                'subunit'=>[
+                    'id' => $item->user->subUnit->id ?? '-',
+                    'subunit_code' => $item->user->subUnit->sub_unit_code ?? '-',
+                    'subunit_name' => $item->user->subUnit->sub_unit_name ?? '-',
+                ],
                 'status' => $item->is_active,
                 'deleted_at' => $item->deleted_at,
                 'created_at' => $item->created_at,

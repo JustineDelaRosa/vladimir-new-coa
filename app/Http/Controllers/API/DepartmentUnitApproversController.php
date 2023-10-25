@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Models\DepartmentUnitApprovers;
+use App\Models\SubUnit;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -68,15 +69,14 @@ class  DepartmentUnitApproversController extends Controller
 
     public function store(CreateDepartmentUnitApproversRequest $request): JsonResponse
     {
-        $departmentId = $request->department_id;
+//        $departmentId = $request->department_id;
         $subunitId = $request->subunit_id;
         $approverId = $request->approver_id;
 
         foreach ($approverId as $key => $approverIds) {
-            $layer = DepartmentUnitApprovers::where('department_id', $departmentId)
-                ->where('subunit_id', $subunitId)->max('layer');
+            $layer = DepartmentUnitApprovers::where('subunit_id', $subunitId)->max('layer');
             DepartmentUnitApprovers::create([
-                'department_id' => $departmentId,
+                'department_id' => SubUnit::where('id', $subunitId)->first()->department_id,
                 'subunit_id' => $subunitId,
                 'approver_id' => $approverIds,
                 'layer' => $layer + 1,
