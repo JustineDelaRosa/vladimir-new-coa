@@ -82,7 +82,7 @@ class  DepartmentUnitApproversController extends Controller
                 'layer' => $layer + 1,
             ]);
         }
-        return $this->responseCreated('DepartmentUnitApprovers created successfully');
+        return $this->responseCreated('Created successfully');
     }
 
     public function show(DepartmentUnitApprovers $departmentUnitApprovers): JsonResponse

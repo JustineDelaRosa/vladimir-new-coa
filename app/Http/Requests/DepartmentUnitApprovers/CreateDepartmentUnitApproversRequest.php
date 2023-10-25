@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\DepartmentUnitApprovers;
 
+use App\Models\DepartmentUnitApprovers;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateDepartmentUnitApproversRequest extends FormRequest
@@ -25,7 +26,15 @@ class CreateDepartmentUnitApproversRequest extends FormRequest
     {
         return [
             'department_id' => ['required', 'integer', 'exists:departments,id'],
-            'subunit_id' => ['required', 'integer', 'exists:sub_units,id'],
+            'subunit_id' => ['required', 'integer', 'exists:sub_units,id',
+                function ($attribute, $value, $fail) {
+                    $DepartmentUnitApprovers = DepartmentUnitApprovers::where('department_id', $this->department_id)
+                        ->where('subunit_id', $value)->first();
+                    if ($DepartmentUnitApprovers) {
+                        $fail('This Sub Unit is already have approvers');
+                    }
+                }
+            ],
             'approver_id' => ['required', 'exists:approvers,id', 'array', 'unique_in_array'],
         ];
     }
