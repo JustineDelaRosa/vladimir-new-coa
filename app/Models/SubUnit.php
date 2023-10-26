@@ -42,4 +42,14 @@ protected string $default_filters = SubUnitFilters::class;
         $subUnit->update(['is_active' => true]);
         return $subUnit;
     }
+
+    //TODO: Temporary solution for generating sub unit code
+    public function generateCode(){
+        //generate sub unit base on the created id, it should be four digit number with leading zero like 0001, 0010, 0100, 1000
+        $subUnit = self::latest()->first();
+        $subUnitId = $subUnit->id;
+        $subUnitId = $subUnitId + 1;
+        $subUnitId = str_pad($subUnitId, 4, '0', STR_PAD_LEFT);
+        return $subUnitId;
+    }
 }

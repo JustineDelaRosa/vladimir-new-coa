@@ -7,6 +7,7 @@ use App\Http\Requests\SubUnit\CreateSubUnitRequest;
 use App\Http\Requests\SubUnit\UpdateSubUnitRequest;
 use App\Models\DepartmentUnitApprovers;
 use App\Models\SubUnit;
+use App\Models\User;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,12 +22,15 @@ class SubUnitController extends Controller
         $requestStatus = $request->status;
         $isActiveStatus = ($requestStatus === "deactivated") ? 0 : 1;
 
-        $subUnits = SubUnit::withTrashed()->where('is_active', $isActiveStatus)->useFilters()->dynamicPaginate();
+        $subUnits = SubUnit::withTrashed()->where('is_active', $isActiveStatus)
+            ->orderBy('created_at', 'desc')
+            ->useFilters()
+            ->dynamicPaginate();
 
         $subUnits->transform(function ($subUnit) {
             return [
                 'id' => $subUnit->id,
-                'subunit_code' => $subUnit->sub_unit_code,
+                'subunit_code' => $subUnit->sub_unit_code ?? '-',
                 'subunit_name' => $subUnit->sub_unit_name,
                 'is_active' => $subUnit->is_active,
                 'department' => [
@@ -48,6 +52,7 @@ class SubUnitController extends Controller
         $subUnitName = $request->subunit_name;
 
         $subUnit = SubUnit::create([
+            'sub_unit_code' => SubUnit::generateCode(),
             'department_id' => $departmentId,
             'sub_unit_name' => $subUnitName,
         ]);
@@ -101,9 +106,14 @@ class SubUnitController extends Controller
             if (!$subUnit->clone()->where('id', $id)->where('is_active', true)->exists()) {
                 return $this->responseSuccess('No changes');
             } else {
-                $departmentUnitApprovers = DepartmentUnitApprovers::where('subunit_id', $id)->exists();;
+                $departmentUnitApprovers = DepartmentUnitApprovers::where('subunit_id', $id)->exists();
+                $users = User::where('subunit_id', $id)->exists();
+
                 if($departmentUnitApprovers) {
                     return $this->responseUnprocessable('You cannot archive a tagged sub unit');
+                }
+                if($users) {
+                    return $this->responseUnprocessable('You cannot archive a sub unit with users');
                 }
                 $removeSubUnit = SubUnit::archive($id);
                 return $this->responseSuccess('SubUnit archived successfully', $removeSubUnit);
