@@ -28,8 +28,7 @@ class CreateDepartmentUnitApproversRequest extends FormRequest
 //            'department_id' => ['required', 'integer', 'exists:departments,id'],
             'subunit_id' => ['required', 'integer', 'exists:sub_units,id',
                 function ($attribute, $value, $fail) {
-                    $DepartmentUnitApprovers = DepartmentUnitApprovers::where('department_id', $this->department_id)
-                        ->where('subunit_id', $value)->first();
+                    $DepartmentUnitApprovers = DepartmentUnitApprovers::where('subunit_id', $value)->exists();
                     if ($DepartmentUnitApprovers) {
                         $fail('This Sub Unit is already have approvers');
                     }
