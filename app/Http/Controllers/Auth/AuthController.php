@@ -38,7 +38,8 @@ class AuthController extends Controller
         $token = $user->createToken('myapptoken')->plainTextToken;
         $response = [
             'user' => $user,
-            'token' => $token
+            'token' => $token,
+            'sessionTime' => config('sanctum.expiration')
         ];
 //        $cookie = cookie('authcookie', $token);
 //        return response()->json([
