@@ -20,40 +20,31 @@ class  DepartmentUnitApproversController extends Controller
 
     public function index(Request $request)
     {
-
-        $search = $request->input('search', '');
         $perPage = $request->input('per_page', null);
 
-        $departmentUnitApprovers = DepartmentUnitApprovers::where(function ($query) use($search){
-           $query->whereHas('department', function ($query) use($search){
-               $query->where('department_name', 'LIKE', "%{$search}%");
-           })->orWhereHas('subUnit', function ($query) use($search){
-               $query->where('sub_unit_name', 'LIKE', "%{$search}%");
-//           })->orWhereHas('approver.user', function ($query) use($search){
-//               $query->where('firstname', 'LIKE', "%{$search}%")
-//                     ->orWhere('lastname', 'LIKE', "%{$search}%")
-//                     ->orWhere('username', 'LIKE', "%{$search}%")
-//                     ->orWhere('employee_id', 'LIKE', "%{$search}%");
-           });
-        });
-
-
-        $transformedResults = $departmentUnitApprovers->get()->groupBy('department_id')->map(function ($item) {
+        $transformedResults = DepartmentUnitApprovers::useFilters()->get()->groupBy('subunit_id')->map(function ($item) {
             return [
                 'department_id' => $item[0]->department_id,
                 'department_name' => $item[0]->department->department_name,
-                'subunit' => $item->map(function ($item) {
+                'department_code' => $item[0]->department->department_code,
+                'subunit' => [
+                    'id' => $item[0]->subunit_id,
+                    'subunit_code' => $item[0]->subUnit->sub_unit_code,
+                    'subunit_name' => $item[0]->subUnit->sub_unit_name,
+                ],
+                'approvers' => $item->map(function ($item) {
                     return [
-                        'subunit_id' => $item->subunit_id,
-                        'subunit_name' => $item->subUnit->sub_unit_name,
+                        'username' => $item->approver->user->username,
+                        'employee_id' => $item->approver->user->employee_id,
+                        'first_name' => $item->approver->user->firstname,
+                        'last_name' => $item->approver->user->lastname,
                         'layer' => $item->layer,
-                        'approver' => $item->approver->user,
                     ];
-                })->groupBy('subunit_name')->sortBy('layer'),
+                })->sortBy('layer')->values(),
             ];
         })->values();
 
-        if($perPage !== null){
+        if ($perPage !== null) {
             $page = $request->input('page', 1);
             $offset = ($page * $perPage) - $perPage;
             $transformedResults = new LengthAwarePaginator(

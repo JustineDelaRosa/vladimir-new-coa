@@ -10,9 +10,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class DepartmentUnitApprovers extends Model
 {
-    use HasFactory,Filterable;
+    use HasFactory, Filterable;
 
-protected $default_filters = DepartmentUnitApproversFilters::class;
+    protected $default_filters = DepartmentUnitApproversFilters::class;
 
     /**
      * Mass-assignable attributes.
@@ -21,14 +21,27 @@ protected $default_filters = DepartmentUnitApproversFilters::class;
      */
     protected $guarded = [];
 
-    public function department(){
-        return $this->belongsTo(Department::class, 'department_id','id');
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id', 'id');
     }
 
-    public function approver(){
-        return $this->belongsTo (Approvers::class, 'approver_id','id');
+    public function subUnit()
+    {
+        return $this->belongsTo(SubUnit::class, 'subunit_id', 'id');
     }
-    public function subUnit(){
-        return $this->belongsTo(SubUnit::class, 'subunit_id','id');
+
+    public function approver()
+    {
+        return $this->belongsTo(Approvers::class, 'approver_id', 'id');
     }
+
+//    public function userApprover(){
+//        return $this->belongsToMany(User::class,
+//            'approvers',
+//            'approver_id',
+//            'approver_id',
+//            'id',
+//            'id');
+//    }
 }
