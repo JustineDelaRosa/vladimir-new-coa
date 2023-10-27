@@ -53,7 +53,6 @@ class ApproverSettingController extends Controller
                     'employee_id' => $item->user->employee_id,
                     'firstname' => $item->user->firstname,
                     'lastname' => $item->user->lastname,
-
                 ],
                 'department' => [
                     'id' => $item->user->department->id ?? '-',
