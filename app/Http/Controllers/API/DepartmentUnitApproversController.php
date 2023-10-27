@@ -34,6 +34,7 @@ class  DepartmentUnitApproversController extends Controller
                 ],
                 'approvers' => $item->map(function ($item) {
                     return [
+                        'approver_id' => $item->approver->id,
                         'username' => $item->approver->user->username,
                         'employee_id' => $item->approver->user->employee_id,
                         'first_name' => $item->approver->user->firstname,
@@ -96,11 +97,12 @@ class  DepartmentUnitApproversController extends Controller
     }
 
 
-    public function arrangeLayer(UpdateDepartmentUnitApproversRequest $request): JsonResponse
+    public function arrangeLayer(UpdateDepartmentUnitApproversRequest $request, $id): JsonResponse
     {
-        $departmentId = $request->department_id;
-        $subunitId = $request->subunit_id;
+//        $departmentId = $request->department_id;
+        $subunitId = $id;
         $approverId = $request->approver_id;
+        $departmentId = SubUnit::where('id', $subunitId)->first()->department_id;
         $layer = 1;
 
         $approverIds = DepartmentUnitApprovers::where('department_id', $departmentId)
@@ -125,7 +127,7 @@ class  DepartmentUnitApproversController extends Controller
                 ['layer' => $layer++]
             );
         }
-        return $this->responseSuccess('DepartmentUnitApprovers arranged successfully');
+        return $this->responseSuccess('Unit Approvers updated Successfully');
     }
 
 }
