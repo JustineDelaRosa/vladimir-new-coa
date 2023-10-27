@@ -504,6 +504,12 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.company_code' => ['required', 'exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $company_name = $collections[$index]['company'];
+                $inactive = Company::where('company_code', $value)->where('is_active', 0)->first();
+                if ($inactive) {
+                    $fail('Company is inactive');
+                    return;
+                }
+
                 $company = Company::query()
                     ->where('company_code', $value)
                     ->where('company_name', $company_name)
@@ -516,6 +522,12 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.department_code' => ['required', 'exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $department_name = $collections[$index]['department'];
+                //check if department is inactive
+                $inactive = Department::where('department_code', $value)->where('is_active', 0)->first();
+                if ($inactive) {
+                    $fail('Department is inactive');
+                    return;
+                }
                 $department = Department::query()
                     ->where('department_code', $value)
                     ->where('department_name', $department_name)
@@ -536,6 +548,11 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.location_code' => ['required', 'exists:locations,location_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 //check if the code is correct on the database
+                $inactive = Location::where('location_code', $value)->where('is_active', 0)->first();
+                if ($inactive) {
+                    $fail('Location is inactive');
+                    return;
+                }
                 $location_name = $collections[$index]['location'];
                 $location = Location::query()
                     ->where('location_code', $value)
@@ -550,12 +567,17 @@ class MasterlistImport extends DefaultValueBinder implements
                 $department_sync_id = Department::where('department_code', $department_code)->first()->sync_id ?? 0;
                 $associated_location_sync_id = $location->departments->pluck('sync_id')->toArray();
                 if (!in_array($department_sync_id, $associated_location_sync_id)) {
-                    $fail('Invalid location, company and department combination');
+                    $fail('Invalid location and department combination');
                 }
             }],
             '*.account_code' => ['required', 'exists:account_titles,account_title_code', function ($attribute, $value, $fail) use ($collections) {
                 $index = array_search($attribute, array_keys($collections->toArray()));
                 $account_title_name = $collections[$index]['account_title'];
+                $inactive = AccountTitle::where('account_title_code', $value)->where('is_active', 0)->first();
+                if ($inactive) {
+                    $fail('Account title is inactive');
+                    return;
+                }
                 $account_title = AccountTitle::query()
                     ->where('account_title_code', $value)
                     ->where('account_title_name', $account_title_name)
