@@ -254,6 +254,8 @@ class FixedAssetRepository
             'account_id',
             'remarks',
             'created_at',
+            'print_count',
+            'last_printed',
             DB::raw("NULL as add_cost_sequence"),
         ];
 
@@ -295,6 +297,8 @@ class FixedAssetRepository
             'additional_costs.account_id',
             'additional_costs.remarks',
             'fixed_assets.created_at',
+            'fixed_assets.print_count',
+            'fixed_assets.last_printed',
             'additional_costs.add_cost_sequence',
         ];
         $firstQuery = ($status === 'deactivated')
@@ -304,7 +308,6 @@ class FixedAssetRepository
         $secondQuery = ($status === 'deactivated')
             ? AdditionalCost::onlyTrashed()->select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
             : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
-
 
         $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'asc')->get();
 
@@ -444,6 +447,7 @@ class FixedAssetRepository
             ],
             'remarks' => $fixed_asset->remarks,
             'print_count' => $fixed_asset->print_count,
+            'print' => $fixed_asset->print_count > 0 ? 'Ready to Print' : 'Printed',
             'last_printed' => $fixed_asset->last_printed,
             'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
                 return [
@@ -637,6 +641,7 @@ class FixedAssetRepository
             ],
             'remarks' => $fixed_asset->remarks,
             'print_count' => $fixed_asset->print_count,
+            'print' => $fixed_asset->print_count > 0 ? 'Ready to Print' : 'Printed',
             'last_printed' => $fixed_asset->last_printed,
             'created_at' => $fixed_asset->created_at,
             'add_cost_sequence' => $fixed_asset->add_cost_sequence ?? null,
@@ -654,8 +659,17 @@ class FixedAssetRepository
             'accountable',
             'brand',
             'depreciation_method',
-
         ];
+
+        // 'ready to print' specific case
+        if (strtolower($search) == 'ready to print' && $item->print_count < 1) {
+            return true;
+        }
+
+        // 'printed' specific case
+        if (strtolower($search) == 'printed' && $item->print_count > 0) {
+            return true;
+        }
 
         foreach ($mainAttributes as $attribute) {
             if (stripos($item->$attribute, $search) !== false) {
