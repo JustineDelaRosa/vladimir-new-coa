@@ -228,22 +228,24 @@ class AdditionalCostImport extends DefaultValueBinder implements
             '*.brand' => 'required',
             '*.major_category' => [
                 'required', 'exists:major_categories,major_category_name'],
-            '*.minor_category' => ['required', function ($attribute, $value, $fail) use ($collections) {
-                $index = array_search($attribute, array_keys($collections));
+            '*.minor_category' => ['required',
+                function ($attribute, $value, $fail) use ($collections) {
+                    $index = array_search($attribute, array_keys($collections));
 //                $status = $collections[$index]['asset_status'];
-                $major_category = $collections[$index]['major_category'];
-                $major_category = MajorCategory::withTrashed()->where('major_category_name', $major_category)->first()->id ?? 0;
-                $minor_category = MinorCategory::withTrashed()->where('minor_category_name', $value)
-                    ->where('major_category_id', $major_category)->first();
+                    $major_category = $collections[$index]['major_category'];
+                    $major_category = MajorCategory::withTrashed()->where('major_category_name', $major_category)->first()->id ?? 0;
+                    $minor_category = MinorCategory::withTrashed()->where('minor_category_name', $value)
+                        ->where('major_category_id', $major_category)->first();
 
 //                if($minor_category->trashed()){
 //                    $fail('Minor Category does not exist');
 //                }
-                if (!$minor_category) {
-                    $fail('Minor Category does not exist');
-                }
+                    if (!$minor_category) {
+                        $fail('Minor Category does not exist');
+                    }
 
-            }],
+                }
+            ],
 
             '*.voucher' => ['required',
 //                function ($attribute, $value, $fail) {
@@ -282,29 +284,35 @@ class AdditionalCostImport extends DefaultValueBinder implements
             '*.quantity' => 'required|numeric',
             '*.depreciation_method' => 'required|in:STL,One Time',
             '*.acquisition_date' => ['required', 'string', 'date_format:Y-m-d', 'date', 'before_or_equal:today'],
-            '*.acquisition_cost' => ['required', 'numeric', function ($attribute, $value, $fail) use ($collections) {
-                $index = array_search($attribute, array_keys($collections));
-                $scrap_value = $collections[$index]['scrap_value'];
+            '*.acquisition_cost' => ['required', 'numeric',
+                function ($attribute, $value, $fail) use ($collections) {
+                    $index = array_search($attribute, array_keys($collections));
+                    $scrap_value = $collections[$index]['scrap_value'];
 
-                if ($value < $scrap_value) {
-                    $fail('Acquisition cost should exceed scrap value.');
-                }
+                    if ($value < $scrap_value) {
+                        $fail('Acquisition cost should exceed scrap value.');
+                    }
 
-                if ($value < 0) {
-                    $fail('Acquisition cost must not be negative');
+                    if ($value < 0) {
+                        $fail('Acquisition cost must not be negative');
+                    }
                 }
-            }],
+            ],
             '*.scrap_value' => ['required',],
-            '*.depreciable_basis' => ['required', 'numeric', function ($attribute, $value, $fail) {
-                if ($value < 0) {
-                    $fail('Depreciation basis must not be negative');
+            '*.depreciable_basis' => ['required', 'numeric',
+                function ($attribute, $value, $fail) {
+                    if ($value < 0) {
+                        $fail('Depreciation basis must not be negative');
+                    }
                 }
-            }],
-            '*.accumulated_cost' => ['required', 'numeric', function ($attribute, $value, $fail) {
-                if ($value < 0) {
-                    $fail('Accumulated cost must not be negative');
+            ],
+            '*.accumulated_cost' => ['required', 'numeric',
+                function ($attribute, $value, $fail) {
+                    if ($value < 0) {
+                        $fail('Accumulated cost must not be negative');
+                    }
                 }
-            }],
+            ],
             '*.asset_status' => [
                 'required',
                 Rule::exists('asset_statuses', 'asset_status_name')->whereNull('deleted_at'),
@@ -342,84 +350,119 @@ class AdditionalCostImport extends DefaultValueBinder implements
                 Rule::exists('movement_statuses', 'movement_status_name')->whereNull('deleted_at'),
             ],
             '*.care_of' => 'required',
-            '*.end_depreciation' => ['required', function ($attribute, $value, $fail) use ($collections) {
-                $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
-            }],
+            '*.end_depreciation' => ['required',
+                function ($attribute, $value, $fail) use ($collections) {
+                    $this->calculationRepository->validationForDate($attribute, $value, $fail, $collections);
+                }
+            ],
             '*.depreciation_per_year' => ['required'],
             '*.depreciation_per_month' => ['required'],
-            '*.remaining_book_value' => ['required', 'numeric', function ($attribute, $value, $fail) {
-                if ($value < 0) {
-                    $fail('Remaining book value must not be negative');
+            '*.remaining_book_value' => ['required', 'numeric',
+                function ($attribute, $value, $fail) {
+                    if ($value < 0) {
+                        $fail('Remaining book value must not be negative');
+                    }
                 }
-            }],
-            '*.start_depreciation' => ['required', function ($attribute, $value, $fail) {
-                $this->calculationRepository->validationForDate($attribute, $value, $fail);
-            }],
-            '*.company_code' => ['required', 'exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
-                $index = array_search($attribute, array_keys($collections));
-                $company_name = $collections[$index]['company'];
-                $company = Company::query()
-                    ->where('company_code', $value)
-                    ->where('company_name', $company_name)
-                    ->where('is_active', '!=', 0)
-                    ->first();
-                if (!$company) {
-                    $fail('Invalid company');
+            ],
+            '*.start_depreciation' => ['required',
+                function ($attribute, $value, $fail) {
+                    $this->calculationRepository->validationForDate($attribute, $value, $fail);
                 }
-            }],
-            '*.department_code' => ['required', 'exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
-                $index = array_search($attribute, array_keys($collections));
-                $department_name = $collections[$index]['department'];
-                $department = Department::query()
-                    ->where('department_code', $value)
-                    ->where('department_name', $department_name)
-                    ->where('is_active', '!=', 0)
-                    ->first();
-                if (!$department) {
-                    $fail('Invalid department');
-                }
-                $company_code = $collections[$index]['company_code'];
-                $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
-                $departmentCompCheck = Department::where('department_code', $value)
-                    ->where('company_sync_id', $company_sync_id)
-                    ->first();
-                if (!$departmentCompCheck) {
-                    $fail('Invalid department and company combination');
-                }
-            }],
-            '*.location_code' => ['required', 'exists:locations,location_code', function ($attribute, $value, $fail) use ($collections) {
-                $index = array_search($attribute, array_keys($collections));
-                //check if the code is correct on the database
-                $location_name = $collections[$index]['location'];
-                $location = Location::query()
-                    ->where('location_code', $value)
-                    ->where('location_name', $location_name)
-                    ->where('is_active', '!=', 0)
-                    ->first();
-                if (!$location) {
-                    $fail('Invalid location');
-                    return;
-                }
-                $department_code = $collections[$index]['department_code'];
-                $department_sync_id = Department::where('department_code', $department_code)->first()->sync_id ?? 0;
-                $associated_location_sync_id = $location->departments->pluck('sync_id')->toArray();
-                if (!in_array($department_sync_id, $associated_location_sync_id)) {
-                    $fail('Invalid location, department combination');
-                }
+            ],
+            '*.company_code' => ['required', 'exists:companies,company_code',
+                function ($attribute, $value, $fail) use ($collections) {
+                    $index = array_search($attribute, array_keys($collections->toArray()));
+                    $company_name = $collections[$index]['company'];
+                    $inactive = Company::where('company_code', $value)->where('is_active', 0)->first();
+                    if ($inactive) {
+                        $fail('Company is inactive');
+                        return;
+                    }
 
-            }],
-            '*.account_code' => ['required', 'exists:account_titles,account_title_code', function ($attribute, $value, $fail) use ($collections) {
-                $index = array_search($attribute, array_keys($collections));
-                $account_title_name = $collections[$index]['account_title'];
-                $account_title = AccountTitle::query()
-                    ->where('account_title_code', $value)
-                    ->where('account_title_name', $account_title_name)
-                    ->where('is_active', '!=', 0)
-                    ->first();
-                if (!$account_title) {
-                    $fail('Invalid account title');
+                    $company = Company::query()
+                        ->where('company_code', $value)
+                        ->where('company_name', $company_name)
+                        ->where('is_active', '!=', 0)
+                        ->first();
+                    if (!$company) {
+                        $fail('Invalid company');
+                    }
                 }
-            }],
+            ],
+            '*.department_code' => ['required', 'exists:departments,department_code',
+                function ($attribute, $value, $fail) use ($collections) {
+                    $index = array_search($attribute, array_keys($collections->toArray()));
+                    $department_name = $collections[$index]['department'];
+                    //check if department is inactive
+                    $inactive = Department::where('department_code', $value)->where('is_active', 0)->first();
+                    if ($inactive) {
+                        $fail('Department is inactive');
+                        return;
+                    }
+                    $department = Department::query()
+                        ->where('department_code', $value)
+                        ->where('department_name', $department_name)
+                        ->where('is_active', '!=', 0)
+                        ->first();
+                    if (!$department) {
+                        $fail('Invalid department');
+                    }
+                    $company_code = $collections[$index]['company_code'];
+                    $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
+                    $departmentCompCheck = Department::where('department_code', $value)
+                        ->where('company_sync_id', $company_sync_id)
+                        ->first();
+                    if (!$departmentCompCheck) {
+                        $fail('Invalid department and company combination');
+                    }
+                }
+            ],
+            '*.location_code' => ['required', 'exists:locations,location_code',
+                function ($attribute, $value, $fail) use ($collections) {
+                    $index = array_search($attribute, array_keys($collections->toArray()));
+                    //check if the code is correct on the database
+                    $inactive = Location::where('location_code', $value)->where('is_active', 0)->first();
+                    if ($inactive) {
+                        $fail('Location is inactive');
+                        return;
+                    }
+                    $location_name = $collections[$index]['location'];
+                    $location = Location::query()
+                        ->where('location_code', $value)
+                        ->where('location_name', $location_name)
+                        ->where('is_active', '!=', 0)
+                        ->first();
+                    if (!$location) {
+                        $fail('Invalid location');
+                        return;
+                    }
+                    $department_code = $collections[$index]['department_code'];
+                    $department_sync_id = Department::where('department_code', $department_code)->first()->sync_id ?? 0;
+                    $associated_location_sync_id = $location->departments->pluck('sync_id')->toArray();
+                    if (!in_array($department_sync_id, $associated_location_sync_id)) {
+                        $fail('Invalid location and department combination');
+                    }
+                }
+            ],
+            '*.account_code' => ['required', 'exists:account_titles,account_title_code',
+                function ($attribute, $value, $fail) use ($collections) {
+                    $index = array_search($attribute, array_keys($collections->toArray()));
+                    $account_title_name = $collections[$index]['account_title'];
+                    $inactive = AccountTitle::where('account_title_code', $value)->where('is_active', 0)->first();
+                    if ($inactive) {
+                        $fail('Account title is inactive');
+                        return;
+                    }
+                    $account_title = AccountTitle::query()
+                        ->where('account_title_code', $value)
+                        ->where('account_title_name', $account_title_name)
+                        ->where('is_active', '!=', 0)
+                        ->first();
+                    if (!$account_title) {
+                        $fail('Invalid account title');
+                    }
+                }
+            ],
         ];
     }
 
