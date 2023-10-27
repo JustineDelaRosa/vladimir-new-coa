@@ -24,16 +24,16 @@ class UpdateDepartmentUnitApproversRequest extends FormRequest
     public function rules()
     {
         return [
-            'department_id' =>[
-                'required',
-                'integer',
-                'exists:departments,id'
-            ],
-            'subunit_id' =>[
-                'required',
-                'integer',
-                'exists:sub_units,id'
-            ],
+//            'department_id' =>[
+//                'required',
+//                'integer',
+//                'exists:departments,id'
+//            ],
+//            'subunit_id' =>[
+//                'required',
+//                'integer',
+//                'exists:sub_units,id'
+//            ],
             'approver_id' =>[
                 'required',
                 'exists:approvers,id',

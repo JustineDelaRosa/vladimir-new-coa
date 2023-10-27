@@ -21,6 +21,12 @@ protected string $default_filters = SubUnitFilters::class;
      */
     protected $guarded = [];
 
+    private static function latest()
+    {
+        $subUnit = self::orderBy('id', 'desc')->first();
+        return $subUnit;
+    }
+
 
     public function department(){
         return $this->belongsTo(Department::class,'department_id','id');
@@ -45,7 +51,6 @@ protected string $default_filters = SubUnitFilters::class;
 
     //TODO: Temporary solution for generating sub unit code
     public function generateCode(){
-        //generate sub unit base on the created id, it should be four digit number with leading zero like 0001, 0010, 0100, 1000
         $subUnit = self::latest()->first();
         $subUnitId = $subUnit->id;
         $subUnitId = $subUnitId + 1;
