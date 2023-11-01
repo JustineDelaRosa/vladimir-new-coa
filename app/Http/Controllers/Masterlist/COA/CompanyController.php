@@ -4,19 +4,29 @@ namespace App\Http\Controllers\Masterlist\COA;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CompanyController extends Controller
 {
+    use ApiResponse;
+
     /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $company = Company::get();
+        $companyStatus = $request->status ?? 'active';
+        $isActiveStatus = ($companyStatus === 'deactivated') ? 0 : 1;
+
+        $company = Company::where('is_active', $isActiveStatus)
+            ->orderBy('created_at', 'DESC')
+            ->useFilters()
+            ->dynamicPaginate();
+
         return $company;
     }
 
@@ -45,7 +55,8 @@ class CompanyController extends Controller
     {
         $companyData = $request->input('result.companies');
         if (empty($request->all()) || empty($request->input('result.companies'))) {
-            return response()->json(['message' => 'Data not Ready']);
+//            return response()->json(['message' => 'Data not Ready']);
+            return $this->responseUnprocessable('Data not Ready');
         }
 
         foreach ($companyData as $companies) {
@@ -65,7 +76,8 @@ class CompanyController extends Controller
                 ],
             );
         }
-        return response()->json(['message' => 'Successfully Synced!']);
+//        return response()->json(['message' => 'Successfully Synced!']);
+        return $this->responseSuccess('Successfully Synced!');
     }
 
     /**

@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Filters\CompanyFilters;
+use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Company extends Model
 {
-    use HasFactory;
+    use HasFactory, Filterable;
     // protected $fillable = [
     //     'sync_id',
     //     'company_code',
@@ -18,6 +20,8 @@ class Company extends Model
     protected $casts = [
         'is_active' => 'boolean'
     ];
+
+    protected string $default_filters = CompanyFilters::class;
 
     public function fixedAsset()
     {
