@@ -214,7 +214,7 @@ class FixedAssetRepository
         return $paginator;
     }
 
-    public function searchFixedAsset($search, $status, $page, $limit = null)
+    public function searchFixedAsset($search, $status, $page, $per_page = null)
     {
         $fixedAssetFields = [
             'id',
@@ -318,7 +318,7 @@ class FixedAssetRepository
             });
         }
 
-        $results = $this->paginateResults($results, $limit, $page);
+        $results = $this->paginateResults($results, $per_page, $page);
 
         $results->setCollection($results->getCollection()->values());
         $results->getCollection()->transform(function ($item) {

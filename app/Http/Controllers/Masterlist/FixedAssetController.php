@@ -23,11 +23,13 @@ use App\Repositories\CalculationRepository;
 use App\Repositories\FixedAssetRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
 use Carbon\Carbon;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class FixedAssetController extends Controller
 {
+    use ApiResponse;
     protected $fixedAssetRepository, $vladimirTagGeneratorRepository, $calculationRepository;
 
     public function __construct()
@@ -270,10 +272,11 @@ class FixedAssetController extends Controller
 //        return FixedAsset::useFilters()->dynamicPaginate();
 
         $search = $request->get('search');
-        $limit = $request->get('limit');
+//        $limit = $request->get('limit');
+        $per_page = $request->get('per_page');
         $page = $request->get('page');
         $status = $request->get('status');
-        return $this->fixedAssetRepository->searchFixedAsset($search, $status, $limit, $page);
+        return $this->fixedAssetRepository->searchFixedAsset($search, $status, $per_page, $page);
     }
 
     //todo change assetDescription
