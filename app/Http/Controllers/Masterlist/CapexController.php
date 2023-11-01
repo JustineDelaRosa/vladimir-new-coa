@@ -23,37 +23,14 @@ class CapexController extends Controller
      */
     public function index(Request $request)
     {
-        $search = $request->input('search', '');
-        $status = $request->input('status', '');
-        $limit = $request->input('limit', null);
 
-        $capexQuery = Capex::withTrashed()->with([
-            'subCapex' => function ($query) {
-                $query->withTrashed();
-            },
-        ])
-            ->where(function ($query) use ($search) {
-                $query->where('capex', 'like', "%$search%")
-                    ->orWhere('project_name', 'like', "%$search%");
-                $query->orWhereHas('subCapex', function ($query) use ($search) {
-                    $query->where('sub_capex', 'like', "%$search%")
-                        ->orWhere('sub_project', 'like', "%$search%");
-                });
-            });
+        $capexStatus = $request->status ?? 'active';
+        $isActiveStatus = ($capexStatus === 'deactivated') ? 0 : 1;
 
-        if ($status === "deactivated") {
-            $capexQuery->onlyTrashed();
-        } elseif ($status === 'active') {
-            $capexQuery->whereNull('deleted_at');
-        }
-
-        $capexQuery->orderByDesc('created_at');
-
-        if ($limit !== null) {
-            $result = is_numeric($limit) ? $capexQuery->paginate($limit) : $capexQuery->paginate(PHP_INT_MAX);
-        } else {
-            $result = $capexQuery->get();
-        }
+        $capexQuery = Capex::withTrashed()->where('is_active', $isActiveStatus)
+            ->orderByDesc('created_at')
+            ->useFilters()
+            ->dynamicPaginate();
 
 //        $result->transform(function ($capex) {
 //            $capex->sub_capex =
@@ -69,7 +46,7 @@ class CapexController extends Controller
 //            return $capex;
 //        });
 
-        $result->transform(function ($capex) {
+        $capexQuery->transform(function ($capex) {
             $capex->sub_capex = $capex->subCapex->map(function ($sub_capex) {
                 $subCapexParts = explode('-', $sub_capex->sub_capex);
                 if (count($subCapexParts) > 1) {
@@ -85,10 +62,7 @@ class CapexController extends Controller
             return $capex;
         });
 
-        return response()->json([
-            'message' => 'Successfully retrieved capex.',
-            'data' => $result
-        ], 200);
+        return $capexQuery;
     }
 
     /**
