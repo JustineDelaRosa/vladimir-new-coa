@@ -5,16 +5,19 @@ namespace App\Http\Controllers\Masterlist\COA;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Location;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 
 class LocationController extends Controller
 {
+
+    use ApiResponse;
     /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index()
+    public function index(Request $request)
     {
 //        $location = Location::with('departments')->where('is_active', 1)->get();
 ////        return $location;
@@ -23,36 +26,36 @@ class LocationController extends Controller
 //            'data' => $location
 //        ], 200);
 
+        $locationStatus = $request->status ?? 'active';
+        $isActiveStatus = ($locationStatus === 'deactivated') ? 0 : 1;
+        $location = Location::where('is_active', $isActiveStatus)
+            ->orderBy('created_at', 'desc')
+            ->useFilters()
+            ->dynamicPaginate();
 
-        $results = [];
-        $location = Location::with('departments')->where('is_active', 1)->get();
+        $location->transform(function ($location){
+           return  [
+               'id' => $location->id,
+               'sync_id' => $location->sync_id,
+               'location_code' => $location->location_code,
+               'location_name' => $location->location_name,
+               'departments' => $location->departments->map(function ($departments) {
+                   return [
+                       'id' => $departments->id ?? '-',
+                       'sync_id' => $departments->sync_id ?? '-',
+                       'department_code' => $departments->department_code ?? '-',
+                       'department_name' => $departments->department_name ?? '-',
+                       'department_status' => $departments->is_active ?? '-',
+                   ];
+               }),
+               'is_active' => $location->is_active,
+               'created_at' => $location->created_at,
+               'updated_at' => $location->updated_at,
+           ];
+        });
 
-        foreach ($location as $loc) {
-            $results[] = [
-                'id' => $loc->id,
-                'sync_id' => $loc->sync_id,
-                'location_code' => $loc->location_code,
-                'location_name' => $loc->location_name,
-                'departments' => $loc->departments->map(function ($departments) {
-                    return [
-                        'id' => $departments->id ?? '-',
-                        'sync_id' => $departments->sync_id ?? '-',
-                        'department_code' => $departments->department_code ?? '-',
-                        'department_name' => $departments->department_name ?? '-',
-                        'department_status' => $departments->is_active ?? '-',
-                    ];
-                }),
-                'is_active' => $loc->is_active,
-                'created_at' => $loc->created_at,
-                'updated_at' => $loc->updated_at,
-            ];
-        }
-//        return
 
-        return response()->json([
-            'message' => 'Location retrieved successfully.',
-            'data' => $results
-        ], 200);
+        return $location;
     }
 
     /**
@@ -65,12 +68,14 @@ class LocationController extends Controller
     public function store(Request $request)
     {
         if (Department::all()->isEmpty()) {
-            return response()->json(['message' => 'Department data not ready'], 422);
+//            return response()->json(['message' => 'Department data not ready'], 422);
+            return $this->responseUnprocessable('Department data not ready');
         }
 
         $locationData = $request->input('result.locations');
         if (empty($request->all()) || empty($request->input('result.locations'))) {
-            return response()->json(['message' => 'Data not Ready']);
+//            return response()->json(['message' => 'Data not Ready']);
+            return $this->responseUnprocessable('Data not Ready');
         }
 
         foreach ($locationData as $location) {
@@ -92,7 +97,8 @@ class LocationController extends Controller
 //            }
         }
 
-        return response()->json(['message' => 'Successfully Synced!']);
+//        return response()->json(['message' => 'Successfully Synced!']);
+        return $this->responseSuccess('Successfully Synced!');
     }
 
 //    public function store(Request $request)

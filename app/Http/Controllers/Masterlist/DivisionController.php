@@ -7,22 +7,41 @@ use App\Http\Requests\Division\DivisionRequest;
 use App\Models\Department;
 use App\Models\Division;
 use App\Models\FixedAsset;
-use http\Env\Response;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 
 class DivisionController extends Controller
 {
+    use ApiResponse;
     /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index()
+    public function index(Request $request)
     {
-        $division = Division::get();
-        return response()->json([
-            'data' => $division
-        ], 200);
+        $divisionStatus = $request->status ?? 'active';
+        $isActiveStatus = ($divisionStatus === 'deactivated') ? 0 : 1;
+        $division = Division::withTrashed()->where('is_active', $isActiveStatus)
+            ->orderByDesc('created_at')
+            ->useFilters()
+            ->dynamicPaginate();
+
+        $division->transform(function ($division){
+            return [
+                'id' => $division->id,
+                'division_name' => $division->division_name,
+                'is_active' => $division->is_active,
+                'departments' => $division->department->map(function ($department) {
+                    return [
+                        'department_name' => $department->department_name,
+                        'sync_id' => $department->sync_id,
+                    ];
+                }),
+            ];
+        });
+
+        return $division;
     }
 
     /**
@@ -51,12 +70,15 @@ class DivisionController extends Controller
                     ]);
                 }
             } else {
-                return response()->json(['error' => 'Division Route Not Found'], 404);
+//                return response()->json(['error' => 'Division Route Not Found'], 404);
+                return $this->responseNotFound('Division Route Not Found');
             }
-            return response()->json([
-                'message' => 'Successfully Created!',
-                'data' => Division::where('division_name', $division_name)->first()
-            ], 201);
+//            return response()->json([
+//                'message' => 'Successfully Created!',
+//                'data' => Division::where('division_name', $division_name)->first()
+//            ], 201);
+
+            return $this->responseCreated('Successfully Created!');
         }
     }
 
@@ -68,9 +90,10 @@ class DivisionController extends Controller
      */
     public function show($id)
     {
-        $division = Division::with('department')->where('id', $id)->first();
-        if (!$division->where('id', $id)->exists()) {
-            return response()->json(['error' => 'Division Route Not Found'], 404);
+        $division = Division::with('department')->find($id);
+
+        if (!$division) {
+            return $this->responseNotFound('Division Route Not Found');
         }
         return response()->json([
             'data' => [
@@ -78,7 +101,13 @@ class DivisionController extends Controller
                 'division_name' => $division->division_name,
                 'is_active' => $division->is_active,
                 //get all departments sync_id push to array
-                'sync_id' => $division->department->pluck('sync_id')
+                'sync_id' => $division->department->pluck('sync_id'),
+                'departments' => $division->department->map(function ($department) {
+                    return [
+                        'department_name' => $department->department_name,
+                        'sync_id' => $department->sync_id,
+                    ];
+                }),
             ]
         ], 200);
 //        return response()->json([
@@ -106,7 +135,8 @@ class DivisionController extends Controller
         $department_sync_id = $request->sync_id;
 
         if (!Division::where('id', $id)->exists()) {
-            return response()->json(['error' => 'Division Route Not Found'], 404);
+//            return response()->json(['error' => 'Division Route Not Found'], 404);
+            return $this->responseNotFound('Division Route Not Found');
         }
 
         //use pluck method to get an array of sync_id values
@@ -115,7 +145,8 @@ class DivisionController extends Controller
         $division = Division::firstWhere(['id' => $id, 'division_name' => $division_name]);
         //check if division exists and department_id matches the array
         if ($division && $department_sync_id == $department_sync_id_array) {
-            return response()->json(['message' => 'No Changes Made'], 200);
+//            return response()->json(['message' => 'No Changes Made'], 200);
+            return $this->responseSuccess('No changes made');
         }
 
         $update = Division::where('id', $id)->update([
@@ -129,7 +160,8 @@ class DivisionController extends Controller
             Department::whereIn('sync_id', $department_sync_id)->update([
                 'division_id' => $id
             ]);
-            return response()->json(['message' => 'Successfully Updated!', 'data' => Division::where('id', $id)->first()], 200);
+//            return response()->json(['message' => 'Successfully Updated!', 'data' => Division::where('id', $id)->first()], 200);
+            return $this->responseSuccess('Successfully Updated!');
         }
     }
     //! as of 10/12/2020 this function is not yet used
@@ -150,13 +182,15 @@ class DivisionController extends Controller
         $status = $request->status;
         $Division = Division::query();
         if (!$Division->withTrashed()->where('id', $id)->exists()) {
-            return response()->json(['error' => 'Division Route Not Found'], 404);
+//            return response()->json(['error' => 'Division Route Not Found'], 404);
+            return $this->responseNotFound('Division Route Not Found');
         }
 
 
         if ($status == false) {
             if (!Division::where('id', $id)->where('is_active', true)->exists()) {
-                return response()->json(['message' => 'No Changes'], 200);
+//                return response()->json(['message' => 'No Changes'], 200);
+                return $this->responseSuccess('No changes made');
             } else {
                 $removeDivision = Department::where('division_id', $id)
                     ->update([
@@ -164,17 +198,19 @@ class DivisionController extends Controller
                     ]);
                 $updateStatus = $Division->where('id', $id)->update(['is_active' => false]);
                 $Division->where('id', $id)->delete();
-                return response()->json(['message' => 'Successfully Deactivated!'], 200);
-
+//                return response()->json(['message' => 'Successfully Deactivated!'], 200);
+                return $this->responseSuccess('Successfully Deactivated!');
             }
         }
         if ($status == true) {
             if (Division::where('id', $id)->where('is_active', true)->exists()) {
-                return response()->json(['message' => 'No Changes'], 200);
+//                return response()->json(['message' => 'No Changes'], 200);
+                return $this->responseSuccess('No changes made');
             } else {
                 $restoreUser = $Division->withTrashed()->where('id', $id)->restore();
                 $updateStatus = $Division->update(['is_active' => true]);
-                return response()->json(['message' => 'Successfully Activated!'], 200);
+//                return response()->json(['message' => 'Successfully Activated!'], 200);
+                return $this->responseSuccess('Successfully Activated!');
             }
         }
     }

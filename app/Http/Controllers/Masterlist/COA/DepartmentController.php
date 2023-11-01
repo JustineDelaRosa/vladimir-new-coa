@@ -6,17 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\Department;
 use App\Models\LocationDepartment;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
+use function PHPUnit\Framework\isEmpty;
 
 class DepartmentController extends Controller
 {
+
+    use APIResponse;
+
     /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Database\Eloquent\Builder[]|\Illuminate\Database\Eloquent\Collection|\Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
 //        $client = new Client();
 //        $token = '9|u27KMjj3ogv0hUR8MMskyNmhDJ9Q8IwUJRg8KAZ4';
@@ -42,19 +47,25 @@ class DepartmentController extends Controller
 //                }
 //            }
 //        }
-        $results = [];
-        $department = Department::where('is_active', 1)->get();
-        foreach ($department as $departments) {
-            $results[] = [
-                'id' => $departments->id,
-                'sync_id' => $departments->sync_id,
+
+        $departmentStatus = $request->status ?? 'active';
+        $isActiveStatus = ($departmentStatus === 'deactivated') ? 0 : 1;
+        $department = Department::where('is_active', $isActiveStatus)
+            ->orderBy('created_at', 'DESC')
+            ->useFilters()
+            ->dynamicPaginate();
+
+        $department->transform(function ($department) {
+            return [
+                'id' => $department->id,
+                'sync_id' => $department->sync_id,
                 'company' => [
-                    'company_id' => $departments->company->id ?? "-",
-                    'company_sync_id' => $departments->company->sync_id ?? "-",
-                    'company_code' => $departments->company->company_code ?? "-",
-                    'company_name' => $departments->company->company_name ?? "-",
+                    'company_id' => $department->company->id ?? "-",
+                    'company_sync_id' => $department->company->sync_id ?? "-",
+                    'company_code' => $department->company->company_code ?? "-",
+                    'company_name' => $department->company->company_name ?? "-",
                 ],
-                'locations' => $departments->location->map(function ($locations) {
+                'locations' => $department->location->map(function ($locations) {
                     return [
                         'location_id' => $locations->id ?? "-",
                         'location_sync_id' => $locations->sync_id ?? "-",
@@ -64,24 +75,36 @@ class DepartmentController extends Controller
                     ];
                 }),
                 'division' => [
-                    'division_id' => $departments->division->id ?? "-",
-                    'division_name' => $departments->division->division_name ?? "-",
+                    'division_id' => $department->division->id ?? "-",
+                    'division_name' => $department->division->division_name ?? "-",
                 ],
-                'subunit' => $departments->subUnit->map(function ($subUnit) {
+//                'subunit' => $department->subUnit->isEmpty() ? [] : $department->subUnit->map(function ($subunit) {
+//                    return [
+//                        'subunit_id' => $subunit->id ?? "-",
+//                        'subunit_sync_id' => $subunit->sync_id ?? "-",
+//                        'subunit_code' => $subunit->subunit_code ?? "-",
+//                        'subunit_name' => $subunit->subunit_name ?? "-",
+//                        'subunit_status' => $subunit->is_active ?? '-',
+//                    ];
+//                }),
+            'subunit' => $department->subUnit->map(function ($subunit) {
                     return [
-                        'subunit_id' => $subUnit->id ?? "-",
-                        'subunit_name' => $subUnit->sub_unit_name ?? "-",
-                        'subunit_status' => $subUnit->is_active ?? '-',
+                        'subunit_id' => $subunit->id ?? "-",
+                        'subunit_sync_id' => $subunit->sync_id ?? "-",
+                        'subunit_code' => $subunit->subunit_code ?? "-",
+                        'subunit_name' => $subunit->subunit_name ?? "-",
+                        'subunit_status' => $subunit->is_active ?? '-',
                     ];
                 }),
-                'department_code' => $departments->department_code,
-                'department_name' => $departments->department_name,
-                'is_active' => $departments->is_active,
-                'created_at' => $departments->created_at,
-                'updated_at' => $departments->updated_at,
+                'department_code' => $department->department_code,
+                'department_name' => $department->department_name,
+                'is_active' => $department->is_active,
+                'created_at' => $department->created_at,
+                'updated_at' => $department->updated_at,
             ];
-        }
-        return $results;
+        });
+
+        return $department;
     }
 
     /**
@@ -100,11 +123,13 @@ class DepartmentController extends Controller
     {
         $company = Company::all()->isEmpty();
         if ($company) {
-            return response()->json(['message' => 'Company Data not Ready'], 422);
+//            return response()->json(['message' => 'Company Data not Ready'], 422);
+            return $this->responseUnprocessable('Company Data not Ready');
         }
         $departmentData = $request->input('result.departments');
         if (empty($request->all()) || empty($request->input('result.departments'))) {
-            return response()->json(['message' => 'Data not Ready']);
+//            return response()->json(['message' => 'Data not Ready']);
+            return $this->responseUnprocessable('Data not Ready');
         }
 
         foreach ($departmentData as $departments) {
@@ -126,7 +151,8 @@ class DepartmentController extends Controller
                 ],
             );
         }
-        return response()->json(['message' => 'Successfully Synced!']);
+//        return response()->json(['message' => 'Successfully Synced!']);
+        return $this->responseSuccess('Successfully Synced!');
     }
 
     /**

@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Filters\LocationFilters;
+use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Location extends Model
 {
-    use HasFactory;
+    use HasFactory,Filterable;
     protected $fillable = [
         'sync_id',
         'location_code',
@@ -17,6 +19,8 @@ class Location extends Model
     protected $casts = [
         'is_active' => 'boolean'
     ];
+
+    protected string $default_filters = LocationFilters::class;
 
     public function fixedAsset()
     {

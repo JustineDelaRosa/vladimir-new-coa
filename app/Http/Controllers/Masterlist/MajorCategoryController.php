@@ -9,10 +9,12 @@ use App\Models\FixedAsset;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
 use App\Repositories\CalculationRepository;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 
 class MajorCategoryController extends Controller
 {
+    use ApiResponse;
 
     private $calculationRepository;
 
@@ -26,16 +28,22 @@ class MajorCategoryController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index()
+    public function index(Request $request)
     {
-        $results = [];
-        $major_category = MajorCategory::with('minorCategory')->get();
-        foreach ($major_category as $item) {
-            $results[] = [
-                'id' => $item->id,
-                'major_category_name' => $item->major_category_name,
-                'est_useful_life' => $item->est_useful_life,
-                'minor_categories' => $item->minorCategory->map(function ($minorCategory) {
+        $majorCategoryStatus = $request->status ?? 'active';
+        $isActiveStatus = ($majorCategoryStatus === 'deactivated') ? 0 : 1;
+
+        $majorCategory = MajorCategory::withTrashed()->where('is_active', $isActiveStatus)
+            ->orderByDesc('created_at')
+            ->useFilters()
+            ->dynamicPaginate();
+
+        $majorCategory->transform(function ($majorCategory) {
+            return [
+                'id' => $majorCategory->id,
+                'major_category_name' => $majorCategory->major_category_name,
+                'est_useful_life' => $majorCategory->est_useful_life,
+                'minor_categories' => $majorCategory->minorCategory->map(function ($minorCategory) {
                     return [
                         'id' => $minorCategory->id,
                         'account_title' => [
@@ -51,17 +59,15 @@ class MajorCategoryController extends Controller
                         'deleted_at' => $minorCategory->deleted_at
                     ];
                 }),
-                'is_active' => $item->is_active,
-                'created_at' => $item->created_at,
-                'updated_at' => $item->updated_at,
-                'deleted_at' => $item->deleted_at,
-                'minor_category' => $item->minorCategory
+                'is_active' => $majorCategory->is_active,
+                'created_at' => $majorCategory->created_at,
+                'updated_at' => $majorCategory->updated_at,
+                'deleted_at' => $majorCategory->deleted_at,
+                'minor_category' => $majorCategory->minorCategory
             ];
+        });
 
-        }
-        return response()->json([
-            'data' => $major_category
-        ], 200);
+        return $majorCategory;
     }
 
     /**
@@ -78,17 +84,19 @@ class MajorCategoryController extends Controller
         $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name)
             ->exists();
         if ($majorCategory) {
-            return response()->json(
-                [
-                    'message' => 'The given data was invalid.',
-                    'errors' => [
-                        'major_category_name' => [
-                            'The major category name has already been taken.'
-                        ]
-                    ]
-                ],
-                422
-            );
+//            return response()->json(
+//                [
+//                    'message' => 'The given data was invalid.',
+//                    'errors' => [
+//                        'major_category_name' => [
+//                            'The major category name has already been taken.'
+//                        ]
+//                    ]
+//                ],
+//                422
+//            );
+
+            return $this->responseUnprocessable('The major category name has already been taken.');
         }
 
 
@@ -99,7 +107,8 @@ class MajorCategoryController extends Controller
         ]);
 
 
-        return response()->json(['message' => 'Successfully Created!', 'data' => $majorCategory], 201);
+//        return response()->json(['message' => 'Successfully Created!', 'data' => $majorCategory], 201);
+        return $this->responseCreated('Successfully Created!', $majorCategory);
 
     }
 
@@ -113,7 +122,8 @@ class MajorCategoryController extends Controller
     {
         $MajorCategory = MajorCategory::query();
         if (!$MajorCategory->where('id', $id)->exists()) {
-            return response()->json(['error' => 'Major Category Route Not Found'], 404);
+//            return response()->json(['error' => 'Major Category Route Not Found'], 404);
+            return $this->responseNotFound('Major Category Route Not Found');
         }
 
         return $MajorCategory->with('minorCategory')->where('id', $id)->first();
@@ -162,11 +172,13 @@ class MajorCategoryController extends Controller
             ->find($id);
 
         if (!$majorCategory) {
-            return response()->json(['error' => 'Major Category Route Not Found'], 404);
+//            return response()->json(['error' => 'Major Category Route Not Found'], 404);
+            return $this->responseNotFound('Major Category Route Not Found');
         }
 
         if ($majorCategory->major_category_name === $major_category_name && $majorCategory->est_useful_life === $est_useful_life) {
-            return response()->json(['message' => 'No Changes'], 200);
+//            return response()->json(['message' => 'No Changes'], 200);
+            return $this->responseSuccess('No Changes');
         }
 
         if (MajorCategory::where(['major_category_name' => $major_category_name])
@@ -174,17 +186,18 @@ class MajorCategoryController extends Controller
             ->withTrashed()
             ->first()
         ) {
-            return response()->json(
-                [
-                    'message' => 'The given data was invalid.',
-                    'errors' => [
-                        'major_category_name' => [
-                            'The major category name has already been taken.'
-                        ]
-                    ]
-                ],
-                422
-            );
+//            return response()->json(
+//                [
+//                    'message' => 'The given data was invalid.',
+//                    'errors' => [
+//                        'major_category_name' => [
+//                            'The major category name has already been taken.'
+//                        ]
+//                    ]
+//                ],
+//                422
+//            );
+            return $this->responseUnprocessable('The major category name has already been taken.');
         }
 
         $majorCategory->major_category_name = $major_category_name;
@@ -222,7 +235,8 @@ class MajorCategoryController extends Controller
 
         $majorCategory->save();
 
-        return response()->json(['message' => 'Successfully Updated!'], 200);
+//        return response()->json(['message' => 'Successfully Updated!'], 200);
+        return $this->responseSuccess('Successfully Updated!');
     }
 
 
@@ -232,7 +246,8 @@ class MajorCategoryController extends Controller
         $status = $request->status;
         $MajorCategory = MajorCategory::query();
         if (!$MajorCategory->withTrashed()->where('id', $id)->exists()) {
-            return response()->json(['error' => 'Major Category Route Not Found'], 404);
+//            return response()->json(['error' => 'Major Category Route Not Found'], 404);
+            return $this->responseNotFound('Major Category Route Not Found');
         }
 
         // if (MajorCategory::where('id', $id)->exists()) {
@@ -246,26 +261,31 @@ class MajorCategoryController extends Controller
 
         if ($status == false) {
             if (!MajorCategory::where('id', $id)->where('is_active', true)->exists()) {
-                return response()->json(['message' => 'No Changes'], 200);
+//                return response()->json(['message' => 'No Changes'], 200);
+                return $this->responseSuccess('No Changes');
             } else {
                 $checkMinorCategory = MinorCategory::where('major_category_id', $id)->exists();
                 if ($checkMinorCategory) {
-                    return response()->json(['message' => 'Unable to Archived!, Archived Minor Category First'], 409);
+//                    return response()->json(['message' => 'Unable to Archived!, Archived Minor Category First'], 409);
+                    return $this->responseConflictError('Unable to Archived!, Archived Minor Category First');
                 }
                 if (MajorCategory::where('id', $id)->exists()) {
                     $updateStatus = $MajorCategory->where('id', $id)->update(['is_active' => false]);
                     $MajorCategory->where('id', $id)->delete();
-                    return response()->json(['message' => 'Successfully Deactived!'], 200);
+//                    return response()->json(['message' => 'Successfully Deactived!'], 200);
+                    return $this->responseSuccess('Successfully Deactivated!');
                 }
             }
         }
         if ($status == true) {
             if (MajorCategory::where('id', $id)->where('is_active', true)->exists()) {
-                return response()->json(['message' => 'No Changes'], 200);
+//                return response()->json(['message' => 'No Changes'], 200);
+                return $this->responseSuccess('No Changes');
             } else {
                 $restoreUser = $MajorCategory->withTrashed()->where('id', $id)->restore();
                 $updateStatus = $MajorCategory->update(['is_active' => true]);
-                return response()->json(['message' => 'Successfully Activated!'], 200);
+//                return response()->json(['message' => 'Successfully Activated!'], 200);
+                return $this->responseSuccess('Successfully Activated!');
             }
         }
     }

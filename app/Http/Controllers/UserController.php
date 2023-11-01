@@ -29,7 +29,10 @@ class UserController extends Controller
         $userStatus = $request->status;
         $isActiveStatus = ($userStatus === "deactivated") ? 0 : 1;
 
-        $user = User::withTrashed()->where('is_active', $isActiveStatus)->orderBy('created_at', 'DESC')->useFilters()->dynamicPaginate();
+        $user = User::withTrashed()->where('is_active', $isActiveStatus)
+            ->orderByDesc('created_at')
+            ->useFilters()
+            ->dynamicPaginate();
 
         $user->transform(function ($item) {
             return [

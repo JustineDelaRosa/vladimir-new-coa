@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Filters\MajorCategoryFilters;
+use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MajorCategory extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Filterable;
     protected $fillable = [
         'major_category_name',
         'est_useful_life',
@@ -17,6 +19,8 @@ class MajorCategory extends Model
     protected $casts = [
         'is_active' => 'boolean'
     ];
+
+    protected string $default_filters = MajorCategoryFilters::class;
 
     // public function findDivisionIdAttribute($value)
     // {
