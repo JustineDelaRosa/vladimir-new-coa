@@ -6,37 +6,26 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Status\CycleCountStatus\CycleCountStatusRequest;
 use App\Models\FixedAsset;
 use App\Models\Status\CycleCountStatus;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 
 class CycleCountStatusController extends Controller
 {
+    use ApiResponse;
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return CycleCountStatus|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder|\Illuminate\Http\Response
      */
     public function index(Request $request)
     {
-        $search = $request->search;
-        $status = $request->status;
-        $limit = $request->limit;
+        $cycleCountStatus = $request->status ?? 'active';
+        $isActiveStatus = ($cycleCountStatus === 'deactivated') ? 0 : 1;
 
-        $cycleCountStatus = CycleCountStatus::where(function ($query) use ($search) {
-            $query
-                ->where("cycle_count_status_name", "like", "%" . $search . "%");
-        })
-            ->when($request->status === 'deactivated', function ($query) {
-                return $query->onlyTrashed();
-            })
-            ->when($request->status === 'active', function ($query) {
-                return $query->whereNull('deleted_at');
-            })
+        $cycleCountStatus = CycleCountStatus::withTrashed()->where('is_active', $isActiveStatus)
             ->orderByDesc('created_at')
-            ->when($request->limit, function ($query) use ($request) {
-                return $query->paginate($request->limit);
-            }, function ($query) {
-                return $query->get();
-            });
+            ->useFilters()
+             ->dynamicPaginate();
 
         return $cycleCountStatus;
     }
@@ -55,10 +44,12 @@ class CycleCountStatusController extends Controller
             'cycle_count_status_name' => $cycle_count_status_name
         ]);
 
-        return response()->json([
-            'message' => 'Successfully created cycle count status.',
-            'data' => $cycleCountStatus
-        ], 200);
+//        return response()->json([
+//            'message' => 'Successfully created cycle count status.',
+//            'data' => $cycleCountStatus
+//        ], 200);
+
+        return $this->responseCreated('Successfully created cycle count status.');
 
     }
 
@@ -71,8 +62,7 @@ class CycleCountStatusController extends Controller
     public function show($id)
     {
         $cycleCountStatus = CycleCountStatus::find($id);
-        if (!$cycleCountStatus) return response()->json([
-        ], 404);
+        if (!$cycleCountStatus) return $this->responseNotFound('Cycle count status route not found.');
 
         return response()->json([
             'message' => 'Successfully retrieved cycle count status.',
@@ -92,25 +82,25 @@ class CycleCountStatusController extends Controller
         $cycle_count_status_name = ucwords(strtolower($request->cycle_count_status_name));
 
         $cycleCountStatus = CycleCountStatus::find($id);
-        if (!$cycleCountStatus) return response()->json([
-            'error' => 'Cycle count status route not found.'
-        ], 404);
+        if (!$cycleCountStatus) return $this->responseNotFound('Cycle count status route not found.');
 
         //check if no changes were made
         if ($cycleCountStatus->cycle_count_status_name == $cycle_count_status_name) {
-            return response()->json([
-                'message' => 'No changes were made.'
-            ], 200);
+//            return response()->json([
+//                'message' => 'No changes were made.'
+//            ], 200);
+            return $this->responseSuccess('No changes changes.');
         }
 
         $cycleCountStatus->update([
             'cycle_count_status_name' => $cycle_count_status_name
         ]);
 
-        return response()->json([
+        /*return response()->json([
             'message' => 'Successfully updated cycle count status.',
             'data' => $cycleCountStatus
-        ], 200);
+        ], 200);*/
+        return $this->responseSuccess('Successfully updated cycle count status.');
     }
 
 //    public function archived(CycleCountStatusRequest $request, $id)
@@ -174,45 +164,50 @@ class CycleCountStatusController extends Controller
         $cycleCount = CycleCountStatus::withTrashed()->find($id);
 
         if (!$cycleCount) {
-            return response()->json([
+            /*return response()->json([
                 'message' => 'Asset Status Route Not Found.'
-            ], 404);
+            ], 404);*/
+            return $this->responseNotFound('Cycle count status route not found.');
         }
 
         // If status requested is the same as the current status, no changes are needed.
         if ($status == $cycleCount->is_active) {
-            return response()->json([
+            /*return response()->json([
                 'message' => 'No Changes.'
-            ], 200);
+            ], 200);*/
+            return $this->responseSuccess('No changes.');
         }
 
         // Perform changes based on requested status.
         if (!$status) {
             $checkFixedAsset = FixedAsset::where('cycle_count_status_id', $id)->exists();
                 if ($checkFixedAsset) {
-                    return response()->json([
+                    /*return response()->json([
                         'message' => 'The given data was invalid.',
                         'errors' => [
                             'cycle_count_status' => [
                                 'Cycle Count Status is still in use!'
                             ]
                         ]
-                    ], 422);
+                    ], 422);*/
+                    return $this->responseUnprocessable('Cycle Count Status is still in use!');
                 }
             $cycleCount->is_active = false;
             $cycleCount->save();
             $cycleCount->delete();
-            return response()->json([
+            /*return response()->json([
                 'message' => 'Successfully archived Cycle Count Status.',
-            ], 200);
+            ], 200);*/
+            return $this->responseSuccess('Successfully archived Cycle Count Status.');
 
         } else {
             $cycleCount->restore();
             $cycleCount->is_active = true;
             $cycleCount->save();
-            return response()->json([
+            /*return response()->json([
                 'message' => 'Successfully restored Cycle Count Status.',
-            ], 200);
+            ], 200);*/
+            return $this->responseSuccess('Successfully restored Cycle Count Status.');
         }
     }
 }

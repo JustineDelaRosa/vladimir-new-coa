@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Status\DepreciationStatus\DepreciationStatusRequest;
 use App\Models\FixedAsset;
 use App\Models\Status\DepreciationStatus;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class DepreciationStatusController extends Controller
 {
+    use ApiResponse;
+
     /**
      * Display a listing of the resource.
      *
@@ -18,27 +21,13 @@ class DepreciationStatusController extends Controller
      */
     public function index(Request $request)
     {
-        $search = $request->search;
-        $status = $request->status;
-        $limit = $request->limit;
+        $depreciationStatus = $request->status ?? 'active';
+        $isActiveStatus = ($depreciationStatus === 'deactivated') ? 0 : 1;
 
-        $depreciationStatus = DepreciationStatus::where(function ($query) use ($search) {
-            $query
-                ->where("depreciation_status_name", "like", "%" . $search . "%");
-        })
-            ->when($request->status === 'deactivated', function ($query) {
-                return $query->onlyTrashed();
-            })
-            ->when($request->status === 'active', function ($query) {
-                return $query->whereNull('deleted_at');
-            })
+        $depreciationStatus = DepreciationStatus::withTrashed()->where('is_active', $isActiveStatus)
             ->orderByDesc('created_at')
-            ->when($request->limit, function ($query) use ($request) {
-                return $query->paginate($request->limit);
-            }, function ($query) {
-                return $query->get();
-            });
-
+            ->useFilters()
+            ->dynamicPaginate();
         return $depreciationStatus;
 
     }
@@ -57,10 +46,11 @@ class DepreciationStatusController extends Controller
             'depreciation_status_name' => $depreciation_status_name
         ]);
 
-        return response()->json([
+        /*return response()->json([
             'message' => 'Successfully created depreciation status.',
             'data' => $depreciationStatus
-        ], 200);
+        ], 200);*/
+        return $this->responseCreated('Successfully created depreciation status.');
     }
 
     /**
@@ -72,9 +62,7 @@ class DepreciationStatusController extends Controller
     public function show($id)
     {
         $depreciationStatus = DepreciationStatus::find($id);
-        if (!$depreciationStatus) return response()->json([
-            'error' => 'Depreciation status route not found.'
-        ], 404);
+        if (!$depreciationStatus) return $this->responseNotFound('Depreciation status route not found.');
 
         return response()->json([
             'message' => 'Successfully retrieved depreciation status.',
@@ -94,25 +82,26 @@ class DepreciationStatusController extends Controller
         $depreciation_status_name = ucwords(strtolower($request->depreciation_status_name));
 
         $depreciationStatus = DepreciationStatus::find($id);
-        if (!$depreciationStatus) return response()->json([
-            'error' => 'Depreciation status route not found.'
-        ], 404);
+        if (!$depreciationStatus) return $this->responseNotFound('Depreciation status route not found.');
 
         //check if no changes
         if ($depreciationStatus->depreciation_status_name == $depreciation_status_name) {
-            return response()->json([
+            /*return response()->json([
                 'message' => 'No changes were made.'
-            ], 200);
+            ], 200);*/
+            return $this->responseUnprocessable('No changes were made.');
         }
 
         $depreciationStatus->update([
             'depreciation_status_name' => $depreciation_status_name
         ]);
 
-        return response()->json([
+        /*return response()->json([
             'message' => 'Successfully updated depreciation status.',
             'data' => $depreciationStatus
-        ], 200);
+        ], 200);*/
+
+        return $this->responseSuccess('Successfully updated depreciation status.');
     }
 
 
@@ -123,45 +112,51 @@ class DepreciationStatusController extends Controller
         $depreciationStatus = DepreciationStatus::withTrashed()->find($id);
 
         if (!$depreciationStatus) {
-            return response()->json([
+            /*return response()->json([
                 'message' => 'Depreciation Status Route Not Found.'
-            ], 404);
+            ], 404);*/
+            return $this->responseNotFound('Depreciation Status Route Not Found.');
         }
 
 
         if ($status == $depreciationStatus->is_active) {
-            return response()->json([
+            /*return response()->json([
                 'message' => 'No Changes.'
-            ], 200);
+            ], 200);*/
+            return $this->responseUnprocessable('No Changes.');
         }
 
 
         if (!$status) {
             $checkFixedAsset = FixedAsset::where('depreciation_status_id', $id)->exists();
             if ($checkFixedAsset) {
-                return response()->json([
+                /*return response()->json([
                     'message' => 'The given data was invalid.',
                     'errors' => [
                         'depreciation_status' => [
                             'Depreciation Status is still being used.'
                         ]
                     ]
-                ], 422);
+                ], 422);*/
+                return $this->responseUnprocessable('Depreciation Status is still being used.');
             }
 
             $depreciationStatus->is_active = false;
             $depreciationStatus->save();
             $depreciationStatus->delete();
-            return response()->json([
+            /*return response()->json([
                 'message' => 'Successfully archived Depreciation Status.',
-            ], 200);
+            ], 200);*/
+            return $this->responseSuccess('Successfully archived Depreciation Status.');
         } else {
             $depreciationStatus->restore();
             $depreciationStatus->is_active = true;
             $depreciationStatus->save();
-            return response()->json([
+            /*return response()->json([
                 'message' => 'Successfully restored Depreciation Status.',
-            ], 200);
+            ], 200);*/
+
+            return $this->responseSuccess('Successfully restored Depreciation Status.');
         }
     }
 }

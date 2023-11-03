@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Status\AssetStatus\AssetStatusRequest;
 use App\Models\FixedAsset;
 use App\Models\Status\AssetStatus;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 
 class AssetStatusController extends Controller
 {
+    use ApiResponse;
+
     /**
      * Display a listing of the resource.
      *
@@ -17,26 +20,13 @@ class AssetStatusController extends Controller
      */
     public function index(Request $request)
     {
-        $search = $request->search;
-        $status = $request->status;
-        $limit = $request->limit;
+        $requestAssetStatus = $request->status ?? 'status';
+        $isActiveStatus = ($requestAssetStatus === 'deactivated') ? 0 : 1;
 
-        $assetStatus = AssetStatus::where(function ($query) use ($search) {
-            $query
-                ->where("asset_status_name", "like", "%" . $search . "%");
-        })
-            ->when($request->status === 'deactivated', function ($query) {
-                return $query->onlyTrashed();
-            })
-            ->when($request->status === 'active', function ($query) {
-                return $query->whereNull('deleted_at');
-            })
+        $assetStatus = AssetStatus::withTrashed()->where('is_active', $isActiveStatus)
             ->orderByDesc('created_at')
-            ->when($request->limit, function ($query) use ($request) {
-                return $query->paginate($request->limit);
-            }, function ($query) {
-                return $query->get();
-            });
+            ->useFilters()
+            ->dynamicPaginate();
 
 
         return $assetStatus;
@@ -56,13 +46,14 @@ class AssetStatusController extends Controller
             'asset_status_name' => $asset_status_name
         ]);
 
-        return response()->json([
-            'message' => 'Successfully created asset status.',
-            'data' => $assetStatus
-        ], 200);
+//        return response()->json([
+//            'message' => 'Successfully created asset status.',
+//            'data' => $assetStatus
+//        ], 200);
+
+        return $this->responseCreated('Successfully created asset status.');
 
     }
-
     /**
      * Display the specified resource.
      *
@@ -72,9 +63,12 @@ class AssetStatusController extends Controller
     public function show($id)
     {
         $assetStatus = AssetStatus::find($id);
-        if (!$assetStatus) return response()->json([
-            'message' => 'Asset status route not found.'
-        ], 404);
+        if(!$assetStatus){
+//            return response()->json([
+//                'error' => 'Asset status route not found.'
+//            ], 404);
+            return $this->responseNotFound('Asset status route not found.');
+        }
 
         return response()->json([
             'message' => 'Successfully retrieved asset status.',
@@ -94,24 +88,27 @@ class AssetStatusController extends Controller
         $asset_status_name = ucwords(strtolower($request->asset_status_name));
 
         $assetStatus = AssetStatus::find($id);
-        if (!$assetStatus) return response()->json([
-            'error' => 'Asset status route not found.'
-        ], 404);
+        if (!$assetStatus) {
+            return $this->responseNotFound('Asset status route not found.');
+        }
 
         if ($assetStatus->asset_status_name == $asset_status_name) {
-            return response()->json([
-                'message' => 'No changes were made.'
-            ], 200);
+//            return response()->json([
+//                'message' => 'No changes were made.'
+//            ], 200);
+
+            return $this->responseSuccess('No changes were made.');
         }
 
         $assetStatus->update([
             'asset_status_name' => $asset_status_name
         ]);
 
-        return response()->json([
-            'message' => 'Successfully updated asset status.',
-            'data' => $assetStatus
-        ], 200);
+//        return response()->json([
+//            'message' => 'Successfully updated asset status.',
+//            'data' => $assetStatus
+//        ], 200);
+        return $this->responseSuccess('Successfully updated asset status.');
     }
 
     /**
@@ -133,36 +130,40 @@ class AssetStatusController extends Controller
 
         $assetStatus = AssetStatus::query();
         if (!$assetStatus->withTrashed()->where('id', $id)->exists()) {
-            return response()->json([
-                'message' => 'Asset Status Route Not Found.'
-            ], 404);
+//            return response()->json([
+//                'message' => 'Asset Status Route Not Found.'
+//            ], 404);
+            return $this->responseNotFound('Asset Status Route Not Found.');
         }
 
         if ($status == false) {
             if (!AssetStatus::where('id', $id)->where('is_active', true)->exists()) {
-                return response()->json([
-                    'message' => 'No Changes.'
-                ], 200);
+//                return response()->json([
+//                    'message' => 'No Changes.'
+//                ], 200);
+                return $this->responseSuccess('No Changes.');
             } else {
                 $checkFixedAsset = FixedAsset::where('asset_status_id', $id)->exists();
                 if ($checkFixedAsset) {
-                    return response()->json([
-                        'message' => 'The given data was invalid.',
-                        'errors' => [
-                            'asset_status' => [
-                                'Asset Status is still in use!'
-                            ]
-                        ]
-                    ], 422);
+//                    return response()->json([
+//                        'message' => 'The given data was invalid.',
+//                        'errors' => [
+//                            'asset_status' => [
+//                                'Asset Status is still in use!'
+//                            ]
+//                        ]
+//                    ], 422);
+                    return $this->responseUnprocessable( 'Asset Status is still in use!');
                 }
                 if (AssetStatus::where('id', $id)->exists()) {
                     $updateCapex = AssetStatus::Where('id', $id)->update([
                         'is_active' => false,
                     ]);
                     $archiveCapex = AssetStatus::where('id', $id)->delete();
-                    return response()->json([
-                        'message' => 'Successfully archived Asset Status.',
-                    ], 200);
+//                    return response()->json([
+//                        'message' => 'Successfully archived Asset Status.',
+//                    ], 200);
+                    return $this->responseSuccess('Successfully archived Asset Status.');
                 }
 
             }
@@ -170,17 +171,19 @@ class AssetStatusController extends Controller
 
         if ($status == true) {
             if (AssetStatus::where('id', $id)->where('is_active', true)->exists()) {
-                return response()->json([
-                    'message' => 'No Changes.'
-                ], 200);
+//                return response()->json([
+//                    'message' => 'No Changes.'
+//                ], 200);
+                return $this->responseSuccess('No Changes.');
             } else {
                 $restoreCapex = AssetStatus::withTrashed()->where('id', $id)->restore();
                 $updateStatus = AssetStatus::where('id', $id)->update([
                     'is_active' => true,
                 ]);
-                return response()->json([
-                    'message' => 'Successfully restored Asset Status.',
-                ], 200);
+//                return response()->json([
+//                    'message' => 'Successfully restored Asset Status.',
+//                ], 200);
+                return $this->responseSuccess('Successfully restored Asset Status.');
             }
         }
     }

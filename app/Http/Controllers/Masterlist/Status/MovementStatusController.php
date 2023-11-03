@@ -6,47 +6,28 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Status\MovementStatus\MovementStatusRequest;
 use App\Models\FixedAsset;
 use App\Models\Status\MovementStatus;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 
 class MovementStatusController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+
+    use ApiResponse;
+
+
     public function index(Request $request)
     {
-        $search = $request->search;
-        $status = $request->status;
-        $limit = $request->limit;
+        $movementStatus  = $request->status ?? 'status';
+        $isActiveStatus = ($movementStatus === 'deactivated') ? 0 : 1;
 
-        $movementStatus = MovementStatus::where(function ($query) use ($search) {
-            $query
-                ->where("movement_status_name", "like", "%" . $search . "%");
-        })
-            ->when($request->status === 'deactivated', function ($query) {
-                return $query->onlyTrashed();
-            })
-            ->when($request->status === 'active', function ($query) {
-                return $query->whereNull('deleted_at');
-            })
+        $movementStatus = MovementStatus::withTrashed()->where('is_active', $isActiveStatus)
             ->orderByDesc('created_at')
-            ->when($request->limit, function ($query) use ($request) {
-                return $query->paginate($request->limit);
-            }, function ($query) {
-                return $query->get();
-            });
+            ->useFilters()
+            ->dynamicPagination();
 
         return $movementStatus;
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function store(MovementStatusRequest $request)
     {
         $movement_status_name = ucwords(strtolower($request->movement_status_name));
@@ -55,25 +36,22 @@ class MovementStatusController extends Controller
             'movement_status_name' => $movement_status_name
         ]);
 
-        return response()->json([
+        /*return response()->json([
             'message' => 'Successfully created movement status.',
             'data' => $movementStatus
-        ], 201);
+        ], 201);*/
+
+        return $this->responseCreated('Successfully created movement status.', $movementStatus);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function show($id)
     {
         $movementStatus = MovementStatus::withTrashed()->find($id);
         if (!$movementStatus) {
-            return response()->json([
+            /*return response()->json([
                 'error' => 'Movement status not found.'
-            ], 404);
+            ], 404);*/
+            return $this->responseNotFound('Movement status not found.');
         }
 
         return response()->json([
@@ -82,38 +60,30 @@ class MovementStatusController extends Controller
         ], 200);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function update(MovementStatusRequest $request, $id)
     {
         $movement_status_name = ucwords(strtolower($request->movement_status_name));
 
         $movementStatus = MovementStatus::withTrashed()->find($id);
-        if (!$movementStatus) {
-            return response()->json([
-                'error' => 'Movement status not found.'
-            ], 404);
-        }
+        if (!$movementStatus) return $this->responseNotFound('Movement status not found.');
 
         if ($movementStatus->movement_status_name == $movement_status_name) {
-            return response()->json([
+            /*return response()->json([
                 'message' => 'No changes were made.'
-            ], 200);
+            ], 200);*/
+            return $this->responseSuccess('No changes were made.');
         }
 
         $movementStatus->update([
             'movement_status_name' => $movement_status_name
         ]);
 
-        return response()->json([
-            'message' => 'Successfully updated movement status.',
-            'data' => $movementStatus
-        ], 200);
+//        return response()->json([
+//            'message' => 'Successfully updated movement status.',
+//            'data' => $movementStatus
+//        ], 200);
+
+        return $this->responseSuccess('Successfully updated movement status.');
     }
 
     public function archived(MovementStatusRequest $request, $id)
@@ -123,16 +93,18 @@ class MovementStatusController extends Controller
         $movementStatus = MovementStatus::withTrashed()->find($id);
 
         if (!$movementStatus) {
-            return response()->json([
-                'message' => 'Movement Status Route Not Found.'
-            ], 404);
+//            return response()->json([
+//                'message' => 'Movement Status Route Not Found.'
+//            ], 404);
+            return $this->responseNotFound('Movement Status Route Not Found.');
         }
 
 
         if ($status == $movementStatus->is_active) {
-            return response()->json([
-                'message' => 'No Changes.'
-            ], 200);
+//            return response()->json([
+//                'message' => 'No Changes.'
+//            ], 200);
+            return $this->responseSuccess('No Changes.');
         }
 
 
@@ -140,29 +112,32 @@ class MovementStatusController extends Controller
 
             $checkFixedAsset = FixedAsset::where('movement_status_id', $id)->exists();
             if ($checkFixedAsset) {
-                return response()->json([
+                /*return response()->json([
                     'message' => 'The given data was invalid.',
                     'errors' => [
                         'movement_status' => [
                             'Movement Status is still in use.'
                         ]
                     ]
-                ], 422);
+                ], 422);*/
+                return $this->responseUnprocessableEntity('Movement Status is still in use.');
             }
 
             $movementStatus->is_active = false;
             $movementStatus->save();
             $movementStatus->delete();
-            return response()->json([
+            /*return response()->json([
                 'message' => 'Successfully archived Movement Status.',
-            ], 200);
+            ], 200);*/
+            return $this->responseSuccess('Successfully archived Movement Status.');
         } else {
             $movementStatus->restore();
             $movementStatus->is_active = true;
             $movementStatus->save();
-            return response()->json([
+            /*return response()->json([
                 'message' => 'Successfully restored Movement Status.',
-            ], 200);
+            ], 200);*/
+            return $this->responseSuccess('Successfully restored Movement Status.');
         }
     }
 }
