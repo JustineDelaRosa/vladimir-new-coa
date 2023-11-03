@@ -38,12 +38,14 @@ class PrintBarCodeController extends Controller
 
         $printerIP = PrinterIP::where('ip', $clientIP)->first();
         if (!$printerIP || !$printerIP->is_active) {
-            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
+//            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
+            return $this->responseUnAuthorized('You are not allowed to print barcode');
         }
 
 
         if (!$tagNumber) {
-            return response()->json(['message' => 'No data found'], 404);
+//            return response()->json(['message' => 'No data found'], 404);
+            return $this->responseNotFound('No data found');
         }
 
         try {
@@ -177,15 +179,18 @@ class PrintBarCodeController extends Controller
 
             }
 
-            return response()->json(
+            /*return response()->json(
                 ['message' => 'Barcode printed successfully!',
                     'data' => $tagNumber
-                ], 200);
+                ], 200);*/
+            return $this->responseSuccess('Barcode printed successfully!', $tagNumber);
+
         } catch (Exception $e) {
             // Handle any exceptions that may occur during the printing process
-            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
+//            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
 
 //            return response()->json(['message' => 'Unable to Print'], 422);
+            return $this->responseUnprocessable('Unable to Print, Please contact your support team');
         }
     }
 
@@ -203,7 +208,7 @@ class PrintBarCodeController extends Controller
         //array of vladimir tag number
         $vladimirTagNumbers = $request->get('tagNumber');
 
-        $typeOfRequestId = TypeOfRequest::where('type_of_request_name', 'Capex')->pluck('id')->first() ?? 0;
+        /*$typeOfRequestId = TypeOfRequest::where('type_of_request_name', 'Capex')->pluck('id')->first() ?? 0;
 
         if($vladimirTagNumbers == null){
             //get all vladimir tag number
@@ -211,7 +216,19 @@ class PrintBarCodeController extends Controller
         }
 
         $fixedAssetQuery = FixedAsset::whereIn('vladimir_tag_number', $vladimirTagNumbers)
-            ->where('type_of_request_id', '!=', $typeOfRequestId);
+            ->where('type_of_request_id', '!=', $typeOfRequestId);*/
+
+
+
+        $typesOfRequestId = TypeOfRequest::whereIn('type_of_request_name', ['Capex', 'Vehicle'])->pluck('id')->toArray();
+
+        if($vladimirTagNumbers == null){
+            $vladimirTagNumbers = FixedAsset::whereNotIn('type_of_request_id', array_values($typesOfRequestId))->pluck('vladimir_tag_number')->toArray();
+        }
+
+        $fixedAssetQuery = FixedAsset::whereIn('vladimir_tag_number', $vladimirTagNumbers)
+            ->whereNotIn('type_of_request_id', array_values($typesOfRequestId));
+
 
 //        $result = [];
         // Chunk the results and populate the result array
@@ -259,28 +276,15 @@ class PrintBarCodeController extends Controller
         $endDate = $request->get('endDate');
         $limit = $request->get('limit');
 
-        //type of request capex should not be printed
+        /*//type of request capex should not be printed
         $typeOfRequest = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
 
         // Define the common query for fixed assets
-        $fixedAssetQuery = FixedAsset::with([
-            'formula',
-            'majorCategory:id,major_category_name',
-            'minorCategory:id,minor_category_name',
-        ])
-            ->where('type_of_request_id', '!=', $typeOfRequest); //todo: ask if can be printed now
+        $fixedAssetQuery = FixedAsset::where('type_of_request_id', '!=', $typeOfRequest); //todo: ask if can be printed now*/
 
-//        if ($startDate && $endDate) {
-//            //Ensure the dates are in Y-m-d H:i:s format
-//            $startDate = new DateTime($startDate);
-//            $endDate = new DateTime($endDate);
-//            //set time to an end of day
-//            $endDate->setTime(23, 59, 59);
-//
-//            $fixedAssetQuery->whereBetween('created_at', [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
-//        }
+        $typesOfRequestId = TypeOfRequest::whereIn('type_of_request_name', ['Capex', 'Vehicle'])->pluck('id')->toArray();
 
-
+        $fixedAssetQuery = FixedAsset::whereNotIn('type_of_request_id', array_values($typesOfRequestId));
 
         if ($startDate) {
             $startDate = new DateTime($startDate);
@@ -300,7 +304,7 @@ class PrintBarCodeController extends Controller
 
 
         // Add search filter if search is given
-        if ($search) {
+        /*if ($search) {
             $fixedAssetQuery->where(function ($query) use ($search) {
                 $query->Where('vladimir_tag_number', '=', $search)
                     ->orWhere('tag_number', 'LIKE', "%$search%")
@@ -348,10 +352,9 @@ class PrintBarCodeController extends Controller
                     $query->where('account_title_name', 'LIKE', '%' . $search . '%');
                 });
             });
-
-        }
-        $assets = $fixedAssetQuery->paginate($limit);
-
+        }*/
+//        $assets = $fixedAssetQuery->paginate($limit);
+        $assets = $fixedAssetQuery->useFilters()->dynamicPaginate();
 
         // Return the result array
         $assets->getCollection()->transform(function ($asset) {
@@ -452,5 +455,4 @@ class PrintBarCodeController extends Controller
         });
         return $assets;
     }
-
 }
