@@ -32,7 +32,7 @@ class DivisionController extends Controller
                 'id' => $division->id,
                 'division_name' => $division->division_name,
                 'is_active' => $division->is_active,
-                'departments' => $division->department->map(function ($department) {
+                'sync_id' => $division->department->map(function ($department) {
                     return [
                         'department_name' => $department->department_name,
                         'sync_id' => $department->sync_id,

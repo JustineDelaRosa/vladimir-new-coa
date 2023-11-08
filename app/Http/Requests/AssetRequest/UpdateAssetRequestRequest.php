@@ -31,9 +31,10 @@ class UpdateAssetRequestRequest extends FormRequest
                 'required',
                 Rule::exists('type_of_requests', 'id')
             ],
-            'sub_capex_id' => ['required_if:type_of_request_id,' . $typeOfRequestIdForCapex, Rule::exists('sub_capexes', 'id')],
-            'asset_description' => 'required',
-            'asset_specification' => 'nullable',
+//            'charged_department_id' => ['required', Rule::exists('departments', 'id')],
+            'attachment_type' => 'required|in:Budgeted,Unbudgeted',
+//            'subunit_id' =>['required', Rule::exists('sub_units', 'id')],
+
             'accountability' => 'required|in:Personal Issued,Common',
             'accountable' => ['required_if:accountability,Personal Issued', 'exists:users,id',
                 function ($attribute, $value, $fail) {
@@ -59,9 +60,16 @@ class UpdateAssetRequestRequest extends FormRequest
                     }
                 },
             ],
+            'asset_description' => 'required',
+            'asset_specification' => 'nullable',
             'cellphone_number' => 'nullable|numeric',
             'brand' => 'nullable',
             'quantity' => 'required|numeric',
+            'letter_of_request' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+            'quotation' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+            'specification_form' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+            'tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+            'other_attachments' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
         ];
     }
 

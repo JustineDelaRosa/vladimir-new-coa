@@ -14,22 +14,44 @@ class CreateAssetRequestsTable extends Migration
     public function up()
     {
         Schema::create('asset_requests', function (Blueprint $table) {
+            //REQUEST FORM
             $table->increments('id');
             $table->unsignedInteger('requester_id');
-            $table->string('status')->default('For Approval by Approver 1');
-//            $table->string('remarks')->nullable();
+            $table->string('status')->default('Pending For 1st Approval');
+            $table->string('transaction_number')->index();
+            $table->string('reference_number');
+            $table->string('pr_number')->nullable();
+            $table->string('po_number')->nullable();
+
+            //TO BE FILL UP BY THE REQUESTER
+            $table->string('remarks')->nullable();
             $table->unsignedInteger('type_of_request_id');
-            $table->unsignedInteger('capex_id')->nullable();
-            $table->unsignedInteger('sub_capex_id')->nullable();
-            $table->string('vladimir_tag_number')->nullable();
-            $table->string('asset_description');
-            $table->string('asset_specification');
+            $table->UnsignedInteger('charged_department_id');
+            $table->unsignedInteger('subunit_id'); //For ChargedDepartment
             $table->enum('accountability', ['Personal Issued', 'Common']);
             $table->string('accountable')->nullable();
-            $table->string('cellphone_number');
-            $table->string('capitalized')->default('Capitalized');
+            $table->string('asset_description');
+            $table->string('asset_specification')->nullable();
+            $table->string('cellphone_number')->nullable();
             $table->string('brand');
             $table->string('quantity')->nullable();
+
+            //ATTACHMENT TYPE
+            $table->enum('attachment_type',['Budgeted', 'Unbudgeted']);
+            //ATTACHMENTS
+//            $table->text('letter_of_request')->nullable();
+//            $table->text('quotation')->nullable();
+//            $table->text('specification_form')->nullable();
+//            $table->text('tool_of_trade')->nullable();
+//            $table->json('other_attachments')->nullable();
+
+            //ADDITIONAL FIELDS TO BE ADDED
+//            $table->unsignedInteger('capex_id')->nullable();
+//            $table->unsignedInteger('sub_capex_id')->nullable();
+            $table->string('vladimir_tag_number')->nullable();
+
+            $table->string('capitalized')->default('Capitalized');
+
             $table->unsignedInteger('division_id')->nullable();
             $table->unsignedInteger('major_category_id')->nullable();
             $table->unsignedInteger('minor_category_id')->nullable();
@@ -63,11 +85,13 @@ class CreateAssetRequestsTable extends Migration
             $table->string('location')->nullable();
             $table->string('account_title_code')->nullable();
             $table->string('account_title')->nullable();
+            $table->integer('print_count')->default(0);
+            $table->timestamp('last_printed')->nullable();
 
             $table->foreign('requester_id')->references('id')->on('users');
             $table->foreign('type_of_request_id')->references('id')->on('type_of_requests');
-            $table->foreign('sub_capex_id')->references('id')->on('sub_capexes');
-            $table->foreign('capex_id')->references('id')->on('capexes');
+//            $table->foreign('sub_capex_id')->references('id')->on('sub_capexes');
+//            $table->foreign('capex_id')->references('id')->on('capexes');
             $table->foreign('division_id')->references('id')->on('divisions');
             $table->foreign('major_category_id')->references('id')->on('major_categories');
             $table->foreign('minor_category_id')->references('id')->on('minor_categories');

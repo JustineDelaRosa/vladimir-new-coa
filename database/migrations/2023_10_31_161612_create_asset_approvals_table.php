@@ -15,17 +15,18 @@ class CreateAssetApprovalsTable extends Migration
     {
         Schema::create('asset_approvals', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('asset_request_id');
+            $table->string('transaction_number');
             $table->unsignedInteger('approver_id');
             $table->unsignedInteger('requester_id');
             $table->Integer('layer');
             $table->string('status')->nullable();
             $table->timestamps();
 
-            $table->foreign('asset_request_id')->references('id')->on('asset_requests');
+//            $table->foreign('asset_request_id')->references('id')->on('asset_requests');
             $table->foreign('approver_id')->references('id')->on('approvers');
             $table->foreign('requester_id')->references('id')->on('users');
-            $table->unique(['asset_request_id', 'approver_id', 'requester_id', 'layer'], 'asset_approvals_unique');
+            $table->foreign('transaction_number')->references('transaction_number')->on('asset_requests');
+            $table->unique(['transaction_number', 'approver_id', 'requester_id', 'layer'], 'asset_approvals_unique');
         });
     }
 

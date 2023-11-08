@@ -30,19 +30,57 @@ class CreateAssetRequestRequest extends FormRequest
     public function rules(): array
     {
         if ($this->isMethod('POST')) {
-            $typeOfRequestIdForCapex = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
-            $requesterId = auth('sanctum')->user()->id;
-            return [
-                'requester_id' => [request()->merge(['requester_id' => $requesterId])],
-                'type_of_request_id' => [
+//            $typeOfRequestIdForCapex = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
+//            return [
+//                'requester_id' => [request()->merge(['requester_id' => $requesterId])],
+//                'type_of_request_id' => [
+//                    'required',
+//                    Rule::exists('type_of_requests', 'id')
+//                ],
+//                'sub_capex_id' => ['required_if:type_of_request_id,' . $typeOfRequestIdForCapex, Rule::exists('sub_capexes', 'id')],
+//                'asset_description' => 'required',
+//                'asset_specification' => 'nullable',
+//                'accountability' => 'required|in:Personal Issued,Common',
+//                'accountable' => ['required_if:accountability,Personal Issued', 'exists:users,id',
+//                    function ($attribute, $value, $fail) {
+//                        $accountable = request()->input('accountable');
+//                        //if the accountability is not Personal Issued, nullify the accountable field and return
+//                        if (request()->accountability != 'Personal Issued') {
+//                            request()->merge(['accountable' => null]);
+//                            return;
+//                        }
+//
+//                        // Get full ID number if it exists or fail validation
+//                        if (!empty($accountable['general_info']['full_id_number'])) {
+//                            $full_id_number = trim($accountable['general_info']['full_id_number']);
+//                            request()->merge(['accountable' => $full_id_number]);
+//                        } else {
+//                            $fail('The accountable person is required.');
+//                            return;
+//                        }
+//
+//                        // Validate full ID number
+//                        if (empty($full_id_number)) {
+//                            $fail('The accountable person cannot be empty.');
+//                        }
+//                    },
+//                ],
+//                'cellphone_number' => 'nullable|numeric',
+//                'brand' => 'nullable',
+//                'quantity' => 'required|numeric|min:1',
+//            ];
+            return[
+//                'userRequest' => ['required','array'],
+
+                'userRequest.*.type_of_request_id' => [
                     'required',
                     Rule::exists('type_of_requests', 'id')
                 ],
-                'sub_capex_id' => ['required_if:type_of_request_id,' . $typeOfRequestIdForCapex, Rule::exists('sub_capexes', 'id')],
-                'asset_description' => 'required',
-                'asset_specification' => 'nullable',
-                'accountability' => 'required|in:Personal Issued,Common',
-                'accountable' => ['required_if:accountability,Personal Issued', 'exists:users,id',
+                'userRequest.*.charged_department_id' => ['required', Rule::exists('departments', 'id')],
+                'userRequest.*.attachment_type' => 'required|in:Budgeted,Unbudgeted',
+                'userRequest.*.subunit_id' =>['required', Rule::exists('sub_units', 'id')],
+                'userRequest.*.accountability' => 'required|in:Personal Issued,Common',
+                'userRequest.*.accountable' => ['required_if:accountability,Personal Issued', 'exists:users,id',
                     function ($attribute, $value, $fail) {
                         $accountable = request()->input('accountable');
                         //if the accountability is not Personal Issued, nullify the accountable field and return
@@ -66,9 +104,16 @@ class CreateAssetRequestRequest extends FormRequest
                         }
                     },
                 ],
-                'cellphone_number' => 'nullable|numeric',
-                'brand' => 'nullable',
-                'quantity' => 'required|numeric|min:1',
+                'userRequest.*.asset_description' => 'required',
+                'userRequest.*.asset_specification' => 'nullable',
+                'userRequest.*.cellphone_number' => 'nullable|numeric',
+                'userRequest.*.brand' => 'nullable',
+                'userRequest.*.quantity' => 'required|numeric|min:1',
+                'userRequest.*.letter_of_request' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+                'userRequest.*.quotation' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+                'userRequest.*.specification_form' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+                'userRequest.*.tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+                'userRequest.*.other_attachments' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
             ];
         }
 
@@ -77,31 +122,47 @@ class CreateAssetRequestRequest extends FormRequest
                 'request_id' => ['required','array','exists:asset_requests,id'],
             ];
         }
+        return [];
     }
 
     function messages(): array
     {
         return [
-            'requester_id.required' => 'The requester field is required',
-            'requester_id.exists' => 'The selected requester is invalid',
-            'type_of_request_id.required' => 'The type of request field is required',
-            'type_of_request_id.exists' => 'The selected type of request is invalid',
-            'sub_capex_id.required_if' => 'The sub capex field is required when type of request is capex',
-            'sub_capex_id.exists' => 'The selected sub capex is invalid',
-            'asset_description.required' => 'The asset description field is required',
-            'accountability.required' => 'The accountability field is required',
-            'accountability.in' => 'The selected accountability is invalid',
-            'accountable.required_if' => 'The accountable field is required',
-            'accountable.exists' => 'The selected accountable is invalid',
-//            'accountable.validateAccountable' => 'The selected accountable is invalids',
-            'cellphone_number.numeric' => 'The cellphone number must be a number',
-            'brand.required' => 'The brand field is required',
-            'quantity.required' => 'The quantity field is required',
-            'quantity.numeric' => 'The quantity must be a number',
-            'quantity.min' => 'The quantity must be at least 1',
-            'request_id.required' => 'The request field is required',
-            'request_id.array' => 'The request must be an array',
-            'request_id.exists' => 'The selected request is invalid',
+            'userRequest.*.type_of_request_id.required' => 'The type of request is required.',
+            'userRequest.*.type_of_request_id.exists' => 'The type of request is invalid.',
+            'userRequest.*.charged_department_id.required' => 'The charged department is required.',
+            'userRequest.*.charged_department_id.exists' => 'The charged department is invalid.',
+            'userRequest.*.attachment_type.required' => 'The attachment type is required.',
+            'userRequest.*.attachment_type.in' => 'The attachment type is invalid.',
+            'userRequest.*.subunit_id.required' => 'The subunit is required.',
+            'userRequest.*.subunit_id.exists' => 'The subunit is invalid.',
+            'userRequest.*.accountability.required' => 'The accountability is required.',
+            'userRequest.*.accountability.in' => 'The accountability is invalid.',
+            'userRequest.*.accountable.required_if' => 'The accountable is required.',
+            'userRequest.*.accountable.exists' => 'The accountable is invalid.',
+            'userRequest.*.asset_description.required' => 'The asset description is required.',
+            'userRequest.*.asset_specification.required' => 'The asset specification is required.',
+            'userRequest.*.cellphone_number.numeric' => 'The cellphone number must be a number.',
+            'userRequest.*.brand.required' => 'The brand is required.',
+            'userRequest.*.quantity.required' => 'The quantity is required.',
+            'userRequest.*.quantity.numeric' => 'The quantity must be a number.',
+            'userRequest.*.quantity.min' => 'The quantity must be at least 1.',
+            'userRequest.*.letter_of_request.file' => 'The letter of request must be a file.',
+            'userRequest.*.letter_of_request.mimes' => 'The letter of request must be a file of type: pdf, doc, docx, xls, xlsx.',
+            'userRequest.*.letter_of_request.max' => 'The letter of request may not be greater than 10000 kilobytes.',
+            'userRequest.*.quotation.file' => 'The quotation must be a file.',
+            'userRequest.*.quotation.mimes' => 'The quotation must be a file of type: pdf, doc, docx, xls, xlsx.',
+            'userRequest.*.quotation.max' => 'The quotation may not be greater than 10000 kilobytes.',
+            'userRequest.*.specification_form.file' => 'The specification form must be a file.',
+            'userRequest.*.specification_form.mimes' => 'The specification form must be a file of type: pdf, doc, docx, xls, xlsx.',
+            'userRequest.*.specification_form.max' => 'The specification form may not be greater than 10000 kilobytes.',
+            'userRequest.*.tool_of_trade.file' => 'The tool of trade must be a file.',
+            'userRequest.*.tool_of_trade.mimes' => 'The tool of trade must be a file of type: pdf, doc, docx, xls, xlsx.',
+            'userRequest.*.tool_of_trade.max' => 'The tool of trade may not be greater than 10000 kilobytes.',
+            'userRequest.*.other_attachments.file' => 'The other attachments must be a file.',
+            'userRequest.*.other_attachments.mimes' => 'The other attachments must be a file of type: pdf, doc, docx, xls, xlsx.',
+            'userRequest.*.other_attachments.max' => 'The other attachments may not be greater than 10000 kilobytes.',
+
         ];
     }
 }

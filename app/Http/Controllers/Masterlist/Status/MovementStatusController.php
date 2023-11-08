@@ -23,7 +23,7 @@ class MovementStatusController extends Controller
         $movementStatus = MovementStatus::withTrashed()->where('is_active', $isActiveStatus)
             ->orderByDesc('created_at')
             ->useFilters()
-            ->dynamicPagination();
+            ->dynamicPaginate();
 
         return $movementStatus;
     }

@@ -11,16 +11,31 @@ use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 
-class AssetRequest extends Model
+class AssetRequest extends Model implements HasMedia
 {
-    use HasFactory, Filterable;
+    use HasFactory, Filterable, InteractsWithMedia;
 
 
     protected $guarded = [];
 
     protected string $default_filters = AssetRequestFilters::class;
+
+    public function last(){
+        return static::all()->last();
+    }
+
+    public function generateReferenceNumber(): string
+    {
+        $last = $this->last();
+        $lastId = $last ? $last->id : 0;
+        $referenceNumber = str_pad($lastId + 1, 4, '0', STR_PAD_LEFT);
+        return $referenceNumber;
+    }
+
 
     public function currentApprover()
     {
@@ -38,6 +53,13 @@ class AssetRequest extends Model
         return $this->hasMany(AssetApproval::class, 'asset_request_id', 'id');
     }
 
+    public function chargedDepartment(){
+        return $this->belongsTo(Department::class , 'charged_department_id' , 'id');
+    }
+
+    public function subunit(){
+        return $this->belongsTo(Subunit::class , 'subunit_id' , 'id');
+    }
 
     public function typeOfRequest()
     {
@@ -54,7 +76,7 @@ class AssetRequest extends Model
         return $this->belongsTo(SubCapex::class, 'sub_capex_id', 'id');
     }
 
-    public function requester()
+    public function requestor()
     {
         return $this->belongsTo(User::class, 'requester_id', 'id');
     }
