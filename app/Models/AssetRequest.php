@@ -11,29 +11,69 @@ use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 
 class AssetRequest extends Model implements HasMedia
 {
-    use HasFactory, Filterable, InteractsWithMedia;
+    use HasFactory, Filterable, InteractsWithMedia, SoftDeletes;
 
 
     protected $guarded = [];
 
     protected string $default_filters = AssetRequestFilters::class;
 
-    public function last(){
-        return static::all()->last();
+    protected function last(){
+        $lastRecord = null;
+        try {
+            $lastRecord = static::withTrashed()->latest()->first();
+        } catch (\Exception $e) {
+            //add more appropriate exception handling here.
+        }
+        return $lastRecord;
     }
 
-    public function generateReferenceNumber(): string
+    public function generateReferenceNumber(): ?string
     {
-        $last = $this->last();
-        $lastId = $last ? $last->id : 0;
-        $referenceNumber = str_pad($lastId + 1, 4, '0', STR_PAD_LEFT);
-        return $referenceNumber;
+        try {
+            $referenceNumber = null;
+
+            DB::transaction(function () use (&$referenceNumber) {
+                // Get last row with "FOR UPDATE" to prevent other processes from reading the same row
+                $last = static::withTrashed()->latest()->lockForUpdate()->first();
+
+                $lastId = $last ? $last->id : 0;
+                $referenceNumber = str_pad($lastId + 1, 4, '0', STR_PAD_LEFT);
+
+                // Here continue your operation, like record creation that uses the generated referenceNumber.
+            });
+
+            return $referenceNumber;
+        } catch (\Exception $e) {
+            // Handle exception if necessary
+            return null;
+        }
+    }
+
+    public static function generateTransactionNumber(): ?string
+    {
+        $transactionNumber = null;
+
+        DB::transaction(function () use (&$transactionNumber) {
+            $lastTransaction = AssetRequest::withTrashed()
+                ->orderBy('transaction_number', 'desc')
+                ->lockForUpdate()
+                ->first();
+
+            $nextNumber = $lastTransaction ? $lastTransaction->transaction_number + 1 : 1;
+            $transactionNumber = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+
+        });
+
+        return $transactionNumber;
     }
 
 

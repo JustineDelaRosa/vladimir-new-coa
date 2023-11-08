@@ -7,6 +7,7 @@ use App\Filters\SubUnitFilters;
 use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class SubUnit extends Model
 {
@@ -50,11 +51,18 @@ protected string $default_filters = SubUnitFilters::class;
     }
 
     //TODO: Temporary solution for generating sub unit code
-    public function generateCode(){
-        $subUnit = self::latest()->first();
-        $subUnitId = $subUnit->id;
-        $subUnitId = $subUnitId + 1;
-        $subUnitId = str_pad($subUnitId, 4, '0', STR_PAD_LEFT);
-        return $subUnitId;
+
+    public function generateCode()
+    {
+        $subUnitCode = null;
+
+        DB::transaction(function() use (&$subUnitCode) {
+            $subUnit = self::latest()->lockForUpdate()->first();
+            $subUnitCode = (!empty($subUnit)) ? $subUnit->id + 1 : 1;
+            $subUnitCode = str_pad($subUnitCode, 4, '0', STR_PAD_LEFT);
+
+        });
+
+        return $subUnitCode;
     }
 }

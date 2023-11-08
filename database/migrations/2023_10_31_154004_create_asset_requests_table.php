@@ -86,10 +86,13 @@ class CreateAssetRequestsTable extends Migration
             $table->string('account_title_code')->nullable();
             $table->string('account_title')->nullable();
             $table->integer('print_count')->default(0);
+            $table->softDeletes();
             $table->timestamp('last_printed')->nullable();
 
             $table->foreign('requester_id')->references('id')->on('users');
             $table->foreign('type_of_request_id')->references('id')->on('type_of_requests');
+            $table->foreign('charged_department_id')->references('id')->on('departments');
+            $table->foreign('subunit_id')->references('id')->on('sub_units');
 //            $table->foreign('sub_capex_id')->references('id')->on('sub_capexes');
 //            $table->foreign('capex_id')->references('id')->on('capexes');
             $table->foreign('division_id')->references('id')->on('divisions');

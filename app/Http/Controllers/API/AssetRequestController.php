@@ -32,7 +32,7 @@ class AssetRequestController extends Controller
 
     public function index(Request $request)
     {
-        $assetRequest = $this->handleAssetRequest($request);
+        $assetRequest = $this->transformIndexAssetRequest($request);
         return $assetRequest;
     }
 
@@ -41,9 +41,10 @@ class AssetRequestController extends Controller
         $userRequest = $request->userRequest;
         $requesterId = auth('sanctum')->user()->id;
 
-        $lastTransaction = AssetRequest::orderBy('transaction_number', 'desc')->first();
-        $transactionNumber = $lastTransaction ? $lastTransaction->transaction_number + 1 : 1;
-        $transactionNumber = str_pad($transactionNumber, 4, '0', STR_PAD_LEFT);
+//        $lastTransaction = AssetRequest::withTrashed()->orderBy('transaction_number', 'desc')->first();
+//        $transactionNumber = $lastTransaction ? $lastTransaction->transaction_number + 1 : 1;
+//        $transactionNumber = str_pad($transactionNumber, 4, '0', STR_PAD_LEFT);
+        $transactionNumber = AssetRequest::generateTransactionNumber();
 
         foreach ($userRequest as $request) {
             $assetRequest = AssetRequest::create([
@@ -195,5 +196,28 @@ class AssetRequestController extends Controller
         }
 
         return $this->responseSuccess('AssetRequest updated Successfully');
+    }
+
+    public function removeRequestItem($referenceNumber){
+
+        return $this->voidAssetRequest($referenceNumber);
+//        $assetRequest = $this->getAssetRequest($referenceNumber);
+//        if (!$assetRequest) {
+//            return $this->responseUnprocessable('Asset Request not found.');
+//        }
+//        if ($this->requestCount($assetRequest->transaction_number) == 1) {
+//            $assetRequest->update([
+//                'status' => 'Void'
+//            ]);
+//            $this->updateToVoid($assetRequest->transaction_number, 'Void');
+//            $assetRequest->delete();
+//            return $this->responseSuccess('Asset Request voided Successfully');
+//        }
+//
+//        $assetRequest->update([
+//            'status' => 'Void'
+//        ]);
+//        $assetRequest->delete();
+//        return $this->responseSuccess('Asset Request voided Successfully more');
     }
 }

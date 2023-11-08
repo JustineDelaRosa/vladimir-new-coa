@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\Models\AssetApproval;
 use App\Models\AssetRequest;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -10,8 +11,7 @@ trait AssetRequestHandler
     public function getAssetRequest($referenceNumber)
     {
         return AssetRequest::where('reference_number', $referenceNumber)
-            ->where('status', 'Pending For 1st Approval')
-            ->where('status', 'denied')
+            ->whereIn('status', ['Pending For 1st Approval', 'Denied'])
             ->first();
     }
 
@@ -178,5 +178,50 @@ trait AssetRequestHandler
                 ]
             ];
         });
+    }
+
+
+
+
+
+
+
+    public function voidAssetRequest($referenceNumber)
+    {
+        $assetRequest = $this->getAssetRequest($referenceNumber);
+
+        if (!$assetRequest) {
+            return $this->responseUnprocessable('Asset Request not found.');
+        }
+
+        if ($this->requestCount($assetRequest->transaction_number) == 1) {
+            $assetRequest->update([
+                'status' => 'Void'
+            ]);
+
+            $this->updateToVoid($assetRequest->transaction_number, 'Void');
+
+            $assetRequest->delete();
+
+            return $this->responseSuccess('Asset Request voided Successfully');
+        }
+
+        $assetRequest->update([
+            'status' => 'Void'
+        ]);
+        $assetRequest->delete();
+
+        return $this->responseSuccess('Asset Request voided Successfully more');
+    }
+
+    public function requestCount($transactionNumber){
+        $requestCount = AssetRequest::where('transaction_number', $transactionNumber)->count();
+        return $requestCount;
+    }
+
+    public function updateToVoid($transactionNumber, $status){
+
+        return AssetApproval::where('transaction_number', $transactionNumber)
+            ->update(['status' => $status]);
     }
 }

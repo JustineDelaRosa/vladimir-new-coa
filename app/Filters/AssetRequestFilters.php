@@ -31,7 +31,7 @@ class AssetRequestFilters extends QueryFilters
     ];
 
     protected array $relationSearch = [
-        'requester' => ['username', 'employee_id', 'firstname', 'lastname'],
+        'requestor' => ['username', 'employee_id', 'firstname', 'lastname'],
 //        'typeOfRequest' => ['type_of_request_name'],
     ];
 }
