@@ -25,8 +25,8 @@ class CreateAssetApprovalRequest extends FormRequest
     {
         if ($this->isMethod('PATCH')) {
             return [
-                'asset_approval_id' => 'one_array_present:asset_request_id|exists:asset_approvals,id|array',
-                'asset_request_id' => 'one_array_present:asset_approval_id|exists:asset_requests,id|array',
+                'asset_approval_id' => 'required|exists:asset_approvals,id',
+//                'asset_request_id' => 'one_array_present:asset_approval_id|exists:asset_requests,id|array',
                 'action' => 'required|string|in:Approved,Denied,Void'
             ];
         }

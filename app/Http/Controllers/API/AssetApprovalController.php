@@ -4,8 +4,11 @@ namespace App\Http\Controllers\API;
 
 use App\Models\Approvers;
 use App\Models\AssetApproval;
+use App\Models\AssetRequest;
 use App\Models\RoleManagement;
 use App\Repositories\ApprovedRequestRepository;
+use App\Traits\AssetApprovalHandler;
+use App\Traits\AssetRequestHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Essa\APIToolKit\Filters\DTO\FiltersDTO;
 use Illuminate\Http\Request;
@@ -19,7 +22,7 @@ use Spatie\Activitylog\Models\Activity;
 
 class AssetApprovalController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, AssetApprovalHandler, assetRequestHandler;
 
     private $approveRequestRepository;
 
@@ -30,6 +33,16 @@ class AssetApprovalController extends Controller
 
     public function index()
     {
+
+//        $approved = AssetApproval::find(3);
+//        if($approved){
+//            return $activities = Activity::forSubject($approved)->get();
+//        }else{
+//            return  $activities = Activity::all();
+//        }
+
+
+
         $user = auth('sanctum')->user();
         $role = RoleManagement::whereId($user->role_id)->value('role_name');
         $adminRoles = ['Super Admin', 'Admin', 'ERP'];
@@ -41,58 +54,7 @@ class AssetApprovalController extends Controller
         }
 
         $assetApprovals = $assetApprovalsQuery->where('status', 'For Approval')->useFilters()->dynamicPaginate();
-        $assetApprovals->transform(function ($assetApproval) {
-            return [
-                'id' => $assetApproval->id,
-                'status' => $assetApproval->status,
-                'requester' => [
-                    'id' => $assetApproval->requester->id,
-                    'username' => $assetApproval->requester->username,
-                    'employee_id' => $assetApproval->requester->employee_id,
-                    'firstname' => $assetApproval->requester->firstname,
-                    'lastname' => $assetApproval->requester->lastname,
-                ],
-                'layer' => $assetApproval->layer,
-                'approver' => [
-                    'id' => $assetApproval->approver->user->id,
-                    'username' => $assetApproval->approver->user->username,
-                    'employee_id' => $assetApproval->approver->user->employee_id,
-                    'firstname' => $assetApproval->approver->user->firstname,
-                    'lastname' => $assetApproval->approver->user->lastname,
-                ],
-                'asset_request' => [
-                    'id' => $assetApproval->assetRequest->id,
-                    'status' => $assetApproval->assetRequest->status,
-                    'requester' => [
-                        'id' => $assetApproval->assetRequest->requester->id,
-                        'username' => $assetApproval->assetRequest->requester->username,
-                        'employee_id' => $assetApproval->assetRequest->requester->employee_id,
-                        'firstname' => $assetApproval->assetRequest->requester->firstname,
-                        'lastname' => $assetApproval->assetRequest->requester->lastname,
-                    ],
-                    'type_of_request' => [
-                        'id' => $assetApproval->assetRequest->typeOfRequest->id,
-                        'type_of_request_name' => $assetApproval->assetRequest->typeOfRequest->type_of_request_name,
-                    ],
-                    'capex' => [
-                        'id' => $assetApproval->assetRequest->capex->id ?? '-',
-                        'capex_name' => $assetApproval->assetRequest->capex->capex_name ?? '-',
-                    ],
-                    'sub_capex' => [
-                        'id' => $assetApproval->assetRequest->subCapex->id ?? '-',
-                        'sub_capex_name' => $assetApproval->assetRequest->subCapex->sub_capex_name ?? '-',
-                    ],
-                    'asset_description' => $assetApproval->assetRequest->asset_description,
-                    'asset_specification' => $assetApproval->assetRequest->asset_specification ?? '-',
-                    'accountability' => $assetApproval->assetRequest->accountability,
-                    'accountable' => $assetApproval->assetRequest->accountable ?? '-',
-                    'cellphone_number' => $assetApproval->assetRequest->cellphone_number ?? '-',
-                    'brand' => $assetApproval->assetRequest->brand ?? '-',
-                ],
-            ];
-        });
-
-        return $assetApprovals;
+        return $this->transformIndexApproval($assetApprovals);
     }
 
     public function store(CreateAssetApprovalRequest $request): JsonResponse
@@ -102,7 +64,7 @@ class AssetApprovalController extends Controller
         return $this->responseCreated('AssetApproval created successfully', $assetApproval);
     }
 
-    public function show($id): JsonResponse
+    public function show($id)
     {
         $user = auth('sanctum')->user();
         $role = RoleManagement::whereId($user->role_id)->value('role_name');
@@ -114,57 +76,12 @@ class AssetApprovalController extends Controller
         }
         $assetApproval = $assetApprovalQuery->where('id', $id)->first();
         if (!$assetApproval) {
-            return $this->responseUnprocessable('Unauthorized for asset approval');
+            return $this->responseUnprocessable('Unauthorized Access');
         }
+        $assetRequest = AssetRequest::where('transaction_number', $assetApproval->transaction_number)
+            ->get();
+        return $this->transformShowAssetRequest($assetRequest);
 
-        return $this->responseSuccess('Successfully fetched AssetApproval', [
-            'id' => $assetApproval->id,
-            'status' => $assetApproval->status,
-            'requester' => [
-                'id' => $assetApproval->requester->id,
-                'username' => $assetApproval->requester->username,
-                'employee_id' => $assetApproval->requester->employee_id,
-                'firstname' => $assetApproval->requester->firstname,
-                'lastname' => $assetApproval->requester->lastname,
-            ],
-            'layer' => $assetApproval->layer,
-            'approver' => [
-                'id' => $assetApproval->approver->user->id,
-                'username' => $assetApproval->approver->user->username,
-                'employee_id' => $assetApproval->approver->user->employee_id,
-                'firstname' => $assetApproval->approver->user->firstname,
-                'lastname' => $assetApproval->approver->user->lastname,
-            ],
-            'asset_request' => [
-                'id' => $assetApproval->assetRequest->id,
-                'status' => $assetApproval->assetRequest->status,
-                'requester' => [
-                    'id' => $assetApproval->assetRequest->requester->id,
-                    'username' => $assetApproval->assetRequest->requester->username,
-                    'employee_id' => $assetApproval->assetRequest->requester->employee_id,
-                    'firstname' => $assetApproval->assetRequest->requester->firstname,
-                    'lastname' => $assetApproval->assetRequest->requester->lastname,
-                ],
-                'type_of_request' => [
-                    'id' => $assetApproval->assetRequest->typeOfRequest->id,
-                    'type_of_request_name' => $assetApproval->assetRequest->typeOfRequest->type_of_request_name,
-                ],
-                'capex' => [
-                    'id' => $assetApproval->assetRequest->capex->id ?? '-',
-                    'capex_name' => $assetApproval->assetRequest->capex->capex_name ?? '-',
-                ],
-                'sub_capex' => [
-                    'id' => $assetApproval->assetRequest->subCapex->id ?? '-',
-                    'sub_capex_name' => $assetApproval->assetRequest->subCapex->sub_capex_name ?? '-',
-                ],
-                'asset_description' => $assetApproval->assetRequest->asset_description,
-                'asset_specification' => $assetApproval->assetRequest->asset_specification ?? '-',
-                'accountability' => $assetApproval->assetRequest->accountability,
-                'accountable' => $assetApproval->assetRequest->accountable ?? '-',
-                'cellphone_number' => $assetApproval->assetRequest->cellphone_number ?? '-',
-                'brand' => $assetApproval->assetRequest->brand ?? '-',
-            ],
-        ]);
     }
 
     public function update(UpdateAssetApprovalRequest $request, AssetApproval $assetApproval): JsonResponse
@@ -184,7 +101,7 @@ class AssetApprovalController extends Controller
     public function handleRequest(CreateAssetApprovalRequest $request): JsonResponse
     {
         $assetApprovalIds = $request->asset_approval_id;
-        $assetRequestIds = $request->asset_request_id;
+//        $assetRequestIds = $request->asset_request_id;
         $action = ucwords($request->action);
 
         switch ($action) {
@@ -194,9 +111,9 @@ class AssetApprovalController extends Controller
             case 'Denied':
                 return $this->approveRequestRepository->disapproveRequest($assetApprovalIds);
                 break;
-            case 'Void':
-                return $this->approveRequestRepository->voidRequest($assetRequestIds);
-                break;
+//            case 'Void':
+//                return $this->approveRequestRepository->voidRequest($assetRequestIds);
+//                break;
             default:
                 return $this->responseUnprocessable('Invalid Action');
                 break;

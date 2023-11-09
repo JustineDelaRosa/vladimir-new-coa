@@ -28,7 +28,7 @@ class AssetApproval extends Model
 
     public function assetRequest()
     {
-        return $this->belongsTo(AssetRequest::class, 'asset_request_id', 'id');
+        return $this->belongsTo(AssetRequest::class, 'transaction_number', 'transaction_number');
     }
 
     public function approver()
