@@ -12,36 +12,36 @@ class ApprovedRequestRepository
 {
     use ApiResponse;
 
-    public function approveRequest(array $assetApprovalId): JsonResponse
+    public function approveRequest($assetApprovalId): JsonResponse
     {
-        foreach ($assetApprovalId as $id) {
-            $assetApproval = $this->findAssetApproval($id);
-            $approverId = $this->findApproverId();
+
+        $assetApproval = $this->findAssetApproval($assetApprovalId);
+        $approverId = $this->findApproverId();
 
 
-            if ($this->isInvalidApprover($assetApproval->approver_id, $approverId)) {
-                return $this->responseUnprocessable('You are not the approver of this request');
-            }
-
-            if ($this->alreadyApproved($id)) {
-                return $this->responseUnprocessable('You already approved this request');
-            }
-
-            if ($this->checkStatus($id)) {
-                return $this->responseUnprocessable('Its not your turn for this request');
-            }
-
-            $this->updateAssetApprovalStatus($assetApproval, 'Approved');
-
-            $nextLayerOfApprover = $this->findNextLayerApprover($assetApproval, $assetApproval->asset_request_id,);
-
-            if (empty($nextLayerOfApprover)) {
-                $this->updateAssetRequestStatus($assetApproval->assetRequest, 'Approved');
-            } else {
-                $this->updateAssetApprovalStatus($nextLayerOfApprover, 'For Approval');
-                $this->updateAssetRequestStatus($assetApproval->assetRequest, 'For Approval of Approver ' . ($assetApproval->layer + 1));
-            }
+        if ($this->isInvalidApprover($assetApproval->approver_id, $approverId)) {
+            return $this->responseUnprocessable('You are not the approver of this request');
         }
+
+        if ($this->alreadyApproved($assetApprovalId)) {
+            return $this->responseUnprocessable('You already approved this request');
+        }
+
+        if ($this->checkStatus($assetApprovalId)) {
+            return $this->responseUnprocessable('Its not your turn for this request');
+        }
+
+        $this->updateAssetApprovalStatus($assetApproval, 'Approved');
+
+        $nextLayerOfApprover = $this->findNextLayerApprover($assetApproval, $assetApproval->transaction_number,);
+
+        if (empty($nextLayerOfApprover)) {
+            $this->updateAssetRequestStatus($assetApproval->transaction_number, 'Approved');
+        } else {
+            $this->updateAssetApprovalStatus($nextLayerOfApprover, 'For Approval');
+            $this->updateAssetRequestStatus($assetApproval->transaction_number, 'For Approval of Approver ' . ($assetApproval->layer + 1));
+        }
+
         return $this->responseSuccess('Asset Request Approved Successfully');
     }
 
@@ -64,7 +64,7 @@ class ApprovedRequestRepository
 
             $this->updateAssetApprovalStatus($assetApproval, 'Denied');
 
-            $this->updateAssetRequestStatus($assetApproval->assetRequest, 'Denied');
+            $this->updateAssetRequestStatus($assetApproval->transaction_number, 'Denied');
         }
         return $this->responseSuccess('Asset Request Denied Successfully');
     }
@@ -80,7 +80,7 @@ class ApprovedRequestRepository
                 return $this->responseUnprocessable('Invalid Action');
             }
             $this->updateToNullOrVoid($id);
-            $this->updateAssetRequestStatus($assetApproval->assetRequest, 'For Approval of Approver ' . ($assetApproval->layer));
+            $this->updateAssetRequestStatus($assetApproval->transaction_number, 'For Approval of Approver ' . ($assetApproval->layer));
             $this->updateAssetApprovalStatus($assetApproval, 'For Approval');
             $this->logActivity($assetApproval, 'Resubmitted');
         }
@@ -88,35 +88,35 @@ class ApprovedRequestRepository
     }
 
     //VOID REQUEST
-    public function voidRequest($assetRequestIds): JsonResponse
-    {
-        foreach ($assetRequestIds as $id) {
-            $assetRequest = AssetRequest::where('id', $id)->where('status', 'Denied')->first();
-            if (!$assetRequest) {
-                return $this->responseUnprocessable('Invalid Action');
-            }
-            $this->updateAssetRequestStatus($assetRequest, 'Void');
-            $this->updateToNullOrVoid($id, 'Void');
-            activity()
-                ->causedBy(auth('sanctum')->user())
-                ->performedOn($assetRequest)
-                ->withProperties(
-                    [
-                        'asset_request_id' => $assetRequest->id,
-                        'requester' => [
-                            'id' => $assetRequest->requester->id,
-                            'firstname' => $assetRequest->requester->firstname,
-                            'lastname' => $assetRequest->requester->lastname,
-                            'employee_id' => $assetRequest->requester->employee_id,
-                        ],
-                        'status' => 'Void',
-                    ]
-                )
-                ->inLog('Void')
-                ->log('Asset Request Voided by ' . auth('sanctum')->user()->employee_id . '.');
-        }
-        return $this->responseSuccess('Asset Request Voided Successfully');
-    }
+//    public function voidRequest($assetRequestIds): JsonResponse
+//    {
+//        foreach ($assetRequestIds as $id) {
+//            $assetRequest = AssetRequest::where('id', $id)->where('status', 'Denied')->first();
+//            if (!$assetRequest) {
+//                return $this->responseUnprocessable('Invalid Action');
+//            }
+//            $this->updateAssetRequestStatus($assetRequest->transaction_number, 'Void');
+//            $this->updateToNullOrVoid($id, 'Void');
+//            activity()
+//                ->causedBy(auth('sanctum')->user())
+//                ->performedOn($assetRequest)
+//                ->withProperties(
+//                    [
+//                        'asset_request_id' => $assetRequest->id,
+//                        'requester' => [
+//                            'id' => $assetRequest->requester->id,
+//                            'firstname' => $assetRequest->requester->firstname,
+//                            'lastname' => $assetRequest->requester->lastname,
+//                            'employee_id' => $assetRequest->requester->employee_id,
+//                        ],
+//                        'status' => 'Void',
+//                    ]
+//                )
+//                ->inLog('Void')
+//                ->log('Asset Request Voided by ' . auth('sanctum')->user()->employee_id . '.');
+//        }
+//        return $this->responseSuccess('Asset Request Voided Successfully');
+//    }
 
 
     private function findAssetApproval(int $id)
@@ -143,17 +143,19 @@ class ApprovedRequestRepository
         }
     }
 
-    private function findNextLayerApprover($assetApproval, $requestId)
+    private function findNextLayerApprover($assetApproval, $transactionNumber)
     {
         return AssetApproval::where([
             'requester_id' => $assetApproval->requester_id,
-            'asset_request_id' => $requestId,
+            'transaction_number' => $transactionNumber,
         ])->where('layer', $assetApproval->layer + 1)->first();
     }
 
-    private function updateAssetRequestStatus($assetRequest, string $status)
+    private function updateAssetRequestStatus($transactionNumber, string $status)
     {
-        $assetRequest->update(['status' => $status]);
+        //foreach asset request with the same transaction number update the status
+        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->get();
+        $assetRequest->each->update(['status' => $status]);
     }
 
     private function checkStatus($requestApprovalId): bool
@@ -183,6 +185,9 @@ class ApprovedRequestRepository
             ->performedOn($assetApproval)
             ->withProperties($this->composeLogProperties($assetApproval, $status))
             ->inLog($status)
+            ->tap(function ($activity) use ($user, $status) {
+                $activity->subject_id = '0001';
+            })
             ->log('Asset Approval Status Updated to ' . $status . ' by ' . $user->employee_id . '.');
     }
 
@@ -210,11 +215,12 @@ class ApprovedRequestRepository
         ];
     }
 
-    private function updateToNullOrVoid($requestId, $status = null){
+    private function updateToNullOrVoid($requestId, $status = null)
+    {
         $assetApproval = AssetApproval::where('asset_request_id', $requestId)->get();
-        if($status == 'Void'){
+        if ($status == 'Void') {
             $assetApproval->each->update(['status' => 'Void']);
-        }else{
+        } else {
             $assetApproval->each->update(['status' => null]);
         }
     }

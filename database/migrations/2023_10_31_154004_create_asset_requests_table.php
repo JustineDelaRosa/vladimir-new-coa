@@ -17,7 +17,7 @@ class CreateAssetRequestsTable extends Migration
             //REQUEST FORM
             $table->increments('id');
             $table->unsignedInteger('requester_id');
-            $table->string('status')->default('Pending For 1st Approval');
+            $table->string('status')->default('For Approval of Approver 1');
             $table->string('transaction_number')->index();
             $table->string('reference_number');
             $table->string('pr_number')->nullable();

@@ -90,7 +90,7 @@ class AssetRequest extends Model implements HasMedia
 
     public function assetApproval()
     {
-        return $this->hasMany(AssetApproval::class, 'asset_request_id', 'id');
+        return $this->hasMany(AssetApproval::class, 'transaction_number', 'transaction_number');
     }
 
     public function chargedDepartment(){

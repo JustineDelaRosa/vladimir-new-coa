@@ -8,13 +8,19 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 trait AssetRequestHandler
 {
-    public function getAssetRequest($referenceNumber)
+    public function getAssetRequest($field, $value, $singleResult = true)
     {
-        return AssetRequest::where('reference_number', $referenceNumber)
-            ->whereIn('status', ['Pending For 1st Approval', 'Denied'])
-            ->first();
-    }
+        $query = AssetRequest::where($field, $value)
+            ->whereIn('status', ['Pending For 1st Approval', 'Denied']);
 
+        return $singleResult ? $query->first() : $query->get();
+    }
+    public function getAssetRequestByTransactionNumber($transactionNumber)
+    {
+        return AssetRequest::where('transaction_number', $transactionNumber)
+            ->whereIn('status', ['Pending For 1st Approval', 'Denied'])
+            ->get();
+    }
     public function updateAssetRequest($assetRequest, $request)
     {
         return $assetRequest->update([
@@ -29,7 +35,6 @@ trait AssetRequestHandler
             'quantity' => $request->quantity,
         ]);
     }
-
     public function handleMediaAttachments($assetRequest, $request)
     {
         $collections = [
@@ -180,15 +185,9 @@ trait AssetRequestHandler
         });
     }
 
-
-
-
-
-
-
-    public function voidAssetRequest($referenceNumber)
+    public function voidRequestItem($referenceNumber)
     {
-        $assetRequest = $this->getAssetRequest($referenceNumber);
+        $assetRequest = $this->getAssetRequest('reference_number',$referenceNumber);
 
         if (!$assetRequest) {
             return $this->responseUnprocessable('Asset Request not found.');
@@ -211,7 +210,24 @@ trait AssetRequestHandler
         ]);
         $assetRequest->delete();
 
-        return $this->responseSuccess('Asset Request voided Successfully more');
+        return $this->responseSuccess('Asset Request voided Successfully');
+    }
+
+    public function voidAssetRequest($transactionNumber){
+
+       $assetRequest = $this->getAssetRequest('transaction_number', $transactionNumber, false);
+
+        if ($assetRequest->isEmpty()) {
+            return $this->responseUnprocessable('Asset Request not found.');
+        }
+        $this->updateToVoid($transactionNumber, 'Void');
+        foreach($assetRequest as $ar){
+            $ar->update([
+                'status' => 'Void'
+            ]);
+            $ar->delete();
+        }
+        return $this->responseSuccess('Asset Request voided Successfully');
     }
 
     public function requestCount($transactionNumber){

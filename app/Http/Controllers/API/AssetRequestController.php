@@ -18,6 +18,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AssetRequest\CreateAssetRequestRequest;
 use App\Http\Requests\AssetRequest\UpdateAssetRequestRequest;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Spatie\Activitylog\Models\Activity;
 
 class AssetRequestController extends Controller
 {
@@ -32,6 +33,7 @@ class AssetRequestController extends Controller
 
     public function index(Request $request)
     {
+
         $assetRequest = $this->transformIndexAssetRequest($request);
         return $assetRequest;
     }
@@ -40,14 +42,21 @@ class AssetRequestController extends Controller
     {
         $userRequest = $request->userRequest;
         $requesterId = auth('sanctum')->user()->id;
-
-//        $lastTransaction = AssetRequest::withTrashed()->orderBy('transaction_number', 'desc')->first();
-//        $transactionNumber = $lastTransaction ? $lastTransaction->transaction_number + 1 : 1;
-//        $transactionNumber = str_pad($transactionNumber, 4, '0', STR_PAD_LEFT);
         $transactionNumber = AssetRequest::generateTransactionNumber();
+        $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $userRequest[0]['subunit_id'])
+            ->orderBy('layer', 'asc')
+            ->get();
+
+        $layerIds = $departmentUnitApprovers->map(function ($approverObject) {
+            return $approverObject->approver->approver_id;
+        })->toArray();
+
+        $isRequesterApprover = in_array($requesterId, $layerIds);
+        $requesterLayer = array_search($requesterId, $layerIds) + 1;
 
         foreach ($userRequest as $request) {
             $assetRequest = AssetRequest::create([
+                'status' => $isRequesterApprover ? 'For Approval of Approver ' . ($requesterLayer + 1) : 'For Approval of Approver 1',
                 'requester_id' => $requesterId,
                 'transaction_number' => $transactionNumber,
                 'reference_number' => (new AssetRequest)->generateReferenceNumber(),
@@ -81,15 +90,25 @@ class AssetRequestController extends Controller
             }
         }
 
-        $departmentUnitApprovers = DepartmentUnitApprovers::where('subunit_id', $userRequest[0]['subunit_id'])
-            ->orderBy('layer', 'asc')
-            ->get();
 
-        $firstLayerFlag = true;
         foreach ($departmentUnitApprovers as $departmentUnitApprover) {
             $approver_id = $departmentUnitApprover->approver_id;
             $layer = $departmentUnitApprover->layer;
-            $status = $layer == 1 ? 'pending' : null;
+
+            // initial status
+            $status = null;
+
+            // if the requester is the approver, decide on status
+            if ($isRequesterApprover) {
+                if ($layer == $requesterLayer || $layer < $requesterLayer) {
+                    $status = "Approved";
+                } elseif ($layer == $requesterLayer + 1) {
+                    $status = "For Approval";
+                }
+            } elseif ($layer == 1) { // if the requester is not an approver, only the first layer should be "For Approval"
+                $status = "For Approval";
+            }
+
             AssetApproval::create([
                 'transaction_number' => $assetRequest->transaction_number,
                 'approver_id' => $approver_id,
@@ -97,9 +116,7 @@ class AssetRequestController extends Controller
                 'layer' => $layer,
                 'status' => $status,
             ]);
-            $firstLayerFlag = false;
         }
-
 
         return $this->responseCreated('AssetRequest created successfully');
     }
@@ -109,53 +126,21 @@ class AssetRequestController extends Controller
         //For Specific Viewing of Asset Request with the same transaction number
         $requestorId = auth('sanctum')->user()->id;
 
-         $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
+        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
             ->where('requester_id', $requestorId)
             ->get();
 
-         if ($assetRequest->isEmpty()) {
-             return $this->responseUnprocessable('Asset Request not found.');
-         }
+        if ($assetRequest->isEmpty()) {
+            return $this->responseUnprocessable('Asset Request not found.');
+        }
 
         return $this->transformShowAssetRequest($assetRequest);
-
-//        return $this->responseSuccess(null, [
-//            'id' => $assetRequest->id,
-//            'status' => $assetRequest->status,
-//            'current_approver' => $assetRequest->currentApprover->first()->approver->user ?? null,
-//            'requester' => [
-//                'id' => $assetRequest->requester->id,
-//                'username' => $assetRequest->requester->username,
-//                'employee_id' => $assetRequest->requester->employee_id,
-//                'firstname' => $assetRequest->requester->firstname,
-//                'lastname' => $assetRequest->requester->lastname,
-//            ],
-//            'type_of_request' => [
-//                'id' => $assetRequest->typeOfRequest->id,
-//                'type_of_request_name' => $assetRequest->typeOfRequest->type_of_request_name,
-//            ],
-//            'capex' => [
-//                'id' => $assetRequest->capex->id ?? '-',
-//                'capex_name' => $assetRequest->capex->capex_name ?? '-',
-//            ],
-//            'sub_capex' => [
-//                'id' => $assetRequest->subCapex->id ?? '-',
-//                'sub_capex_name' => $assetRequest->subCapex->sub_capex_name ?? '-',
-//            ],
-//            'asset_description' => $assetRequest->asset_description,
-//            'asset_specification' => $assetRequest->asset_specification ?? '-',
-//            'accountability' => $assetRequest->accountability,
-//            'accountable' => $assetRequest->accountable ?? '-',
-//            'cellphone_number' => $assetRequest->cellphone_number ?? '-',
-//            'brand' => $assetRequest->brand ?? '-',
-//            'quantity' => $assetRequest->quantity ?? '-',
-//        ]);
     }
 
     public function update(UpdateAssetRequestRequest $request, $referenceNumber)
     {
 
-        $assetRequest = $this->getAssetRequest($referenceNumber);
+        $assetRequest = $this->getAssetRequest('reference_number', $referenceNumber);
         if (!$assetRequest) {
             return $this->responseUnprocessable('Asset Request not found.');
         }
@@ -185,7 +170,7 @@ class AssetRequestController extends Controller
     {
 //        return $request->all();
 
-        $assetRequest = $this->getAssetRequest($referenceNumber);
+        $assetRequest = $this->getAssetRequest('reference_number', $referenceNumber);
         if (!$assetRequest) {
             return $this->responseUnprocessable('Asset Request not found.');
         }
@@ -198,26 +183,14 @@ class AssetRequestController extends Controller
         return $this->responseSuccess('AssetRequest updated Successfully');
     }
 
-    public function removeRequestItem($referenceNumber){
+    public function removeRequestItem($transactionNumber, $referenceNumber = null)
+    {
 
-        return $this->voidAssetRequest($referenceNumber);
-//        $assetRequest = $this->getAssetRequest($referenceNumber);
-//        if (!$assetRequest) {
-//            return $this->responseUnprocessable('Asset Request not found.');
-//        }
-//        if ($this->requestCount($assetRequest->transaction_number) == 1) {
-//            $assetRequest->update([
-//                'status' => 'Void'
-//            ]);
-//            $this->updateToVoid($assetRequest->transaction_number, 'Void');
-//            $assetRequest->delete();
-//            return $this->responseSuccess('Asset Request voided Successfully');
-//        }
-//
-//        $assetRequest->update([
-//            'status' => 'Void'
-//        ]);
-//        $assetRequest->delete();
-//        return $this->responseSuccess('Asset Request voided Successfully more');
+        if ($transactionNumber && $referenceNumber) {
+            return $this->voidRequestItem($referenceNumber);
+        }
+        if ($transactionNumber) {
+            return $this->voidAssetRequest($transactionNumber);
+        }
     }
 }
