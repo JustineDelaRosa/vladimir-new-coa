@@ -185,9 +185,9 @@ class ApprovedRequestRepository
             ->performedOn($assetApproval)
             ->withProperties($this->composeLogProperties($assetApproval, $status))
             ->inLog($status)
-            ->tap(function ($activity) use ($user, $status) {
-                $activity->subject_id = '0001';
-            })
+//            ->tap(function ($activity) use ($user, $status) {
+//                $activity->subject_id = '0001';
+//            })
             ->log('Asset Approval Status Updated to ' . $status . ' by ' . $user->employee_id . '.');
     }
 
