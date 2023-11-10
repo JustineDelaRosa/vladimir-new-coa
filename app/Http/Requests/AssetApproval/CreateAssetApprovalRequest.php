@@ -27,7 +27,7 @@ class CreateAssetApprovalRequest extends FormRequest
             return [
                 'asset_approval_id' => 'required|exists:asset_approvals,id',
 //                'asset_request_id' => 'one_array_present:asset_approval_id|exists:asset_requests,id|array',
-                'action' => 'required|string|in:Approved,Denied,Void'
+                'action' => 'required|string|in:Approved,Declined,Void'
             ];
         }
     }

@@ -187,9 +187,12 @@ class AssetRequestController extends Controller
     {
 
         if ($transactionNumber && $referenceNumber) {
+//            return 'both';
             return $this->voidRequestItem($referenceNumber);
         }
         if ($transactionNumber) {
+
+//            return 'single';
             return $this->voidAssetRequest($transactionNumber);
         }
     }

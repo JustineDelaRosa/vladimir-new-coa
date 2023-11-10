@@ -41,8 +41,6 @@ class AssetApprovalController extends Controller
 //            return  $activities = Activity::all();
 //        }
 
-
-
         $user = auth('sanctum')->user();
         $role = RoleManagement::whereId($user->role_id)->value('role_name');
         $adminRoles = ['Super Admin', 'Admin', 'ERP'];
@@ -108,7 +106,7 @@ class AssetApprovalController extends Controller
             case 'Approved':
                 return $this->approveRequestRepository->approveRequest($assetApprovalIds);
                 break;
-            case 'Denied':
+            case 'Declined':
                 return $this->approveRequestRepository->disapproveRequest($assetApprovalIds);
                 break;
 //            case 'Void':

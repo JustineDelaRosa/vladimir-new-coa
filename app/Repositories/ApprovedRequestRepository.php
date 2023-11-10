@@ -62,11 +62,11 @@ class ApprovedRequestRepository
                 return $this->responseUnprocessable('Its not your turn for this request');
             }
 
-            $this->updateAssetApprovalStatus($assetApproval, 'Denied');
+            $this->updateAssetApprovalStatus($assetApproval, 'Declined');
 
-            $this->updateAssetRequestStatus($assetApproval->transaction_number, 'Denied');
+            $this->updateAssetRequestStatus($assetApproval->transaction_number, 'Declined');
         }
-        return $this->responseSuccess('Asset Request Denied Successfully');
+        return $this->responseSuccess('Asset Request Declined Successfully');
     }
 
     //RESUBMITTING REQUEST
@@ -91,7 +91,7 @@ class ApprovedRequestRepository
 //    public function voidRequest($assetRequestIds): JsonResponse
 //    {
 //        foreach ($assetRequestIds as $id) {
-//            $assetRequest = AssetRequest::where('id', $id)->where('status', 'Denied')->first();
+//            $assetRequest = AssetRequest::where('id', $id)->where('status', 'Declined')->first();
 //            if (!$assetRequest) {
 //                return $this->responseUnprocessable('Invalid Action');
 //            }

@@ -11,14 +11,14 @@ trait AssetRequestHandler
     public function getAssetRequest($field, $value, $singleResult = true)
     {
         $query = AssetRequest::where($field, $value)
-            ->whereIn('status', ['Pending For 1st Approval', 'Denied']);
+            ->whereIn('status', ['Pending For 1st Approval', 'Declined']);
 
         return $singleResult ? $query->first() : $query->get();
     }
     public function getAssetRequestByTransactionNumber($transactionNumber)
     {
         return AssetRequest::where('transaction_number', $transactionNumber)
-            ->whereIn('status', ['Pending For 1st Approval', 'Denied'])
+            ->whereIn('status', ['Pending For 1st Approval', 'Declined'])
             ->get();
     }
     public function updateAssetRequest($assetRequest, $request)
