@@ -100,6 +100,7 @@ class AssetApprovalController extends Controller
     {
         $assetApprovalIds = $request->asset_approval_id;
 //        $assetRequestIds = $request->asset_request_id;
+        $remarks = $request->remarks;
         $action = ucwords($request->action);
 
         switch ($action) {
@@ -107,7 +108,7 @@ class AssetApprovalController extends Controller
                 return $this->approveRequestRepository->approveRequest($assetApprovalIds);
                 break;
             case 'Declined':
-                return $this->approveRequestRepository->disapproveRequest($assetApprovalIds);
+                return $this->approveRequestRepository->disapproveRequest($assetApprovalIds, $remarks);
                 break;
 //            case 'Void':
 //                return $this->approveRequestRepository->voidRequest($assetRequestIds);

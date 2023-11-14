@@ -20,6 +20,7 @@ class AssetApprovalLoggerController extends Controller
         $activityLog = Activity::useFilters()->dynamicPaginate();
 
         $activityLog->transform(function ($item) {
+            $transactionNumber = $item->assetApproval->transaction_number;
             return[
                 'id' => $item->id,
                 'log_name' => $item->log_name,

@@ -11,6 +11,7 @@ use App\Models\SubCapex;
 use App\Repositories\ApprovedRequestRepository;
 use App\Traits\AssetRequestHandler;
 use Essa\APIToolKit\Api\ApiResponse;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
@@ -73,23 +74,33 @@ class AssetRequestController extends Controller
                 'quantity' => $request['quantity'],
             ]);
 
-            if (isset($request['letter_of_request'])) {
-                $assetRequest->addMedia($request['letter_of_request'])->toMediaCollection('letter_of_request');
-            }
-            if (isset($request['quotation'])) {
-                $assetRequest->addMedia($request['quotation'])->toMediaCollection('quotation');
-            }
-            if (isset($request['specification_form'])) {
-                $assetRequest->addMedia($request['specification_form'])->toMediaCollection('specification_form');
-            }
-            if (isset($request['tool_of_trade'])) {
-                $assetRequest->addMedia($request['tool_of_trade'])->toMediaCollection('tool_of_trade');
-            }
-            if (isset($request['other_attachments'])) {
-                $assetRequest->addMedia($request['other_attachments'])->toMediaCollection('other_attachments');
-            }
-        }
+            $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
 
+            foreach($fileKeys as $fileKey) {
+                if(isset($request[$fileKey])) {
+                    $files = is_array($request[$fileKey]) ? $request[$fileKey] : [$request[$fileKey]];
+                    foreach ($files as $file) {
+                        $assetRequest->addMedia($file)->toMediaCollection($fileKey);
+                    }
+                }
+            }
+//            if(isset($request['letter_of_request'])) {
+//                $assetRequest->addMedia($request['letter_of_request'])->toMediaCollection('letter_of_request');
+//            }
+//
+//            if (isset($request['quotation'])) {
+//                $assetRequest->addMedia($request['quotation'])->toMediaCollection('quotation');
+//            }
+//            if (isset($request['specification_form'])) {
+//                $assetRequest->addMedia($request['specification_form'])->toMediaCollection('specification_form');
+//            }
+//            if (isset($request['tool_of_trade'])) {
+//                $assetRequest->addMedia($request['tool_of_trade'])->toMediaCollection('tool_of_trade');
+//            }
+//            if (isset($request['other_attachments'])) {
+//                $assetRequest->addMedia($request['other_attachments'])->toMediaCollection('other_attachments');
+//            }
+        }
 
         foreach ($departmentUnitApprovers as $departmentUnitApprover) {
             $approver_id = $departmentUnitApprover->approver_id;
@@ -159,11 +170,10 @@ class AssetRequestController extends Controller
         return $this->responseDeleted();
     }
 
-    public function resubmitRequest(CreateAssetRequestRequest $request): JsonResponse
+    public function resubmitRequest(CreateAssetRequestRequest $request)
     {
-        $requestIds = $request->request_id;
-
-        return $this->approveRequestRepository->resubmitRequest($requestIds);
+        $transactionNumber = $request->transaction_number;
+        return $this->approveRequestRepository->resubmitRequest($transactionNumber);
     }
 
     public function updateRequest(Request $request, $referenceNumber)

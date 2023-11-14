@@ -46,44 +46,45 @@ class ApprovedRequestRepository
     }
 
     //DISAPPROVE REQUEST
-    public function disapproveRequest($assetApprovalId): JsonResponse
+    public function disapproveRequest($assetApprovalId, $remarks = null): JsonResponse
     {
-        foreach ($assetApprovalId as $id) {
-            $assetApproval = $this->findAssetApproval($id);
-            $approverId = $this->findApproverId();
 
-            if ($this->isInvalidApprover($assetApproval->approver_id, $approverId)) {
-                return $this->responseUnprocessable('You are not the approver of this request');
-            }
-            if ($this->alreadyApproved($id)) {
-                return $this->responseUnprocessable('You already approved this request');
-            }
-            if ($this->checkStatus($id)) {
-                return $this->responseUnprocessable('Its not your turn for this request');
-            }
+        $assetApproval = $this->findAssetApproval($assetApprovalId);
+        $approverId = $this->findApproverId();
 
-            $this->updateAssetApprovalStatus($assetApproval, 'Declined');
-
-            $this->updateAssetRequestStatus($assetApproval->transaction_number, 'Declined');
+        if ($this->isInvalidApprover($assetApproval->approver_id, $approverId)) {
+            return $this->responseUnprocessable('You are not the approver of this request');
         }
+        if ($this->alreadyApproved($assetApprovalId)) {
+            return $this->responseUnprocessable('You already approved this request');
+        }
+        if ($this->checkStatus($assetApprovalId)) {
+            return $this->responseUnprocessable('Its not your turn for this request');
+        }
+
+        $this->updateAssetApprovalStatus($assetApproval, 'Declined');
+
+        $this->updateAssetRequestStatus($assetApproval->transaction_number, 'Declined', $remarks);
+
         return $this->responseSuccess('Asset Request Declined Successfully');
     }
 
     //RESUBMITTING REQUEST
-    public function resubmitRequest($assetApprovalId): JsonResponse
+    public function resubmitRequest($transactionNumber): JsonResponse
     {
         $user = auth('sanctum')->user();
-        foreach ($assetApprovalId as $id) {
-            $assetApproval = AssetApproval::where('asset_request_id', $id)
+//        foreach ($transactionNumber as $id) {
+            $assetApproval = AssetApproval::where('transaction_number', $transactionNumber)
+                ->where('status', '!=', 'Void')
                 ->where('layer', 1)->first();
             if (!$assetApproval || $assetApproval->requester_id != $user->id) {
                 return $this->responseUnprocessable('Invalid Action');
             }
-            $this->updateToNullOrVoid($id);
+            $this->updateToNullOrVoid($transactionNumber);
             $this->updateAssetRequestStatus($assetApproval->transaction_number, 'For Approval of Approver ' . ($assetApproval->layer));
             $this->updateAssetApprovalStatus($assetApproval, 'For Approval');
             $this->logActivity($assetApproval, 'Resubmitted');
-        }
+//        }
         return $this->responseSuccess('Asset Request Resubmitted Successfully');
     }
 
@@ -151,11 +152,18 @@ class ApprovedRequestRepository
         ])->where('layer', $assetApproval->layer + 1)->first();
     }
 
-    private function updateAssetRequestStatus($transactionNumber, string $status)
+    private function updateAssetRequestStatus($transactionNumber, string $status, $remarks = null)
     {
         //foreach asset request with the same transaction number update the status
         $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->get();
-        $assetRequest->each->update(['status' => $status]);
+
+        //if the status is decline then update include the remarks
+        //else don't update the remarks
+        if ($status == 'Declined') {
+            $assetRequest->each->update(['status' => $status, 'remarks' => $remarks]);
+        } else {
+            $assetRequest->each->update(['status' => $status]);
+        }
     }
 
     private function checkStatus($requestApprovalId): bool
@@ -215,9 +223,9 @@ class ApprovedRequestRepository
         ];
     }
 
-    private function updateToNullOrVoid($requestId, $status = null)
+    private function updateToNullOrVoid($transactionNumber, $status = null)
     {
-        $assetApproval = AssetApproval::where('asset_request_id', $requestId)->get();
+        $assetApproval = AssetApproval::where('transaction_number', $transactionNumber)->get();
         if ($status == 'Void') {
             $assetApproval->each->update(['status' => 'Void']);
         } else {

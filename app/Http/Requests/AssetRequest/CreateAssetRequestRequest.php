@@ -119,7 +119,7 @@ class CreateAssetRequestRequest extends FormRequest
 
         if($this->isMethod('PATCH')){
             return [
-                'request_id' => ['required','array','exists:asset_requests,id'],
+                'transaction_number' => ['required','exists:asset_requests,transaction_number'],
             ];
         }
         return [];

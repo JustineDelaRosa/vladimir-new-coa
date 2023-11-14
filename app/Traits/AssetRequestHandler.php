@@ -11,16 +11,11 @@ trait AssetRequestHandler
     public function getAssetRequest($field, $value, $singleResult = true)
     {
         $query = AssetRequest::where($field, $value)
-            ->whereIn('status', ['Pending For 1st Approval', 'Declined']);
+            ->whereIn('status', ['For Approval of Approver 1', 'Declined']);
 
         return $singleResult ? $query->first() : $query->get();
     }
-    public function getAssetRequestByTransactionNumber($transactionNumber)
-    {
-        return AssetRequest::where('transaction_number', $transactionNumber)
-            ->whereIn('status', ['Pending For 1st Approval', 'Declined'])
-            ->get();
-    }
+
     public function updateAssetRequest($assetRequest, $request)
     {
         return $assetRequest->update([
@@ -35,6 +30,7 @@ trait AssetRequestHandler
             'quantity' => $request->quantity,
         ]);
     }
+
     public function handleMediaAttachments($assetRequest, $request)
     {
         $collections = [
@@ -48,7 +44,9 @@ trait AssetRequestHandler
         foreach ($collections as $collection) {
             if (isset($request->$collection)) {
                 $assetRequest->clearMediaCollection($collection);
-                $assetRequest->addMedia($request->$collection)->toMediaCollection($collection);
+                $assetRequest->addMultipleMediaFromRequest([$collection], $collection)->each(function ($fileAdder) use ($collection) {
+                    $fileAdder->toMediaCollection($collection);
+                });
             } else {
                 $assetRequest->clearMediaCollection($collection);
             }
@@ -108,6 +106,12 @@ trait AssetRequestHandler
     public function transformShowAssetRequest($assetRequest)
     {
         return $assetRequest->transform(function ($ar) {
+
+            /*
+             * //TODO: This is the viewing if the attachments are multiple
+             * $letterOfRequestMedia = $ar->getMedia('letter_of_request')->all();
+             * */
+
             $letterOfRequestMedia = $ar->getMedia('letter_of_request')->first();
             $quotationMedia = $ar->getMedia('quotation')->first();
             $specificationFormMedia = $ar->getMedia('specification_form')->first();
@@ -150,6 +154,17 @@ trait AssetRequestHandler
                     'subunit_name' => $ar->subunit->subunit_name,
                 ],
                 'attachments' => [
+                    /*
+                     * TODO: This is the viewing if the attachments are multiple
+                      $letterOfRequestMedia ? collect($letterOfRequestMedia)->map(function ($media) {
+                          return [
+                              'id' => $media->id,
+                              'file_name' => $media->file_name,
+                              'file_path' => $media->getPath(),
+                              'file_url' => $media->getUrl(),
+                          ];
+                      }) : '-',
+                    */
                     'letter_of_request' => [
                         'id' => $letterOfRequestMedia ? $letterOfRequestMedia->id : '-',
                         'file_name' => $letterOfRequestMedia ? $letterOfRequestMedia->file_name : '-',
@@ -187,7 +202,7 @@ trait AssetRequestHandler
 
     public function voidRequestItem($referenceNumber)
     {
-        $assetRequest = $this->getAssetRequest('reference_number',$referenceNumber);
+        $assetRequest = $this->getAssetRequest('reference_number', $referenceNumber);
 
         if (!$assetRequest) {
             return $this->responseUnprocessable('Asset Request not found.');
@@ -213,15 +228,16 @@ trait AssetRequestHandler
         return $this->responseSuccess('Asset Request voided Successfully');
     }
 
-    public function voidAssetRequest($transactionNumber){
+    public function voidAssetRequest($transactionNumber)
+    {
 
-       $assetRequest = $this->getAssetRequest('transaction_number', $transactionNumber, false);
+        $assetRequest = $this->getAssetRequest('transaction_number', $transactionNumber, false);
 
         if ($assetRequest->isEmpty()) {
             return $this->responseUnprocessable('Asset Request not found.');
         }
         $this->updateToVoid($transactionNumber, 'Void');
-        foreach($assetRequest as $ar){
+        foreach ($assetRequest as $ar) {
             $ar->update([
                 'status' => 'Void'
             ]);
@@ -230,12 +246,14 @@ trait AssetRequestHandler
         return $this->responseSuccess('Asset Request voided Successfully');
     }
 
-    public function requestCount($transactionNumber){
+    public function requestCount($transactionNumber)
+    {
         $requestCount = AssetRequest::where('transaction_number', $transactionNumber)->count();
         return $requestCount;
     }
 
-    public function updateToVoid($transactionNumber, $status){
+    public function updateToVoid($transactionNumber, $status)
+    {
 
         return AssetApproval::where('transaction_number', $transactionNumber)
             ->update(['status' => $status]);
