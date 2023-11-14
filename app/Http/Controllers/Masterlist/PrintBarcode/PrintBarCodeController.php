@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Masterlist\PrintBarcode;
+
 use App\Http\Controllers\Controller;
 use App\Models\FixedAsset;
 use App\Models\PrinterIP;
@@ -57,40 +58,8 @@ class PrintBarCodeController extends Controller
             $printer = new Printer($connector);
 
             foreach ($tagNumber as $VDM) {
-
                 $fixedAsset = FixedAsset::where('vladimir_tag_number', $VDM['vladimir_tag_number'])->first();
-
-//                $zplCode = "^XA
-//                            ~TA000
-//                            ~JSN
-//                            ^LT0
-//                            ^MNW
-//                            ^MTT
-//                            ^PON
-//                            ^PMN
-//                            ^LH0,0
-//                            ^JMA
-//                            ^PR4,4
-//                            ~SD30
-//                            ^JUS
-//                            ^LRN
-//                            ^CI27
-//                            ^PA0,1,1,0
-//                            ^XZ
-//                            ^XA
-//                            ^MMT
-//                            ^PW406
-//                            ^LL203
-//                            ^LS0
-//                            ^BY3,2,59^FT69,106^BEN,,Y,N
-//                            ^FH\^FD" . $VDM['vladimir_tag_number'] . "^FS
-//                            ^FT210,45^A0N,17,18^FH\^CI28^FDPROPERTY RECORD^FS^CI27
-//                            ^FO93,160^GFA,429,832,32,:Z64:eJzN0TFLw1AQB/BAS9vhMOsTpM3kasClQ83QQifxI8hparo46SLyEEvBUnzFNZ30I/gBLPQReckQcHWsVIuDQyFD+zYvbkLsIoj/9cfxv+MM449SMUWs53puinGmr/txLH3pQ7zSBYTiB1fP2tfC7GV7hYVLOaf5IHs/xsKqvF/lgf21XwDZbnZtLei+brb/08geNLrJDHR/WT7knNsHQRIqy/GcCy4vDWPaW2tc5YobMkI4QeVVX8ZStC30kOGUfDG4aapc8UG+I5yT70yR/A5r5Avy0eBaqdzbhz5D2OfK23LJjya8xhkfkQ8HfaVO87GsIuyh4puptyYOcxgOyTu30dNsOw+SITRRHVtt+mELC6zAsJO6H+16qZcQ6tRveTa59c3d5BV0Cct15C55ED5a1M546r/NJxAcmeQ=:227C
-//                            ^FT11,154^APN,20,6^FB395,1,4,C^FH\^FD" . $VDM['asset_description'] . "^FS
-//                            ^FO2,1^GFA,793,10452,52,:Z64:eJzt2M9q1EAcB/AJAx1PzqGXHsR5BXtS6bLTN/AVfAyFkqwU3It0z158Eg8TVsxFzCvsksNes+yhEcL8mmxYKYp1vj8hxDa/cz7M/P4l7NJKQBGRE/RwzYRqopRtJP0SJcNUD9Bs6crSmoQtUtILYRCjO6P/ZPbRzYGs6KklR0YVqdcLPUfMsnCNMVmw+UZmDZg6nlr6kJht4epXsPlykSPm008TVAM/iW2TUmO+vskDa33LvAw1NPHWC9Oa03yhw8zJwWSnoTW4ZY6DzUdv62RhiiKTweZdZ5ZFdhlsLr1pjFZFNv+raaM1Sy9OKGt2ATe2yPLGbO42SiC73YVhGM8wFdfc+cTvYRlGMYxgGBqwcffMlAzje5o3jkkYhrM/btwFsWSYTU93ixnm0YBrzTFiwHczA95tzuxw8hnyHHDMmA/PnPVk+srn+5B7Osj/akYzmtHcc4MG1zw5x40Fj+Ka5zOGwUiv+aDBNWM+TIORvTEMoxzjHIaZYmScnX8waLRGz3DDmQNOPs96MkPujzjHjQSPYvd01o8xDMOpAafWLOP6MX3tKWD2nx1wF4yIyseteRFu4sZMwe9p3Zh4/04Mvl5U2XTrsXmTJa07E36O3NF2V2L7Izf0Y7dqzSSUCJW7t9cO64/6LCLUHL0+mPDfJdE82l57zCijCTVHiYGNIAubiBLcVBcKrZssKwmbVQX3R65K3KQDNq6MNrCp5MEkNKf3QaZWB0OUUx5kYp3BxhJuDM1ho0nBRtWo6aJf0/b0CjTBj/8X5gas119Y:227E
-//                            ^PQ1,0,1,Y
-//                            ^XZ";
-                if ($VDM['print_count'] == 0) {
+                if ($fixedAsset && $fixedAsset->print_count == 0){
                     //original
                     $zplCode = "^XA
                                 ~TA000
@@ -156,7 +125,7 @@ class PrintBarCodeController extends Controller
                             ^FH\^FD" . $VDM['vladimir_tag_number'] . "^FS
                             ^FT210,34^A0N,17,18^FH\^CI28^FDPROPERTY RECORD^FS^CI27
                             ^FO131,174^GFA,229,320,20,:Z64:eJxjYCAFWHybPKe48SyKmOakTyJOjq4CyGKWk5PnFDkeQxFTnJwk4nQwCUWvwuPkacWNh1DUkQd8nFxsnpzzPjyp+Jya8p1Pjresz/nkPPZLaDuR2Sjl5mVW2DnZmSuxI6dm8amc5+cqG+XK/OwCOycfPGPZVxP76F5K64nIRjE3L72PnZMOuHB2xPgaXQaaF9k8zblbbeacR4ePVPb5YLMXACYPQTo=:7CBE
-                            ^FT3,163^APN,20,6^FB403,1,4,C^FH\^" . $VDM['department_name'] . " - " . $VDM['location_name'] . "^FS
+                            ^FT3,163^APN,20,6^FB403,1,4,C^FH\^FD" . $VDM['department_name'] . " - " . $VDM['location_name'] . "^FS
                             ^FO24,7^GFA,97,144,12,:Z64:eJxjYCAMfvyo+dn8vKHCAAjPnEk42MzMcKYACM8cg7ANgPDHMaCaxzJg9gck8RtnEOwzPxIOfmZvqAABXHYBACKcLfg=:E7DF
                             ^FT155,142^A0N,21,20^FH\^CI28^FD" . $VDM['asset_description'] . "^FS^CI27
                             ^FO0,0^GFA,705,10556,52,:Z64:eJzt2rFOwlAUBuDe1FBNgJq4aETQxIQV48LGC/gQbG6GUROkNQxsxsQHwEfwDWRjIfIKTSCySUkHSkRqEcLc/088qaRn/3J77j3nNLep5WpYFOaahZrK3xsrCCOuxswf9UHT2MnutUFTH34M31AzG15VcJO2YNNboPtW7/XmqGnkTmAjVQeVkCwEeiExidlEwcdNGDLGxY1BGLND7BuRj2njRify0Woy52M6xL4R+RSIdXJEPow5JMwus9dC58P0D9VzTO0Q/ZMWmlUmU9dCJlfCTVboTA1i9qoYzypmHU0oH6ZGFTMPmGcjept5bzP5MPvGGG3LZpVYL0jlQxidmL3mq8yzZYTOR8rE9NtTYhKTmH9kHNzAQZrsKW7C67OIObYJAxLJfOAgTZKPoLFxoxPrmIQpgCSpHd7AERrDxk14RYUNk89hVcbE+XwYoxzcUL3dIYwtYwwHNxpjqttl4twL+4TJE4aZb8z7lDFUz4Hkd44SBoocYW6V46D3H1cNUKMGkxFq9P5sZKOm/T1G73NGOfOJmlRHwUYv34/RPUjdBbDRvnCjvC6eT7eJm9Z63ybLH198zHhLE62+9ZZGGGYd9b4yfrl0U49ommszObg8j7hOM3hcGW/6fBbRPATZlZmOni4iGnuxMS8eMEtWz1YswsatXU9R4/tj2EQ/040BanRjiO9IP2rLWtM=:E347
@@ -219,10 +188,9 @@ class PrintBarCodeController extends Controller
             ->where('type_of_request_id', '!=', $typeOfRequestId);*/
 
 
-
         $typesOfRequestId = TypeOfRequest::whereIn('type_of_request_name', ['Capex', 'Vehicle'])->pluck('id')->toArray();
 
-        if($vladimirTagNumbers == null){
+        if ($vladimirTagNumbers == null) {
             $vladimirTagNumbers = FixedAsset::whereNotIn('type_of_request_id', array_values($typesOfRequestId))->pluck('vladimir_tag_number')->toArray();
         }
 
@@ -296,7 +264,7 @@ class PrintBarCodeController extends Controller
             $endDate->setTime(23, 59, 59);
             $fixedAssetQuery->where('created_at', '<=', $endDate->format('Y-m-d H:i:s'));
         }
-        if($endDate && $startDate) {
+        if ($endDate && $startDate) {
             if (Carbon::parse($startDate)->gt(Carbon::parse($endDate))) {
                 return $this->responseUnprocessable('Invalid date range');
             }
