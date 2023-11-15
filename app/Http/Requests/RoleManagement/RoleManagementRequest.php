@@ -26,12 +26,11 @@ class RoleManagementRequest extends FormRequest
     {
         $accessTypes = [
             'masterlist' => ['company', 'department', 'location', 'account-title', 'division', 'type-of-request', 'capex', 'category', 'status-category'],
-            'user-management' => ['user-accounts', 'role-management'],
+            'user-management' => ['user-accounts', 'role-management', 'user-requestor', 'user-approver'],
             'settings' => ['approver-settings', 'form-settings']
         ];
 
         if ($this->isMethod('post')) {
-
             return [
                 'role_name' => 'required|unique:role_management,role_name',
                 'access_permission' => ['required', 'array', function ($attribute, $value, $fail) use ($accessTypes) {
