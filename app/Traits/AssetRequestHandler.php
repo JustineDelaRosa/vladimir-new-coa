@@ -77,10 +77,30 @@ trait AssetRequestHandler
                     'employee_id' => $assetRequest->requestor->employee_id,
                     'firstname' => $assetRequest->requestor->firstname,
                     'lastname' => $assetRequest->requestor->lastname,
+                    'department' => $assetRequest->requestor->department->department_name ?? '-',
+                    'subunit' => $assetRequest->requestor->subUnit->sub_unit_name ?? '-',
                 ],
                 'quantity_of_po' => $assetRequestCollection->count(),
                 'date_requested' => $assetRequest->created_at,
                 'status' => $assetRequest->status,
+                'history_log' => $assetRequest->assetapproval->map(function ($approval) {
+                    return [
+                        'id' => $approval->id,
+                        'approver' => [
+                            'id' => $approval->approver->id,
+                            'username' => $approval->approver->user->username,
+                            'employee_id' => $approval->approver->user->employee_id,
+                            'firstname' => $approval->approver->user->firstname,
+                            'lastname' => $approval->approver->user->lastname,
+                            'department' => $approval->approver->user->department->department_name ?? '-',
+                            'subunit' => $approval->approver->user->subUnit->sub_unit_name ?? '-',
+                            'layer' => $approval->layer,
+                        ],
+                        'status' => $approval->status,
+                        'remarks' => $approval->status == 'Declined' ? $approval->assetRequest->remarks : null,
+                        'created_at' => $approval->activityLog()->latest()->first()->created_at ?? null,
+                    ];
+                }),
             ];
         })->values();
 
@@ -119,6 +139,7 @@ trait AssetRequestHandler
             $otherAttachmentsMedia = $ar->getMedia('other_attachments')->first();
 
             return [
+                'can_resubmit' => $ar->status == 'Declined' ? 1 : 0,
                 'id' => $ar->id,
                 'status' => $ar->status,
                 'transaction_number' => $ar->transaction_number,
