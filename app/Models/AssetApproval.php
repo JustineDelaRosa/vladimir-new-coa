@@ -7,6 +7,7 @@ use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 
@@ -40,4 +41,15 @@ class AssetApproval extends Model
     {
         return $this->belongsTo(User::class, 'requester_id', 'id');
     }
+
+    public function activityLog()
+    {
+        return $this->hasMany(Activity::class, 'subject_id', 'id');
+
+    }
+
+//    public function activityLog()
+//    {
+//        return $this->hasMany(Activity::class, 'subject_id', 'id')->latest();
+//    }
 }
