@@ -31,8 +31,10 @@ class AssetApprovalController extends Controller
         $this->approveRequestRepository = $approveRequestRepository;
     }
 
-    public function index()
+    public function index(Request $request)
     {
+
+//        return AssetApproval::with('activityLog')->get();
 
 //        $approved = AssetApproval::find(3);
 //        if($approved){
@@ -45,13 +47,14 @@ class AssetApprovalController extends Controller
         $role = RoleManagement::whereId($user->role_id)->value('role_name');
         $adminRoles = ['Super Admin', 'Admin', 'ERP'];
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
+        $status = $request->input('status', 'For Approval');
 
         $assetApprovalsQuery = AssetApproval::query();
         if (!in_array($role, $adminRoles)) {
             $assetApprovalsQuery->where('approver_id', $approverId);
         }
 
-        $assetApprovals = $assetApprovalsQuery->where('status', 'For Approval')->useFilters()->dynamicPaginate();
+        $assetApprovals = $assetApprovalsQuery->where('status', $status)->useFilters()->dynamicPaginate();
         return $this->transformIndexApproval($assetApprovals);
     }
 
