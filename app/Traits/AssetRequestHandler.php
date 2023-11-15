@@ -68,6 +68,8 @@ trait AssetRequestHandler
 
         $assetRequest = AssetRequest::where('requester_id', $requesterId)->useFilters()->get()->groupBy('transaction_number')->map(function ($assetRequestCollection) {
             $assetRequest = $assetRequestCollection->first();
+            //sum all the quantity per group
+            $assetRequest->quantity = $assetRequestCollection->sum('quantity');
             return [
                 'id' => $assetRequest->transaction_number,
                 'transaction_number' => $assetRequest->transaction_number,
@@ -80,7 +82,7 @@ trait AssetRequestHandler
                     'department' => $assetRequest->requestor->department->department_name ?? '-',
                     'subunit' => $assetRequest->requestor->subUnit->sub_unit_name ?? '-',
                 ],
-                'quantity_of_po' => $assetRequestCollection->count(),
+                'item_count' => $assetRequest->quantity ?? 0,
                 'date_requested' => $assetRequest->created_at,
                 'status' => $assetRequest->status,
                 'history_log' => $assetRequest->assetapproval->map(function ($approval) {
