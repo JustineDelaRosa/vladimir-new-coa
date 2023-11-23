@@ -26,7 +26,7 @@ class CreateAssetRequestsTable extends Migration
             //TO BE FILL UP BY THE REQUESTER
             $table->string('remarks')->nullable();
             $table->unsignedInteger('type_of_request_id');
-            $table->UnsignedInteger('charged_department_id');
+//            $table->UnsignedInteger('charged_department_id');
             $table->unsignedInteger('subunit_id'); //For ChargedDepartment
             $table->enum('accountability', ['Personal Issued', 'Common']);
             $table->string('accountable')->nullable();
@@ -73,26 +73,31 @@ class CreateAssetRequestsTable extends Migration
             $table->double('scrap_value')->nullable();
             $table->double('depreciable_basis')->nullable();
             //COA
-//            $table->unsignedInteger('company_id')->nullable();
-//            $table->unsignedInteger('department_id')->nullable();
-//            $table->unsignedInteger('location_id')->nullable();
-//            $table->unsignedInteger('account_id')->nullable();
-            $table->string('company_code')->nullable();
-            $table->string('company')->nullable();
-            $table->string('department_code')->nullable();
-            $table->string('department')->nullable();
-            $table->string('location_code')->nullable();
-            $table->string('location')->nullable();
-            $table->string('account_title_code')->nullable();
-            $table->string('account_title')->nullable();
+            $table->unsignedInteger('company_id')->nullable();
+            $table->unsignedInteger('department_id')->nullable();
+            $table->unsignedInteger('location_id')->nullable();
+            $table->unsignedInteger('account_title_id')->nullable();
+//            $table->string('company_code')->nullable();
+//            $table->string('company')->nullable();
+//            $table->string('department_code')->nullable();
+//            $table->string('department')->nullable();
+//            $table->string('location_code')->nullable();
+//            $table->string('location')->nullable();
+//            $table->string('account_title_code')->nullable();
+//            $table->string('account_title')->nullable();
             $table->integer('print_count')->default(0);
             $table->softDeletes();
             $table->timestamp('last_printed')->nullable();
 
             $table->foreign('requester_id')->references('id')->on('users');
             $table->foreign('type_of_request_id')->references('id')->on('type_of_requests');
-            $table->foreign('charged_department_id')->references('id')->on('departments');
+//            $table->foreign('charged_department_id')->references('id')->on('departments');
             $table->foreign('subunit_id')->references('id')->on('sub_units');
+            $table->foreign('company_id')->references('id')->on('companies');
+            $table->foreign('department_id')->references('id')->on('departments');
+            $table->foreign('location_id')->references('id')->on('locations');
+            $table->foreign('account_title_id')->references('id')->on('account_titles');
+
 //            $table->foreign('sub_capex_id')->references('id')->on('sub_capexes');
 //            $table->foreign('capex_id')->references('id')->on('capexes');
             $table->foreign('division_id')->references('id')->on('divisions');

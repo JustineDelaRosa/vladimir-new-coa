@@ -76,9 +76,11 @@ class CreateAssetRequestRequest extends FormRequest
                     'required',
                     Rule::exists('type_of_requests', 'id')
                 ],
-                'userRequest.*.charged_department_id' => ['required', Rule::exists('departments', 'id')],
+                'userRequest.*.department_id' => ['required', Rule::exists('departments', 'id')],
                 'userRequest.*.attachment_type' => 'required|in:Budgeted,Unbudgeted',
                 'userRequest.*.subunit_id' =>['required', Rule::exists('sub_units', 'id')],
+                'userRequest.*.location_id'=>['required', Rule::exists('locations', 'id')],
+                'userRequest.*.account_title_id' => ['required', Rule::exists('account_titles', 'id')],
                 'userRequest.*.accountability' => 'required|in:Personal Issued,Common',
                 'userRequest.*.accountable' => ['required_if:accountability,Personal Issued', 'exists:users,id',
                     function ($attribute, $value, $fail) {
@@ -130,12 +132,16 @@ class CreateAssetRequestRequest extends FormRequest
         return [
             'userRequest.*.type_of_request_id.required' => 'The type of request is required.',
             'userRequest.*.type_of_request_id.exists' => 'The type of request is invalid.',
-            'userRequest.*.charged_department_id.required' => 'The charged department is required.',
-            'userRequest.*.charged_department_id.exists' => 'The charged department is invalid.',
+            'userRequest.*.department_id.required' => 'The department is required.',
+            'userRequest.*.department_id.exists' => 'The department is invalid.',
             'userRequest.*.attachment_type.required' => 'The attachment type is required.',
             'userRequest.*.attachment_type.in' => 'The attachment type is invalid.',
             'userRequest.*.subunit_id.required' => 'The subunit is required.',
             'userRequest.*.subunit_id.exists' => 'The subunit is invalid.',
+            'userRequest.*.location_id.required' => 'The location is required.',
+            'userRequest.*.location_id.exists' => 'The location is invalid.',
+            'userRequest.*.account_title_id.required' => 'The account title is required.',
+            'userRequest.*.account_title_id.exists' => 'The account title is invalid.',
             'userRequest.*.accountability.required' => 'The accountability is required.',
             'userRequest.*.accountability.in' => 'The accountability is invalid.',
             'userRequest.*.accountable.required_if' => 'The accountable is required.',
@@ -162,7 +168,6 @@ class CreateAssetRequestRequest extends FormRequest
             'userRequest.*.other_attachments.file' => 'The other attachments must be a file.',
             'userRequest.*.other_attachments.mimes' => 'The other attachments must be a file of type: pdf, doc, docx, xls, xlsx.',
             'userRequest.*.other_attachments.max' => 'The other attachments may not be greater than 10000 kilobytes.',
-
         ];
     }
 }

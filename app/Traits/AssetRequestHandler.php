@@ -60,66 +60,53 @@ trait AssetRequestHandler
      * @param Request $request The request object.
      * @return LengthAwarePaginator|array The paginated asset requests or array of asset requests.
      */
-    public function transformIndexAssetRequest($request)
+    public function transformIndexAssetRequest($assetRequest)
     {
-        $perPage = $request->input('per_page', null);
-
-        $requesterId = auth('sanctum')->user()->id;
-
-        $assetRequest = AssetRequest::where('requester_id', $requesterId)->useFilters()->get()->groupBy('transaction_number')->map(function ($assetRequestCollection) {
-            $assetRequest = $assetRequestCollection->first();
-            //sum all the quantity per group
-            $assetRequest->quantity = $assetRequestCollection->sum('quantity');
-            return [
-                'id' => $assetRequest->transaction_number,
-                'transaction_number' => $assetRequest->transaction_number,
-                'requestor' => [
-                    'id' => $assetRequest->requestor->id,
-                    'username' => $assetRequest->requestor->username,
-                    'employee_id' => $assetRequest->requestor->employee_id,
-                    'firstname' => $assetRequest->requestor->firstname,
-                    'lastname' => $assetRequest->requestor->lastname,
-                    'department' => $assetRequest->requestor->department->department_name ?? '-',
-                    'subunit' => $assetRequest->requestor->subUnit->sub_unit_name ?? '-',
-                ],
-                'item_count' => $assetRequest->quantity ?? 0,
-                'date_requested' => $assetRequest->created_at,
-                'status' => $assetRequest->status,
-                'history_log' => $assetRequest->assetapproval->map(function ($approval) {
-                    return [
-                        'id' => $approval->id,
-                        'approver' => [
-                            'id' => $approval->approver->id,
-                            'username' => $approval->approver->user->username,
-                            'employee_id' => $approval->approver->user->employee_id,
-                            'firstname' => $approval->approver->user->firstname,
-                            'lastname' => $approval->approver->user->lastname,
-                            'department' => $approval->approver->user->department->department_name ?? '-',
-                            'subunit' => $approval->approver->user->subUnit->sub_unit_name ?? '-',
-                            'layer' => $approval->layer,
-                        ],
-                        'status' => $approval->status,
-                        'remarks' => $approval->status == 'Declined' ? $approval->assetRequest->remarks : null,
-                        'created_at' => $approval->activityLog()->latest()->first()->created_at ?? null,
-                    ];
-                }),
-            ];
-        })->values();
-
-        if ($perPage !== null) {
-            $page = $request->input('page', 1);
-            $offset = ($page * $perPage) - $perPage;
-            $assetRequest = new LengthAwarePaginator(
-                $assetRequest->slice($offset, $perPage)->values(),
-                $assetRequest->count(),
-                $perPage,
-                $page,
-                ['path' => $request->url(), 'query' => $request->query()]
-            );
-        }
-
-        return $assetRequest;
+        return [
+            'id' => $assetRequest->transaction_number,
+            'transaction_number' => $assetRequest->transaction_number,
+            'item_count' => $assetRequest->quantity ?? 0,
+            'date_requested' => $assetRequest->created_at,
+            'status' => $assetRequest->status,
+            'pr_number' => $assetRequest->pr_number ?? '-',
+            'requestor' => [
+                'id' => $assetRequest->requestor->id,
+                'username' => $assetRequest->requestor->username,
+                'employee_id' => $assetRequest->requestor->employee_id,
+                'firstname' => $assetRequest->requestor->firstname,
+                'lastname' => $assetRequest->requestor->lastname,
+                'department' => $assetRequest->requestor->department->department_name ?? '-',
+                'subunit' => $assetRequest->requestor->subUnit->sub_unit_name ?? '-',
+            ],
+            'history_log' => $assetRequest->assetapproval->map(function ($approval) {
+                return [
+                    'id' => $approval->id,
+                    'approver' => [
+                        'id' => $approval->approver->id,
+                        'username' => $approval->approver->user->username,
+                        'employee_id' => $approval->approver->user->employee_id,
+                        'firstname' => $approval->approver->user->firstname,
+                        'lastname' => $approval->approver->user->lastname,
+                        'department' => $approval->approver->user->department->department_name ?? '-',
+                        'subunit' => $approval->approver->user->subUnit->sub_unit_name ?? '-',
+                        'layer' => $approval->layer,
+                    ],
+                    'status' => $approval->status,
+                    'remarks' => $approval->status == 'Declined' ? $approval->assetRequest->remarks : null,
+//                    'created_at' => $approval->activityLog()->latest()->first()->created_at ?? null,
+                    'activity_log' =>$approval->activityLog->map(function ($activityLog) {
+                        return [
+                            'id' => $activityLog->id,
+                            'action' => $activityLog->log_name,
+                            'created_at' => $activityLog->created_at,
+                        ];
+                    }),
+                ];
+            })->sortBy('approver.layer')->values(),
+        ];
     }
+
+
 
     /**
      * This is for the asset request show page.
@@ -168,13 +155,25 @@ trait AssetRequestHandler
                     'id' => $ar->typeOfRequest->id,
                     'type_of_request_name' => $ar->typeOfRequest->type_of_request_name,
                 ],
-                'charged_department' => [
-                    'id' => $ar->chargedDepartment->id,
-                    'charged_department_name' => $ar->chargedDepartment->department_name,
+                'company' => [
+                    'id' => $ar->company->id,
+                    'company_name' => $ar->company->company_name,
+                ],
+                'department' => [
+                    'id' => $ar->department->id,
+                    'charged_department_name' => $ar->department->department_name,
                 ],
                 'subunit' => [
                     'id' => $ar->subunit->id,
-                    'subunit_name' => $ar->subunit->subunit_name,
+                    'subunit_name' => $ar->subunit->sub_unit_name,
+                ],
+                'location' => [
+                    'id' =>$ar->location->id,
+                    'location_name' => $ar->location->location_name,
+                ],
+                'account_title' => [
+                    'id' => $ar->accountTitle->id,
+                    'account_title_name' => $ar->accountTitle->account_title_name,
                 ],
                 'attachments' => [
                     /*

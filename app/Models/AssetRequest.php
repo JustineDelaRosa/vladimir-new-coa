@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Filters\AssetRequestFilters;
+use App\Filters\LocationFilters;
 use App\Models\Status\AssetStatus;
 use App\Models\Status\CycleCountStatus;
 use App\Models\Status\DepreciationStatus;
@@ -93,10 +94,6 @@ class AssetRequest extends Model implements HasMedia
         return $this->hasMany(AssetApproval::class, 'transaction_number', 'transaction_number');
     }
 
-    public function chargedDepartment(){
-        return $this->belongsTo(Department::class , 'charged_department_id' , 'id');
-    }
-
     public function subunit(){
         return $this->belongsTo(Subunit::class , 'subunit_id' , 'id');
     }
@@ -156,4 +153,19 @@ class AssetRequest extends Model implements HasMedia
         return $this->belongsTo(MovementStatus::class, 'movement_status_id', 'id');
     }
 
+    public function company()
+    {
+        return $this->belongsTo(Company::class, 'company_id', 'id');
+    }
+
+    public function department(){
+        return $this->belongsTo(Department::class , 'department_id' , 'id');
+    }
+
+    public function location(){
+        return $this->belongsTo(Location::class, 'location_id', 'id');
+    }
+    public function accountTitle(){
+        return $this->belongsTo(AccountTitle::class, 'account_title_id', 'id');
+    }
 }

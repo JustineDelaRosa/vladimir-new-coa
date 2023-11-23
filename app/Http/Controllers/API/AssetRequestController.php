@@ -5,9 +5,12 @@ namespace App\Http\Controllers\API;
 use App\Models\ApproverLayer;
 use App\Models\AssetApproval;
 use App\Models\AssetRequest;
+use App\Models\Company;
+use App\Models\Department;
 use App\Models\DepartmentUnitApprovers;
 use App\Models\RoleManagement;
 use App\Models\SubCapex;
+use App\Models\SubUnit;
 use App\Repositories\ApprovedRequestRepository;
 use App\Traits\AssetRequestHandler;
 use Essa\APIToolKit\Api\ApiResponse;
@@ -34,8 +37,29 @@ class AssetRequestController extends Controller
 
     public function index(Request $request)
     {
+        $perPage = $request->input('per_page', null);
 
-        $assetRequest = $this->transformIndexAssetRequest($request);
+        $requesterId = auth('sanctum')->user()->id;
+
+        $assetRequest = AssetRequest::where('requester_id', $requesterId)->useFilters()->get()->groupBy('transaction_number')->map(function ($assetRequestCollection) {
+            $assetRequest = $assetRequestCollection->first();
+            //sum all the quantity per group
+            $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+            return $this->transformIndexAssetRequest($assetRequest);
+        })->values();
+
+
+        if ($perPage !== null) {
+            $page = $request->input('page', 1);
+            $offset = ($page * $perPage) - $perPage;
+            $assetRequest = new LengthAwarePaginator(
+                $assetRequest->slice($offset, $perPage)->values(),
+                $assetRequest->count(),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+        }
         return $assetRequest;
     }
 
@@ -63,9 +87,13 @@ class AssetRequestController extends Controller
                 'reference_number' => (new AssetRequest)->generateReferenceNumber(),
                 'type_of_request_id' => $request['type_of_request_id'],
                 'attachment_type' => $request['attachment_type'],
-                'charged_department_id' => $request['charged_department_id'],
+//                'charged_department_id' => $request['charged_department_id'],
                 'subunit_id' => $request['subunit_id'],
+                'location_id' => $request['location_id'],
+                'account_title_id' => $request['account_title_id'],
                 'accountability' => $request['accountability'],
+                'company_id' =>  Department::find($request['department_id'])->company->id,
+                'department_id' => $request['department_id'],
                 'accountable' => $request['accountable'] ?? null,
                 'asset_description' => $request['asset_description'],
                 'asset_specification' => $request['asset_specification'] ?? null,
@@ -76,8 +104,8 @@ class AssetRequestController extends Controller
 
             $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
 
-            foreach($fileKeys as $fileKey) {
-                if(isset($request[$fileKey])) {
+            foreach ($fileKeys as $fileKey) {
+                if (isset($request[$fileKey])) {
                     $files = is_array($request[$fileKey]) ? $request[$fileKey] : [$request[$fileKey]];
                     foreach ($files as $file) {
                         $assetRequest->addMedia($file)->toMediaCollection($fileKey);
