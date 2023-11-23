@@ -69,20 +69,25 @@ class CreateAssetRequestRequest extends FormRequest
 //                'brand' => 'nullable',
 //                'quantity' => 'required|numeric|min:1',
 //            ];
-            return[
+            return [
 //                'userRequest' => ['required','array'],
 
-                'userRequest.*.type_of_request_id' => [
+
+                'userRequest.*.type_of_request_id.id' => [
                     'required',
                     Rule::exists('type_of_requests', 'id')
                 ],
-                'userRequest.*.department_id' => ['required', Rule::exists('departments', 'id')],
+                'uerRequest.*.department_id.company.company_id' => [
+                    'required',
+                    Rule::exists('companies', 'id')
+                ],
+                'userRequest.*.department_id.id' => ['required', Rule::exists('departments', 'id')],
                 'userRequest.*.attachment_type' => 'required|in:Budgeted,Unbudgeted',
-                'userRequest.*.subunit_id' =>['required', Rule::exists('sub_units', 'id')],
-                'userRequest.*.location_id'=>['required', Rule::exists('locations', 'id')],
-                'userRequest.*.account_title_id' => ['required', Rule::exists('account_titles', 'id')],
+                'userRequest.*.subunit_id.id' => ['required', Rule::exists('sub_units', 'id')],
+                'userRequest.*.location_id.id' => ['required', Rule::exists('locations', 'id')],
+                'userRequest.*.account_title_id.id' => ['required', Rule::exists('account_titles', 'id')],
                 'userRequest.*.accountability' => 'required|in:Personal Issued,Common',
-                'userRequest.*.accountable' => ['required_if:accountability,Personal Issued', 'exists:users,id',
+                'userRequest.*.accountable' => ['required_if:accountability,Personal Issued',
                     function ($attribute, $value, $fail) {
                         $accountable = request()->input('accountable');
                         //if the accountability is not Personal Issued, nullify the accountable field and return
@@ -111,17 +116,17 @@ class CreateAssetRequestRequest extends FormRequest
                 'userRequest.*.cellphone_number' => 'nullable|numeric',
                 'userRequest.*.brand' => 'nullable',
                 'userRequest.*.quantity' => 'required|numeric|min:1',
-                'userRequest.*.letter_of_request' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
-                'userRequest.*.quotation' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
-                'userRequest.*.specification_form' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
-                'userRequest.*.tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
-                'userRequest.*.other_attachments' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+//                'userRequest.*.letter_of_request' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+//                'userRequest.*.quotation' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+//                'userRequest.*.specification_form' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+//                'userRequest.*.tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+//                'userRequest.*.other_attachments' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
             ];
         }
 
-        if($this->isMethod('PATCH')){
+        if ($this->isMethod('PATCH')) {
             return [
-                'transaction_number' => ['required','exists:asset_requests,transaction_number'],
+                'transaction_number' => ['required', 'exists:asset_requests,transaction_number'],
             ];
         }
         return [];
@@ -130,22 +135,24 @@ class CreateAssetRequestRequest extends FormRequest
     function messages(): array
     {
         return [
-            'userRequest.*.type_of_request_id.required' => 'The type of request is required.',
-            'userRequest.*.type_of_request_id.exists' => 'The type of request is invalid.',
-            'userRequest.*.department_id.required' => 'The department is required.',
-            'userRequest.*.department_id.exists' => 'The department is invalid.',
+            'userRequest.*.type_of_request_id.id.required' => 'The type of request is required.',
+            'userRequest.*.type_of_request_id.id.exists' => 'The type of request is invalid.',
+            'userRequest.*.department_id.id.required' => 'The department is required.',
+            'userRequest.*.department_id.id.exists' => 'The department is invalid.',
             'userRequest.*.attachment_type.required' => 'The attachment type is required.',
             'userRequest.*.attachment_type.in' => 'The attachment type is invalid.',
-            'userRequest.*.subunit_id.required' => 'The subunit is required.',
-            'userRequest.*.subunit_id.exists' => 'The subunit is invalid.',
-            'userRequest.*.location_id.required' => 'The location is required.',
+            'userRequest.*.subunit_id.id.required' => 'The subunit is required.',
+            'userRequest.*.subunit_id.id.exists' => 'The subunit is invalid.',
+            'userRequest.*.location_id.id.required' => 'The location is required.',
             'userRequest.*.location_id.exists' => 'The location is invalid.',
-            'userRequest.*.account_title_id.required' => 'The account title is required.',
-            'userRequest.*.account_title_id.exists' => 'The account title is invalid.',
+            'userRequest.*.account_title_id.id.required' => 'The account title is required.',
+            'userRequest.*.account_title_id.id.exists' => 'The account title is invalid.',
             'userRequest.*.accountability.required' => 'The accountability is required.',
+            'userRequest.*.department.company.company_id.required' => 'The company is required.',
+            'userRequest.*.department.company.company_id.exists' => 'The company is invalid.',
             'userRequest.*.accountability.in' => 'The accountability is invalid.',
             'userRequest.*.accountable.required_if' => 'The accountable is required.',
-            'userRequest.*.accountable.exists' => 'The accountable is invalid.',
+//            'userRequest.*.accountable.exists' => 'The accountable is invalid.',
             'userRequest.*.asset_description.required' => 'The asset description is required.',
             'userRequest.*.asset_specification.required' => 'The asset specification is required.',
             'userRequest.*.cellphone_number.numeric' => 'The cellphone number must be a number.',

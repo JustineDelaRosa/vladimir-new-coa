@@ -65,7 +65,7 @@ class AssetRequestController extends Controller
 
     public function store(CreateAssetRequestRequest $request)
     {
-        $userRequest = $request->userRequest;
+         $userRequest = $request->userRequest;
         $requesterId = auth('sanctum')->user()->id;
         $transactionNumber = AssetRequest::generateTransactionNumber();
         $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $userRequest[0]['subunit_id'])
@@ -85,15 +85,15 @@ class AssetRequestController extends Controller
                 'requester_id' => $requesterId,
                 'transaction_number' => $transactionNumber,
                 'reference_number' => (new AssetRequest)->generateReferenceNumber(),
-                'type_of_request_id' => $request['type_of_request_id'],
+                'type_of_request_id' => $request['type_of_request_id']['id'],
                 'attachment_type' => $request['attachment_type'],
 //                'charged_department_id' => $request['charged_department_id'],
-                'subunit_id' => $request['subunit_id'],
-                'location_id' => $request['location_id'],
-                'account_title_id' => $request['account_title_id'],
+                'subunit_id' => $request['subunit_id']['id'],
+                'location_id' => $request['location_id']['id'],
+                'account_title_id' => $request['account_title_id']['id'],
                 'accountability' => $request['accountability'],
-                'company_id' =>  Department::find($request['department_id'])->company->id,
-                'department_id' => $request['department_id'],
+                'company_id' =>  $request['department_id']['company']['company_id'],
+                'department_id' => $request['department_id']['id'],
                 'accountable' => $request['accountable'] ?? null,
                 'asset_description' => $request['asset_description'],
                 'asset_specification' => $request['asset_specification'] ?? null,

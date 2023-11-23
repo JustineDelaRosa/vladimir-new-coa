@@ -47,6 +47,7 @@ class Department extends Model
         return $this->belongsTo(Company::class, 'company_sync_id', 'sync_id');
     }
 
+
 //    public function location(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
 //    {
 //        return $this->belongsToMany(Location::class, 'location_sync_id', 'sync_id');
