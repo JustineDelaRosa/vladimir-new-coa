@@ -55,7 +55,10 @@ class AssetApprovalController extends Controller
         }
 
         $assetApprovals = $assetApprovalsQuery->where('status', $status)->useFilters()->dynamicPaginate();
-        return $this->transformIndexApproval($assetApprovals);
+        $transactionNumbers = $assetApprovals->map(function ($item) {
+            return $item->transaction_number;
+        });
+        return $this->transformIndexApproval($assetApprovals, $transactionNumbers);
     }
 
     public function store(CreateAssetApprovalRequest $request): JsonResponse

@@ -2,14 +2,19 @@
 
 namespace App\Traits;
 
+use App\Models\AssetRequest;
+
 trait AssetApprovalHandler
 {
-    public function transformIndexApproval($assetApprovals)
+    public function transformIndexApproval($assetApprovals, $transactionNumbers)
     {
-        $assetApprovals->transform(function ($assetApproval) {
+        $quantity = AssetRequest::whereIn('transaction_number', $transactionNumbers)->get()->sum('quantity');
+        $assetApprovals->transform(function ($assetApproval) use ($quantity) {
             return [
                 'id' => $assetApproval->id,
                 'status' => $assetApproval->status,
+                'layer' => $assetApproval->layer,
+                'number_of_item' => $quantity,
                 'requester' => [
                     'id' => $assetApproval->requester->id,
                     'username' => $assetApproval->requester->username,
@@ -17,7 +22,6 @@ trait AssetApprovalHandler
                     'firstname' => $assetApproval->requester->firstname,
                     'lastname' => $assetApproval->requester->lastname,
                 ],
-                'layer' => $assetApproval->layer,
                 'approver' => [
                     'id' => $assetApproval->approver->user->id,
                     'username' => $assetApproval->approver->user->username,
@@ -28,7 +32,6 @@ trait AssetApprovalHandler
                 'asset_request' => [
                     'id' => $assetApproval->assetRequest->transaction_number,
                     'transaction_number' => $assetApproval->assetRequest->transaction_number,
-                    'quantity_of_po' => $assetApproval->assetRequest->count(),
                     'date_requested' => $assetApproval->assetRequest->created_at,
                     'status' => $assetApproval->assetRequest->status,
                 ]

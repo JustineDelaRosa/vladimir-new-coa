@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\AddingPrController;
 use App\Http\Controllers\API\ApproverSettingController;
 use App\Http\Controllers\API\AssetApprovalController;
 use App\Http\Controllers\API\AssetApprovalLogger\AssetApprovalLoggerController;
@@ -230,4 +231,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('approval-logs', AssetApprovalLoggerController::class);
     //DEPARTMENT UNIT APPROVER LAYER SETUP//
     Route::resource('department-unit-approvers', DepartmentUnitApproversController::class);
+    //ADDING PR//
+    Route::resource('adding-pr', AddingPrController::class);
 });
