@@ -131,7 +131,9 @@ class AdditionalCostImport extends DefaultValueBinder implements
             'accumulated_cost' => $collection['accumulated_cost'],
             'months_depreciated' => $this->calculationRepository->getMonthDifference(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
 //            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life, $collection['depreciation_method']),
+            'end_depreciation' => substr_replace($collection['end_depreciation'], '-', 4, 0),
+            //TODO: The validation is temporarily disabled requested by th proponent.
+            //$this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life, $collection['depreciation_method']),
             'depreciation_per_year' => $collection['depreciation_per_year'],
             'depreciation_per_month' => $collection['depreciation_per_month'],
             'remaining_book_value' => $collection['remaining_book_value'],
@@ -369,10 +371,12 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     $this->calculationRepository->validationForDate($attribute, $value, $fail);
                 }
             ],
-            '*.company_code' => ['required', 'exists:companies,company_code',
+            '*.company_code' => [
+                'required',
+                'exists:companies,company_code',
                 function ($attribute, $value, $fail) use ($collections) {
-                    $index = array_search($attribute, array_keys($collections->toArray()));
-                    $company_name = $collections[$index]['company'];
+                    $index = array_search($attribute, array_keys($collections));
+                    $company_name = $collections[$index]['company']; // Ensure $collections[$index] is an array.
                     $inactive = Company::where('company_code', $value)->where('is_active', 0)->first();
                     if ($inactive) {
                         $fail('Company is inactive');
@@ -391,7 +395,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             ],
             '*.department_code' => ['required', 'exists:departments,department_code',
                 function ($attribute, $value, $fail) use ($collections) {
-                    $index = array_search($attribute, array_keys($collections->toArray()));
+                    $index = array_search($attribute, array_keys($collections));
                     $department_name = $collections[$index]['department'];
                     //check if department is inactive
                     $inactive = Department::where('department_code', $value)->where('is_active', 0)->first();
@@ -419,7 +423,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             ],
             '*.location_code' => ['required', 'exists:locations,location_code',
                 function ($attribute, $value, $fail) use ($collections) {
-                    $index = array_search($attribute, array_keys($collections->toArray()));
+                    $index = array_search($attribute, array_keys($collections));
                     //check if the code is correct on the database
                     $inactive = Location::where('location_code', $value)->where('is_active', 0)->first();
                     if ($inactive) {
@@ -446,7 +450,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             ],
             '*.account_code' => ['required', 'exists:account_titles,account_title_code',
                 function ($attribute, $value, $fail) use ($collections) {
-                    $index = array_search($attribute, array_keys($collections->toArray()));
+                    $index = array_search($attribute, array_keys($collections));
                     $account_title_name = $collections[$index]['account_title'];
                     $inactive = AccountTitle::where('account_title_code', $value)->where('is_active', 0)->first();
                     if ($inactive) {
