@@ -90,10 +90,9 @@ class DepartmentController extends Controller
             'subunit' => $department->subUnit->map(function ($subunit) {
                     return [
                         'subunit_id' => $subunit->id ?? "-",
-                        'subunit_sync_id' => $subunit->sync_id ?? "-",
-                        'subunit_code' => $subunit->subunit_code ?? "-",
-                        'subunit_name' => $subunit->subunit_name ?? "-",
-                        'subunit_status' => $subunit->is_active ?? '-',
+                        'subunit_code' => $subunit->sub_unit_code ?? "-",
+                        'subunit_name' => $subunit->sub_unit_name ?? "-",
+                        'subunit_status' => $subunit->is_active ?? "-",
                     ];
                 }),
                 'department_code' => $department->department_code,

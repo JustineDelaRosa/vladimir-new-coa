@@ -57,12 +57,12 @@ class SubUnitController extends Controller
             'sub_unit_name' => $subUnitName,
         ]);
 
-        return $this->responseCreated('SubUnit created successfully', $subUnit);
+        return $this->responseCreated('Subunit created successfully', $subUnit);
     }
 
     public function show(SubUnit $subUnit): JsonResponse
     {
-        return $this->responseSuccess('SubUnit retrieved successfully', $subUnit);
+        return $this->responseSuccess('Subunit retrieved successfully', $subUnit);
     }
 
     public function update(UpdateSubUnitRequest $request, $id): JsonResponse
@@ -70,11 +70,11 @@ class SubUnitController extends Controller
         $subUnit = SubUnit::find($id);
 
         if(!$subUnit) {
-            return $this->responseNotFound('SubUnit not found');
+            return $this->responseNotFound('Subunit not found');
         }
         //sub unit is tagged
         if($subUnit->departmentUnitApprovers()->exists()) {
-            return $this->responseUnprocessable('You cannot update a tagged sub unit');
+            return $this->responseUnprocessable('You cannot update a tagged subunit');
         }
 
         $departmentId = $request->department_id;
@@ -85,7 +85,7 @@ class SubUnitController extends Controller
             'sub_unit_name' => $subUnitName,
         ]);
 
-        return $this->responseSuccess('SubUnit updated Successfully');
+        return $this->responseSuccess('Subunit updated Successfully');
     }
 
     /**
@@ -100,7 +100,7 @@ class SubUnitController extends Controller
         $status = $request->status;
         $subUnit = SubUnit::query();
         if (!$subUnit->withTrashed()->where('id', $id)->exists()) {
-            return $this->responseNotFound('SubUnit not found');
+            return $this->responseNotFound('Subunit not found');
         }
         if ($status == false) {
             if (!$subUnit->clone()->where('id', $id)->where('is_active', true)->exists()) {
@@ -110,13 +110,13 @@ class SubUnitController extends Controller
                 $users = User::where('subunit_id', $id)->exists();
 
                 if($departmentUnitApprovers) {
-                    return $this->responseUnprocessable('You cannot archive a tagged sub unit');
+                    return $this->responseUnprocessable('You cannot archive a tagged subunit');
                 }
                 if($users) {
-                    return $this->responseUnprocessable('You cannot archive a sub unit with users');
+                    return $this->responseUnprocessable('You cannot archive a subunit with users');
                 }
                 $removeSubUnit = SubUnit::archive($id);
-                return $this->responseSuccess('SubUnit archived successfully', $removeSubUnit);
+                return $this->responseSuccess('Subunit archived successfully', $removeSubUnit);
             }
         }
 
@@ -125,7 +125,7 @@ class SubUnitController extends Controller
                 return $this->responseSuccess('No changes');
             } else {
                 $restoreSubUnit = SubUnit::restoreSubUnit($id);
-                return $this->responseSuccess('SubUnit restored successfully', $restoreSubUnit);
+                return $this->responseSuccess('Subunit restored successfully', $restoreSubUnit);
             }
         }
     }

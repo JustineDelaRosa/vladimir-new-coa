@@ -18,32 +18,16 @@ class SubCapexController extends Controller
      */
     public function index(Request $request)
     {
-        $subCapex = SubCapex::withTrashed()
-            ->with(['capex' => function ($query) {
-                return $query->withTrashed();
-            }])
-            ->where(function ($query) use ($request) {
-                $query->where('sub_capex', 'like', '%' . $request->search . '%')
-                    ->orWhere('sub_project', 'like', '%' . $request->search . '%');
-            })
-            ->when($request->status === 'deactivated', function ($query) {
-                return $query->onlyTrashed();
-            })
-            ->when($request->status === 'active', function ($query) {
-                return $query->whereNull('deleted_at');
-            })
-            ->orderByDesc('created_at')
-            ->when($request->limit, function ($query) use ($request) {
-                return $query->paginate($request->limit);
-            }, function ($query) {
-                return $query->get();
-            });
+        $capexStatus = $request->status ?? 'active';
+        $isActiveStatus = ($capexStatus === 'deactivated') ? 0 : 1;
+
+        $subCapex = SubCapex::withTrashed()->where('is_active', $isActiveStatus)
+        ->orderByDesc('created_at')
+        ->useFilters()
+        ->dynamicPaginate();
 
 
-        return response()->json([
-            'message' => 'Successfully retrieved sub capex.',
-            'data' => $subCapex,
-        ], 200);
+        return $subCapex;
     }
 
     /**

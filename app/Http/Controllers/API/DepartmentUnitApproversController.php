@@ -35,12 +35,12 @@ class  DepartmentUnitApproversController extends Controller
                 ],
                 'approvers' => $item->map(function ($item) {
                     return [
-                        'approver_id' => $item->approver->id,
-                        'username' => $item->approver->user->username,
-                        'employee_id' => $item->approver->user->employee_id,
-                        'first_name' => $item->approver->user->firstname,
-                        'last_name' => $item->approver->user->lastname,
-                        'layer' => $item->layer,
+                        'approver_id' => $item->approver->id ?? '-',
+                        'username' => $item->approver->user->username ?? '-',
+                        'employee_id' => $item->approver->user->employee_id ?? '-',
+                        'first_name' => $item->approver->user->firstname ?? '-',
+                        'last_name' => $item->approver->user->lastname ?? '-',
+                        'layer' => $item->layer ?? '-',
                     ];
                 })->sortBy('layer')->values(),
             ];

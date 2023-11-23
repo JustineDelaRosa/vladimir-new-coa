@@ -176,7 +176,9 @@ class MasterlistImport extends DefaultValueBinder implements
             'accumulated_cost' => $collection['accumulated_cost'],
             'months_depreciated' => $this->calculationRepository->getMonthDifference(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
 //            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life, $collection['depreciation_method']),
+            'end_depreciation' => substr_replace($collection['end_depreciation'], '-', 4, 0),
+                //TODO: The validation is temporarily disabled requested by th proponent.
+                //$this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life, $collection['depreciation_method']),
             'depreciation_per_year' => $collection['depreciation_per_year'],
             'depreciation_per_month' => $collection['depreciation_per_month'],
             'remaining_book_value' => $collection['remaining_book_value'],
@@ -281,42 +283,42 @@ class MasterlistImport extends DefaultValueBinder implements
                     }
                 }
             }],
-            //            '*.project_name' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
-            //                //check if the value of project name is null or '-'
-            //                if ($value == null || $value == '-') {
-            //                    return true;
-            //                }
-            //                //check in the capex table if the project name is the same with the capex
-            //                $index = array_search($attribute, array_keys($collections->toArray()));
-            //                $capex = Capex::where('capex', $collections[$index]['capex'])->first();
-            //                if ($capex) {
-            //                    $project = $capex->where('project_name', $value)->first();
-            //                    if (!$project) {
-            //                        $fail('Project name does not exist in the capex');
-            //                    }
-            //                }
-            //            }],
-            //            '*.sub_project' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
-            //                if ($value == '' || $value == '-') {
-            //                    return true;
-            //                }
-            //                $index = array_search($attribute, array_keys($collections->toArray()));
-            //                $subCapexValue = $collections[$index]['sub_capex'];
-            //                if($subCapexValue != '' && $subCapexValue != '-'){
-            //                    if ($value == '' || $value == '-') {
-            //                        $fail('Sub Project is required');
-            //                        return true;
-            //                    }
-            //                }
-            //                //check in the sub capex table if the subproject is the same with the capex
-            //                $subCapex = SubCapex::where('sub_capex', $subCapexValue)->first();
-            //                if ($subCapex) {
-            //                    $subProject = $subCapex->where('sub_project', $value)->first();
-            //                    if (!$subProject) {
-            //                        $fail('Sub project does not exist in the sub capex');
-            //                    }
-            //                }
-            //            }],
+            //      '*.project_name' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
+            //          //check if the value of project name is null or '-'
+            //          if ($value == null || $value == '-') {
+            //              return true;
+            //          }
+            //          //check in the capex table if the project name is the same with the capex
+            //          $index = array_search($attribute, array_keys($collections->toArray()));
+            //          $capex = Capex::where('capex', $collections[$index]['capex'])->first();
+            //          if ($capex) {
+            //              $project = $capex->where('project_name', $value)->first();
+            //              if (!$project) {
+            //                  $fail('Project name does not exist in the capex');
+            //              }
+            //          }
+            //      }],
+            //      '*.sub_project' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
+            //          if ($value == '' || $value == '-') {
+            //              return true;
+            //          }
+            //          $index = array_search($attribute, array_keys($collections->toArray()));
+            //          $subCapexValue = $collections[$index]['sub_capex'];
+            //          if($subCapexValue != '' && $subCapexValue != '-'){
+            //              if ($value == '' || $value == '-') {
+            //                  $fail('Sub Project is required');
+            //                  return true;
+            //              }
+            //          }
+            //          //check in the sub capex table if the subproject is the same with the capex
+            //          $subCapex = SubCapex::where('sub_capex', $subCapexValue)->first();
+            //          if ($subCapex) {
+            //              $subProject = $subCapex->where('sub_project', $value)->first();
+            //              if (!$subProject) {
+            //                  $fail('Sub project does not exist in the sub capex');
+            //              }
+            //          }
+            //      }],
             '*.tag_number' => ['required', 'regex:/^([0-9-]{6,13}|-)$/', function ($attribute, $value, $fail) use ($collections) {
                 $duplicate = $collections->where('tag_number', $value)->where('tag_number', '!=', '-')->count();
                 if ($duplicate > 1) {
@@ -470,13 +472,12 @@ class MasterlistImport extends DefaultValueBinder implements
                         $fail('Invalid depreciation status');
                     }
 
-                    //                    $depreciation_method = $collections[$index]['depreciation_method'];
-                    //                    if ($depreciation_method == 'One Time') {
-                    //                        if ($value != 'Fully Depreciated') {
-                    //                            $fail('Depreciation status should be fully depreciated');
-                    //                        }
-                    //                    }
-
+                    //$depreciation_method = $collections[$index]['depreciation_method'];
+                    //if ($depreciation_method == 'One Time') {
+                    //    if ($value != 'Fully Depreciated') {
+                    //        $fail('Depreciation status should be fully depreciated');
+                    //    }
+                    //}
                 }
             ],
             '*.cycle_count_status' => [

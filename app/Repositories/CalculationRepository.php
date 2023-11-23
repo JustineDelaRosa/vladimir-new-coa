@@ -210,15 +210,16 @@ class CalculationRepository
                 if (Carbon::parse($value)->isAfter($current_date)) {
                     $fail('Not yet fully depreciated');
                 }
-            } elseif ($depreciation_status->depreciation_status_name == 'Running Depreciation') {
-                //check if the value of end depreciation is not yet passed the current date (yyyymm)
-                $current_date = Carbon::now()->format('Y-m');
-                $value = substr_replace($value, '-', 4, 0);
-                //check if the value is parsable or not
-                if (Carbon::parse($value)->isBefore($current_date)) {
-                    $fail('The asset is fully depreciated');
-                }
             }
+//            elseif ($depreciation_status->depreciation_status_name == 'Running Depreciation') {
+//                //check if the value of end depreciation is not yet passed the current date (yyyymm)
+//                $current_date = Carbon::now()->format('Y-m');
+//                $value = substr_replace($value, '-', 4, 0);
+//                //check if the value is parsable or not
+//                if (Carbon::parse($value)->isBefore($current_date)) {
+//                    $fail('The asset is fully depreciated');
+//                }
+//            }
         }
     }
 
