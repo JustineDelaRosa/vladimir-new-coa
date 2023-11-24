@@ -113,7 +113,7 @@ class AssetApprovalController extends Controller
             case 'Approve':
                 return $this->approveRequestRepository->approveRequest($assetApprovalIds);
                 break;
-            case 'Return': //todo: change to term to Return
+            case 'Return':
                 return $this->approveRequestRepository->disapproveRequest($assetApprovalIds, $remarks);
                 break;
 //            case 'Void':
