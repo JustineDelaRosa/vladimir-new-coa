@@ -64,7 +64,7 @@ class RequestContainerController extends Controller
                 ? 'Approved'
                 : ($isRequesterApprover
                     ? 'For Approval of Approver ' . ($requesterLayer + 1)
-                    : 'For Approval'),
+                    : 'For Approval of Approver 1'),
             'requester_id' => $requesterId,
             'type_of_request_id' => $request->type_of_request_id['id'],
             'attachment_type' => $request->attachment_type,
