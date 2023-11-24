@@ -79,10 +79,16 @@ class AssetRequestController extends Controller
 
         $isRequesterApprover = in_array($requesterId, $layerIds);
         $requesterLayer = array_search($requesterId, $layerIds) + 1;
+        $maxLayer = $departmentUnitApprovers->max('layer');
+        $isLastApprover = $maxLayer == $requesterLayer;
 
         foreach ($userRequest as $request) {
             $assetRequest = AssetRequest::create([
-                'status' => $isRequesterApprover ? 'For Approval of Approver ' . ($requesterLayer + 1) : 'For Approval of Approver 1',
+                'status' => $isLastApprover
+                    ? 'Approved'
+                    : ($isRequesterApprover
+                        ? 'For Approval of Approver ' . ($requesterLayer + 1)
+                        : 'For Approval'),
                 'requester_id' => $requesterId,
                 'transaction_number' => $transactionNumber,
                 'reference_number' => (new AssetRequest)->generateReferenceNumber(),

@@ -52,10 +52,19 @@ class RequestContainerController extends Controller
 
         $isRequesterApprover = in_array($requesterId, $layerIds);
         $requesterLayer = array_search($requesterId, $layerIds) + 1;
+        // Get the maximum (last) layer
+        $maxLayer = $departmentUnitApprovers->max('layer');
+
+        // Check if requester is the last approver
+        $isLastApprover = $maxLayer == $requesterLayer;
 
 
         $assetRequest = RequestContainer::create([
-            'status' => $isRequesterApprover ? 'For Approval of Approver ' . ($requesterLayer + 1) : 'For Approval of Approver 1',
+            'status' => $isLastApprover
+                ? 'Approved'
+                : ($isRequesterApprover
+                    ? 'For Approval of Approver ' . ($requesterLayer + 1)
+                    : 'For Approval'),
             'requester_id' => $requesterId,
             'type_of_request_id' => $request->type_of_request_id['id'],
             'attachment_type' => $request->attachment_type,
@@ -140,7 +149,7 @@ class RequestContainerController extends Controller
     public function updateContainer(UpdateRequestContainerRequest $request, $id): \Illuminate\Http\JsonResponse
     {
         $requestContainer = RequestContainer::find($id);
-        if(!$requestContainer){
+        if (!$requestContainer) {
             return $this->responseNotFound('Request Not Found');
         }
 
@@ -161,8 +170,8 @@ class RequestContainerController extends Controller
             'quantity' => $request->quantity ?? 1,
         ]);
 
-        if($requestContainer){
-                $this->handleMediaAttachments($requestContainer, $request);
+        if ($requestContainer) {
+            $this->handleMediaAttachments($requestContainer, $request);
         }
 
         return $this->responseSuccess('Request updated Successfully');

@@ -191,7 +191,8 @@ class PrintBarCodeController extends Controller
         $typesOfRequestId = TypeOfRequest::whereIn('type_of_request_name', ['Capex', 'Vehicle'])->pluck('id')->toArray();
 
         if ($vladimirTagNumbers == null) {
-            $vladimirTagNumbers = FixedAsset::whereNotIn('type_of_request_id', array_values($typesOfRequestId))->pluck('vladimir_tag_number')->toArray();
+//            $vladimirTagNumbers = FixedAsset::whereNotIn('type_of_request_id', array_values($typesOfRequestId))->pluck('vladimir_tag_number')->toArray();
+            $this->responseUnprocessable('Please select at least one asset');
         }
 
         $fixedAssetQuery = FixedAsset::whereIn('vladimir_tag_number', $vladimirTagNumbers)
