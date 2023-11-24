@@ -7,6 +7,7 @@ use App\Http\Controllers\API\AssetApprovalLogger\AssetApprovalLoggerController;
 use App\Http\Controllers\API\AssetRequestController;
 use App\Http\Controllers\API\AssignApproverController;
 use App\Http\Controllers\API\DepartmentUnitApproversController;
+use App\Http\Controllers\API\RequestContainerController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CategoryListController;
 use App\Http\Controllers\Masterlist\AdditionalCostController;
@@ -224,6 +225,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('update-request/{referenceNumber}', [AssetRequestController::class, 'updateRequest']);
     Route::patch('void-request/{transactionNumber}/{referenceNumber?}',[AssetRequestController::class, 'removeRequestItem']);
     Route::patch('resubmit-request', [AssetRequestController::class, 'resubmitRequest']);
+    Route::POST('move-to-asset-request', [AssetRequestController::class, 'moveData']);
     //ASSET APPROVAL//
     Route::resource('asset-approval', AssetApprovalController::class);
     Route::patch('handle-request', [AssetApprovalController::class, 'handleRequest']);
@@ -233,4 +235,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('department-unit-approvers', DepartmentUnitApproversController::class);
     //ADDING PR//
     Route::resource('adding-pr', AddingPrController::class);
+    //REQUEST CONTAINER//
+    Route::resource('request-container', RequestContainerController::class);
+    Route::delete('remove-container-item/{id?}',[RequestContainerController::class, 'removeAll']);
+    Route::post('update-container/{id}', [RequestContainerController::class, 'updateContainer']);
 });

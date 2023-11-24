@@ -27,15 +27,15 @@ class AssetRequest extends Model implements HasMedia
 
     protected string $default_filters = AssetRequestFilters::class;
 
-    protected function last(){
-        $lastRecord = null;
-        try {
-            $lastRecord = static::withTrashed()->latest()->first();
-        } catch (\Exception $e) {
-            //add more appropriate exception handling here.
-        }
-        return $lastRecord;
-    }
+//    protected function last(){
+//        $lastRecord = null;
+//        try {
+//            $lastRecord = static::withTrashed()->latest()->first();
+//        } catch (\Exception $e) {
+//            //add more appropriate exception handling here.
+//        }
+//        return $lastRecord;
+//    }
 
     public function generateReferenceNumber(): ?string
     {
@@ -167,5 +167,10 @@ class AssetRequest extends Model implements HasMedia
     }
     public function accountTitle(){
         return $this->belongsTo(AccountTitle::class, 'account_title_id', 'id');
+    }
+    //move all the data of requestor from request container table then pass it to asset request table then delete the request container
+    public function moveAssetRequest($requestorId){
+
+
     }
 }

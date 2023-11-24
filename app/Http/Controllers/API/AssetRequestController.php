@@ -8,6 +8,7 @@ use App\Models\AssetRequest;
 use App\Models\Company;
 use App\Models\Department;
 use App\Models\DepartmentUnitApprovers;
+use App\Models\RequestContainer;
 use App\Models\RoleManagement;
 use App\Models\SubCapex;
 use App\Models\SubUnit;
@@ -65,7 +66,7 @@ class AssetRequestController extends Controller
 
     public function store(CreateAssetRequestRequest $request)
     {
-         $userRequest = $request->userRequest;
+        $userRequest = $request->userRequest;
         $requesterId = auth('sanctum')->user()->id;
         $transactionNumber = AssetRequest::generateTransactionNumber();
         $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $userRequest[0]['subunit_id'])
@@ -232,6 +233,101 @@ class AssetRequestController extends Controller
 
 //            return 'single';
             return $this->voidAssetRequest($transactionNumber);
+        }
+    }
+
+    public function moveData()
+    {
+        // Get the requester id from the request
+        $requesterId = auth('sanctum')->user()->id;
+        $transactionNumber = AssetRequest::generateTransactionNumber();
+
+
+
+
+        // Get the items from Requestcontainer
+        $items = RequestContainer::where('requester_id', $requesterId)->get();
+
+        foreach($items as $item) {
+            // For each item, create an AssetRequest
+            $assetRequest = new AssetRequest;
+
+            $assetRequest->status = $item->status;
+            $assetRequest->requester_id = $item->requester_id;
+            $assetRequest->type_of_request_id = $item->type_of_request_id;
+            $assetRequest->attachment_type = $item->attachment_type;
+            $assetRequest->subunit_id = $item->subunit_id;
+            $assetRequest->location_id = $item->location_id;
+            $assetRequest->account_title_id = $item->account_title_id;
+            $assetRequest->accountability = $item->accountability;
+            $assetRequest->company_id = $item->company_id;
+            $assetRequest->department_id = $item->department_id;
+            $assetRequest->accountable = $item->accountable;
+            $assetRequest->asset_description = $item->asset_description;
+            $assetRequest->asset_specification = $item->asset_specification;
+            $assetRequest->cellphone_number = $item->cellphone_number;
+            $assetRequest->brand = $item->brand;
+            $assetRequest->quantity = $item->quantity;
+
+            // Add transaction number and reference number
+            $assetRequest->transaction_number = $transactionNumber;
+            $assetRequest->reference_number = (new AssetRequest)->generateReferenceNumber();
+
+            $assetRequest->save();
+
+            // Get the media from RequestContainer and put it in AssetRequest
+            $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
+
+            foreach ($fileKeys as $fileKey) {
+                $media = $item->getMedia($fileKey);
+                foreach ($media as $file) {
+                    $file->copy($assetRequest, $fileKey);
+                }
+            }
+
+            $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $item->subunit_id)
+                    ->orderBy('layer', 'asc')
+                ->get();
+
+            $layerIds = $departmentUnitApprovers->map(function ($approverObject) {
+                return $approverObject->approver->approver_id;
+            })->toArray();
+            $isRequesterApprover = in_array($requesterId, $layerIds);
+            $requesterLayer = array_search($requesterId, $layerIds) + 1;
+
+            foreach ($departmentUnitApprovers as $departmentUnitApprover) {
+                $approver_id = $departmentUnitApprover->approver_id;
+                $layer = $departmentUnitApprover->layer;
+
+                // initial status
+                $status = null;
+
+                // if the requester is the approver, decide on status
+                if ($isRequesterApprover) {
+                    if ($layer == $requesterLayer || $layer < $requesterLayer) {
+                        $status = "Approved";
+                    } elseif ($layer == $requesterLayer + 1) {
+                        $status = "For Approval";
+                    }
+                } elseif ($layer == 1) { // if the requester is not an approver, only the first layer should be "For Approval"
+                    $status = "For Approval";
+                }
+
+                AssetApproval::create([
+                    'transaction_number' => $assetRequest->transaction_number,
+                    'approver_id' => $approver_id,
+                    'requester_id' => $requesterId,
+                    'layer' => $layer,
+                    'status' => $status,
+                ]);
+            }
+
+
+
+            // Delete the item from RequestContainer
+            $item->delete();
+
+            return $this->responseSuccess('Successfully requested');
         }
     }
 }

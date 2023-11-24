@@ -11,7 +11,7 @@ trait AssetRequestHandler
     public function getAssetRequest($field, $value, $singleResult = true)
     {
         $query = AssetRequest::where($field, $value)
-            ->whereIn('status', ['For Approval of Approver 1', 'Declined']);
+            ->whereIn('status', ['For Approval of Approver 1', 'Returned']);
 
         return $singleResult ? $query->first() : $query->get();
     }
@@ -92,7 +92,7 @@ trait AssetRequestHandler
                         'layer' => $approval->layer,
                     ],
                     'status' => $approval->status,
-                    'remarks' => $approval->status == 'Declined' ? $approval->assetRequest->remarks : null,
+                    'remarks' => $approval->status == 'Returned' ? $approval->assetRequest->remarks : null,
 //                    'created_at' => $approval->activityLog()->latest()->first()->created_at ?? null,
                     'activity_log' =>$approval->activityLog->map(function ($activityLog) {
                         return [
@@ -128,7 +128,7 @@ trait AssetRequestHandler
             $otherAttachmentsMedia = $ar->getMedia('other_attachments')->first();
 
             return [
-                'can_resubmit' => $ar->status == 'Declined' ? 1 : 0,
+                'can_resubmit' => $ar->status == 'Returned' ? 1 : 0,
                 'id' => $ar->id,
                 'status' => $ar->status,
                 'transaction_number' => $ar->transaction_number,

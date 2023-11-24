@@ -33,7 +33,7 @@ class CreateAssetApprovalRequest extends FormRequest
         }
     }
 
-    function messages()
+    function messages(): array
     {
         return [
             'asset_approval_id.one_array_present' => 'either asset approval or asset request is required',

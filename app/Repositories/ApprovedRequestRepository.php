@@ -62,11 +62,11 @@ class ApprovedRequestRepository
             return $this->responseUnprocessable('Its not your turn for this request');
         }
 
-        $this->updateAssetApprovalStatus($assetApproval, 'Declined');
+        $this->updateAssetApprovalStatus($assetApproval, 'Returned');
 
-        $this->updateAssetRequestStatus($assetApproval->transaction_number, 'Declined', $remarks);
+        $this->updateAssetRequestStatus($assetApproval->transaction_number, 'Returned', $remarks);
 
-        return $this->responseSuccess('Asset Request Declined Successfully');
+        return $this->responseSuccess('Asset Request Return Successfully');
     }
 
     //RESUBMITTING REQUEST
@@ -92,7 +92,7 @@ class ApprovedRequestRepository
 //    public function voidRequest($assetRequestIds): JsonResponse
 //    {
 //        foreach ($assetRequestIds as $id) {
-//            $assetRequest = AssetRequest::where('id', $id)->where('status', 'Declined')->first();
+//            $assetRequest = AssetRequest::where('id', $id)->where('status', 'Returned')->first();
 //            if (!$assetRequest) {
 //                return $this->responseUnprocessable('Invalid Action');
 //            }
@@ -159,7 +159,7 @@ class ApprovedRequestRepository
 
         //if the status is decline then update include the remarks
         //else don't update the remarks
-        if ($status == 'Declined') {
+        if ($status == 'Returned') {
             $assetRequest->each->update(['status' => $status, 'remarks' => $remarks]);
         } else {
             $assetRequest->each->update(['status' => $status]);
