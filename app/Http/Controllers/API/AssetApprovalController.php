@@ -110,10 +110,10 @@ class AssetApprovalController extends Controller
         $action = ucwords($request->action);
 
         switch ($action) {
-            case 'Approved':
+            case 'Approve':
                 return $this->approveRequestRepository->approveRequest($assetApprovalIds);
                 break;
-            case 'Declined':
+            case 'Return': //todo: change to term to Return
                 return $this->approveRequestRepository->disapproveRequest($assetApprovalIds, $remarks);
                 break;
 //            case 'Void':
