@@ -25,19 +25,19 @@ class CreateRequestContainerRequest extends FormRequest
     public function rules()
     {
         return [
-            'type_of_request_id.id' => [
+            'type_of_request_id' => [
                 'required',
                 Rule::exists('type_of_requests', 'id')
             ],
-            'department_id.company.company_id' => [
-                'required',
-                Rule::exists('companies', 'id')
-            ],
-            'department_id.id' => ['required', Rule::exists('departments', 'id')],
+//            'department_id.company.company_id' => [
+//                'required',
+//                Rule::exists('companies', 'id')
+//            ],
+            'department_id' => ['required', Rule::exists('departments', 'id')],
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
-            'subunit_id.id' => ['required', Rule::exists('sub_units', 'id')],
-            'location_id.id' => ['required', Rule::exists('locations', 'id')],
-            'account_title_id.id' => ['required', Rule::exists('account_titles', 'id')],
+            'subunit_id' => ['required', Rule::exists('sub_units', 'id')],
+            'location_id' => ['required', Rule::exists('locations', 'id')],
+            'account_title_id' => ['required', Rule::exists('account_titles', 'id')],
             'accountability' => 'required|in:Personal Issued,Common',
             'accountable' => ['required_if:accountability,Personal Issued',
                 function ($attribute, $value, $fail) {
@@ -74,21 +74,21 @@ class CreateRequestContainerRequest extends FormRequest
     function messages()
     {
         return [
-            'type_of_request_id.id.required' => 'The type of request is required.',
-            'type_of_request_id.id.exists' => 'The type of request is invalid.',
-            'department_id.id.required' => 'The department is required.',
-            'department_id.id.exists' => 'The department is invalid.',
+            'type_of_request_id.required' => 'The type of request is required.',
+            'type_of_request_id.exists' => 'The type of request is invalid.',
+            'department_id.required' => 'The department is required.',
+            'department_id.exists' => 'The department is invalid.',
             'attachment_type.required' => 'The attachment type is required.',
             'attachment_type.in' => 'The attachment type is invalid.',
-            'subunit_id.id.required' => 'The subunit is required.',
-            'subunit_id.id.exists' => 'The subunit is invalid.',
-            'location_id.id.required' => 'The location is required.',
+            'subunit_id.required' => 'The subunit is required.',
+            'subunit_id.exists' => 'The subunit is invalid.',
+            'location_id.required' => 'The location is required.',
             'location_id.exists' => 'The location is invalid.',
-            'account_title_id.id.required' => 'The account title is required.',
-            'account_title_id.id.exists' => 'The account title is invalid.',
+            'account_title_id.required' => 'The account title is required.',
+            'account_title_id.exists' => 'The account title is invalid.',
             'accountability.required' => 'The accountability is required.',
-            'department.company.company_id.required' => 'The company is required.',
-            'department.company.company_id.exists' => 'The company is invalid.',
+//            'department.company.company_id.required' => 'The company is required.',
+//            'department.company.company_id.exists' => 'The company is invalid.',
             'accountability.in' => 'The accountability is invalid.',
             'accountable.required_if' => 'The accountable is required.',
 //            'accountable.exists' => 'The accountable is invalid.',

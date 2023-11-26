@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RequestContainer\CreateRequestContainerRequest;
 use App\Http\Requests\RequestContainer\UpdateRequestContainerRequest;
 use App\Models\AssetRequest;
+use App\Models\Department;
 use App\Models\DepartmentUnitApprovers;
 use App\Models\RequestContainer;
 use App\Traits\AssetRequestHandler;
@@ -39,10 +40,11 @@ class RequestContainerController extends Controller
      */
     public function store(CreateRequestContainerRequest $request)
     {
+
 //        return $request->all();
         $requesterId = auth('sanctum')->user()->id;
 //        $transactionNumber = RequestContainer::generateTransactionNumber($requesterId);
-        $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $request->subunit_id['id'])
+        $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $request->subunit_id)
             ->orderBy('layer', 'asc')
             ->get();
 
@@ -66,14 +68,14 @@ class RequestContainerController extends Controller
                     ? 'For Approval of Approver ' . ($requesterLayer + 1)
                     : 'For Approval of Approver 1'),
             'requester_id' => $requesterId,
-            'type_of_request_id' => $request->type_of_request_id['id'],
+            'type_of_request_id' => $request->type_of_request_id,
             'attachment_type' => $request->attachment_type,
-            'subunit_id' => $request->subunit_id['id'],
-            'location_id' => $request->location_id['id'],
-            'account_title_id' => $request->account_title_id['id'],
+            'subunit_id' => $request->subunit_id,
+            'location_id' => $request->location_id,
+            'account_title_id' => $request->account_title_id,
             'accountability' => $request->accountability,
-            'company_id' => $request->department_id['company']['company_id'],
-            'department_id' => $request->department_id['id'],
+            'company_id' => Department::find($request->department_id)->company->id,
+            'department_id' => $request->department_id,
             'accountable' => $request->accountable ?? null,
             'asset_description' => $request->asset_description,
             'asset_specification' => $request->asset_specification ?? null,
@@ -154,7 +156,7 @@ class RequestContainerController extends Controller
         }
 
         $requestContainer->update([
-            'type_of_request_id' => $request->type_of_request_id['id'],
+            'type_of_request_id' => $request->type_of_request_id,
             'attachment_type' => $request->attachment_type,
 //            'subunit_id' => $request->subunit_id['id'],
 //            'location_id' => $request->location_id['id'],
