@@ -171,7 +171,7 @@ trait AssetRequestHandler
                     'subunit_name' => $ar->subunit->sub_unit_name,
                 ],
                 'location' => [
-                    'id' =>$ar->location->id,
+                    'id' =>$ar->location->id ?? null,
                     'location_code' => $ar->location->location_code,
                     'location_name' => $ar->location->location_name,
                 ],
