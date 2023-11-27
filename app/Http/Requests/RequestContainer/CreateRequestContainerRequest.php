@@ -33,6 +33,7 @@ class CreateRequestContainerRequest extends FormRequest
 //                'required',
 //                Rule::exists('companies', 'id')
 //            ],
+            'company_id' => ['required', Rule::exists('companies', 'id')],
             'department_id' => ['required', Rule::exists('departments', 'id')],
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
             'subunit_id' => ['required', Rule::exists('sub_units', 'id')],
