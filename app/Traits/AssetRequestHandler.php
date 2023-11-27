@@ -157,22 +157,27 @@ trait AssetRequestHandler
                 ],
                 'company' => [
                     'id' => $ar->company->id,
+                    'company_code' => $ar->company->company_code,
                     'company_name' => $ar->company->company_name,
                 ],
                 'department' => [
                     'id' => $ar->department->id,
-                    'charged_department_name' => $ar->department->department_name,
+                    'department_code' => $ar->department->department_code,
+                    'department_name' => $ar->department->department_name,
                 ],
                 'subunit' => [
                     'id' => $ar->subunit->id,
+                    'subunit_code' => $ar->subunit->sub_unit_code,
                     'subunit_name' => $ar->subunit->sub_unit_name,
                 ],
                 'location' => [
                     'id' =>$ar->location->id,
+                    'location_code' => $ar->location->location_code,
                     'location_name' => $ar->location->location_name,
                 ],
                 'account_title' => [
                     'id' => $ar->accountTitle->id,
+                    'account_title_code' => $ar->accountTitle->account_title_code,
                     'account_title_name' => $ar->accountTitle->account_title_name,
                 ],
                 'attachments' => [
