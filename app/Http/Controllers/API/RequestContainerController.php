@@ -9,6 +9,7 @@ use App\Models\AssetRequest;
 use App\Models\Department;
 use App\Models\DepartmentUnitApprovers;
 use App\Models\RequestContainer;
+use App\Models\SubUnit;
 use App\Traits\AssetRequestHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
@@ -27,7 +28,10 @@ class RequestContainerController extends Controller
     public function index()
     {
         $requesterId = auth('sanctum')->user()->id;
-        $requestContainer = RequestContainer::where('requester_id', $requesterId)->useFilters()->get();
+        $requestContainer = RequestContainer::where('requester_id', $requesterId)
+//            ->orderBy('created_at', 'desc')
+            ->useFilters()
+            ->get();
 
         return $this->transformShowAssetRequest($requestContainer);
     }
@@ -40,7 +44,6 @@ class RequestContainerController extends Controller
      */
     public function store(CreateRequestContainerRequest $request)
     {
-
 //        return $request->all();
         $requesterId = auth('sanctum')->user()->id;
 //        $transactionNumber = RequestContainer::generateTransactionNumber($requesterId);
@@ -53,13 +56,15 @@ class RequestContainerController extends Controller
         })->toArray();
 
         $isRequesterApprover = in_array($requesterId, $layerIds);
-        $requesterLayer = array_search($requesterId, $layerIds) + 1;
-        // Get the maximum (last) layer
-        $maxLayer = $departmentUnitApprovers->max('layer');
+        $isLastApprover = false;
+        if ($isRequesterApprover) {
+            $requesterLayer = array_search($requesterId, $layerIds) + 1;
+            // Get the maximum (last) layer
+            $maxLayer = $departmentUnitApprovers->max('layer');
 
-        // Check if requester is the last approver
-        $isLastApprover = $maxLayer == $requesterLayer;
-
+            // Check if reqesuter is the last approver
+            $isLastApprover = $maxLayer == $requesterLayer;
+        }
 
         $assetRequest = RequestContainer::create([
             'status' => $isLastApprover
@@ -75,7 +80,7 @@ class RequestContainerController extends Controller
             'account_title_id' => $request->account_title_id,
             'accountability' => $request->accountability,
             'company_id' => $request->company_id,
-                //Department::find($request->department_id)->company->id,
+            //Department::find($request->department_id)->company->id,
             'department_id' => $request->department_id,
             'accountable' => $request->accountable ?? null,
             'asset_description' => $request->asset_description,
@@ -104,11 +109,16 @@ class RequestContainerController extends Controller
      * Display the specified resource.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
-        //
+        $requestContainer = RequestContainer::find($id);
+        if (!$requestContainer) {
+            return $this->responseNotFound('Request Not Found');
+        }
+
+        return $this->transformForSingleItemOnly($requestContainer);
     }
 
     /**
@@ -126,10 +136,10 @@ class RequestContainerController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param int $id
+     * @param int|null $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function removeAll($id = null)
+    public function removeAll(int $id = null): \Illuminate\Http\JsonResponse
     {
         //if the $id is not null, then delete the specific request container
         if ($id) {
