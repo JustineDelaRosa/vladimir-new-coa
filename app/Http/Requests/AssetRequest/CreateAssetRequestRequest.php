@@ -113,7 +113,7 @@ class CreateAssetRequestRequest extends FormRequest
                 ],
                 'userRequest.*.asset_description' => 'required',
                 'userRequest.*.asset_specification' => 'nullable',
-                'userRequest.*.cellphone_number' => 'nullable|numeric',
+                'userRequest.*.cellphone_number' => 'nullable',
                 'userRequest.*.brand' => 'nullable',
                 'userRequest.*.quantity' => 'required|numeric|min:1',
 //                'userRequest.*.letter_of_request' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',

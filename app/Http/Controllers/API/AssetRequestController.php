@@ -66,6 +66,7 @@ class AssetRequestController extends Controller
 
     public function store(CreateAssetRequestRequest $request)
     {
+
         $userRequest = $request->userRequest;
         $requesterId = auth('sanctum')->user()->id;
         $transactionNumber = AssetRequest::generateTransactionNumber();
@@ -208,6 +209,12 @@ class AssetRequestController extends Controller
     public function resubmitRequest(CreateAssetRequestRequest $request)
     {
         $transactionNumber = $request->transaction_number;
+        $resubmitCheck = AssetRequest::where('transaction_number', $transactionNumber)
+            ->where('status', 'Returned')
+            ->first();
+        if (!$resubmitCheck) {
+            return $this->responseUnprocessable('Invalid Action, Asset Request is not returned.');
+        }
         return $this->approveRequestRepository->resubmitRequest($transactionNumber);
     }
 
@@ -332,5 +339,14 @@ class AssetRequestController extends Controller
         }
 
         return $this->responseSuccess('Successfully requested');
+    }
+
+    public function showById($id)
+    {
+        $assetRequest = AssetRequest::find($id);
+        if (!$assetRequest) {
+            return $this->responseUnprocessable('Asset Request not found.');
+        }
+        return $this->transformForSingleItemOnly($assetRequest);
     }
 }

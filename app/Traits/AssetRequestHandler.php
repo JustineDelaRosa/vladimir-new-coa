@@ -94,7 +94,7 @@ trait AssetRequestHandler
                     'status' => $approval->status,
                     'remarks' => $approval->status == 'Returned' ? $approval->assetRequest->remarks : null,
 //                    'created_at' => $approval->activityLog()->latest()->first()->created_at ?? null,
-                    'activity_log' =>$approval->activityLog->map(function ($activityLog) {
+                    'activity_log' => $approval->activityLog->map(function ($activityLog) {
                         return [
                             'id' => $activityLog->id,
                             'action' => $activityLog->log_name,
@@ -105,7 +105,6 @@ trait AssetRequestHandler
             })->sortBy('approver.layer')->values(),
         ];
     }
-
 
 
     /**
@@ -171,7 +170,7 @@ trait AssetRequestHandler
                     'subunit_name' => $ar->subunit->sub_unit_name,
                 ],
                 'location' => [
-                    'id' =>$ar->location->id,
+                    'id' => $ar->location->id,
                     'location_code' => $ar->location->location_code,
                     'location_name' => $ar->location->location_name,
                 ],
@@ -192,39 +191,133 @@ trait AssetRequestHandler
                           ];
                       }) : '-',
                     */
-                    'letter_of_request' => [
-                        'id' => $letterOfRequestMedia ? $letterOfRequestMedia->id : '-',
-                        'file_name' => $letterOfRequestMedia ? $letterOfRequestMedia->file_name : '-',
-                        'file_path' => $letterOfRequestMedia ? $letterOfRequestMedia->getPath() : '-',
-                        'file_url' => $letterOfRequestMedia ? $letterOfRequestMedia->getUrl() : '-',
-                    ],
-                    'quotation' => [
-                        'id' => $quotationMedia ? $quotationMedia->id : '-',
-                        'file_name' => $quotationMedia ? $quotationMedia->file_name : '-',
-                        'file_path' => $quotationMedia ? $quotationMedia->getPath() : '-',
-                        'file_url' => $quotationMedia ? $quotationMedia->getUrl() : '-',
-                    ],
-                    'specification_form' => [
-                        'id' => $specificationFormMedia ? $specificationFormMedia->id : '-',
-                        'file_name' => $specificationFormMedia ? $specificationFormMedia->file_name : '-',
-                        'file_path' => $specificationFormMedia ? $specificationFormMedia->getPath() : '-',
-                        'file_url' => $specificationFormMedia ? $specificationFormMedia->getUrl() : '-',
-                    ],
-                    'tool_of_trade' => [
-                        'id' => $toolOfTradeMedia ? $toolOfTradeMedia->id : '-',
-                        'file_name' => $toolOfTradeMedia ? $toolOfTradeMedia->file_name : '-',
-                        'file_path' => $toolOfTradeMedia ? $toolOfTradeMedia->getPath() : '-',
-                        'file_url' => $toolOfTradeMedia ? $toolOfTradeMedia->getUrl() : '-',
-                    ],
-                    'other_attachments' => [
-                        'id' => $otherAttachmentsMedia ? $otherAttachmentsMedia->id : '-',
-                        'file_name' => $otherAttachmentsMedia ? $otherAttachmentsMedia->file_name : '-',
-                        'file_path' => $otherAttachmentsMedia ? $otherAttachmentsMedia->getPath() : '-',
-                        'file_url' => $otherAttachmentsMedia ? $otherAttachmentsMedia->getUrl() : '-',
-                    ],
+                    'letter_of_request' => $letterOfRequestMedia ? [
+                        'id' => $letterOfRequestMedia->id,
+                        'file_name' => $letterOfRequestMedia->file_name,
+                        'file_path' => $letterOfRequestMedia->getPath(),
+                        'file_url' => $letterOfRequestMedia->getUrl(),
+                    ] : null,
+                    'quotation' => $quotationMedia ? [
+                        'id' => $quotationMedia->id,
+                        'file_name' => $quotationMedia->file_name,
+                        'file_path' => $quotationMedia->getPath(),
+                        'file_url' => $quotationMedia->getUrl(),
+                    ] : null,
+                    'specification_form' => $specificationFormMedia ? [
+                        'id' => $specificationFormMedia->id,
+                        'file_name' => $specificationFormMedia->file_name,
+                        'file_path' => $specificationFormMedia->getPath(),
+                        'file_url' => $specificationFormMedia->getUrl(),
+                    ] : null,
+                    'tool_of_trade' => $toolOfTradeMedia ? [
+                        'id' => $toolOfTradeMedia->id,
+                        'file_name' => $toolOfTradeMedia->file_name,
+                        'file_path' => $toolOfTradeMedia->getPath(),
+                        'file_url' => $toolOfTradeMedia->getUrl(),
+                    ] : null,
+                    'other_attachments' => $otherAttachmentsMedia ? [
+                        'id' => $otherAttachmentsMedia->id,
+                        'file_name' => $otherAttachmentsMedia->file_name,
+                        'file_path' => $otherAttachmentsMedia->getPath(),
+                        'file_url' => $otherAttachmentsMedia->getUrl(),
+                    ] : null,
                 ]
             ];
         });
+    }
+
+    public function transformForSingleItemOnly($assetRequest): array
+    {
+        return [
+            'id' => $assetRequest->id,
+            'status' => $assetRequest->status,
+            'transaction_number' => $assetRequest->transaction_number,
+            'reference_number' => $assetRequest->reference_number,
+            'pr_number' => $assetRequest->pr_number,
+            'po_number' => $assetRequest->po_number,
+            'attachment_type' => $assetRequest->attachment_type,
+            'remarks' => $assetRequest->remarks,
+            'accountability' => $assetRequest->accountability,
+            'accountable' => $assetRequest->accountable ?? '-',
+            'asset_description' => $assetRequest->asset_description,
+            'asset_specification' => $assetRequest->asset_specification ?? '-',
+            'cellphone_number' => $assetRequest->cellphone_number ?? '-',
+            'brand' => $assetRequest->brand ?? '-',
+            'quantity' => $assetRequest->quantity,
+            'requestor' => [
+                'id' => $assetRequest->requestor->id,
+                'username' => $assetRequest->requestor->username,
+                'employee_id' => $assetRequest->requestor->employee_id,
+                'firstname' => $assetRequest->requestor->firstname,
+                'lastname' => $assetRequest->requestor->lastname,
+            ],
+            'type_of_request' => [
+                'id' => $assetRequest->typeOfRequest->id,
+                'type_of_request_name' => $assetRequest->typeOfRequest->type_of_request_name,
+            ],
+            'company' => [
+                'id' => $assetRequest->company->id,
+                'company_name' => $assetRequest->company->company_name,
+            ],
+            'department' => [
+                'id' => $assetRequest->department->id,
+                'charged_department_name' => $assetRequest->department->department_name,
+            ],
+            'subunit' => [
+                'id' => $assetRequest->subunit->id,
+                'subunit_name' => $assetRequest->subunit->sub_unit_name,
+            ],
+            'location' => [
+                'id' => $assetRequest->location->id,
+                'location_name' => $assetRequest->location->location_name,
+            ],
+            'account_title' => [
+                'id' => $assetRequest->accountTitle->id,
+                'account_title_name' => $assetRequest->accountTitle->account_title_name
+            ],
+            'attachments' => [
+                'letter_of_request' => $assetRequest->getMedia('letter_of_request')->map(function ($media) {
+                    return [
+                        'id' => $media->id,
+                        'file_name' => $media->file_name,
+                        'file_path' => $media->getPath(),
+                        'file_url' => $media->getUrl(),
+                    ];
+                }),
+                'quotation' => $assetRequest->getMedia('quotation')->map(function ($media) {
+                    return [
+                        'id' => $media->id,
+                        'file_name' => $media->file_name,
+                        'file_path' => $media->getPath(),
+                        'file_url' => $media->getUrl(),
+                    ];
+                }),
+                'specification_form' => $assetRequest->getMedia('specification_form')->map(function ($media) {
+                    return [
+                        'id' => $media->id,
+                        'file_name' => $media->file_name,
+                        'file_path' => $media->getPath(),
+                        'file_url' => $media->getUrl(),
+                    ];
+                }),
+                'tool_of_trade' => $assetRequest->getMedia('tool_of_trade')->map(function ($media) {
+                    return [
+                        'id' => $media->id,
+                        'file_name' => $media->file_name,
+                        'file_path' => $media->getPath(),
+                        'file_url' => $media->getUrl(),
+                    ];
+                }),
+                'other_attachments' => $assetRequest->getMedia('other_attachments')->map(function ($media) {
+                    return [
+                        'id' => $media->id,
+                        'file_name' => $media->file_name,
+                        'file_path' => $media->getPath(),
+                        'file_url' => $media->getUrl(),
+                    ];
+                }),
+            ]
+        ];
     }
 
     public function voidRequestItem($referenceNumber)

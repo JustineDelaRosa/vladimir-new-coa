@@ -50,11 +50,11 @@ class AssetApprovalController extends Controller
         $status = $request->input('status', 'For Approval');
 
         $assetApprovalsQuery = AssetApproval::query();
-        if (!in_array($role, $adminRoles)) {
-            $assetApprovalsQuery->where('approver_id', $approverId);
-        }
+//        if (!in_array($role, $adminRoles)) {
+//            $assetApprovalsQuery->where('approver_id', $approverId);
+//        }
 
-        $assetApprovals = $assetApprovalsQuery->where('status', $status)->useFilters()->dynamicPaginate();
+        $assetApprovals = $assetApprovalsQuery->where('status', $status)->where('approver_id', $approverId)->useFilters()->dynamicPaginate();
         $transactionNumbers = $assetApprovals->map(function ($item) {
             return $item->transaction_number;
         });
@@ -114,7 +114,7 @@ class AssetApprovalController extends Controller
                 return $this->approveRequestRepository->approveRequest($assetApprovalIds);
                 break;
             case 'Return':
-                return $this->approveRequestRepository->disapproveRequest($assetApprovalIds, $remarks);
+                return $this->approveRequestRepository->returnRequest($assetApprovalIds, $remarks);
                 break;
 //          case 'Void':
 //              return $this->approveRequestRepository->voidRequest($assetRequestIds);

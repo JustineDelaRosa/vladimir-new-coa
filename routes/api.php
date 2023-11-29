@@ -226,6 +226,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::patch('void-request/{transactionNumber}/{referenceNumber?}',[AssetRequestController::class, 'removeRequestItem']);
     Route::patch('resubmit-request', [AssetRequestController::class, 'resubmitRequest']);
     Route::POST('move-to-asset-request', [AssetRequestController::class, 'moveData']);
+    Route::GET('show-by-id/{id}',[AssetRequestController::class, 'showById']);
     //ASSET APPROVAL//
     Route::resource('asset-approval', AssetApprovalController::class);
     Route::patch('handle-request', [AssetApprovalController::class, 'handleRequest']);

@@ -46,7 +46,7 @@ class ApprovedRequestRepository
     }
 
     //DISAPPROVE REQUEST
-    public function disapproveRequest($assetApprovalId, $remarks = null): JsonResponse
+    public function returnRequest($assetApprovalId, $remarks = null): JsonResponse
     {
 
         $assetApproval = $this->findAssetApproval($assetApprovalId);
@@ -70,21 +70,23 @@ class ApprovedRequestRepository
     }
 
     //RESUBMITTING REQUEST
-    public function resubmitRequest($transactionNumber): JsonResponse
+    public function resubmitRequest($transactionNumber)
     {
         $user = auth('sanctum')->user();
-//        foreach ($transactionNumber as $id) {
-            $assetApproval = AssetApproval::where('transaction_number', $transactionNumber)
-                ->where('status', '!=', 'Void')
-                ->where('layer', 1)->first();
-            if (!$assetApproval || $assetApproval->requester_id != $user->id) {
-                return $this->responseUnprocessable('Invalid Action');
-            }
-            $this->updateToNullOrVoid($transactionNumber);
-            $this->updateAssetRequestStatus($assetApproval->transaction_number, 'For Approval of Approver ' . ($assetApproval->layer));
-            $this->updateAssetApprovalStatus($assetApproval, 'For Approval');
-            $this->logActivity($assetApproval, 'Resubmitted');
-//        }
+        $defaultLayer = $this->getUserLayer($transactionNumber);
+
+        $assetApproval = AssetApproval::where('transaction_number', $transactionNumber)
+            ->where('status', '!=', 'Void')
+            ->where('layer', $defaultLayer)->first();
+
+
+        if (!$assetApproval || $assetApproval->requester_id != $user->id) {
+            return $this->responseUnprocessable('Invalid Action');
+        }
+        $this->updateToNullOrVoid($transactionNumber);
+        $this->updateAssetRequestStatus($assetApproval->transaction_number, 'For Approval of Approver ' . ($assetApproval->layer));
+        $this->updateAssetApprovalStatus($assetApproval, 'For Approval');
+        $this->logActivity($assetApproval, 'Resubmitted');
         return $this->responseSuccess('Asset Request Resubmitted Successfully');
     }
 
@@ -229,8 +231,26 @@ class ApprovedRequestRepository
         if ($status == 'Void') {
             $assetApproval->each->update(['status' => 'Void']);
         } else {
-            $assetApproval->each->update(['status' => null]);
+            $layer = $this->getUserLayer($transactionNumber);
+            $assetApproval->where('layer', '>', $layer)->each->update(['status' => null]);
         }
+    }
+
+
+    public function getUserLayer($transactionNumber) {
+        $user = auth('sanctum')->user();
+        //get the approver id of the user
+        $approverId = Approvers::where('approver_id', $user->id)->value('id');
+        $assetApproval = AssetApproval::where('transaction_number', $transactionNumber)->get();
+
+        $defaultLayer = 1;
+        //check if the user is the included in approver_id of asset approval
+        if ($assetApproval->contains('approver_id', $approverId)) {
+            $defaultLayer = $assetApproval->where('approver_id', $approverId)->first()->layer;
+            $defaultLayer = $defaultLayer + 1;
+        }
+
+        return $defaultLayer;
     }
 
 }
