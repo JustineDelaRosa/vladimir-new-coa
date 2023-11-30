@@ -67,10 +67,24 @@ trait AssetRequestHandler
             'transaction_number' => $assetRequest->transaction_number,
             'item_count' => $assetRequest->quantity ?? 0,
             'date_requested' => $assetRequest->created_at,
+            'remarks' => $assetRequest->remarks,
             'status' => $assetRequest->status,
             'pr_number' => $assetRequest->pr_number ?? '-',
             'created_at' => $assetRequest->created_at,
-            'approver_count' => $assetRequest->assetapproval->count(),
+            'approver_count' => $assetRequest->assetApproval->count(),
+            'current_approver' => $assetRequest->assetApproval->filter(function ($approval) {
+                return $approval->status == 'For Approval';
+            })->map(function ($approval) {
+                return [
+                    'id' => $approval->approver->user->id,
+                    'username' => $approval->approver->user->username,
+                    'employee_id' => $approval->approver->user->employee_id,
+                    'firstname' => $approval->approver->user->firstname,
+                    'lastname' => $approval->approver->user->lastname,
+                    'department' => $approval->approver->user->department->department_name ?? '-',
+                    'subunit' => $approval->approver->user->subUnit->sub_unit_name ?? '-',
+                ];
+            })->values()->first(),
             'requestor' => [
                 'id' => $assetRequest->requestor->id,
                 'username' => $assetRequest->requestor->username,

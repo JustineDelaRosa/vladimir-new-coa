@@ -24,9 +24,14 @@ class  DepartmentUnitApproversController extends Controller
 
         $transformedResults = DepartmentUnitApprovers::useFilters()->get()->groupBy('subunit_id')->map(function ($item) {
             return [
-                'department_id' => $item[0]->department_id,
+                /*'department_id' => $item[0]->department_id,
                 'department_name' => $item[0]->department->department_name,
-                'department_code' => $item[0]->department->department_code,
+                'department_code' => $item[0]->department->department_code,*/
+                'department' => [
+                    'id' => $item[0]->department_id,
+                    'department_name' => $item[0]->department->department_name,
+                    'department_code' => $item[0]->department->department_code,
+                ],
                 'created_at' => $item[0]->created_at,
                 'subunit' => [
                     'id' => $item[0]->subunit_id,

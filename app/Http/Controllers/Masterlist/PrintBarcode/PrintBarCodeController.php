@@ -35,6 +35,11 @@ class PrintBarCodeController extends Controller
     {
         $tagNumber = $this->searchPrint($request);
 
+        if ($tagNumber === null) {
+            return $this->responseUnprocessable('Please select at least one asset');
+        }
+
+
         $clientIP = request()->ip();
 
         $printerIP = PrinterIP::where('ip', $clientIP)->first();
@@ -59,7 +64,7 @@ class PrintBarCodeController extends Controller
 
             foreach ($tagNumber as $VDM) {
                 $fixedAsset = FixedAsset::where('vladimir_tag_number', $VDM['vladimir_tag_number'])->first();
-                if ($fixedAsset && $fixedAsset->print_count == 0){
+                if ($fixedAsset && $fixedAsset->print_count == 0) {
                     //original
                     $zplCode = "^XA
                                 ~TA000
@@ -190,9 +195,10 @@ class PrintBarCodeController extends Controller
 
         $typesOfRequestId = TypeOfRequest::whereIn('type_of_request_name', ['Capex', 'Vehicle'])->pluck('id')->toArray();
 
-        if ($vladimirTagNumbers == null) {
+        if (empty($vladimirTagNumbers)) {
 //            $vladimirTagNumbers = FixedAsset::whereNotIn('type_of_request_id', array_values($typesOfRequestId))->pluck('vladimir_tag_number')->toArray();
-            $this->responseUnprocessable('Please select at least one asset');
+//            $this->responseUnprocessable('Please select at least one asset');
+            return null;
         }
 
         $fixedAssetQuery = FixedAsset::whereIn('vladimir_tag_number', $vladimirTagNumbers)

@@ -81,7 +81,7 @@ class AssetRequest extends Model implements HasMedia
     public function currentApprover()
     {
         //pass who is the current approver of this asset request from asset approval table with status For Approval
-        return $this->hasMany(AssetApproval::class , 'asset_request_id' , 'id')->where('status' , 'For Approval');
+        return $this->hasMany(AssetApproval::class , 'transaction_number' , 'transaction_number')->where('status' , 'For Approval');
     }
 
 //    public function approver()
