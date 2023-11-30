@@ -49,19 +49,19 @@ class CreateRequestContainerRequest extends FormRequest
                         return;
                     }
 
-                    // Get full ID number if it exists or fail validation
-                    if (!empty($accountable['general_info']['full_id_number'])) {
-                        $full_id_number = trim($accountable['general_info']['full_id_number']);
-                        request()->merge(['accountable' => $full_id_number]);
-                    } else {
-                        $fail('The accountable person is required.');
-                        return;
-                    }
-
-                    // Validate full ID number
-                    if (empty($full_id_number)) {
-                        $fail('The accountable person cannot be empty.');
-                    }
+//                    // Get full ID number if it exists or fail validation
+//                    if (!empty($accountable['general_info']['full_id_number'])) {
+//                        $full_id_number = trim($accountable['general_info']['full_id_number']);
+//                        request()->merge(['accountable' => $full_id_number]);
+//                    } else {
+//                        $fail('The accountable person is required.');
+//                        return;
+//                    }
+//
+//                    // Validate full ID number
+//                    if ($value->isEmpty()) {
+//                        $fail('The accountable person cannot be empty.');
+//                    }
                 },
             ],
             'asset_description' => 'required',
