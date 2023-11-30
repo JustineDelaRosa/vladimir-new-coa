@@ -237,20 +237,14 @@ class ApprovedRequestRepository
     }
 
 
-    public function getUserLayer($transactionNumber) {
-        $user = auth('sanctum')->user();
-        //get the approver id of the user
-        $approverId = Approvers::where('approver_id', $user->id)->value('id');
-        $assetApproval = AssetApproval::where('transaction_number', $transactionNumber)->get();
+    public function getUserLayer($transactionNumber): int
+    {
+        $userId = auth('sanctum')->id();
+        $approverId = Approvers::where('approver_id', $userId)->value('id');
 
-        $defaultLayer = 1;
-        //check if the user is the included in approver_id of asset approval
-        if ($assetApproval->contains('approver_id', $approverId)) {
-            $defaultLayer = $assetApproval->where('approver_id', $approverId)->first()->layer;
-            $defaultLayer = $defaultLayer + 1;
-        }
+        $assetApproval = AssetApproval::where('transaction_number', $transactionNumber)->firstWhere('approver_id', $approverId);
 
-        return $defaultLayer;
+        return $assetApproval ? $assetApproval->layer + 1 : 1;
     }
 
 }

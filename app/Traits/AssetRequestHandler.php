@@ -69,6 +69,8 @@ trait AssetRequestHandler
             'date_requested' => $assetRequest->created_at,
             'status' => $assetRequest->status,
             'pr_number' => $assetRequest->pr_number ?? '-',
+            'created_at' => $assetRequest->created_at,
+            'approver_count' => $assetRequest->assetapproval->count(),
             'requestor' => [
                 'id' => $assetRequest->requestor->id,
                 'username' => $assetRequest->requestor->username,

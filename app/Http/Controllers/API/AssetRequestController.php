@@ -42,12 +42,13 @@ class AssetRequestController extends Controller
 
         $requesterId = auth('sanctum')->user()->id;
 
-        $assetRequest = AssetRequest::where('requester_id', $requesterId)->useFilters()->get()->groupBy('transaction_number')->map(function ($assetRequestCollection) {
-            $assetRequest = $assetRequestCollection->first();
-            //sum all the quantity per group
-            $assetRequest->quantity = $assetRequestCollection->sum('quantity');
-            return $this->transformIndexAssetRequest($assetRequest);
-        })->values();
+        $assetRequest = AssetRequest::where('requester_id', $requesterId)->orderByDesc('created_at')
+            ->useFilters()->get()->groupBy('transaction_number')->map(function ($assetRequestCollection) {
+                $assetRequest = $assetRequestCollection->first();
+                //sum all the quantity per group
+                $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+                return $this->transformIndexAssetRequest($assetRequest);
+            })->values();
 
 
         if ($perPage !== null) {
