@@ -41,14 +41,27 @@ trait AssetRequestHandler
             'other_attachments'
         ];
 
+//        foreach ($collections as $collection) {
+//            if (isset($request->$collection)) {
+//                $assetRequest->clearMediaCollection($collection);
+//                $assetRequest->addMultipleMediaFromRequest([$collection], $collection)->each(function ($fileAdder) use ($collection) {
+//                    $fileAdder->toMediaCollection($collection);
+//                });
+//            } else {
+//                $assetRequest->clearMediaCollection($collection);
+//            }
+//        }
+
         foreach ($collections as $collection) {
-            if (isset($request->$collection)) {
-                $assetRequest->clearMediaCollection($collection);
-                $assetRequest->addMultipleMediaFromRequest([$collection], $collection)->each(function ($fileAdder) use ($collection) {
-                    $fileAdder->toMediaCollection($collection);
-                });
-            } else {
-                $assetRequest->clearMediaCollection($collection);
+            if ($request->$collection !== 'x') {
+                if (isset($request->$collection)) {
+                    $assetRequest->clearMediaCollection($collection);
+                    $assetRequest->addMultipleMediaFromRequest([$collection], $collection)->each(function ($fileAdder) use ($collection) {
+                        $fileAdder->toMediaCollection($collection);
+                    });
+                } else {
+                    $assetRequest->clearMediaCollection($collection);
+                }
             }
         }
     }
@@ -67,7 +80,7 @@ trait AssetRequestHandler
             'transaction_number' => $assetRequest->transaction_number,
             'item_count' => $assetRequest->quantity ?? 0,
             'date_requested' => $assetRequest->created_at,
-            'remarks' => $assetRequest->remarks,
+            'remarks' => $assetRequest->remarks ?? '',
             'status' => $assetRequest->status,
             'pr_number' => $assetRequest->pr_number ?? '-',
             'created_at' => $assetRequest->created_at,
@@ -151,7 +164,7 @@ trait AssetRequestHandler
                 'pr_number' => $ar->pr_number,
                 'po_number' => $ar->po_number,
                 'attachment_type' => $ar->attachment_type,
-                'remarks' => $ar->remarks,
+                'remarks' => $ar->remarks ?? '',
                 'accountability' => $ar->accountability,
                 'accountable' => $ar->accountable ?? '-',
                 'asset_description' => $ar->asset_description,
@@ -252,7 +265,7 @@ trait AssetRequestHandler
             'pr_number' => $assetRequest->pr_number,
             'po_number' => $assetRequest->po_number,
             'attachment_type' => $assetRequest->attachment_type,
-            'remarks' => $assetRequest->remarks,
+            'remarks' => $assetRequest->remarks ?? '',
             'accountability' => $assetRequest->accountability,
             'accountable' => $assetRequest->accountable ?? '-',
             'asset_description' => $assetRequest->asset_description,
