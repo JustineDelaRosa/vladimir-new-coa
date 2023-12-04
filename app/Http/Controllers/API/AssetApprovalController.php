@@ -33,28 +33,30 @@ class AssetApprovalController extends Controller
 
     public function index(Request $request)
     {
+        $request->validate([
+            'for_monitoring' => 'boolean',
+            'status' => 'string|in:For Approval,Approved', // or any other statuses you might have
+        ]);
 
-//        return AssetApproval::with('activityLog')->get();
-
-//        $approved = AssetApproval::find(3);
-//        if($approved){
-//            return $activities = Activity::forSubject($approved)->get();
-//        }else{
-//            return  $activities = Activity::all();
-//        }
-
+        $forMonitoring = $request->for_monitoring ?? false;
         $user = auth('sanctum')->user();
         $role = RoleManagement::whereId($user->role_id)->value('role_name');
         $adminRoles = ['Super Admin', 'Admin', 'ERP'];
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
         $status = $request->input('status', 'For Approval');
 
-        $assetApprovalsQuery = AssetApproval::query();
-//        if (!in_array($role, $adminRoles)) {
-//            $assetApprovalsQuery->where('approver_id', $approverId);
-//        }
+        if (!in_array($role, $adminRoles)) {
+            $forMonitoring = false;
+        }
 
-        $assetApprovals = $assetApprovalsQuery->where('status', $status)->where('approver_id', $approverId)->useFilters()->dynamicPaginate();
+        $assetApprovalsQuery = AssetApproval::query();
+        if (!$forMonitoring ) {
+            $assetApprovalsQuery->where('approver_id', $approverId);
+        }
+
+        $assetApprovals = $assetApprovalsQuery->where('status', $status)->useFilters()->dynamicPaginate();
+
+
         $transactionNumbers = $assetApprovals->map(function ($item) {
             return $item->transaction_number;
         });

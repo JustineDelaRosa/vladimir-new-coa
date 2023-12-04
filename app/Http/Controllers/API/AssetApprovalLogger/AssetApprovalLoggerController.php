@@ -15,6 +15,16 @@ class AssetApprovalLoggerController extends Controller
      */
     public function index()
     {
+
+        //        return AssetApproval::with('activityLog')->get();
+
+//        $approved = AssetApproval::find(3);
+//        if($approved){
+//            return $activities = Activity::forSubject($approved)->get();
+//        }else{
+//            return  $activities = Activity::all();
+//        }
+
         // return Activity::all();
 
         $activityLog = Activity::useFilters()->dynamicPaginate();
