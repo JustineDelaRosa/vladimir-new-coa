@@ -75,15 +75,16 @@ trait AssetRequestHandler
      */
     public function transformIndexAssetRequest($assetRequest)
     {
+
         return [
             'id' => $assetRequest->transaction_number,
             'transaction_number' => $assetRequest->transaction_number,
             'item_count' => $assetRequest->quantity ?? 0,
-            'date_requested' => $assetRequest->created_at,
+            'date_requested' => $this->getDateRequested($assetRequest->transaction_number),
             'remarks' => $assetRequest->remarks ?? '',
             'status' => $assetRequest->status,
             'pr_number' => $assetRequest->pr_number ?? '-',
-            'created_at' => $assetRequest->created_at,
+//            'created_at' => $assetRequest->created_at,
             'approver_count' => $assetRequest->assetApproval->count(),
             'current_approver' => $assetRequest->assetApproval->filter(function ($approval) {
                 return $approval->status == 'For Approval';
@@ -133,6 +134,15 @@ trait AssetRequestHandler
                 ];
             })->sortBy('approver.layer')->values(),
         ];
+    }
+
+    private function getDateRequested($transactionNumber)
+    {
+        // Get the assetRequest associated with the transaction number
+        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->first();
+
+        // Return the created_at field
+        return $assetRequest ? $assetRequest->created_at : null;
     }
 
 
