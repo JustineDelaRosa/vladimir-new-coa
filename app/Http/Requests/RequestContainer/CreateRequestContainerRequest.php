@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\RequestContainer;
 
+use App\Models\Location;
+use App\Models\SubUnit;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -36,8 +38,30 @@ class CreateRequestContainerRequest extends FormRequest
             'company_id' => ['required', Rule::exists('companies', 'id')],
             'department_id' => ['required', Rule::exists('departments', 'id')],
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
-            'subunit_id' => ['required', Rule::exists('sub_units', 'id')],
-            'location_id' => ['required', Rule::exists('locations', 'id')],
+            'subunit_id' => ['required', Rule::exists('sub_units', 'id'),
+                //check if the subunit already has approvers assigned
+                function ($attribute, $value, $fail) {
+                    $subunit = SubUnit::find($value);
+                    if ($subunit->departmentUnitApprovers->isEmpty()) {
+                        $fail('No approvers assigned to the selected subunit.');
+                    }
+                    //check if this is the sub unit of the selected department
+                    if ($subunit->department_id != request()->department_id) {
+                        $fail('Subunit does not match department.');
+                    }
+                },
+            ],
+            'location_id' => ['required', Rule::exists('locations', 'id'),
+                    //check if the location and department combination exists
+                    function ($attribute, $value, $fail) {
+                        $location = Location::find($value);
+                        $departments = $location->departments->pluck('id')->toArray();
+                        if (!in_array(request()->department_id, $departments)) {
+                            $fail('Invalid combination of location and department.');
+                        }
+
+                    },
+                ],
             'account_title_id' => ['required', Rule::exists('account_titles', 'id')],
             'accountability' => 'required|in:Personal Issued,Common',
             'accountable' => ['required_if:accountability,Personal Issued',
