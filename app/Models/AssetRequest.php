@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -168,9 +169,9 @@ class AssetRequest extends Model implements HasMedia
     public function accountTitle(){
         return $this->belongsTo(AccountTitle::class, 'account_title_id', 'id');
     }
-    //move all the data of requestor from request container table then pass it to asset request table then delete the request container
-    public function moveAssetRequest($requestorId){
 
-
+    public function activityLog()
+    {
+        return $this->hasMany(Activity::class, 'subject_id', 'transaction_number');
     }
 }

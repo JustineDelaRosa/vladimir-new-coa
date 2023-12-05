@@ -75,7 +75,6 @@ trait AssetRequestHandler
      */
     public function transformIndexAssetRequest($assetRequest)
     {
-
         return [
             'id' => $assetRequest->transaction_number,
             'transaction_number' => $assetRequest->transaction_number,
@@ -84,8 +83,9 @@ trait AssetRequestHandler
             'remarks' => $assetRequest->remarks ?? '',
             'status' => $assetRequest->status,
             'pr_number' => $assetRequest->pr_number ?? '-',
-//            'created_at' => $assetRequest->created_at,
+            'created_at' => $this->getDateRequested($assetRequest->transaction_number),
             'approver_count' => $assetRequest->assetApproval->count(),
+            'process_count' => $this->getProcessCount($assetRequest),
             'current_approver' => $assetRequest->assetApproval->filter(function ($approval) {
                 return $approval->status == 'For Approval';
             })->map(function ($approval) {
@@ -97,6 +97,7 @@ trait AssetRequestHandler
                     'lastname' => $approval->approver->user->lastname,
                     'department' => $approval->approver->user->department->department_name ?? '-',
                     'subunit' => $approval->approver->user->subUnit->sub_unit_name ?? '-',
+                    'layer' => $approval->layer ?? '',
                 ];
             })->values()->first(),
             'requestor' => [
@@ -108,32 +109,63 @@ trait AssetRequestHandler
                 'department' => $assetRequest->requestor->department->department_name ?? '-',
                 'subunit' => $assetRequest->requestor->subUnit->sub_unit_name ?? '-',
             ],
-            'history_log' => $assetRequest->assetapproval->map(function ($approval) {
+            'history' => $assetRequest->activityLog->map(function ($activityLog) {
                 return [
-                    'id' => $approval->id,
-                    'approver' => [
-                        'id' => $approval->approver->id,
-                        'username' => $approval->approver->user->username,
-                        'employee_id' => $approval->approver->user->employee_id,
-                        'firstname' => $approval->approver->user->firstname,
-                        'lastname' => $approval->approver->user->lastname,
-                        'department' => $approval->approver->user->department->department_name ?? '-',
-                        'subunit' => $approval->approver->user->subUnit->sub_unit_name ?? '-',
-                        'layer' => $approval->layer,
-                    ],
-                    'status' => $approval->status,
-                    'remarks' => $approval->status == 'Returned' ? $approval->assetRequest->remarks : null,
-//                    'created_at' => $approval->activityLog()->latest()->first()->created_at ?? null,
-                    'activity_log' => $approval->activityLog->map(function ($activityLog) {
-                        return [
-                            'id' => $activityLog->id,
-                            'action' => $activityLog->log_name,
-                            'created_at' => $activityLog->created_at,
-                        ];
-                    }),
+                    'id' => $activityLog->id,
+                    'action' => $activityLog->log_name,
+                    'causer' => $activityLog->causer,
+                    'created_at' => $activityLog->created_at,
+                    'remarks' => $activityLog->properties['remarks'] ?? null,
                 ];
-            })->sortBy('approver.layer')->values(),
+            }),
+//            'history_log' => $assetRequest->assetapproval->map(function ($approval) {
+//                return [
+//                    'id' => $approval->id,
+//                    'approver' => [
+//                        'id' => $approval->approver->id,
+//                        'username' => $approval->approver->user->username,
+//                        'employee_id' => $approval->approver->user->employee_id,
+//                        'firstname' => $approval->approver->user->firstname,
+//                        'lastname' => $approval->approver->user->lastname,
+//                        'department' => $approval->approver->user->department->department_name ?? '-',
+//                        'subunit' => $approval->approver->user->subUnit->sub_unit_name ?? '-',
+//                        'layer' => $approval->layer,
+//                    ],
+//                    'status' => $approval->status,
+//                    'remarks' => $approval->status == 'Returned' ? $approval->assetRequest->remarks : null,
+////                    'created_at' => $approval->activityLog()->latest()->first()->created_at ?? null,
+//                    'activity_log' => $approval->activityLog->map(function ($activityLog) {
+//                        return [
+//                            'id' => $activityLog->id,
+//                            'action' => $activityLog->log_name,
+//                            'created_at' => $activityLog->created_at,
+//                        ];
+//                    }),
+//                ];
+//            })->sortBy('approver.layer')->values(),
         ];
+    }
+
+    private function getProcessCount($assetRequest)
+    {
+        $lastLayer = 0;
+        if ($assetRequest->assetApproval->where('status', 'For Approval')->count() > 0) {
+            // If there is any approval pending return the layer number
+            $lastLayer = $assetRequest->assetApproval->where('status', 'For Approval')->first()->layer;
+        } elseif ($assetRequest->assetApproval->where('status', 'For Approval')->count() == 0) {
+            $lastLayer = 1;
+        } else {
+            // If no approval is pending, then get the last layer and add 1
+            $lastLayer = $assetRequest->assetApproval->last()->layer ?? 0;
+
+            // if pr_number is null, add 1
+            if ($assetRequest->pr_number == null) $lastLayer++;
+            // if pr_number is not null and po_number is null, add 1 more
+            else if ($assetRequest->po_number == null) $lastLayer++;
+            // if pr_number, po_number are not null and vladimir_tagNumber is null, add 1 more
+            else if ($assetRequest->vladimir_tagNumber == null) $lastLayer++;
+        }
+        return $lastLayer;
     }
 
     private function getDateRequested($transactionNumber)
