@@ -17,14 +17,14 @@ class ApprovedRequestRepository
 
         $assetApproval = $this->findAssetApproval($assetApprovalId);
         $approverId = $this->findApproverId();
-
+        $status = "Approved";
 
         if ($this->isInvalidApprover($assetApproval->approver_id, $approverId)) {
             return $this->responseUnprocessable('You are not the approver of this request');
         }
 
-        if ($this->alreadyApproved($assetApprovalId)) {
-            return $this->responseUnprocessable('You already approved this request');
+        if ($this->isAssetApprovalWithStatus($assetApprovalId, $status)) {
+            return $this->responseUnprocessable('You already approve this request');
         }
 
         if ($this->checkStatus($assetApprovalId)) {
@@ -51,12 +51,13 @@ class ApprovedRequestRepository
 
         $assetApproval = $this->findAssetApproval($assetApprovalId);
         $approverId = $this->findApproverId();
+        $status = "Returned";
 
         if ($this->isInvalidApprover($assetApproval->approver_id, $approverId)) {
             return $this->responseUnprocessable('You are not the approver of this request');
         }
-        if ($this->alreadyApproved($assetApprovalId)) {
-            return $this->responseUnprocessable('You already approved this request');
+        if ($this->isAssetApprovalWithStatus($assetApprovalId, $status)) {
+            return $this->responseUnprocessable('You already return this request');
         }
         if ($this->checkStatus($assetApprovalId)) {
             return $this->responseUnprocessable('Its not your turn for this request');
@@ -70,7 +71,7 @@ class ApprovedRequestRepository
     }
 
     //RESUBMITTING REQUEST
-    public function resubmitRequest($transactionNumber)
+    public function resubmitRequest($transactionNumber): JsonResponse
     {
         $user = auth('sanctum')->user();
         $defaultLayer = $this->getUserLayer($transactionNumber);
@@ -177,9 +178,9 @@ class ApprovedRequestRepository
         return false;
     }
 
-    private function alreadyApproved($requestApprovalId): bool
+    private function isAssetApprovalWithStatus($requestApprovalId, $status): bool
     {
-        $assetApproval = AssetApproval::where('id', $requestApprovalId)->where('status', 'Approved')->first();
+        $assetApproval = AssetApproval::where('id', $requestApprovalId)->where('status', $status)->first();
         if ($assetApproval) {
             return true;
         }
@@ -190,15 +191,16 @@ class ApprovedRequestRepository
     private function logActivity($assetApproval, $status)
     {
         $user = auth('sanctum')->user();
+        $assetRequest = new AssetRequest();
         activity()
             ->causedBy($user)
-            ->performedOn($assetApproval)
+            ->performedOn($assetRequest)
             ->withProperties($this->composeLogProperties($assetApproval, $status))
             ->inLog($status)
-//            ->tap(function ($activity) use ($user, $status) {
-//                $activity->subject_id = '0001';
-//            })
-            ->log('Asset Approval Status Updated to ' . $status . ' by ' . $user->employee_id . '.');
+            ->tap(function ($activity) use ($user, $status, $assetApproval) {
+                $activity->subject_id = $assetApproval->transaction_number;
+            })
+            ->log('ssAet status has been changed to ' . $status . ' by ' . $user->employee_id . '.');
     }
 
     private function composeLogProperties($assetApproval, $status)
@@ -222,6 +224,7 @@ class ApprovedRequestRepository
                 'employee_id' => $requester->employee_id,
             ],
             'status' => $status,
+            'remarks' => $status == 'Returned' ? $assetApproval->asset_request->remarks : null,
         ];
     }
 
@@ -246,5 +249,6 @@ class ApprovedRequestRepository
 
         return $assetApproval ? $assetApproval->layer + 1 : 1;
     }
+
 
 }

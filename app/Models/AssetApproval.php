@@ -45,7 +45,6 @@ class AssetApproval extends Model
     public function activityLog()
     {
         return $this->hasMany(Activity::class, 'subject_id', 'id');
-
     }
 
 //    public function activityLog()
