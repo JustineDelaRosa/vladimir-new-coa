@@ -148,20 +148,21 @@ trait AssetRequestHandler
 
     private function getProcessCount($assetRequest)
     {
-        $lastLayer = 0;
-        if ($assetRequest->assetApproval->where('status', 'For Approval')->count() > 0) {
+        $statusForApproval = $assetRequest->assetApproval->where('status', 'For Approval');
+        $statusOther = $assetRequest->assetApproval->whereIn('status', ['For Approval', 'Approved']);
+        $lastLayerAssetApproval = $assetRequest->assetApproval->last();
+        $statusForApprovalCount = $statusForApproval->count();
+        $statusOtherCount = $statusOther->count();
 
-            $lastLayer = $assetRequest->assetApproval->where('status', 'For Approval')->first()->layer;
-        } elseif ($assetRequest->assetApproval->whereIn('status', ['For Approval', 'Approved'])->count() == 0) {
+        if ($statusForApprovalCount > 0) {
+            $lastLayer = $statusForApproval->first()->layer;
+        } elseif ($statusOtherCount == 0) {
             $lastLayer = 1;
         } else {
-            $lastLayer = $assetRequest->assetApproval->last()->layer ?? 0;
-
-            if ($assetRequest->pr_number == null) $lastLayer++;
-
-            else if ($assetRequest->po_number == null) $lastLayer++;
-
-            else if ($assetRequest->vladimir_tagNumber == null) $lastLayer++;
+            $lastLayer = $lastLayerAssetApproval->layer ?? 0;
+            if ($assetRequest->pr_number == null || $assetRequest->po_number == null || $assetRequest->vladimir_tagNumber == null) {
+                $lastLayer++;
+            }
         }
         return $lastLayer;
     }
