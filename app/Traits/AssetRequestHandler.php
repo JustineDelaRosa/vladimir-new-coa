@@ -150,19 +150,17 @@ trait AssetRequestHandler
     {
         $lastLayer = 0;
         if ($assetRequest->assetApproval->where('status', 'For Approval')->count() > 0) {
-            // If there is any approval pending return the layer number
+
             $lastLayer = $assetRequest->assetApproval->where('status', 'For Approval')->first()->layer;
         } elseif ($assetRequest->assetApproval->whereIn('status', ['For Approval', 'Approved'])->count() == 0) {
             $lastLayer = 1;
         } else {
-            // If no approval is pending, then get the last layer and add 1
             $lastLayer = $assetRequest->assetApproval->last()->layer ?? 0;
 
-            // if pr_number is null, add 1
             if ($assetRequest->pr_number == null) $lastLayer++;
-            // if pr_number is not null and po_number is null, add 1 more
+
             else if ($assetRequest->po_number == null) $lastLayer++;
-            // if pr_number, po_number are not null and vladimir_tagNumber is null, add 1 more
+
             else if ($assetRequest->vladimir_tagNumber == null) $lastLayer++;
         }
         return $lastLayer;
