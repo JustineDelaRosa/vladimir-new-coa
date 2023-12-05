@@ -350,4 +350,17 @@ class AssetRequestController extends Controller
         }
         return $this->transformForSingleItemOnly($assetRequest);
     }
+
+    public function getPerRequest($transactionNumber){
+
+        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->orderByDesc('created_at')
+            ->useFilters()->get()->groupBy('transaction_number')->map(function ($assetRequestCollection) {
+                $assetRequest = $assetRequestCollection->first();
+                //sum all the quantity per group
+                $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+                return $this->transformIndexAssetRequest($assetRequest);
+            })->values();
+
+        return $assetRequest;
+    }
 }
