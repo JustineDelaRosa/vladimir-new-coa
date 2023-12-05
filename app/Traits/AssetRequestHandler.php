@@ -152,7 +152,7 @@ trait AssetRequestHandler
         if ($assetRequest->assetApproval->where('status', 'For Approval')->count() > 0) {
             // If there is any approval pending return the layer number
             $lastLayer = $assetRequest->assetApproval->where('status', 'For Approval')->first()->layer;
-        } elseif ($assetRequest->assetApproval->where('status', 'For Approval')->count() == 0) {
+        } elseif ($assetRequest->assetApproval->whereIn('status', ['For Approval', 'Approved'])->count() == 0) {
             $lastLayer = 1;
         } else {
             // If no approval is pending, then get the last layer and add 1
