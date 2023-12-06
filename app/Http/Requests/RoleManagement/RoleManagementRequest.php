@@ -27,7 +27,8 @@ class RoleManagementRequest extends FormRequest
         $accessTypes = [
             'masterlist' => ['company', 'department', 'location', 'account-title', 'division', 'type-of-request', 'capex', 'category', 'status-category'],
             'user-management' => ['user-accounts', 'role-management', 'user-requestor', 'user-approver'],
-            'settings' => ['approver-settings', 'form-settings']
+            'settings' => ['approver-settings', 'form-settings'],
+            'request' => ['disposal', 'requisition', 'transfer', 'pull-out', 'disposal']
         ];
 
         if ($this->isMethod('post')) {
@@ -62,7 +63,8 @@ class RoleManagementRequest extends FormRequest
         }
     }
 
-    function validateAccessType($type, $items, $inputArray, $fail) {
+    function validateAccessType($type, $items, $inputArray, $fail)
+    {
         if (in_array($type, $inputArray)) {
             $intersect = array_intersect($items, $inputArray);
             if (count($intersect) == 0) {
