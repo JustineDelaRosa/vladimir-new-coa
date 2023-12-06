@@ -160,9 +160,10 @@ trait AssetRequestHandler
             $lastLayer = 1;
         } else {
             $lastLayer = $lastLayerAssetApproval->layer ?? 0;
-            if ($assetRequest->pr_number == null || $assetRequest->po_number == null || $assetRequest->vladimir_tagNumber == null) {
-                $lastLayer++;
-            }
+
+            if ($assetRequest->pr_number == null) $lastLayer++;
+            if ($assetRequest->po_number == null && $assetRequest->pr_number != null) $lastLayer+=2;
+            if ($assetRequest->vladimir_tagNumber == null && $assetRequest->po_number != null && $assetRequest->pr_number != null) $lastLayer+=3;
         }
         return $lastLayer;
     }
