@@ -38,18 +38,33 @@ class AssetRequestController extends Controller
 
     public function index(Request $request)
     {
+        $request->validate([
+            'for_monitoring' => 'boolean',
+        ]);
+
         $perPage = $request->input('per_page', null);
 
+        $forMonitoring = $request->for_monitoring ?? false;
+
         $requesterId = auth('sanctum')->user()->id;
+        $forMonitoring = $request->for_monitoring ?? false;
+        $role = RoleManagement::whereId($requesterId)->value('role_name');
+        $adminRoles = ['Super Admin', 'Admin', 'ERP'];
 
-        $assetRequest = AssetRequest::where('requester_id', $requesterId)->orderByDesc('created_at')
-            ->useFilters()->get()->groupBy('transaction_number')->map(function ($assetRequestCollection) {
-                $assetRequest = $assetRequestCollection->first();
-                //sum all the quantity per group
-                $assetRequest->quantity = $assetRequestCollection->sum('quantity');
-                return $this->transformIndexAssetRequest($assetRequest);
-            })->values();
+        if (!in_array($role, $adminRoles)) {
+            $forMonitoring = false;
+        }
 
+        $assetRequest = AssetRequest::query()->orderByDesc('created_at')->useFilters();
+        if (!$forMonitoring) {
+            $assetRequest->where('requester_id', $requesterId);
+        }
+
+        $assetRequest = $assetRequest->get()->groupBy('transaction_number')->map(function ($assetRequestCollection) {
+            $assetRequest = $assetRequestCollection->first();
+            $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+            return $this->transformIndexAssetRequest($assetRequest);
+        })->values();
 
         if ($perPage !== null) {
             $page = $request->input('page', 1);
@@ -351,7 +366,8 @@ class AssetRequestController extends Controller
         return $this->transformForSingleItemOnly($assetRequest);
     }
 
-    public function getPerRequest($transactionNumber){
+    public function getPerRequest($transactionNumber)
+    {
 
         $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->orderByDesc('created_at')
             ->useFilters()->get()->groupBy('transaction_number')->map(function ($assetRequestCollection) {
