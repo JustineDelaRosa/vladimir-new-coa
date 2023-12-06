@@ -8,7 +8,7 @@ trait AssetApprovalHandler
 {
     public function transformIndexApproval($assetApprovals, $transactionNumbers)
     {
-        $quantity = AssetRequest::whereIn('transaction_number', $transactionNumbers)->get()->sum('quantity');
+        $quantity = AssetRequest::where('transaction_number', $transactionNumbers)->get()->sum('quantity');
         $assetApprovals->transform(function ($assetApproval) use ($quantity) {
             return [
                 'id' => $assetApproval->id,
