@@ -2,12 +2,16 @@
 
 namespace App\Http\Requests\RequestContainer;
 
+use App\Http\Requests\BaseRequest;
 use App\Models\Location;
 use App\Models\SubUnit;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
-class CreateRequestContainerRequest extends FormRequest
+class CreateRequestContainerRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -141,4 +145,27 @@ class CreateRequestContainerRequest extends FormRequest
             'userRequest.*.other_attachments.max' => 'The other attachments may not be greater than 10000 kilobytes.',*/
         ];
     }
+
+
+
+//    /**
+//     * Handle a failed validation attempt.
+//     *
+//     * @param Validator $validator
+//     * @return JsonResponse
+//     * @throws HttpResponseException
+//     */
+//    protected function failedValidation(Validator $validator)
+//    {
+//        throw new HttpResponseException(
+//            response()->json(
+//                [
+//                    'message' => 'Invalid Request',
+//                    'errors' => [
+//                        'title' => 'Oops . Something went wrong , try again or contact the support',
+//                        'detail' => $validator->errors()->first(),
+//                    ],
+//                ], 422)
+//        );
+//    }
 }
