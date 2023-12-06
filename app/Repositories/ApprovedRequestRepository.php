@@ -200,7 +200,7 @@ class ApprovedRequestRepository
             ->tap(function ($activity) use ($user, $status, $assetApproval) {
                 $activity->subject_id = $assetApproval->transaction_number;
             })
-            ->log('ssAet status has been changed to ' . $status . ' by ' . $user->employee_id . '.');
+            ->log('Asset status has been changed to ' . $status . ' by ' . $user->employee_id . '.');
     }
 
     private function composeLogProperties($assetApproval, $status)
