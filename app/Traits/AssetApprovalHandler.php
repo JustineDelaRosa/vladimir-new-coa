@@ -8,13 +8,16 @@ trait AssetApprovalHandler
 {
     public function transformIndexApproval($assetApprovals, $transactionNumbers)
     {
-        $quantity = AssetRequest::where('transaction_number', $transactionNumbers)->get()->sum('quantity');
-        $assetApprovals->transform(function ($assetApproval) use ($quantity) {
+        $assetApprovals->transform(function ($assetApproval) use ($transactionNumbers) {
+            $quantity = [];
+            foreach($transactionNumbers as $transactionNumber){
+                $quantity[$transactionNumber] = AssetRequest::where('transaction_number', $transactionNumber)->sum('quantity');
+            }
             return [
                 'id' => $assetApproval->id,
                 'status' => $assetApproval->status,
                 'layer' => $assetApproval->layer,
-                'number_of_item' => $quantity,
+                'number_of_item' => $quantity[$assetApproval->transaction_number],
                 'requester' => [
                     'id' => $assetApproval->requester->id,
                     'username' => $assetApproval->requester->username,
@@ -29,12 +32,6 @@ trait AssetApprovalHandler
                     'firstname' => $assetApproval->approver->user->firstname,
                     'lastname' => $assetApproval->approver->user->lastname,
                 ],
-                'asset_request' => [
-                    'id' => $assetApproval->assetRequest->transaction_number,
-                    'transaction_number' => $assetApproval->assetRequest->transaction_number,
-                    'date_requested' => $assetApproval->assetRequest->created_at,
-                    'status' => $assetApproval->assetRequest->status,
-                ]
             ];
         });
 

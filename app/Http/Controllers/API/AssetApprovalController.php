@@ -60,6 +60,7 @@ class AssetApprovalController extends Controller
         $transactionNumbers = $assetApprovals->map(function ($item) {
             return $item->transaction_number;
         });
+
         return $this->transformIndexApproval($assetApprovals, $transactionNumbers);
     }
 
