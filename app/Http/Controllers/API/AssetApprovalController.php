@@ -24,7 +24,7 @@ class AssetApprovalController extends Controller
 {
     use ApiResponse, AssetApprovalHandler, assetRequestHandler;
 
-    private $approveRequestRepository;
+    private ApprovedRequestRepository $approveRequestRepository;
 
     public function __construct(ApprovedRequestRepository $approveRequestRepository)
     {
@@ -88,7 +88,6 @@ class AssetApprovalController extends Controller
         $assetRequest = AssetRequest::where('transaction_number', $assetApproval->transaction_number)
             ->get();
         return $this->transformShowAssetRequest($assetRequest);
-
     }
 
     public function update(UpdateAssetApprovalRequest $request, AssetApproval $assetApproval): JsonResponse

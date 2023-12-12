@@ -150,7 +150,7 @@ trait AssetRequestHandler
     {
         $statusForApproval = $assetRequest->assetApproval->where('status', 'For Approval');
         $statusOther = $assetRequest->assetApproval->whereIn('status', ['For Approval', 'Approved']);
-        $lastLayerAssetApproval = $assetRequest->assetApproval->last();
+        $highestLayerNumber = $assetRequest->assetApproval()->max('layer');
         $statusForApprovalCount = $statusForApproval->count();
         $statusOtherCount = $statusOther->count();
 
@@ -159,7 +159,7 @@ trait AssetRequestHandler
         } elseif ($statusOtherCount == 0) {
             $lastLayer = 1;
         } else {
-            $lastLayer = $lastLayerAssetApproval->layer ?? 0;
+            $lastLayer = $highestLayerNumber ?? 0;
 
             if ($assetRequest->pr_number == null) $lastLayer++;
             if ($assetRequest->po_number == null && $assetRequest->pr_number != null) $lastLayer+=2;

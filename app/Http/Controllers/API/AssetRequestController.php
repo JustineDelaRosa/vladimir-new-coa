@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Models\ApproverLayer;
+use App\Models\Approvers;
 use App\Models\AssetApproval;
 use App\Models\AssetRequest;
 use App\Models\Company;
@@ -188,10 +189,16 @@ class AssetRequestController extends Controller
     {
         //For Specific Viewing of Asset Request with the same transaction number
         $requestorId = auth('sanctum')->user()->id;
-
-        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
-            ->where('requester_id', $requestorId)
-            ->get();
+        //check if the user is approver
+        $approverCheck = Approvers::where('approver_id', $requestorId)->first();
+        if($approverCheck) {
+            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
+                ->get();
+        } else {
+            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
+                ->where('requester_id', $requestorId)
+                ->get();
+        }
 
         if ($assetRequest->isEmpty()) {
             return $this->responseUnprocessable('Asset Request not found.');
