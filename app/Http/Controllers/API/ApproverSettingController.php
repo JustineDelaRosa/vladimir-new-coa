@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ApproverSetting\ApproverSettingRequest;
 use App\Models\Approvers;
+use App\Models\DepartmentUnitApprovers;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -59,7 +60,7 @@ class ApproverSettingController extends Controller
                     'department_code' => $item->user->department->department_code ?? '-',
                     'department_name' => $item->user->department->department_name ?? '-',
                 ],
-                'subunit'=>[
+                'subunit' => [
                     'id' => $item->user->subUnit->id ?? '-',
                     'subunit_code' => $item->user->subUnit->sub_unit_code ?? '-',
                     'subunit_name' => $item->user->subUnit->sub_unit_name ?? '-',
@@ -177,6 +178,10 @@ class ApproverSettingController extends Controller
             if (!Approvers::where('id', $id)->where('is_active', true)->exists()) {
                 return response()->json(['message' => 'No Changes'], 200);
             } else {
+                $department_unit_approver = DepartmentUnitApprovers::where('approver_id', $id)->exists();
+                if ($department_unit_approver) {
+                    return response()->json(['error' => 'Unable to deactivate'], 422);
+                }
 
                 $updateStatus = $approver->where('id', $id)->update(['is_active' => false]);
                 $approver->where('id', $id)->delete();
@@ -195,12 +200,11 @@ class ApproverSettingController extends Controller
                 }
 
 
-                $restoreUser = $approver->withTrashed()->where('id', $id)->restore();
-                $updateStatus = $approver->update(['is_active' => true]);
+                $approver->withTrashed()->where('id', $id)->restore();
+                $approver->update(['is_active' => true]);
                 return response()->json(['message' => 'Successfully Activated!'], 200);
             }
         }
-
     }
 
     public function approverSetting()
