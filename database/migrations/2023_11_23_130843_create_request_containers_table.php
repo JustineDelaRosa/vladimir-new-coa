@@ -22,6 +22,8 @@ class CreateRequestContainersTable extends Migration
             $table->string('reference_number')->nullable();
             $table->string('pr_number')->nullable();
             $table->string('po_number')->nullable();
+            $table->boolean('is_add_cost')->default(0);
+            $table->unsignedInteger('fixed_asset_id')->nullable();
 
             //TO BE FILL UP BY THE REQUESTER
             $table->string('remarks')->nullable();
@@ -107,6 +109,7 @@ class CreateRequestContainersTable extends Migration
             $table->foreign('cycle_count_status_id')->references('id')->on('cycle_count_statuses');
             $table->foreign('depreciation_status_id')->references('id')->on('depreciation_statuses');
             $table->foreign('movement_status_id')->references('id')->on('movement_statuses');
+            $table->foreign('fixed_asset_id')->references('id')->on('fixed_assets');
 
             $table->timestamps();
         });
