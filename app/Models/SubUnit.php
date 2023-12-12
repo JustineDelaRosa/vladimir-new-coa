@@ -22,11 +22,11 @@ protected string $default_filters = SubUnitFilters::class;
      */
     protected $guarded = [];
 
-    private static function latest()
-    {
-        $subUnit = self::orderBy('id', 'desc')->first();
-        return $subUnit;
-    }
+//    private static function latest()
+//    {
+//        $subUnit = self::orderBy('id', 'desc')->first();
+//        return $subUnit;
+//    }
 
 
     public function department(){
@@ -57,10 +57,9 @@ protected string $default_filters = SubUnitFilters::class;
         $subUnitCode = null;
 
         DB::transaction(function() use (&$subUnitCode) {
-            $subUnit = self::latest()->lockForUpdate()->first();
+            $subUnit = self::withTrashed()->latest()->lockForUpdate()->first();
             $subUnitCode = (!empty($subUnit)) ? $subUnit->id + 1 : 1;
             $subUnitCode = str_pad($subUnitCode, 4, '0', STR_PAD_LEFT);
-
         });
 
         return $subUnitCode;

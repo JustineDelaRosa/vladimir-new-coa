@@ -22,7 +22,7 @@ class  DepartmentUnitApproversController extends Controller
     {
         $perPage = $request->input('per_page', null);
 
-        $transformedResults = DepartmentUnitApprovers::useFilters()->get()->groupBy('subunit_id')->map(function ($item) {
+        $transformedResults = DepartmentUnitApprovers::useFilters()->orderByDesc('created_at')->get()->groupBy('subunit_id')->map(function ($item) {
             return [
                 /*'department_id' => $item[0]->department_id,
                 'department_name' => $item[0]->department->department_name,

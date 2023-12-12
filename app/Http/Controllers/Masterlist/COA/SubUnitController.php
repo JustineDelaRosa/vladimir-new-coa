@@ -45,11 +45,13 @@ class SubUnitController extends Controller
         return $subUnits;
     }
 
-    public function store(CreateSubUnitRequest $request): JsonResponse
+    public function store(CreateSubUnitRequest $request)
     {
         $request->validated();
         $departmentId = $request->department_id;
         $subUnitName = $request->subunit_name;
+//      return  SubUnit::latest()->lockForUpdate()->first();
+//        return SubUnit::generateCode();
 
         $subUnit = SubUnit::create([
             'sub_unit_code' => SubUnit::generateCode(),
