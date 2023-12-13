@@ -49,7 +49,7 @@ class AssignApproverController extends Controller
 //            $userApproverQuery->whereNull('deleted_at');
 //        }
 
-        $transformedResults = $userApproverQuery->get()->groupBy('requester_id')->map(function ($item) {
+        $transformedResults = $userApproverQuery->orderByDesc('created_at')->get()->groupBy('requester_id')->map(function ($item) {
             return [
                 'id' => $item[0]->requester_id,
                 'requester_details' => $item[0]->requester,

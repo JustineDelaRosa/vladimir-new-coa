@@ -118,6 +118,7 @@ trait AssetRequestHandler
                     'remarks' => $activityLog->properties['remarks'] ?? null,
                 ];
             }),
+            'steps' => $this->getSteps($assetRequest),
 //            'history_log' => $assetRequest->assetapproval->map(function ($approval) {
 //                return [
 //                    'id' => $approval->id,
@@ -145,6 +146,22 @@ trait AssetRequestHandler
 //            })->sortBy('approver.layer')->values(),
         ];
     }
+    private function getSteps($assetRequest){
+        $approvalCount = $assetRequest->assetApproval->count();
+
+        $suffixes = ['st', 'nd', 'rd', 'th', 'th'];
+
+        $steps = [];
+        for($i = 1; $i <= $approvalCount; $i++){
+            $steps[] = $i . $suffixes[$i-1] . ' Approval';
+        }
+        $steps[] = 'Inputing of PR No.';
+        $steps[] = 'Matching of PR No. to Receiving';
+        $steps[] = 'Asset Tagging';
+        $steps[] = 'Ready to Pickup';
+
+        return $steps;
+    }
 
     private function getProcessCount($assetRequest)
     {
@@ -162,8 +179,8 @@ trait AssetRequestHandler
             $lastLayer = $highestLayerNumber ?? 0;
 
             if ($assetRequest->pr_number == null) $lastLayer++;
-            if ($assetRequest->po_number == null && $assetRequest->pr_number != null) $lastLayer+=2;
-            if ($assetRequest->vladimir_tagNumber == null && $assetRequest->po_number != null && $assetRequest->pr_number != null) $lastLayer+=3;
+            if ($assetRequest->po_number == null && $assetRequest->pr_number != null) $lastLayer += 2;
+            if ($assetRequest->vladimir_tagNumber == null && $assetRequest->po_number != null && $assetRequest->pr_number != null) $lastLayer += 3;
         }
         return $lastLayer;
     }

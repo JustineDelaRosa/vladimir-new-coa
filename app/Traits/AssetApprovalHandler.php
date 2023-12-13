@@ -20,29 +20,28 @@ trait AssetApprovalHandler
                 'number_of_item' => $quantity[$assetApproval->transaction_number],
                 'transaction_number' => $assetApproval->transaction_number,
                 'requester' => [
-                    'id' => $assetApproval->requester->id,
-                    'username' => $assetApproval->requester->username,
-                    'employee_id' => $assetApproval->requester->employee_id,
-                    'firstname' => $assetApproval->requester->firstname,
-                    'lastname' => $assetApproval->requester->lastname,
+                    'id' => $assetApproval->requester->id ?? '-',
+                    'username' => $assetApproval->requester->username ?? '-',
+                    'employee_id' => $assetApproval->requester->employee_id ?? '-',
+                    'firstname' => $assetApproval->requester->firstname ?? '-',
+                    'lastname' => $assetApproval->requester->lastname ?? '-',
                 ],
                 'approver' => [
-                    'id' => $assetApproval->approver->user->id,
-                    'username' => $assetApproval->approver->user->username,
-                    'employee_id' => $assetApproval->approver->user->employee_id,
-                    'firstname' => $assetApproval->approver->user->firstname,
-                    'lastname' => $assetApproval->approver->user->lastname,
+                    'id' => $assetApproval->approver->user->id ?? '-',
+                    'username' => $assetApproval->approver->user->username ?? '-',
+                    'employee_id' => $assetApproval->approver->user->employee_id ?? '-',
+                    'firstname' => $assetApproval->approver->user->firstname ?? '-',
+                    'lastname' => $assetApproval->approver->user->lastname ?? '-',
                 ],
                 'asset_request' => [
-                    'id' => $assetApproval->assetRequest->transaction_number,
-                    'transaction_number' => $assetApproval->assetRequest->transaction_number,
-                    'date_requested' => $assetApproval->assetRequest->created_at,
-                    'status' => $assetApproval->assetRequest->status,
+                    'id' => $assetApproval->assetRequest->transaction_number ?? '-',
+                    'transaction_number' => $assetApproval->assetRequest->transaction_number ?? '-',
+                    'date_requested' => $assetApproval->assetRequest->created_at ?? '-',
+                    'status' => $assetApproval->assetRequest->status ?? '-',
                 ],
             ];
         });
 
         return $assetApprovals;
     }
-
 }
