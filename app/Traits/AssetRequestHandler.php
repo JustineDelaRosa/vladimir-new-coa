@@ -127,7 +127,7 @@ trait AssetRequestHandler
         //check if the status is approved
         $approvers = $assetRequest->status == 'Approved';
         if ($approvers) {
-            //check if null pr number 
+            //check if null pr number
             if ($assetRequest->pr_number == null) {
                 return [
                     'firstname' => 'Inputing of PR No.',
@@ -157,7 +157,7 @@ trait AssetRequestHandler
     {
         $approvers = $assetRequest->status == 'Approved';
         if ($approvers) {
-            //check if null pr number 
+            //check if null pr number
             if ($assetRequest->pr_number == null) {
                 return 'Inputing of PR No.';
             }
@@ -196,14 +196,13 @@ trait AssetRequestHandler
     private function getProcessCount($assetRequest)
     {
         $statusForApproval = $assetRequest->assetApproval->where('status', 'For Approval');
-        $statusOther = $assetRequest->assetApproval->whereIn('status', ['For Approval', 'Approved']);
         $highestLayerNumber = $assetRequest->assetApproval()->max('layer');
         $statusForApprovalCount = $statusForApproval->count();
-        $statusOtherCount = $statusOther->count();
+        $returnStatus = $assetRequest->assetApproval->where('status', 'Returned')->count();
 
         if ($statusForApprovalCount > 0) {
             $lastLayer = $statusForApproval->first()->layer;
-        } elseif ($statusOtherCount == 0) {
+        } elseif ($returnStatus > 0) {
             $lastLayer = 1;
         } else {
             $lastLayer = $highestLayerNumber ?? 0;

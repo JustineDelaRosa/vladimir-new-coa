@@ -133,7 +133,7 @@ class ApprovedRequestRepository
         return Approvers::where('approver_id', $user->id)->value('id');
     }
 
-    private function isInvalidApprover($approver_id, $approverId)
+    private function isInvalidApprover($approver_id, $approverId): bool
     {
         return $approver_id != $approverId;
     }
@@ -202,7 +202,7 @@ class ApprovedRequestRepository
             ->log('Asset status has been changed to ' . $status . ' by ' . $user->employee_id . '.');
     }
 
-    private function composeLogProperties($assetApproval, $status)
+    private function composeLogProperties($assetApproval, $status): array
     {
         // Assume approver and requester are loaded with user relation
         $approver = $assetApproval->approver->user;

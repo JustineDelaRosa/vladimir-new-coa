@@ -7,6 +7,7 @@ use App\Http\Requests\ApproverSetting\ApproverSettingRequest;
 use App\Models\Approvers;
 use App\Models\DepartmentUnitApprovers;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ApproverSettingController extends Controller
@@ -16,7 +17,7 @@ class ApproverSettingController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $search = $request->input('search', '');
         $status = $request->input('status', '');
@@ -85,7 +86,7 @@ class ApproverSettingController extends Controller
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function store(ApproverSettingRequest $request)
+    public function store(ApproverSettingRequest $request): JsonResponse
     {
         $approver_id = $request->approver_id;
         $user = User::query()->where('id', $approver_id)->first();
@@ -104,7 +105,7 @@ class ApproverSettingController extends Controller
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function show($id)
+    public function show($id): JsonResponse
     {
         $approver = Approvers::find($id);
         if (!$approver) {
@@ -141,7 +142,7 @@ class ApproverSettingController extends Controller
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function update(ApproverSettingRequest $request, $id)
+    public function update(ApproverSettingRequest $request, $id): JsonResponse
     {
         $approver_id = $request->approver_id;
         $approvers = Approvers::find($id);
