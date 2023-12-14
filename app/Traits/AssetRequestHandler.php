@@ -153,7 +153,7 @@ trait AssetRequestHandler
         return 'Something went wrong';
     }
 
-    private function getAfterApprovedStatus($assetRequest)
+    private function getAfterApprovedStatus($assetRequest): string
     {
         $approvers = $assetRequest->status == 'Approved';
         if ($approvers) {
@@ -175,7 +175,7 @@ trait AssetRequestHandler
     }
 
 
-    private function getSteps($assetRequest)
+    private function getSteps($assetRequest): array
     {
         $approvalCount = $assetRequest->assetApproval->count();
 
@@ -185,7 +185,7 @@ trait AssetRequestHandler
         for ($i = 1; $i <= $approvalCount; $i++) {
             $steps[] = $i . $suffixes[$i - 1] . ' Approval';
         }
-        $steps[] = 'Inputing of PR No.';
+        $steps[] = 'Inputting of PR No.';
         $steps[] = 'Matching of PR No. to Receiving';
         $steps[] = 'Asset Tagging';
         $steps[] = 'Ready to Pickup';
