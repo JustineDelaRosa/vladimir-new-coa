@@ -62,10 +62,9 @@ class ApprovedRequestRepository
         if ($this->checkStatus($assetApprovalId)) {
             return $this->responseUnprocessable('Its not your turn for this request');
         }
+        $this->updateAssetRequestStatus($assetApproval->transaction_number, 'Returned', $remarks);
 
         $this->updateAssetApprovalStatus($assetApproval, 'Returned');
-
-        $this->updateAssetRequestStatus($assetApproval->transaction_number, 'Returned', $remarks);
 
         return $this->responseSuccess('Asset Request Return Successfully');
     }
@@ -224,7 +223,7 @@ class ApprovedRequestRepository
                 'employee_id' => $requester->employee_id,
             ],
             'status' => $status,
-            'remarks' => $status == 'Returned' ? $assetApproval->asset_request->remarks ?? null : null,
+            'remarks' => $status == 'Returned' ? $assetApproval->assetRequest->remarks ?? 'test' : null,
         ];
     }
 

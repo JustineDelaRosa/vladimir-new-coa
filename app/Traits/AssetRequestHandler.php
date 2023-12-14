@@ -41,16 +41,16 @@ trait AssetRequestHandler
             'other_attachments'
         ];
 
-//        foreach ($collections as $collection) {
-//            if (isset($request->$collection)) {
-//                $assetRequest->clearMediaCollection($collection);
-//                $assetRequest->addMultipleMediaFromRequest([$collection], $collection)->each(function ($fileAdder) use ($collection) {
-//                    $fileAdder->toMediaCollection($collection);
-//                });
-//            } else {
-//                $assetRequest->clearMediaCollection($collection);
-//            }
-//        }
+        //        foreach ($collections as $collection) {
+        //            if (isset($request->$collection)) {
+        //                $assetRequest->clearMediaCollection($collection);
+        //                $assetRequest->addMultipleMediaFromRequest([$collection], $collection)->each(function ($fileAdder) use ($collection) {
+        //                    $fileAdder->toMediaCollection($collection);
+        //                });
+        //            } else {
+        //                $assetRequest->clearMediaCollection($collection);
+        //            }
+        //        }
 
         foreach ($collections as $collection) {
             if ($request->$collection !== 'x') {
@@ -81,7 +81,7 @@ trait AssetRequestHandler
             'item_count' => $assetRequest->quantity ?? 0,
             'date_requested' => $this->getDateRequested($assetRequest->transaction_number),
             'remarks' => $assetRequest->remarks ?? '',
-            'status' => $assetRequest->status,
+            'status' => $assetRequest->status == 'Approved' ? $this->getAfterApprovedStatus($assetRequest) : $assetRequest->status,
             'pr_number' => $assetRequest->pr_number ?? '-',
             'created_at' => $this->getDateRequested($assetRequest->transaction_number),
             'approver_count' => $assetRequest->assetApproval->count(),
@@ -99,7 +99,7 @@ trait AssetRequestHandler
                     'subunit' => $approval->approver->user->subUnit->sub_unit_name ?? '-',
                     'layer' => $approval->layer ?? '',
                 ];
-            })->values()->first(),
+            })->values()->first() ?? $this->getAfterApprovedStep($assetRequest),
             'requestor' => [
                 'id' => $assetRequest->requestor->id,
                 'username' => $assetRequest->requestor->username,
@@ -119,41 +119,71 @@ trait AssetRequestHandler
                 ];
             }),
             'steps' => $this->getSteps($assetRequest),
-//            'history_log' => $assetRequest->assetapproval->map(function ($approval) {
-//                return [
-//                    'id' => $approval->id,
-//                    'approver' => [
-//                        'id' => $approval->approver->id,
-//                        'username' => $approval->approver->user->username,
-//                        'employee_id' => $approval->approver->user->employee_id,
-//                        'firstname' => $approval->approver->user->firstname,
-//                        'lastname' => $approval->approver->user->lastname,
-//                        'department' => $approval->approver->user->department->department_name ?? '-',
-//                        'subunit' => $approval->approver->user->subUnit->sub_unit_name ?? '-',
-//                        'layer' => $approval->layer,
-//                    ],
-//                    'status' => $approval->status,
-//                    'remarks' => $approval->status == 'Returned' ? $approval->assetRequest->remarks : null,
-////                    'created_at' => $approval->activityLog()->latest()->first()->created_at ?? null,
-//                    'activity_log' => $approval->activityLog->map(function ($activityLog) {
-//                        return [
-//                            'id' => $activityLog->id,
-//                            'action' => $activityLog->log_name,
-//                            'created_at' => $activityLog->created_at,
-//                        ];
-//                    }),
-//                ];
-//            })->sortBy('approver.layer')->values(),
         ];
     }
-    private function getSteps($assetRequest){
+
+    private function getAfterApprovedStep($assetRequest)
+    {
+        //check if the status is approved
+        $approvers = $assetRequest->status == 'Approved';
+        if ($approvers) {
+            //check if null pr number 
+            if ($assetRequest->pr_number == null) {
+                return [
+                    'firstname' => 'Inputing of PR No.',
+                    'lastname' => '',
+                ];
+            }
+            //check if null po number
+            if ($assetRequest->po_number == null && $assetRequest->pr_number != null) {
+                return [
+                    'firstname' => 'Inputing of PO No.',
+                    'lastname' => '',
+                ];
+            }
+
+            if ($assetRequest->vladimir_tagNumber == null && $assetRequest->po_number != null && $assetRequest->pr_number != null) {
+                return [
+                    'firstname' => 'Asset Tagging',
+                    'lastname' => '',
+                ];
+            }
+        }
+
+        return 'Something went wrong';
+    }
+
+    private function getAfterApprovedStatus($assetRequest)
+    {
+        $approvers = $assetRequest->status == 'Approved';
+        if ($approvers) {
+            //check if null pr number 
+            if ($assetRequest->pr_number == null) {
+                return 'Inputing of PR No.';
+            }
+            //check if null po number
+            if ($assetRequest->po_number == null && $assetRequest->pr_number != null) {
+                return 'Inputing of PO No.';
+            }
+
+            if ($assetRequest->vladimir_tagNumber == null && $assetRequest->po_number != null && $assetRequest->pr_number != null) {
+                return 'Asset Tagging';
+            }
+        }
+
+        return 'Something went wrong';
+    }
+
+
+    private function getSteps($assetRequest)
+    {
         $approvalCount = $assetRequest->assetApproval->count();
 
         $suffixes = ['st', 'nd', 'rd', 'th', 'th'];
 
         $steps = [];
-        for($i = 1; $i <= $approvalCount; $i++){
-            $steps[] = $i . $suffixes[$i-1] . ' Approval';
+        for ($i = 1; $i <= $approvalCount; $i++) {
+            $steps[] = $i . $suffixes[$i - 1] . ' Approval';
         }
         $steps[] = 'Inputing of PR No.';
         $steps[] = 'Matching of PR No. to Receiving';
