@@ -3,7 +3,9 @@
 namespace App\Http\Requests\RequestContainer;
 
 use App\Http\Requests\BaseRequest;
+use App\Models\Approvers;
 use App\Models\Location;
+use App\Models\RequestContainer;
 use App\Models\SubUnit;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
@@ -52,6 +54,14 @@ class CreateRequestContainerRequest extends BaseRequest
                     //check if this is the sub unit of the selected department
                     if ($subunit->department_id != request()->department_id) {
                         $fail('Subunit does not match department.');
+                    }
+                    //check if this use have item stored on request container
+                    $requestContainer = RequestContainer::where('requester_id',  auth('sanctum')->user()->id)->get();
+                    if ($requestContainer->isNotEmpty()) {
+                        //check if the this and the subunit is the same on the request container
+                        if ($requestContainer->first()->subunit_id != $value) {
+                            $fail('You have an existing request container with different subunit.');
+                        }
                     }
                 },
             ],

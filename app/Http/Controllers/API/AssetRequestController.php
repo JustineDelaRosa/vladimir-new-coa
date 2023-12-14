@@ -281,6 +281,13 @@ class AssetRequestController extends Controller
 
         // Get the items from Request-container
         $items = RequestContainer::where('requester_id', $requesterId)->get();
+        //check if the item inside item have different subunit id
+        $subunitId = $items[0]->subunit_id;
+        foreach ($items as $item) {
+            if ($item->subunit_id != $subunitId) {
+                return $this->responseUnprocessable('Invalid Action, Different Subunit');
+            }
+        }
 
 
         foreach ($items as $item) {

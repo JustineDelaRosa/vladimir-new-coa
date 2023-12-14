@@ -26,16 +26,7 @@ class Authenticate extends Middleware
 
         if ($request->cookie('authcookie')) {
             $request->headers->set('Authorization', 'Bearer ' . $request->cookie('authcookie'));
-
         }
-
-        // $this->authenticate($request, $guards);
-
-
-        // // return $next($request);
-        // if($sanctum = $request->cookie('authcookie')){
-        //     $request->headers->set('Authorization','Bearer ' . $sanctum);
-        // }
         $this->authenticate($request, $guards);
 
         return $next($request);

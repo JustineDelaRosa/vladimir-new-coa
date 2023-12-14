@@ -215,7 +215,8 @@ trait AssetRequestHandler
             $otherAttachmentsMedia = $ar->getMedia('other_attachments')->first();
 
             return [
-                'can_resubmit' => $ar->status == 'Returned' ? 1 : 0,
+                'can_edit' => $ar->status == 'Returned' || $ar->status == 'For Approval of Approver 1'  ? 1 : 0,
+                'can_resubmit' => $ar->status == 'Returned'  ? 1 : 0,
                 'id' => $ar->id,
                 'status' => $ar->status,
                 'transaction_number' => $ar->transaction_number,
