@@ -28,32 +28,51 @@ class AssetRequest extends Model implements HasMedia
 
     protected string $default_filters = AssetRequestFilters::class;
 
-//    protected function last(){
-//        $lastRecord = null;
-//        try {
-//            $lastRecord = static::withTrashed()->latest()->first();
-//        } catch (\Exception $e) {
-//            //add more appropriate exception handling here.
-//        }
-//        return $lastRecord;
-//    }
+    //    protected function last(){
+    //        $lastRecord = null;
+    //        try {
+    //            $lastRecord = static::withTrashed()->latest()->first();
+    //        } catch (\Exception $e) {
+    //            //add more appropriate exception handling here.
+    //        }
+    //        return $lastRecord;
+    //    }
+
+    // public function generateReferenceNumber(): ?string
+    // {
+    //     try {
+    //         $referenceNumber = null;
+
+    //         DB::transaction(function () use (&$referenceNumber) {
+    //             // Get last row with "FOR UPDATE" to prevent other processes from reading the same row
+    //             $last = static::withTrashed()->latest()->lockForUpdate()->first();
+
+    //             $lastId = $last ? $last->id : 0;
+    //             $referenceNumber = str_pad($lastId + 1, 4, '0', STR_PAD_LEFT);
+    //         });
+
+    //         return $referenceNumber;
+    //     } catch (\Exception $e) {
+    //         // Handle exception if necessary
+    //         return null;
+    //     }
+    // }
 
     public function generateReferenceNumber(): ?string
     {
         try {
-            $referenceNumber = null;
+            // Ensure the model has been saved and has an ID
+            if ($this->id === null) {
+                $this->save();
+            }
 
-            DB::transaction(function () use (&$referenceNumber) {
-                // Get last row with "FOR UPDATE" to prevent other processes from reading the same row
-                $last = static::withTrashed()->latest()->lockForUpdate()->first();
+            // Use the ID as the reference number
+            $this->reference_number = str_pad($this->id, 4, '0', STR_PAD_LEFT);
 
-                $lastId = $last ? $last->id : 0;
-                $referenceNumber = str_pad($lastId + 1, 4, '0', STR_PAD_LEFT);
+            // Save the model again to store the reference number
+            $this->save();
 
-                // Here continue your operation, like record creation that uses the generated referenceNumber.
-            });
-
-            return $referenceNumber;
+            return $this->reference_number;
         } catch (\Exception $e) {
             // Handle exception if necessary
             return null;
@@ -72,7 +91,6 @@ class AssetRequest extends Model implements HasMedia
 
             $nextNumber = $lastTransaction ? $lastTransaction->transaction_number + 1 : 1;
             $transactionNumber = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-
         });
 
         return $transactionNumber;
@@ -82,21 +100,22 @@ class AssetRequest extends Model implements HasMedia
     public function currentApprover()
     {
         //pass who is the current approver of this asset request from asset approval table with status For Approval
-        return $this->hasMany(AssetApproval::class , 'transaction_number' , 'transaction_number')->where('status' , 'For Approval');
+        return $this->hasMany(AssetApproval::class, 'transaction_number', 'transaction_number')->where('status', 'For Approval');
     }
 
-//    public function approver()
-//    {
-//        return $this->belongsTo(Approvers::class, 'current_approver_id', 'id');
-//    }
+    //    public function approver()
+    //    {
+    //        return $this->belongsTo(Approvers::class, 'current_approver_id', 'id');
+    //    }
 
     public function assetApproval()
     {
         return $this->hasMany(AssetApproval::class, 'transaction_number', 'transaction_number');
     }
 
-    public function subunit(){
-        return $this->belongsTo(Subunit::class , 'subunit_id' , 'id');
+    public function subunit()
+    {
+        return $this->belongsTo(Subunit::class, 'subunit_id', 'id');
     }
 
     public function typeOfRequest()
@@ -159,14 +178,17 @@ class AssetRequest extends Model implements HasMedia
         return $this->belongsTo(Company::class, 'company_id', 'id');
     }
 
-    public function department(){
-        return $this->belongsTo(Department::class , 'department_id' , 'id');
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id', 'id');
     }
 
-    public function location(){
+    public function location()
+    {
         return $this->belongsTo(Location::class, 'location_id', 'id');
     }
-    public function accountTitle(){
+    public function accountTitle()
+    {
         return $this->belongsTo(AccountTitle::class, 'account_title_id', 'id');
     }
 

@@ -2,8 +2,10 @@
 
 namespace App\Traits;
 
+use App\Models\Approvers;
 use App\Models\AssetApproval;
 use App\Models\AssetRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 trait AssetRequestHandler
@@ -14,6 +16,28 @@ trait AssetRequestHandler
             ->whereIn('status', ['For Approval of Approver 1', 'Returned']);
 
         return $singleResult ? $query->first() : $query->get();
+    }
+
+    public function getAssetRequestForApprover($field, $transactionNumber, $referenceNumber = null, $singleResult = true)
+    {
+        $approverCount = AssetApproval::where('transaction_number', $transactionNumber)->where('status', 'For Approval')
+            ->first()->layer;
+        if ($singleResult == true) {
+            $query = AssetRequest::where($field, $referenceNumber)
+                ->whereIn('status', [
+                    'For Approval of Approver ' . $approverCount,
+                    'Returned'
+                ]);
+            return $query->first();
+        } else {
+            $query = AssetRequest::where($field, $transactionNumber)
+                ->whereNotIn('status', [
+                    'For Approval of Approver ' . $approverCount,
+                    'Approved',
+                    'Returned'
+                ]);
+            return $query->get();
+        }
     }
 
     public function updateAssetRequest($assetRequest, $request)
@@ -438,12 +462,18 @@ trait AssetRequestHandler
         ];
     }
 
-    public function voidRequestItem($referenceNumber)
+    public function voidRequestItem($referenceNumber, $transactionNumber): JsonResponse
     {
-        $assetRequest = $this->getAssetRequest('reference_number', $referenceNumber);
 
-        if (!$assetRequest) {
-            return $this->responseUnprocessable('Asset Request not found.');
+        $approverId = $this->isUserAnApprover($transactionNumber);
+        $assetRequest = $this->getAssetRequestForApprover('reference_number', $transactionNumber, $referenceNumber);
+
+        // return $this->responseUnprocessable($assetRequest);
+        if (!$approverId) {
+            $assetRequest = $this->getAssetRequest('reference_number', $referenceNumber);
+            if (!$assetRequest) {
+                return $this->responseUnprocessable('Unable to void Request Item.');
+            }
         }
 
         if ($this->requestCount($assetRequest->transaction_number) == 1) {
@@ -468,13 +498,18 @@ trait AssetRequestHandler
 
     public function voidAssetRequest($transactionNumber)
     {
+        // return $this->responseSuccess($this->isUserAnApprover($transactionNumber));
 
-        $assetRequest = $this->getAssetRequest('transaction_number', $transactionNumber, false);
+        $approverId = $this->isUserAnApprover($transactionNumber);
+        $assetRequest = $this->getAssetRequestForApprover('transaction_number', $transactionNumber, null, false);
 
-        if ($assetRequest->isEmpty()) {
-            return $this->responseUnprocessable('Asset Request not found.');
+        // return $this->responseUnprocessable($assetRequest);
+        if ($approverId == null) {
+            $assetRequest = $this->getAssetRequest('transaction_number', $transactionNumber, false);
+            if ($assetRequest->isEmpty()) {
+                return $this->responseUnprocessable('Unable to void Asset Request.');
+            }
         }
-        $this->updateToVoid($transactionNumber, 'Void');
         foreach ($assetRequest as $ar) {
             $ar->update([
                 'status' => 'Void'
@@ -482,6 +517,16 @@ trait AssetRequestHandler
             $ar->delete();
         }
         return $this->responseSuccess('Asset Request voided Successfully');
+    }
+
+    private function isUserAnApprover($transactionNumber)
+    {
+        $user = auth('sanctum')->user()->id;
+        $approversId = Approvers::where('approver_id', $user)->first()->id;
+        $approverId = AssetApproval::where('transaction_number', $transactionNumber)
+            ->where('status', 'approved')->where('approver_id', $approversId)->first();
+
+        return $approverId;
     }
 
     public function requestCount($transactionNumber)

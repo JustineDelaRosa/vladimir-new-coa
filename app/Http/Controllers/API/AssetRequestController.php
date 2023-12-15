@@ -112,7 +112,7 @@ class AssetRequestController extends Controller
                 'reference_number' => (new AssetRequest)->generateReferenceNumber(),
                 'type_of_request_id' => $request['type_of_request_id']['id'],
                 'attachment_type' => $request['attachment_type'],
-//                'charged_department_id' => $request['charged_department_id'],
+                //                'charged_department_id' => $request['charged_department_id'],
                 'subunit_id' => $request['subunit_id']['id'],
                 'location_id' => $request['location_id']['id'],
                 'account_title_id' => $request['account_title_id']['id'],
@@ -137,22 +137,22 @@ class AssetRequestController extends Controller
                     }
                 }
             }
-//            if(isset($request['letter_of_request'])) {
-//                $assetRequest->addMedia($request['letter_of_request'])->toMediaCollection('letter_of_request');
-//            }
-//
-//            if (isset($request['quotation'])) {
-//                $assetRequest->addMedia($request['quotation'])->toMediaCollection('quotation');
-//            }
-//            if (isset($request['specification_form'])) {
-//                $assetRequest->addMedia($request['specification_form'])->toMediaCollection('specification_form');
-//            }
-//            if (isset($request['tool_of_trade'])) {
-//                $assetRequest->addMedia($request['tool_of_trade'])->toMediaCollection('tool_of_trade');
-//            }
-//            if (isset($request['other_attachments'])) {
-//                $assetRequest->addMedia($request['other_attachments'])->toMediaCollection('other_attachments');
-//            }
+            //            if(isset($request['letter_of_request'])) {
+            //                $assetRequest->addMedia($request['letter_of_request'])->toMediaCollection('letter_of_request');
+            //            }
+            //
+            //            if (isset($request['quotation'])) {
+            //                $assetRequest->addMedia($request['quotation'])->toMediaCollection('quotation');
+            //            }
+            //            if (isset($request['specification_form'])) {
+            //                $assetRequest->addMedia($request['specification_form'])->toMediaCollection('specification_form');
+            //            }
+            //            if (isset($request['tool_of_trade'])) {
+            //                $assetRequest->addMedia($request['tool_of_trade'])->toMediaCollection('tool_of_trade');
+            //            }
+            //            if (isset($request['other_attachments'])) {
+            //                $assetRequest->addMedia($request['other_attachments'])->toMediaCollection('other_attachments');
+            //            }
         }
 
         foreach ($departmentUnitApprovers as $departmentUnitApprover) {
@@ -191,7 +191,7 @@ class AssetRequestController extends Controller
         $requestorId = auth('sanctum')->user()->id;
         //check if the user is approver
         $approverCheck = Approvers::where('approver_id', $requestorId)->first();
-        if($approverCheck) {
+        if ($approverCheck) {
             $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
                 ->get();
         } else {
@@ -229,7 +229,7 @@ class AssetRequestController extends Controller
         return $this->responseDeleted();
     }
 
-    public function resubmitRequest(CreateAssetRequestRequest $request)
+    public function resubmitRequest(CreateAssetRequestRequest $request): JsonResponse
     {
         $transactionNumber = $request->transaction_number;
         $resubmitCheck = AssetRequest::where('transaction_number', $transactionNumber)
@@ -241,9 +241,9 @@ class AssetRequestController extends Controller
         return $this->approveRequestRepository->resubmitRequest($transactionNumber);
     }
 
-    public function updateRequest(Request $request, $referenceNumber)
+    public function updateRequest(Request $request, $referenceNumber): JsonResponse
     {
-//        return $request->all();
+        //        return $request->all();
 
         $assetRequest = $this->getAssetRequest('reference_number', $referenceNumber);
         if (!$assetRequest) {
@@ -262,12 +262,12 @@ class AssetRequestController extends Controller
     {
 
         if ($transactionNumber && $referenceNumber) {
-//            return 'both';
-            return $this->voidRequestItem($referenceNumber);
+            //            return 'both';
+            return $this->voidRequestItem($referenceNumber, $transactionNumber);
         }
         if ($transactionNumber) {
 
-//            return 'single';
+            //            return 'single';
             return $this->voidAssetRequest($transactionNumber);
         }
     }
@@ -289,9 +289,8 @@ class AssetRequestController extends Controller
             }
         }
 
-
         foreach ($items as $item) {
-            // For each item, create an AssetRequest
+
             $assetRequest = new AssetRequest;
 
             $assetRequest->status = $item->status;
@@ -313,9 +312,11 @@ class AssetRequestController extends Controller
 
             // Add transaction number and reference number
             $assetRequest->transaction_number = $transactionNumber;
-            $assetRequest->reference_number = (new AssetRequest)->generateReferenceNumber();
+            $assetRequest->reference_number = $assetRequest->generateReferenceNumber();
 
             $assetRequest->save();
+            // $assetRequest->reference_number = str_pad($assetRequest->id, 4, '0', STR_PAD_LEFT);
+            // $assetRequest->save();
 
             // Get the media from RequestContainer and put it in AssetRequest
             $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
