@@ -37,14 +37,15 @@ class CreateRequestContainerRequest extends BaseRequest
                 'required',
                 Rule::exists('type_of_requests', 'id')
             ],
-//            'department_id.company.company_id' => [
-//                'required',
-//                Rule::exists('companies', 'id')
-//            ],
+            //            'department_id.company.company_id' => [
+            //                'required',
+            //                Rule::exists('companies', 'id')
+            //            ],
             'company_id' => ['required', Rule::exists('companies', 'id')],
             'department_id' => ['required', Rule::exists('departments', 'id')],
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
-            'subunit_id' => ['required', Rule::exists('sub_units', 'id'),
+            'subunit_id' => [
+                'required', Rule::exists('sub_units', 'id'),
                 //check if the subunit already has approvers assigned
                 function ($attribute, $value, $fail) {
                     $subunit = SubUnit::find($value);
@@ -65,20 +66,21 @@ class CreateRequestContainerRequest extends BaseRequest
                     }
                 },
             ],
-            'location_id' => ['required', Rule::exists('locations', 'id'),
-                    //check if the location and department combination exists
-                    function ($attribute, $value, $fail) {
-                        $location = Location::find($value);
-                        $departments = $location->departments->pluck('id')->toArray();
-                        if (!in_array(request()->department_id, $departments)) {
-                            $fail('Invalid combination of location and department.');
-                        }
-
-                    },
-                ],
+            'location_id' => [
+                'required', Rule::exists('locations', 'id'),
+                //check if the location and department combination exists
+                function ($attribute, $value, $fail) {
+                    $location = Location::find($value);
+                    $departments = $location->departments->pluck('id')->toArray();
+                    if (!in_array(request()->department_id, $departments)) {
+                        $fail('Invalid combination of location and department.');
+                    }
+                },
+            ],
             'account_title_id' => ['required', Rule::exists('account_titles', 'id')],
             'accountability' => 'required|in:Personal Issued,Common',
-            'accountable' => ['required_if:accountability,Personal Issued',
+            'accountable' => [
+                'required_if:accountability,Personal Issued',
                 function ($attribute, $value, $fail) {
                     $accountable = request()->input('accountable');
                     //if the accountability is not Personal Issued, nullify the accountable field and return
@@ -87,21 +89,23 @@ class CreateRequestContainerRequest extends BaseRequest
                         return;
                     }
 
-//                    // Get full ID number if it exists or fail validation
-//                    if (!empty($accountable['general_info']['full_id_number'])) {
-//                        $full_id_number = trim($accountable['general_info']['full_id_number']);
-//                        request()->merge(['accountable' => $full_id_number]);
-//                    } else {
-//                        $fail('The accountable person is required.');
-//                        return;
-//                    }
-//
-//                    // Validate full ID number
-//                    if ($value->isEmpty()) {
-//                        $fail('The accountable person cannot be empty.');
-//                    }
+                    //                    // Get full ID number if it exists or fail validation
+                    //                    if (!empty($accountable['general_info']['full_id_number'])) {
+                    //                        $full_id_number = trim($accountable['general_info']['full_id_number']);
+                    //                        request()->merge(['accountable' => $full_id_number]);
+                    //                    } else {
+                    //                        $fail('The accountable person is required.');
+                    //                        return;
+                    //                    }
+                    //
+                    //                    // Validate full ID number
+                    //                    if ($value->isEmpty()) {
+                    //                        $fail('The accountable person cannot be empty.');
+                    //                    }
                 },
             ],
+            'additional_info' => 'nullable',
+            'acquisition_details' => 'required',
             'asset_description' => 'required',
             'asset_specification' => 'nullable',
             'cellphone_number' => 'nullable|numeric',
@@ -126,11 +130,11 @@ class CreateRequestContainerRequest extends BaseRequest
             'account_title_id.required' => 'The account title is required.',
             'account_title_id.exists' => 'The account title is invalid.',
             'accountability.required' => 'The accountability is required.',
-//            'department.company.company_id.required' => 'The company is required.',
-//            'department.company.company_id.exists' => 'The company is invalid.',
+            //            'department.company.company_id.required' => 'The company is required.',
+            //            'department.company.company_id.exists' => 'The company is invalid.',
             'accountability.in' => 'The accountability is invalid.',
             'accountable.required_if' => 'The accountable is required.',
-//            'accountable.exists' => 'The accountable is invalid.',
+            //            'accountable.exists' => 'The accountable is invalid.',
             'asset_description.required' => 'The asset description is required.',
             'asset_specification.required' => 'The asset specification is required.',
             'cellphone_number.numeric' => 'The cellphone number must be a number.',
@@ -158,24 +162,24 @@ class CreateRequestContainerRequest extends BaseRequest
 
 
 
-//    /**
-//     * Handle a failed validation attempt.
-//     *
-//     * @param Validator $validator
-//     * @return JsonResponse
-//     * @throws HttpResponseException
-//     */
-//    protected function failedValidation(Validator $validator)
-//    {
-//        throw new HttpResponseException(
-//            response()->json(
-//                [
-//                    'message' => 'Invalid Request',
-//                    'errors' => [
-//                        'title' => 'Oops . Something went wrong , try again or contact the support',
-//                        'detail' => $validator->errors()->first(),
-//                    ],
-//                ], 422)
-//        );
-//    }
+    //    /**
+    //     * Handle a failed validation attempt.
+    //     *
+    //     * @param Validator $validator
+    //     * @return JsonResponse
+    //     * @throws HttpResponseException
+    //     */
+    //    protected function failedValidation(Validator $validator)
+    //    {
+    //        throw new HttpResponseException(
+    //            response()->json(
+    //                [
+    //                    'message' => 'Invalid Request',
+    //                    'errors' => [
+    //                        'title' => 'Oops . Something went wrong , try again or contact the support',
+    //                        'detail' => $validator->errors()->first(),
+    //                    ],
+    //                ], 422)
+    //        );
+    //    }
 }

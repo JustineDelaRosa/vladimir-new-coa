@@ -29,7 +29,7 @@ class RequestContainerController extends Controller
     {
         $requesterId = auth('sanctum')->user()->id;
         $requestContainer = RequestContainer::where('requester_id', $requesterId)
-//            ->orderBy('created_at', 'desc')
+            //            ->orderBy('created_at', 'desc')
             ->useFilters()
             ->get();
 
@@ -44,9 +44,9 @@ class RequestContainerController extends Controller
      */
     public function store(CreateRequestContainerRequest $request)
     {
-//        return $request->all();
+        //        return $request->all();
         $requesterId = auth('sanctum')->user()->id;
-//        $transactionNumber = RequestContainer::generateTransactionNumber($requesterId);
+        //        $transactionNumber = RequestContainer::generateTransactionNumber($requesterId);
         $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $request->subunit_id)
             ->orderBy('layer', 'asc')
             ->get();
@@ -83,6 +83,8 @@ class RequestContainerController extends Controller
             //Department::find($request->department_id)->company->id,
             'department_id' => $request->department_id,
             'accountable' => $request->accountable ?? null,
+            'additional_info' => $request->additional_info ?? null,
+            'acquisition_details' => $request->acquisition_detail,
             'asset_description' => $request->asset_description,
             'asset_specification' => $request->asset_specification ?? null,
             'cellphone_number' => $request->cellphone_number ?? null,
@@ -130,7 +132,6 @@ class RequestContainerController extends Controller
      */
     public function update(UpdateRequestContainerRequest $request, $id)
     {
-
     }
 
     /**
@@ -169,12 +170,12 @@ class RequestContainerController extends Controller
         $requestContainer->update([
             'type_of_request_id' => $request->type_of_request_id,
             'attachment_type' => $request->attachment_type,
-//            'subunit_id' => $request->subunit_id['id'],
-//            'location_id' => $request->location_id['id'],
-//            'account_title_id' => $request->account_title_id['id'],
+            //            'subunit_id' => $request->subunit_id['id'],
+            //            'location_id' => $request->location_id['id'],
+            //            'account_title_id' => $request->account_title_id['id'],
             'accountability' => $request->accountability,
-//            'company_id' => $request->department_id['company']['company_id'],
-//            'department_id' => $request->department_id['id'],
+            //            'company_id' => $request->department_id['company']['company_id'],
+            //            'department_id' => $request->department_id['id'],
             'accountable' => $request->accountable ?? null,
             'asset_description' => $request->asset_description,
             'asset_specification' => $request->asset_specification ?? null,

@@ -38,6 +38,8 @@ trait AssetApprovalHandler
                     'transaction_number' => $assetApproval->assetRequest->transaction_number ?? '-',
                     'date_requested' => $assetApproval->assetRequest->created_at ?? '-',
                     'status' => $assetApproval->assetRequest->status ?? '-',
+                    'additional_info' => $assetApproval->assetRequest->additional_info ?? '-',
+                    'aquisition_details' => $assetApproval->assetRequest->aquisition_details ?? '-',
                 ],
             ];
         });
