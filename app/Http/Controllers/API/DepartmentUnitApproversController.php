@@ -67,7 +67,7 @@ class  DepartmentUnitApproversController extends Controller
 
     public function store(CreateDepartmentUnitApproversRequest $request): JsonResponse
     {
-//        $departmentId = $request->department_id;
+        //        $departmentId = $request->department_id;
         $subunitId = $request->subunit_id;
         $approverId = $request->approver_id;
 
@@ -99,13 +99,13 @@ class  DepartmentUnitApproversController extends Controller
         //delete all with subunit id
         DepartmentUnitApprovers::where('subunit_id', $subUnitId)->delete();
 
-        return $this->responseDeleted();
+        return $this->responseSuccess('Deleted Successfully');
     }
 
 
     public function arrangeLayer(UpdateDepartmentUnitApproversRequest $request, $id): JsonResponse
     {
-//        $departmentId = $request->department_id;
+        //        $departmentId = $request->department_id;
         $subunitId = $id;
         $approverId = $request->approver_id;
         $departmentId = SubUnit::where('id', $subunitId)->first()->department_id;
@@ -135,5 +135,4 @@ class  DepartmentUnitApproversController extends Controller
         }
         return $this->responseSuccess('Unit Approvers updated Successfully');
     }
-
 }
