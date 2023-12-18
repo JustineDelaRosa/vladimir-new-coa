@@ -24,11 +24,13 @@ class CreateRequestContainersTable extends Migration
             $table->string('po_number')->nullable();
             $table->boolean('is_add_cost')->default(0);
             $table->unsignedInteger('fixed_asset_id')->nullable();
+            $table->string('additional_info')->nullable();
+            $table->string('acquisition_details');
 
             //TO BE FILL UP BY THE REQUESTER
             $table->string('remarks')->nullable();
             $table->unsignedInteger('type_of_request_id');
-//            $table->UnsignedInteger('charged_department_id');
+            //            $table->UnsignedInteger('charged_department_id');
             $table->unsignedInteger('subunit_id'); //For ChargedDepartment
             $table->enum('accountability', ['Personal Issued', 'Common']);
             $table->string('accountable')->nullable();
@@ -39,17 +41,17 @@ class CreateRequestContainersTable extends Migration
             $table->string('quantity')->nullable();
 
             //ATTACHMENT TYPE
-            $table->enum('attachment_type',['Budgeted', 'Unbudgeted']);
+            $table->enum('attachment_type', ['Budgeted', 'Unbudgeted']);
             //ATTACHMENTS
-//            $table->text('letter_of_request')->nullable();
-//            $table->text('quotation')->nullable();
-//            $table->text('specification_form')->nullable();
-//            $table->text('tool_of_trade')->nullable();
-//            $table->json('other_attachments')->nullable();
+            //            $table->text('letter_of_request')->nullable();
+            //            $table->text('quotation')->nullable();
+            //            $table->text('specification_form')->nullable();
+            //            $table->text('tool_of_trade')->nullable();
+            //            $table->json('other_attachments')->nullable();
 
             //ADDITIONAL FIELDS TO BE ADDED
-//            $table->unsignedInteger('capex_id')->nullable();
-//            $table->unsignedInteger('sub_capex_id')->nullable();
+            //            $table->unsignedInteger('capex_id')->nullable();
+            //            $table->unsignedInteger('sub_capex_id')->nullable();
             $table->string('vladimir_tag_number')->nullable();
 
             $table->string('capitalized')->default('Capitalized');
@@ -59,7 +61,7 @@ class CreateRequestContainersTable extends Migration
             $table->unsignedInteger('minor_category_id')->nullable();
             $table->string('voucher')->nullable();
             $table->string('receipt')->nullable();
-            $table->enum('depreciation_method',['STL', 'One Time'])->nullable();
+            $table->enum('depreciation_method', ['STL', 'One Time'])->nullable();
             $table->string('care_of')->nullable();
             //STATUSES
             $table->unsignedInteger('asset_status_id')->nullable();
@@ -79,29 +81,29 @@ class CreateRequestContainersTable extends Migration
             $table->unsignedInteger('department_id')->nullable();
             $table->unsignedInteger('location_id')->nullable();
             $table->unsignedInteger('account_title_id')->nullable();
-//            $table->string('company_code')->nullable();
-//            $table->string('company')->nullable();
-//            $table->string('department_code')->nullable();
-//            $table->string('department')->nullable();
-//            $table->string('location_code')->nullable();
-//            $table->string('location')->nullable();
-//            $table->string('account_title_code')->nullable();
-//            $table->string('account_title')->nullable();
+            //            $table->string('company_code')->nullable();
+            //            $table->string('company')->nullable();
+            //            $table->string('department_code')->nullable();
+            //            $table->string('department')->nullable();
+            //            $table->string('location_code')->nullable();
+            //            $table->string('location')->nullable();
+            //            $table->string('account_title_code')->nullable();
+            //            $table->string('account_title')->nullable();
             $table->integer('print_count')->default(0);
             $table->softDeletes();
             $table->timestamp('last_printed')->nullable();
 
             $table->foreign('requester_id')->references('id')->on('users');
             $table->foreign('type_of_request_id')->references('id')->on('type_of_requests');
-//            $table->foreign('charged_department_id')->references('id')->on('departments');
+            //            $table->foreign('charged_department_id')->references('id')->on('departments');
             $table->foreign('subunit_id')->references('id')->on('sub_units');
             $table->foreign('company_id')->references('id')->on('companies');
             $table->foreign('department_id')->references('id')->on('departments');
             $table->foreign('location_id')->references('id')->on('locations');
             $table->foreign('account_title_id')->references('id')->on('account_titles');
 
-//            $table->foreign('sub_capex_id')->references('id')->on('sub_capexes');
-//            $table->foreign('capex_id')->references('id')->on('capexes');
+            //            $table->foreign('sub_capex_id')->references('id')->on('sub_capexes');
+            //            $table->foreign('capex_id')->references('id')->on('capexes');
             $table->foreign('division_id')->references('id')->on('divisions');
             $table->foreign('major_category_id')->references('id')->on('major_categories');
             $table->foreign('minor_category_id')->references('id')->on('minor_categories');
