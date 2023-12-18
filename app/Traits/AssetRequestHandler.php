@@ -107,6 +107,7 @@ trait AssetRequestHandler
             'remarks' => $assetRequest->remarks ?? '',
             'status' => $assetRequest->status == 'Approved' ? $this->getAfterApprovedStatus($assetRequest) : $assetRequest->status,
             'pr_number' => $assetRequest->pr_number ?? '-',
+            'acquisition_details' => $assetRequest->acquisition_details ?? '-',
             'created_at' => $this->getDateRequested($assetRequest->transaction_number),
             'approver_count' => $assetRequest->assetApproval->count(),
             'process_count' => $this->getProcessCount($assetRequest),
@@ -201,18 +202,17 @@ trait AssetRequestHandler
 
     private function getSteps($assetRequest): array
     {
-        $approvalCount = $assetRequest->assetApproval->count();
-
-        $suffixes = ['st', 'nd', 'rd', 'th', 'th'];
+        $approvers = $assetRequest->assetApproval;
 
         $steps = [];
-        for ($i = 1; $i <= $approvalCount; $i++) {
-            $steps[] = $i . $suffixes[$i - 1] . ' Approval';
+        foreach ($approvers as $approver) {
+            $steps[] = $approver->approver->user->firstname . ' ' . $approver->approver->user->lastname;
         }
         $steps[] = 'Inputting of PR No.';
         $steps[] = 'Matching of PR No. to Receiving';
         $steps[] = 'Asset Tagging';
         $steps[] = 'Ready to Pickup';
+        $steps[] = 'Released';
 
         return $steps;
     }
@@ -280,6 +280,8 @@ trait AssetRequestHandler
                 'remarks' => $ar->remarks ?? '',
                 'accountability' => $ar->accountability,
                 'accountable' => $ar->accountable ?? '-',
+                'additional_info' => $ar->additional_info ?? '-',
+                'acquisition_details' => $ar->acquisition_details ?? '-',
                 'asset_description' => $ar->asset_description,
                 'asset_specification' => $ar->asset_specification ?? '-',
                 'cellphone_number' => $ar->cellphone_number ?? '-',
@@ -379,6 +381,8 @@ trait AssetRequestHandler
             'po_number' => $assetRequest->po_number,
             'attachment_type' => $assetRequest->attachment_type,
             'remarks' => $assetRequest->remarks ?? '',
+            'additional_info' => $assetRequest->additional_info ?? '-',
+            'acquisition_details' => $assetRequest->acquisition_details ?? '-',
             'accountability' => $assetRequest->accountability,
             'accountable' => $assetRequest->accountable ?? '-',
             'asset_description' => $assetRequest->asset_description,

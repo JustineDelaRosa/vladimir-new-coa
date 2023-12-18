@@ -111,6 +111,8 @@ class AssetRequestController extends Controller
                 'transaction_number' => $transactionNumber,
                 'reference_number' => (new AssetRequest)->generateReferenceNumber(),
                 'type_of_request_id' => $request['type_of_request_id']['id'],
+                'additional_info' => $request['additional_info'] ?? null,
+                'acquisition_details' => $request['acquisition_details'],
                 'attachment_type' => $request['attachment_type'],
                 //                'charged_department_id' => $request['charged_department_id'],
                 'subunit_id' => $request['subunit_id']['id'],
@@ -300,6 +302,8 @@ class AssetRequestController extends Controller
             $assetRequest->subunit_id = $item->subunit_id;
             $assetRequest->location_id = $item->location_id;
             $assetRequest->account_title_id = $item->account_title_id;
+            $assetRequest->additional_info = $item->additional_info;
+            $assetRequest->acquisition_details = $item->acquisition_details;
             $assetRequest->accountability = $item->accountability;
             $assetRequest->company_id = $item->company_id;
             $assetRequest->department_id = $item->department_id;
