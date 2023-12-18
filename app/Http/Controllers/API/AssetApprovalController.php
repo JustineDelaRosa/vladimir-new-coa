@@ -50,7 +50,7 @@ class AssetApprovalController extends Controller
         }
 
         $assetApprovalsQuery = AssetApproval::query();
-        if (!$forMonitoring ) {
+        if (!$forMonitoring) {
             $assetApprovalsQuery->where('approver_id', $approverId);
         }
 
@@ -107,7 +107,7 @@ class AssetApprovalController extends Controller
     public function handleRequest(CreateAssetApprovalRequest $request): JsonResponse
     {
         $assetApprovalIds = $request->asset_approval_id;
-//        $assetRequestIds = $request->asset_request_id;
+        //        $assetRequestIds = $request->asset_request_id;
         $remarks = $request->remarks;
         $action = ucwords($request->action);
 
@@ -118,58 +118,67 @@ class AssetApprovalController extends Controller
             case 'Return':
                 return $this->approveRequestRepository->returnRequest($assetApprovalIds, $remarks);
                 break;
-//          case 'Void':
-//              return $this->approveRequestRepository->voidRequest($assetRequestIds);
-//              break;
             default:
                 return $this->responseUnprocessable('Invalid Action');
                 break;
         }
     }
 
-//    public function approveRequest(Request $request, $id)
-//    {
-//        $assetApproval = AssetApproval::find($id);
-//
-//        //check if the logged in user is the approver
-//        $user = auth('sanctum')->user();
-//        $approverId = Approvers::where('approver_id', $user->id)->value('id');
-//        if ($assetApproval->approver_id != $approverId) {
-//            return $this->responseUnprocessable('You are not the approver of this request');
-//        }
-//
-//        $requesterId = $assetApproval->requester_id;
-//
-//        //update the status of the asset request
-//        $assetApproval->update([
-//            'status' => 'Approved',
-//        ]);
-//
-//        //update the status of the next layer of approver
-//        $nextLayerOfApprover = AssetApproval::where('requester_id', $requesterId)->where('layer', $assetApproval->layer + 1)->first();
-//        //if no next layer of approver, update the status of the asset request to Approved
-//        if (!$nextLayerOfApprover) {
-//            $assetRequest = $assetApproval->assetRequest;
-//            $assetRequest->update([
-//                'status' => 'Approved',
-//            ]);
-//            return $this->responseSuccess('Asset Request Approved Successfully');
-//        }
-//
-//        if ($nextLayerOfApprover) {
-//            $nextLayerOfApprover->update([
-//                'status' => 'For Approval',
-//            ]);
-//        }
-//
-//        //update the status of the asset request
-//        $assetRequest = $assetApproval->assetRequest;
-//        $assetRequest->update([
-//            'status' => 'For Approval of Approver ' . ($assetApproval->layer + 1),
-//        ]);
-//
-//
-//        return $this->responseSuccess('Asset Request Approved Successfully');
-//    }
+    public function getNextRequest()
+    {
+        $user = auth('sanctum')->user();
+        $approverId = Approvers::where('approver_id', $user->id)->value('id');
+        $assetApproval = AssetApproval::where('approver_id', $approverId)->where('status', 'For Approval')->first();
+        if (!$assetApproval) {
+            return $this->responseNotFound('No Request Found');
+        }
+        $assetRequest = AssetRequest::where('transaction_number', $assetApproval->transaction_number)->get();
+        return $this->transformShowAssetRequest($assetRequest);
+    }
+
+    //    public function approveRequest(Request $request, $id)
+    //    {
+    //        $assetApproval = AssetApproval::find($id);
+    //
+    //        //check if the logged in user is the approver
+    //        $user = auth('sanctum')->user();
+    //        $approverId = Approvers::where('approver_id', $user->id)->value('id');
+    //        if ($assetApproval->approver_id != $approverId) {
+    //            return $this->responseUnprocessable('You are not the approver of this request');
+    //        }
+    //
+    //        $requesterId = $assetApproval->requester_id;
+    //
+    //        //update the status of the asset request
+    //        $assetApproval->update([
+    //            'status' => 'Approved',
+    //        ]);
+    //
+    //        //update the status of the next layer of approver
+    //        $nextLayerOfApprover = AssetApproval::where('requester_id', $requesterId)->where('layer', $assetApproval->layer + 1)->first();
+    //        //if no next layer of approver, update the status of the asset request to Approved
+    //        if (!$nextLayerOfApprover) {
+    //            $assetRequest = $assetApproval->assetRequest;
+    //            $assetRequest->update([
+    //                'status' => 'Approved',
+    //            ]);
+    //            return $this->responseSuccess('Asset Request Approved Successfully');
+    //        }
+    //
+    //        if ($nextLayerOfApprover) {
+    //            $nextLayerOfApprover->update([
+    //                'status' => 'For Approval',
+    //            ]);
+    //        }
+    //
+    //        //update the status of the asset request
+    //        $assetRequest = $assetApproval->assetRequest;
+    //        $assetRequest->update([
+    //            'status' => 'For Approval of Approver ' . ($assetApproval->layer + 1),
+    //        ]);
+    //
+    //
+    //        return $this->responseSuccess('Asset Request Approved Successfully');
+    //    }
 
 }
