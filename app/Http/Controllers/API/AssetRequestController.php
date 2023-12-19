@@ -165,41 +165,42 @@ class AssetRequestController extends Controller
             }
         }
 
-        foreach ($departmentUnitApprovers as $departmentUnitApprover) {
-            $approver_id = $departmentUnitApprover->approver_id;
-            $layer = $departmentUnitApprover->layer;
+        $this->createAssetApprovals($departmentUnitApprovers, $isRequesterApprover, $requesterLayer, $assetRequest, $requesterId);
 
-            // initial status
-            $status = null;
+        // foreach ($departmentUnitApprovers as $departmentUnitApprover) {
+        //     $approver_id = $departmentUnitApprover->approver_id;
+        //     $layer = $departmentUnitApprover->layer;
 
-            // if the requester is the approver, decide on status
-            if ($isRequesterApprover) {
-                if ($layer == $requesterLayer || $layer < $requesterLayer) {
-                    $status = "Approved";
-                } elseif ($layer == $requesterLayer + 1) {
-                    $status = "For Approval";
-                }
-            } elseif ($layer == 1) { // if the requester is not an approver, only the first layer should be "For Approval"
-                $status = "For Approval";
-            }
+        //     // initial status
+        //     $status = null;
 
-            AssetApproval::create([
-                'transaction_number' => $assetRequest->transaction_number,
-                'approver_id' => $approver_id,
-                'requester_id' => $requesterId,
-                'layer' => $layer,
-                'status' => $status,
-            ]);
-        }
+        //     // if the requester is the approver, decide on status
+        //     if ($isRequesterApprover) {
+        //         if ($layer == $requesterLayer || $layer < $requesterLayer) {
+        //             $status = "Approved";
+        //         } elseif ($layer == $requesterLayer + 1) {
+        //             $status = "For Approval";
+        //         }
+        //     } elseif ($layer == 1) { // if the requester is not an approver, only the first layer should be "For Approval"
+        //         $status = "For Approval";
+        //     }
+
+        //     AssetApproval::create([
+        //         'transaction_number' => $assetRequest->transaction_number,
+        //         'approver_id' => $approver_id,
+        //         'requester_id' => $requesterId,
+        //         'layer' => $layer,
+        //         'status' => $status,
+        //     ]);
+        // }
 
         return $this->responseCreated('AssetRequest created successfully');
     }
 
     public function show($transactionNumber)
     {
-        //For Specific Viewing of Asset Request with the same transaction number
+
         $requestorId = auth('sanctum')->user()->id;
-        //check if the user is approver
         $approverCheck = Approvers::where('approver_id', $requestorId)->first();
         if ($approverCheck) {
             $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
