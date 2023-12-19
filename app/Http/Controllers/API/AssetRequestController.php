@@ -41,9 +41,34 @@ class AssetRequestController extends Controller
     {
         $request->validate([
             'for_monitoring' => 'boolean',
+            'filter' => ['nullable', 'string', 'in:For Approval,For PR,For PO,For Tagging,For Pickup,Returned'],
         ]);
 
         $perPage = $request->input('per_page', null);
+        $filter = $request->input('filter', null);
+
+        $conditions = [
+            'Returned' => ['status' => 'Returned'],
+            'For Approval' => ['status' => ['like', 'For Approval%']],
+            'For PR' => ['status' => 'Approved', 'pr_number' => null],
+            'For PO' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => null],
+            'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => null],
+            // 'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => ['!=', null], 'pickup_number' => null]
+        ];
+
+        if ($filter === null) {
+            $assetRequest = AssetRequest::query()->orderByDesc('created_at')->useFilters();
+        } else if (array_key_exists($filter, $conditions)) {
+            $assetRequest = AssetRequest::query()->orderByDesc('created_at')->useFilters();
+            foreach ($conditions[$filter] as $field => $condition) {
+                if (is_array($condition)) {
+                    $assetRequest = $assetRequest->where($field, $condition[0], $condition[1]);
+                } else {
+                    $assetRequest = $assetRequest->where($field, $condition);
+                }
+            }
+        }
+
 
         $forMonitoring = $request->for_monitoring ?? false;
 
@@ -56,7 +81,6 @@ class AssetRequestController extends Controller
             $forMonitoring = false;
         }
 
-        $assetRequest = AssetRequest::query()->orderByDesc('created_at')->useFilters();
         if (!$forMonitoring) {
             $assetRequest->where('requester_id', $requesterId);
         }
