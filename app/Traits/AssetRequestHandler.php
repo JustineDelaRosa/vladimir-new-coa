@@ -470,7 +470,6 @@ trait AssetRequestHandler
     {
 
         $approverId = $this->isUserAnApprover($transactionNumber);
-        $assetRequest = $this->getAssetRequestForApprover('reference_number', $transactionNumber, $referenceNumber);
 
         // return $this->responseUnprocessable($assetRequest);
         if (!$approverId) {
@@ -478,6 +477,8 @@ trait AssetRequestHandler
             if (!$assetRequest) {
                 return $this->responseUnprocessable('Unable to void Request Item.');
             }
+        } else {
+            $assetRequest = $this->getAssetRequestForApprover('reference_number', $transactionNumber, $referenceNumber);
         }
 
         if ($this->requestCount($assetRequest->transaction_number) == 1) {
@@ -505,7 +506,6 @@ trait AssetRequestHandler
         // return $this->responseSuccess($this->isUserAnApprover($transactionNumber));
 
         $approverId = $this->isUserAnApprover($transactionNumber);
-        $assetRequest = $this->getAssetRequestForApprover('transaction_number', $transactionNumber, null, false);
 
         // return $this->responseUnprocessable($assetRequest);
         if ($approverId == null) {
@@ -513,6 +513,8 @@ trait AssetRequestHandler
             if ($assetRequest->isEmpty()) {
                 return $this->responseUnprocessable('Unable to void Asset Request.');
             }
+        } else {
+            $assetRequest = $this->getAssetRequestForApprover('transaction_number', $transactionNumber, null, false);
         }
         foreach ($assetRequest as $ar) {
             $ar->update([
