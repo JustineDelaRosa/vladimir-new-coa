@@ -163,22 +163,6 @@ class AssetRequestController extends Controller
                     }
                 }
             }
-            //            if(isset($request['letter_of_request'])) {
-            //                $assetRequest->addMedia($request['letter_of_request'])->toMediaCollection('letter_of_request');
-            //            }
-            //
-            //            if (isset($request['quotation'])) {
-            //                $assetRequest->addMedia($request['quotation'])->toMediaCollection('quotation');
-            //            }
-            //            if (isset($request['specification_form'])) {
-            //                $assetRequest->addMedia($request['specification_form'])->toMediaCollection('specification_form');
-            //            }
-            //            if (isset($request['tool_of_trade'])) {
-            //                $assetRequest->addMedia($request['tool_of_trade'])->toMediaCollection('tool_of_trade');
-            //            }
-            //            if (isset($request['other_attachments'])) {
-            //                $assetRequest->addMedia($request['other_attachments'])->toMediaCollection('other_attachments');
-            //            }
         }
 
         foreach ($departmentUnitApprovers as $departmentUnitApprover) {
