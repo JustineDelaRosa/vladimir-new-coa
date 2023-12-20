@@ -41,11 +41,20 @@ class AssetRequestController extends Controller
     {
         $request->validate([
             'for_monitoring' => 'boolean',
-            'filter' => ['nullable', 'string', 'in:For Approval,For PR,For PO,For Tagging,For Pickup,Returned'],
+            'filter' => ['nullable', 'string'],
         ]);
+
+
+        $forMonitoring = $request->for_monitoring ?? false;
+
+        $requesterId = auth('sanctum')->user()->id;
+        $role = RoleManagement::whereId($requesterId)->value('role_name');
+        $adminRoles = ['Super Admin', 'Admin', 'ERP'];
 
         $perPage = $request->input('per_page', null);
         $filter = $request->input('filter', null);
+        $filter = $filter ? explode(',', $filter) : [];
+        $filter = array_map('trim', $filter);
 
         $conditions = [
             'Returned' => ['status' => 'Returned'],
@@ -56,35 +65,56 @@ class AssetRequestController extends Controller
             // 'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => ['!=', null], 'pickup_number' => null]
         ];
 
-        if ($filter === null) {
-            $assetRequest = AssetRequest::query()->orderByDesc('created_at')->useFilters();
-        } else if (array_key_exists($filter, $conditions)) {
-            $assetRequest = AssetRequest::query()->orderByDesc('created_at')->useFilters();
-            foreach ($conditions[$filter] as $field => $condition) {
-                if (is_array($condition)) {
-                    $assetRequest = $assetRequest->where($field, $condition[0], $condition[1]);
-                } else {
-                    $assetRequest = $assetRequest->where($field, $condition);
+        $assetRequest = AssetRequest::query();
+
+        if (!empty($filter)) {
+            $assetRequest->where(function ($query) use ($filter, $conditions, $requesterId, $forMonitoring, $role, $adminRoles) {
+                foreach ($filter as $key) {
+                    if (isset($conditions[$key])) {
+                        $query->orWhere(function ($query) use ($conditions, $key, $requesterId, $forMonitoring, $role, $adminRoles) {
+                            if (!in_array($role, $adminRoles)) {
+                                $forMonitoring = false;
+                            }
+
+                            if (!$forMonitoring) {
+                                $query->where('requester_id', $requesterId);
+                            }
+
+                            foreach ($conditions[$key] as $field => $value) {
+                                if (is_array($value)) {
+                                    $query->where($field, $value[0], $value[1]);
+                                } else {
+                                    $query->where($field, $value);
+                                }
+                            }
+                        });
+                    }
                 }
+            });
+        } else {
+            if (!in_array($role, $adminRoles)) {
+                $forMonitoring = false;
             }
+
+            if (!$forMonitoring) {
+                $assetRequest->where('requester_id', $requesterId);
+            }
+
+            $assetRequest = AssetRequest::query()->orderByDesc('created_at')->useFilters();
         }
 
 
-        $forMonitoring = $request->for_monitoring ?? false;
 
-        $requesterId = auth('sanctum')->user()->id;
-        $forMonitoring = $request->for_monitoring ?? false;
-        $role = RoleManagement::whereId($requesterId)->value('role_name');
-        $adminRoles = ['Super Admin', 'Admin', 'ERP'];
+        // if (!in_array($role, $adminRoles)) {
+        //     $forMonitoring = false;
+        // }
 
-        if (!in_array($role, $adminRoles)) {
-            $forMonitoring = false;
-        }
+        // if (!$forMonitoring) {
+        //     $assetRequest->where('requester_id', $requesterId);
+        //     echo 'asdfasdf';
+        // }
 
-        if (!$forMonitoring) {
-            $assetRequest->where('requester_id', $requesterId);
-        }
-
+        $assetRequest = $assetRequest->orderByDesc('created_at')->useFilters();
         $assetRequest = $assetRequest->get()->groupBy('transaction_number')->map(function ($assetRequestCollection) {
             $assetRequest = $assetRequestCollection->first();
             $assetRequest->quantity = $assetRequestCollection->sum('quantity');
