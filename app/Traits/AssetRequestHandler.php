@@ -548,9 +548,51 @@ trait AssetRequestHandler
             ->update(['status' => $status]);
     }
 
-
-    public function createAssetApprovals($departmentUnitApprovers, $isRequesterApprover, $requesterLayer, $assetRequest, $requesterId)
+    //THIS IS FOR STORE ASSET REQUEST
+    /*   public function createAssetApprovals($departmentUnitApprovers, $isRequesterApprover, $requesterLayer, $assetRequest, $requesterId)
     {
+        foreach ($departmentUnitApprovers as $departmentUnitApprover) {
+            $approver_id = $departmentUnitApprover->approver_id;
+            $layer = $departmentUnitApprover->layer;
+
+            // initial status
+            $status = null;
+
+            // if the requester is the approver, decide on status
+            if ($isRequesterApprover) {
+                if ($layer == $requesterLayer || $layer < $requesterLayer) {
+                    $status = "Approved";
+                } elseif ($layer == $requesterLayer + 1) {
+                    $status = "For Approval";
+                }
+            } elseif ($layer == 1) { // if the requester is not an approver, only the first layer should be "For Approval"
+                $status = "For Approval";
+            }
+
+            AssetApproval::create([
+                'transaction_number' => $assetRequest->transaction_number,
+                'approver_id' => $approver_id,
+                'requester_id' => $requesterId,
+                'layer' => $layer,
+                'status' => $status,
+            ]);
+        }
+    }
+     */
+
+    //THIS IS FOR MOVING ASSET CONTAINER TO ASSET REQUEST
+    public function createAssetApprovals($items, $requesterId, $assetRequest)
+    {
+        $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $items[0]->subunit_id)
+            ->orderBy('layer', 'asc')
+            ->get();
+
+        $layerIds = $departmentUnitApprovers->map(function ($approverObject) {
+            return $approverObject->approver->approver_id;
+        })->toArray();
+        $isRequesterApprover = in_array($requesterId, $layerIds);
+        $requesterLayer = array_search($requesterId, $layerIds) + 1;
+
         foreach ($departmentUnitApprovers as $departmentUnitApprover) {
             $approver_id = $departmentUnitApprover->approver_id;
             $layer = $departmentUnitApprover->layer;

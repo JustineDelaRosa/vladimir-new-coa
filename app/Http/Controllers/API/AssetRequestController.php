@@ -345,42 +345,44 @@ class AssetRequestController extends Controller
             $item->delete();
         }
 
-        $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $items[0]->subunit_id)
-            ->orderBy('layer', 'asc')
-            ->get();
+        $this->createAssetApprovals($items, $requesterId, $assetRequest);
 
-        $layerIds = $departmentUnitApprovers->map(function ($approverObject) {
-            return $approverObject->approver->approver_id;
-        })->toArray();
-        $isRequesterApprover = in_array($requesterId, $layerIds);
-        $requesterLayer = array_search($requesterId, $layerIds) + 1;
+        // $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $items[0]->subunit_id)
+        //     ->orderBy('layer', 'asc')
+        //     ->get();
 
-        foreach ($departmentUnitApprovers as $departmentUnitApprover) {
-            $approver_id = $departmentUnitApprover->approver_id;
-            $layer = $departmentUnitApprover->layer;
+        // $layerIds = $departmentUnitApprovers->map(function ($approverObject) {
+        //     return $approverObject->approver->approver_id;
+        // })->toArray();
+        // $isRequesterApprover = in_array($requesterId, $layerIds);
+        // $requesterLayer = array_search($requesterId, $layerIds) + 1;
 
-            // initial status
-            $status = null;
+        // foreach ($departmentUnitApprovers as $departmentUnitApprover) {
+        //     $approver_id = $departmentUnitApprover->approver_id;
+        //     $layer = $departmentUnitApprover->layer;
 
-            // if the requester is the approver, decide on status
-            if ($isRequesterApprover) {
-                if ($layer == $requesterLayer || $layer < $requesterLayer) {
-                    $status = "Approved";
-                } elseif ($layer == $requesterLayer + 1) {
-                    $status = "For Approval";
-                }
-            } elseif ($layer == 1) { // if the requester is not an approver, only the first layer should be "For Approval"
-                $status = "For Approval";
-            }
+        //     // initial status
+        //     $status = null;
 
-            AssetApproval::create([
-                'transaction_number' => $assetRequest->transaction_number,
-                'approver_id' => $approver_id,
-                'requester_id' => $requesterId,
-                'layer' => $layer,
-                'status' => $status,
-            ]);
-        }
+        //     // if the requester is the approver, decide on status
+        //     if ($isRequesterApprover) {
+        //         if ($layer == $requesterLayer || $layer < $requesterLayer) {
+        //             $status = "Approved";
+        //         } elseif ($layer == $requesterLayer + 1) {
+        //             $status = "For Approval";
+        //         }
+        //     } elseif ($layer == 1) { // if the requester is not an approver, only the first layer should be "For Approval"
+        //         $status = "For Approval";
+        //     }
+
+        //     AssetApproval::create([
+        //         'transaction_number' => $assetRequest->transaction_number,
+        //         'approver_id' => $approver_id,
+        //         'requester_id' => $requesterId,
+        //         'layer' => $layer,
+        //         'status' => $status,
+        //     ]);
+        // }
 
         return $this->responseSuccess('Successfully requested');
     }
