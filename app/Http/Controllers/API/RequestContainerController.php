@@ -84,7 +84,7 @@ class RequestContainerController extends Controller
             'department_id' => $request->department_id,
             'accountable' => $request->accountable ?? null,
             'additional_info' => $request->additional_info ?? null,
-            'acquisition_details' => $request->acquisition_detail,
+            'acquisition_details' => $request->acquisition_details,
             'asset_description' => $request->asset_description,
             'asset_specification' => $request->asset_specification ?? null,
             'cellphone_number' => $request->cellphone_number ?? null,

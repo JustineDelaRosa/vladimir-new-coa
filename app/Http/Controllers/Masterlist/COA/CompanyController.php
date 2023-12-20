@@ -30,32 +30,11 @@ class CompanyController extends Controller
         return $company;
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-
-//    public function store(Request $request)
-//    {
-//        $sync = $request->all();
-//
-//        $company = Company::upsert($sync, ["sync_id"],
-//            [
-//                "company_code",
-//                "company_name",
-//                "is_active"
-//            ]);
-//
-//        return response()->json(['message' => 'Successfully Synced!']);
-//    }
-
     public function store(Request $request)
     {
         $companyData = $request->input('result.companies');
         if (empty($request->all()) || empty($request->input('result.companies'))) {
-//            return response()->json(['message' => 'Data not Ready']);
+            //            return response()->json(['message' => 'Data not Ready']);
             return $this->responseUnprocessable('Data not Ready');
         }
 
@@ -76,7 +55,7 @@ class CompanyController extends Controller
                 ],
             );
         }
-//        return response()->json(['message' => 'Successfully Synced!']);
+        //        return response()->json(['message' => 'Successfully Synced!']);
         return $this->responseSuccess('Successfully Synced!');
     }
 
@@ -134,37 +113,37 @@ class CompanyController extends Controller
         return $Company;
     }
 
-//    public function archived(Request $request, $id)
-//    {
-//        $status = $request->status;
-//        $Company = Company::query();
-//        if (!$Company->where('id', $id)->exists()) {
-//            return response()->json(['error' => 'Company Route Not Found'], 404);
-//        }
-//
-//
-//        if ($status == false) {
-//            if (!Company::where('id', $id)->where('is_active', true)->exists()) {
-//                return response()->json(['message' => 'No Changes'], 200);
-//            } else {
-//                $checkDepartment = Department::where('company_id', $id)->exists();
-//                if ($checkDepartment) {
-//                    return response()->json(['error' => 'Unable to archived , Company is still in use!'], 422);
-//                }
-//
-//                $updateStatus = $Company->where('id', $id)->update(['is_active' => false]);
-////                $Company->where('id', $id)->delete();
-//                return response()->json(['message' => 'Successfully Deactived!'], 200);
-//            }
-//        }
-//        if ($status == true) {
-//            if (Company::where('id', $id)->where('is_active', true)->exists()) {
-//                return response()->json(['message' => 'No Changes'], 200);
-//            } else {
-////              $restoreUser = $Company->withTrashed()->where('id', $id)->restore();
-//                $updateStatus = $Company->update(['is_active' => true]);
-//                return response()->json(['message' => 'Successfully Activated!'], 200);
-//            }
-//        }
-//    }
+    //    public function archived(Request $request, $id)
+    //    {
+    //        $status = $request->status;
+    //        $Company = Company::query();
+    //        if (!$Company->where('id', $id)->exists()) {
+    //            return response()->json(['error' => 'Company Route Not Found'], 404);
+    //        }
+    //
+    //
+    //        if ($status == false) {
+    //            if (!Company::where('id', $id)->where('is_active', true)->exists()) {
+    //                return response()->json(['message' => 'No Changes'], 200);
+    //            } else {
+    //                $checkDepartment = Department::where('company_id', $id)->exists();
+    //                if ($checkDepartment) {
+    //                    return response()->json(['error' => 'Unable to archived , Company is still in use!'], 422);
+    //                }
+    //
+    //                $updateStatus = $Company->where('id', $id)->update(['is_active' => false]);
+    ////                $Company->where('id', $id)->delete();
+    //                return response()->json(['message' => 'Successfully Deactived!'], 200);
+    //            }
+    //        }
+    //        if ($status == true) {
+    //            if (Company::where('id', $id)->where('is_active', true)->exists()) {
+    //                return response()->json(['message' => 'No Changes'], 200);
+    //            } else {
+    ////              $restoreUser = $Company->withTrashed()->where('id', $id)->restore();
+    //                $updateStatus = $Company->update(['is_active' => true]);
+    //                return response()->json(['message' => 'Successfully Activated!'], 200);
+    //            }
+    //        }
+    //    }
 }
