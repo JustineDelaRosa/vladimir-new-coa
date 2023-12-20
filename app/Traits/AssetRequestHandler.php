@@ -3,9 +3,10 @@
 namespace App\Traits;
 
 use App\Models\Approvers;
-use App\Models\AssetApproval;
 use App\Models\AssetRequest;
+use App\Models\AssetApproval;
 use Illuminate\Http\JsonResponse;
+use App\Models\DepartmentUnitApprovers;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 trait AssetRequestHandler

@@ -128,7 +128,10 @@ class AssetApprovalController extends Controller
     {
         $user = auth('sanctum')->user();
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
-        $assetApproval = AssetApproval::where('approver_id', $approverId)->where('status', 'For Approval')->first();
+        $assetApproval = AssetApproval::where('approver_id', $approverId)
+            ->where('status', 'For Approval')
+            ->oldest()
+            ->first();
         if (!$assetApproval) {
             return $this->responseNotFound('No Request Found');
         }
