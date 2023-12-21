@@ -62,7 +62,7 @@ class AssetRequestController extends Controller
             'For PR' => ['status' => 'Approved', 'pr_number' => null],
             'For PO' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => null],
             'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => null],
-            // 'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => ['!=', null], 'pickup_number' => null]
+            // 'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => ['!=', null]]
         ];
 
         $assetRequest = AssetRequest::query();
