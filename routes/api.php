@@ -238,7 +238,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('department-unit-approvers', DepartmentUnitApproversController::class);
     //ADDING PR//
     Route::resource('adding-pr', AddingPrController::class);
-    Route::PUT('remove-pr/{transactionNumber}', [AddingPrController::class, 'removePR']);
+    Route::put('remove-pr/{transactionNumber}', [AddingPrController::class, 'removePR']);
     //REQUEST CONTAINER//
     Route::resource('request-container', RequestContainerController::class);
     Route::delete('remove-container-item/{id?}', [RequestContainerController::class, 'removeAll']);

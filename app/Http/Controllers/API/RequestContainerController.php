@@ -176,6 +176,7 @@ class RequestContainerController extends Controller
             'accountability' => $request->accountability,
             //            'company_id' => $request->department_id['company']['company_id'],
             //            'department_id' => $request->department_id['id'],
+            'additional_info' => $request->additional_info ?? null,
             'accountable' => $request->accountable ?? null,
             'asset_description' => $request->asset_description,
             'asset_specification' => $request->asset_specification ?? null,
