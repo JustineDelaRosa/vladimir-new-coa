@@ -89,4 +89,20 @@ class AddingPrController extends Controller
 
         return $this->responseDeleted();
     }
+
+    public function removePR($transactionNumber): JsonResponse
+    {
+        $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
+            ->where('status', 'Approved')->get();
+        if ($assetRequests->isEmpty()) {
+            return $this->responseUnprocessable('Asset Request is not yet approved');
+        }
+        $assetRequests->each(function ($assetRequest) {
+            $assetRequest->update([
+                'pr_number' => null,
+            ]);
+        });
+
+        return $this->responseSuccess('PR No. removed successfully');
+    }
 }
