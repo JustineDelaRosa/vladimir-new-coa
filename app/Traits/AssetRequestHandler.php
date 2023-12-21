@@ -204,6 +204,7 @@ trait AssetRequestHandler
     private function getSteps($assetRequest): array
     {
         $approvers = $assetRequest->assetApproval;
+        $approvers = $approvers->sortBy('layer');
 
         $steps = [];
         foreach ($approvers as $approver) {
