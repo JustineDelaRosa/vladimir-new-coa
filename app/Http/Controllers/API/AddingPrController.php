@@ -80,7 +80,7 @@ class AddingPrController extends Controller
             ]);
         });
 
-        return $this->responseSuccess('PR Number added successfully');
+        return $this->responseSuccess('PR No. added successfully');
     }
 
     public function destroy(AssetRequest $assetRequest): JsonResponse
@@ -89,5 +89,4 @@ class AddingPrController extends Controller
 
         return $this->responseDeleted();
     }
-
 }
