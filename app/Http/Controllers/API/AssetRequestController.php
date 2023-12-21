@@ -100,7 +100,7 @@ class AssetRequestController extends Controller
                 $assetRequest->where('requester_id', $requesterId);
             }
 
-            $assetRequest = AssetRequest::query()->orderByDesc('created_at')->useFilters();
+            // $assetRequest = AssetRequest::query()->orderByDesc('created_at')->useFilters();
         }
 
 
