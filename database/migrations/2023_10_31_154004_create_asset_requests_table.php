@@ -26,6 +26,7 @@ class CreateAssetRequestsTable extends Migration
             $table->unsignedInteger('fixed_asset_id')->nullable();
             $table->string('additional_info')->nullable();
             $table->string('acquisition_details');
+            $table->boolean('is_resubmit')->default(0);
 
             //TO BE FILL UP BY THE REQUESTER
             $table->string('remarks')->nullable();
@@ -81,14 +82,7 @@ class CreateAssetRequestsTable extends Migration
             $table->unsignedInteger('department_id')->nullable();
             $table->unsignedInteger('location_id')->nullable();
             $table->unsignedInteger('account_title_id')->nullable();
-            //            $table->string('company_code')->nullable();
-            //            $table->string('company')->nullable();
-            //            $table->string('department_code')->nullable();
-            //            $table->string('department')->nullable();
-            //            $table->string('location_code')->nullable();
-            //            $table->string('location')->nullable();
-            //            $table->string('account_title_code')->nullable();
-            //            $table->string('account_title')->nullable();
+            $table->unsignedInteger('organization_id')->nullable(); //TODO: For the meantime
             $table->integer('print_count')->default(0);
             $table->softDeletes();
             $table->timestamp('last_printed')->nullable();
@@ -111,6 +105,7 @@ class CreateAssetRequestsTable extends Migration
             $table->foreign('cycle_count_status_id')->references('id')->on('cycle_count_statuses');
             $table->foreign('depreciation_status_id')->references('id')->on('depreciation_statuses');
             $table->foreign('movement_status_id')->references('id')->on('movement_statuses');
+            $table->foreign('organization_id')->references('id')->on('organizations');
 
             $table->timestamps();
         });

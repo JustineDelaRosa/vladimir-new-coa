@@ -196,4 +196,9 @@ class AssetRequest extends Model implements HasMedia
     {
         return $this->hasMany(Activity::class, 'subject_id', 'transaction_number');
     }
+
+    public function organization()
+    {
+        return $this->belongsTo(Company::class, 'organization_id', 'id');
+    }
 }

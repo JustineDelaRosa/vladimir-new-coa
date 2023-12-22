@@ -43,17 +43,47 @@ trait AssetRequestHandler
 
     public function updateAssetRequest($assetRequest, $request)
     {
-        return $assetRequest->update([
-            'type_of_request_id' => $request->type_of_request_id,
-            'attachment_type' => $request->attachment_type,
-            'accountability' => $request->accountability,
-            'accountable' => $request->accountable ?? null,
-            'asset_description' => $request->asset_description,
-            'asset_specification' => $request->asset_specification ?? null,
-            'cellphone_number' => $request->cellphone_number ?? null,
-            'brand' => $request->brand ?? null,
-            'quantity' => $request->quantity,
-        ]);
+
+        //check if the status of the request is 'For Approval of Approver 1'
+        //if it is, then dont update the resubmit flag if it was 'Returned' then update the resubmit flag
+        if ($assetRequest->status == 'For Approval of Approver 1') {
+            $assetRequest->update([
+                'type_of_request_id' => $request->type_of_request_id,
+                'attachment_type' => $request->attachment_type,
+                'accountability' => $request->accountability,
+                'accountable' => $request->accountable ?? null,
+                'asset_description' => $request->asset_description,
+                'asset_specification' => $request->asset_specification ?? null,
+                'cellphone_number' => $request->cellphone_number ?? null,
+                'brand' => $request->brand ?? null,
+                'quantity' => $request->quantity,
+            ]);
+        } else {
+            $assetRequest->update([
+                'type_of_request_id' => $request->type_of_request_id,
+                'attachment_type' => $request->attachment_type,
+                'accountability' => $request->accountability,
+                'accountable' => $request->accountable ?? null,
+                'asset_description' => $request->asset_description,
+                'asset_specification' => $request->asset_specification ?? null,
+                'cellphone_number' => $request->cellphone_number ?? null,
+                'brand' => $request->brand ?? null,
+                'quantity' => $request->quantity,
+                'is_resubmit' => 1,
+            ]);
+        }
+
+        // return $assetRequest->update([
+        //     'type_of_request_id' => $request->type_of_request_id,
+        //     'attachment_type' => $request->attachment_type,
+        //     'accountability' => $request->accountability,
+        //     'accountable' => $request->accountable ?? null,
+        //     'asset_description' => $request->asset_description,
+        //     'asset_specification' => $request->asset_specification ?? null,
+        //     'cellphone_number' => $request->cellphone_number ?? null,
+        //     'brand' => $request->brand ?? null,
+        //     'quantity' => $request->quantity,
+        // ]);
     }
 
     public function handleMediaAttachments($assetRequest, $request)
