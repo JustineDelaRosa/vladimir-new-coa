@@ -82,7 +82,7 @@ class CreateAssetRequestsTable extends Migration
             $table->unsignedInteger('department_id')->nullable();
             $table->unsignedInteger('location_id')->nullable();
             $table->unsignedInteger('account_title_id')->nullable();
-            $table->unsignedInteger('organization_id')->nullable(); //TODO: For the meantime
+            $table->unsignedInteger('business_unit_id')->nullable(); //TODO: For the meantime
             $table->integer('print_count')->default(0);
             $table->softDeletes();
             $table->timestamp('last_printed')->nullable();
@@ -105,7 +105,7 @@ class CreateAssetRequestsTable extends Migration
             $table->foreign('cycle_count_status_id')->references('id')->on('cycle_count_statuses');
             $table->foreign('depreciation_status_id')->references('id')->on('depreciation_statuses');
             $table->foreign('movement_status_id')->references('id')->on('movement_statuses');
-            $table->foreign('organization_id')->references('id')->on('organizations');
+            $table->foreign('business_unit_id')->references('id')->on('companies');
 
             $table->timestamps();
         });
