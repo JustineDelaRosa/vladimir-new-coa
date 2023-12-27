@@ -516,12 +516,13 @@ trait AssetRequestHandler
             $assetRequest = $this->getAssetRequestForApprover('reference_number', $transactionNumber, $referenceNumber);
         }
 
-        if ($this->requestCount($assetRequest->transaction_number) == 1) {
+        // $assetRequest->transaction_number
+        if ($this->requestCount($transactionNumber) == 1) {
             $assetRequest->update([
                 'status' => 'Void'
             ]);
 
-            $this->updateToVoid($assetRequest->transaction_number, 'Void');
+            $this->updateToVoid($transactionNumber, 'Void');
 
             $assetRequest->delete();
 
@@ -539,7 +540,6 @@ trait AssetRequestHandler
     public function voidAssetRequest($transactionNumber)
     {
         // return $this->responseSuccess($this->isUserAnApprover($transactionNumber));
-
         $approverId = $this->isUserAnApprover($transactionNumber);
 
         // return $this->responseUnprocessable($assetRequest);
@@ -551,6 +551,10 @@ trait AssetRequestHandler
         } else {
             $assetRequest = $this->getAssetRequestForApprover('transaction_number', $transactionNumber, null, false);
         }
+
+        // return $this->updateToVoid($assetRequest->transaction_number, 'Void') . 'asdfasdf';
+
+        $this->updateToVoid($transactionNumber, 'Void');
         foreach ($assetRequest as $ar) {
             $ar->update([
                 'status' => 'Void'
@@ -578,9 +582,8 @@ trait AssetRequestHandler
 
     public function updateToVoid($transactionNumber, $status)
     {
-
-        return AssetApproval::where('transaction_number', $transactionNumber)
-            ->update(['status' => $status]);
+        // $toVoid = AssetApproval::where('transaction_number', $transactionNumber)->get()
+        return AssetApproval::where('transaction_number', $transactionNumber)->update(['status' => $status]);
     }
 
     //THIS IS FOR STORE ASSET REQUEST

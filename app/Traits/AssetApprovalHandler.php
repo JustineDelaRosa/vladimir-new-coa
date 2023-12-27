@@ -15,6 +15,7 @@ trait AssetApprovalHandler
             }
             return [
                 'id' => $assetApproval->id,
+                'asset_approval_id' => $assetApproval->id,
                 'status' => $assetApproval->status,
                 'layer' => $assetApproval->layer,
                 'number_of_item' => $quantity[$assetApproval->transaction_number],
