@@ -302,6 +302,9 @@ trait AssetRequestHandler
             return [
                 'can_edit' => $ar->status == 'Returned' || $ar->status == 'For Approval of Approver 1'  ? 1 : 0,
                 'can_resubmit' => $ar->status == 'Returned'  ? 1 : 0,
+                'asset_approval_id' => $ar->assetApproval->first(function ($approval) {
+                    return $approval->status == 'For Approval';
+                })->id ?? '',
                 'id' => $ar->id,
                 'status' => $ar->status,
                 'transaction_number' => $ar->transaction_number,
