@@ -26,6 +26,7 @@ class UpdateAddingPrRequest extends FormRequest
         // . $this->transactionNumber . ',transaction_number'
         return [
             'pr_number' => 'required|string|unique:asset_requests,pr_number,',
+            'business_unit_id' => 'required|exists:companies,id',
         ];
     }
 
@@ -35,6 +36,8 @@ class UpdateAddingPrRequest extends FormRequest
             'pr_number.required' => 'PR Number is required',
             'pr_number.string' => 'Invalid data type',
             'pr_number.unique' => 'PR Number already exists',
+            'business_unit_id.required' => 'Business Unit is required',
+            'business_unit_id.exists' => 'Business Unit does not exist',
         ];
     }
 }
