@@ -6,8 +6,11 @@ use App\Models\Approvers;
 use App\Models\AssetRequest;
 use App\Models\AssetApproval;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use App\Models\DepartmentUnitApprovers;
+use Spatie\Activitylog\Models\Activity;
 use Illuminate\Pagination\LengthAwarePaginator;
+
 
 trait AssetRequestHandler
 {
@@ -118,6 +121,21 @@ trait AssetRequestHandler
                     $assetRequest->clearMediaCollection($collection);
                 }
             }
+        }
+    }
+
+    private function removeMediaAttachments($assetRequest)
+    {
+        $collections = [
+            'letter_of_request',
+            'quotation',
+            'specification_form',
+            'tool_of_trade',
+            'other_attachments'
+        ];
+
+        foreach ($collections as $collection) {
+            $assetRequest->clearMediaCollection($collection);
         }
     }
 
@@ -501,7 +519,7 @@ trait AssetRequestHandler
         ];
     }
 
-    public function voidRequestItem($referenceNumber, $transactionNumber): JsonResponse
+    public function deleteRequestItem($referenceNumber, $transactionNumber): JsonResponse
     {
 
         $approverId = $this->isUserAnApprover($transactionNumber);
@@ -510,7 +528,7 @@ trait AssetRequestHandler
         if (!$approverId) {
             $assetRequest = $this->getAssetRequest('reference_number', $referenceNumber);
             if (!$assetRequest) {
-                return $this->responseUnprocessable('Unable to void Request Item.');
+                return $this->responseUnprocessable('Unable to Delete Request Item.');
             }
         } else {
             $assetRequest = $this->getAssetRequestForApprover('reference_number', $transactionNumber, $referenceNumber);
@@ -518,26 +536,21 @@ trait AssetRequestHandler
 
         // $assetRequest->transaction_number
         if ($this->requestCount($transactionNumber) == 1) {
-            $assetRequest->update([
-                'status' => 'Void'
-            ]);
-
-            $this->updateToVoid($transactionNumber, 'Void');
-
-            $assetRequest->delete();
-
-            return $this->responseSuccess('Asset Request voided Successfully');
+            return $this->responseUnprocessable('You cannot delete the last item.');
         }
+        $this->removeMediaAttachments($assetRequest);
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-        $assetRequest->update([
-            'status' => 'Void'
-        ]);
+        // Perform the delete operation
         $assetRequest->delete();
 
-        return $this->responseSuccess('Asset Request voided Successfully');
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+
+        return $this->responseSuccess('Asset Request deleted Successfully');
     }
 
-    public function voidAssetRequest($transactionNumber)
+    public function deleteAssetRequest($transactionNumber)
     {
         // return $this->responseSuccess($this->isUserAnApprover($transactionNumber));
         $approverId = $this->isUserAnApprover($transactionNumber);
@@ -546,22 +559,21 @@ trait AssetRequestHandler
         if ($approverId == null) {
             $assetRequest = $this->getAssetRequest('transaction_number', $transactionNumber, false);
             if ($assetRequest->isEmpty()) {
-                return $this->responseUnprocessable('Unable to void Asset Request.');
+                return $this->responseUnprocessable('Unable to Delete Asset Request.');
             }
         } else {
             $assetRequest = $this->getAssetRequestForApprover('transaction_number', $transactionNumber, null, false);
         }
 
-        // return $this->updateToVoid($assetRequest->transaction_number, 'Void') . 'asdfasdf';
-
-        $this->updateToVoid($transactionNumber, 'Void');
+        // return $this->deleteApprovals($assetRequest->transaction_number, 'Void') . 'asdfasdf';
+        $this->deleteApprovals($transactionNumber);
+        // $assetRequest->activityLog()->delete();
         foreach ($assetRequest as $ar) {
-            $ar->update([
-                'status' => 'Void'
-            ]);
+            $this->removeMediaAttachments($ar);
+            $ar->activityLog()->delete();
             $ar->delete();
         }
-        return $this->responseSuccess('Asset Request voided Successfully');
+        return $this->responseSuccess('Asset Request deleted Successfully');
     }
 
     private function isUserAnApprover($transactionNumber)
@@ -580,10 +592,10 @@ trait AssetRequestHandler
         return $requestCount;
     }
 
-    public function updateToVoid($transactionNumber, $status)
+    public function deleteApprovals($transactionNumber)
     {
         // $toVoid = AssetApproval::where('transaction_number', $transactionNumber)->get()
-        return AssetApproval::where('transaction_number', $transactionNumber)->update(['status' => $status]);
+        return AssetApproval::where('transaction_number', $transactionNumber)->delete();
     }
 
     //THIS IS FOR STORE ASSET REQUEST

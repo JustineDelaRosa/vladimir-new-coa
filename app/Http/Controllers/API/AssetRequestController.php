@@ -2,29 +2,30 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Models\ApproverLayer;
-use App\Models\Approvers;
-use App\Models\AssetApproval;
-use App\Models\AssetRequest;
+use App\Models\User;
 use App\Models\Company;
-use App\Models\Department;
-use App\Models\DepartmentUnitApprovers;
-use App\Models\RequestContainer;
-use App\Models\RoleManagement;
-use App\Models\SubCapex;
 use App\Models\SubUnit;
-use App\Repositories\ApprovedRequestRepository;
-use App\Traits\AssetRequestHandler;
-use Essa\APIToolKit\Api\ApiResponse;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\SubCapex;
+use App\Models\Approvers;
+use App\Models\Department;
+use App\Models\AssetRequest;
 use Illuminate\Http\Request;
+use App\Models\ApproverLayer;
+use App\Models\AssetApproval;
+use App\Models\RoleManagement;
+use App\Models\RequestContainer;
 use Illuminate\Http\JsonResponse;
+use App\Traits\AssetRequestHandler;
 use App\Http\Controllers\Controller;
+use Essa\APIToolKit\Api\ApiResponse;
+use App\Models\DepartmentUnitApprovers;
+use Illuminate\Database\Eloquent\Model;
 
+use Spatie\Activitylog\Models\Activity;
+use App\Repositories\ApprovedRequestRepository;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Http\Requests\AssetRequest\CreateAssetRequestRequest;
 use App\Http\Requests\AssetRequest\UpdateAssetRequestRequest;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Spatie\Activitylog\Models\Activity;
 
 class AssetRequestController extends Controller
 {
@@ -48,7 +49,8 @@ class AssetRequestController extends Controller
         $forMonitoring = $request->for_monitoring ?? false;
 
         $requesterId = auth('sanctum')->user()->id;
-        $role = RoleManagement::whereId($requesterId)->value('role_name');
+        $role = User::find($requesterId)->roleManagement->role_name;
+        // $roleName = User::find($requesterId)->roleManagement->role_name;
         $adminRoles = ['Super Admin', 'Admin', 'ERP'];
 
         $perPage = $request->input('per_page', null);
@@ -306,12 +308,12 @@ class AssetRequestController extends Controller
 
         if ($transactionNumber && $referenceNumber) {
             //            return 'both';
-            return $this->voidRequestItem($referenceNumber, $transactionNumber);
+            return $this->deleteRequestItem($referenceNumber, $transactionNumber);
         }
         if ($transactionNumber) {
 
             //            return 'single';
-            return $this->voidAssetRequest($transactionNumber);
+            return $this->deleteAssetRequest($transactionNumber);
         }
     }
 

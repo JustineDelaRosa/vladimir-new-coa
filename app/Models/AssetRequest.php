@@ -21,7 +21,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 class AssetRequest extends Model implements HasMedia
 {
-    use HasFactory, Filterable, InteractsWithMedia, SoftDeletes;
+    use HasFactory, Filterable, InteractsWithMedia;
+    //, SoftDeletes
 
 
     protected $guarded = [];
@@ -84,8 +85,7 @@ class AssetRequest extends Model implements HasMedia
         $transactionNumber = null;
 
         DB::transaction(function () use (&$transactionNumber) {
-            $lastTransaction = AssetRequest::withTrashed()
-                ->orderBy('transaction_number', 'desc')
+            $lastTransaction = AssetRequest::orderBy('transaction_number', 'desc')
                 ->lockForUpdate()
                 ->first();
 
