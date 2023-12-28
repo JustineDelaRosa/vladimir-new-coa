@@ -223,7 +223,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //ASSET REQUEST//
     Route::resource('asset-request', AssetRequestController::class);
     Route::post('update-request/{referenceNumber}', [AssetRequestController::class, 'updateRequest']);
-    Route::patch('void-request/{transactionNumber}/{referenceNumber?}', [AssetRequestController::class, 'removeRequestItem']);
+    Route::delete('delete-request/{transactionNumber}/{referenceNumber?}', [AssetRequestController::class, 'removeRequestItem']);
     Route::patch('resubmit-request', [AssetRequestController::class, 'resubmitRequest']);
     Route::POST('move-to-asset-request', [AssetRequestController::class, 'moveData']);
     Route::GET('show-by-id/{id}', [AssetRequestController::class, 'showById']);
