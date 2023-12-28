@@ -20,7 +20,7 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
-    protected $guarded =[];
+    protected $guarded = [];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -56,48 +56,59 @@ class User extends Authenticatable
     //     return $this->belongsTo(Department::class)->select('id', 'department_name');
     // }
 
-    public function department(){
-        return $this->belongsTo(Department::class, 'department_id','id');
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id', 'id');
     }
-    public function subUnit(){
-        return $this->belongsTo(SubUnit::class, 'subunit_id','id');
+    public function subUnit()
+    {
+        return $this->belongsTo(SubUnit::class, 'subunit_id', 'id');
     }
-    public function role(){
-        return $this->belongsTo(RoleManagement::class, 'role_id','id');
+    public function role()
+    {
+        return $this->belongsTo(RoleManagement::class, 'role_id', 'id');
     }
 
-    public function requester(){
+    public function requester()
+    {
         return $this->hasMany(UserApprover::class, 'requester_id', 'id');
     }
 
-    public function approvers(){
+    public function approvers()
+    {
         return $this->hasMany(Approvers::class, 'approver_id', 'id');
     }
 
-    public function assetRequest(){
+    public function assetRequest()
+    {
         return $this->hasMany(AssetRequest::class, 'requester_id', 'id');
     }
 
-    public function assetApproval(){
+    public function assetApproval()
+    {
         return $this->hasMany(AssetApproval::class, 'requester_id', 'id');
     }
+    public function roleManagement()
+    {
+        return $this->belongsTo(RoleManagement::class, 'role_id', 'id');
+    }
 
-//    public function requestor(){
-//        return $this->hasMany(ApproverLayer::class, 'user_id', 'id');
-//    }
-//    public function layer1(){
-//        return $this->hasMany(ApproverLayer::class, 'layer1', 'id');
-//    }
-//    public function layer2(){
-//        return $this->hasMany(ApproverLayer::class, 'layer2', 'id');
-//    }
-//    public function layer3(){
-//        return $this->hasMany(ApproverLayer::class, 'layer3', 'id');
-//    }
-//    public function layer4(){
-//        return $this->hasMany(ApproverLayer::class, 'layer4', 'id');
-//    }
-//    public function layer5(){
-//        return $this->hasMany(ApproverLayer::class, 'layer5', 'id');
-//    }
+    //    public function requestor(){
+    //        return $this->hasMany(ApproverLayer::class, 'user_id', 'id');
+    //    }
+    //    public function layer1(){
+    //        return $this->hasMany(ApproverLayer::class, 'layer1', 'id');
+    //    }
+    //    public function layer2(){
+    //        return $this->hasMany(ApproverLayer::class, 'layer2', 'id');
+    //    }
+    //    public function layer3(){
+    //        return $this->hasMany(ApproverLayer::class, 'layer3', 'id');
+    //    }
+    //    public function layer4(){
+    //        return $this->hasMany(ApproverLayer::class, 'layer4', 'id');
+    //    }
+    //    public function layer5(){
+    //        return $this->hasMany(ApproverLayer::class, 'layer5', 'id');
+    //    }
 }
