@@ -19,12 +19,16 @@ class ApprovedRequestRepository
         $approverId = $this->findApproverId();
         $status = "Approved";
 
+        if ($assetApproval->status != 'For Approval') {
+            return $this->responseUnprocessable('You are not allowed to do this action');
+        }
+
         if ($this->isInvalidApprover($assetApproval->approver_id, $approverId)) {
             return $this->responseUnprocessable('You are not the approver of this request');
         }
 
         if ($this->isAssetApprovalWithStatus($assetApprovalId, $status)) {
-            return $this->responseUnprocessable('You already approve this request');
+            return $this->responseUnprocessable('You already approved this request');
         }
 
         if ($this->checkStatus($assetApprovalId)) {
@@ -45,13 +49,16 @@ class ApprovedRequestRepository
         return $this->responseSuccess('Asset Request Approved Successfully');
     }
 
-    //DISAPPROVE REQUEST
+    //RETURN REQUEST
     public function returnRequest($assetApprovalId, $remarks = null): JsonResponse
     {
 
         $assetApproval = $this->findAssetApproval($assetApprovalId);
         $approverId = $this->findApproverId();
         $status = "Returned";
+        if ($assetApproval->status != 'For Approval') {
+            return $this->responseUnprocessable('You are not allowed to do this action');
+        }
 
         if ($this->isInvalidApprover($assetApproval->approver_id, $approverId)) {
             return $this->responseUnprocessable('You are not the approver of this request');
@@ -91,35 +98,35 @@ class ApprovedRequestRepository
     }
 
     //VOID REQUEST
-//    public function voidRequest($assetRequestIds): JsonResponse
-//    {
-//        foreach ($assetRequestIds as $id) {
-//            $assetRequest = AssetRequest::where('id', $id)->where('status', 'Returned')->first();
-//            if (!$assetRequest) {
-//                return $this->responseUnprocessable('Invalid Action');
-//            }
-//            $this->updateAssetRequestStatus($assetRequest->transaction_number, 'Void');
-//            $this->updateToNullOrVoid($id, 'Void');
-//            activity()
-//                ->causedBy(auth('sanctum')->user())
-//                ->performedOn($assetRequest)
-//                ->withProperties(
-//                    [
-//                        'asset_request_id' => $assetRequest->id,
-//                        'requester' => [
-//                            'id' => $assetRequest->requester->id,
-//                            'firstname' => $assetRequest->requester->firstname,
-//                            'lastname' => $assetRequest->requester->lastname,
-//                            'employee_id' => $assetRequest->requester->employee_id,
-//                        ],
-//                        'status' => 'Void',
-//                    ]
-//                )
-//                ->inLog('Void')
-//                ->log('Asset Request Voided by ' . auth('sanctum')->user()->employee_id . '.');
-//        }
-//        return $this->responseSuccess('Asset Request Voided Successfully');
-//    }
+    //    public function voidRequest($assetRequestIds): JsonResponse
+    //    {
+    //        foreach ($assetRequestIds as $id) {
+    //            $assetRequest = AssetRequest::where('id', $id)->where('status', 'Returned')->first();
+    //            if (!$assetRequest) {
+    //                return $this->responseUnprocessable('Invalid Action');
+    //            }
+    //            $this->updateAssetRequestStatus($assetRequest->transaction_number, 'Void');
+    //            $this->updateToNullOrVoid($id, 'Void');
+    //            activity()
+    //                ->causedBy(auth('sanctum')->user())
+    //                ->performedOn($assetRequest)
+    //                ->withProperties(
+    //                    [
+    //                        'asset_request_id' => $assetRequest->id,
+    //                        'requester' => [
+    //                            'id' => $assetRequest->requester->id,
+    //                            'firstname' => $assetRequest->requester->firstname,
+    //                            'lastname' => $assetRequest->requester->lastname,
+    //                            'employee_id' => $assetRequest->requester->employee_id,
+    //                        ],
+    //                        'status' => 'Void',
+    //                    ]
+    //                )
+    //                ->inLog('Void')
+    //                ->log('Asset Request Voided by ' . auth('sanctum')->user()->employee_id . '.');
+    //        }
+    //        return $this->responseSuccess('Asset Request Voided Successfully');
+    //    }
 
 
     private function findAssetApproval(int $id)
@@ -248,6 +255,4 @@ class ApprovedRequestRepository
 
         return $assetApproval ? $assetApproval->layer + 1 : 1;
     }
-
-
 }

@@ -26,9 +26,9 @@ class CreateAssetApprovalRequest extends FormRequest
         if ($this->isMethod('PATCH')) {
             return [
                 'asset_approval_id' => 'required|exists:asset_approvals,id',
-//                'asset_request_id' => 'one_array_present:asset_approval_id|exists:asset_requests,id|array',
-                'action' => 'required|string|in:Approve,Return,Void',
-                'remarks' => 'nullable|string',
+                //'asset_request_id' => 'one_array_present:asset_approval_id|exists:asset_requests,id|array',
+                'action' => 'required|string|in:Approve,Return,Delete',
+                'remarks' => ['required_if:action,Return', 'string'],
             ];
         }
     }
@@ -44,7 +44,9 @@ class CreateAssetApprovalRequest extends FormRequest
             'asset_request_id.array' => 'The asset request must be an array',
             'action.required' => 'The action is required',
             'action.string' => 'The action must be a string',
-            'action.in' => 'Invalid Selection',
+            'action.in' => 'The selected action is invalid',
+            'remarks.required_if' => 'The remarks is required',
+            'remarks.string' => 'The remarks must be a string',
         ];
     }
 }
