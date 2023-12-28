@@ -12,22 +12,25 @@ use App\Http\Controllers\Controller;
 
 use App\Http\Requests\AddingPr\CreateAddingPrRequest;
 use App\Http\Requests\AddingPr\UpdateAddingPrRequest;
+use App\Traits\AddPRHandler;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use function PHPUnit\Framework\isEmpty;
 
 class AddingPrController extends Controller
 {
-    use ApiResponse, AssetRequestHandler;
+    use ApiResponse, AssetRequestHandler, AddPRHandler;
 
     public function index(Request $request)
     {
-        $hasPrNumber = $request->get('has_pr');
+        $toPr = $request->get('toPr', null);
         $perPage = $request->input('per_page', null);
 
         $assetRequest = AssetRequest::where('status', 'Approved')
-            ->when($hasPrNumber !== null, function ($query) use ($hasPrNumber) {
-                return $hasPrNumber == 1 ? $query->whereNotNull('pr_number') : $query->whereNull('pr_number');
+            ->when($toPr !== null, function ($query) use ($toPr) {
+                return $toPr == 0 ? $query->whereNotNull('pr_number') : $query->whereNull('pr_number');
+            })->when($toPr === null, function ($query) use ($toPr) {
+                return $query->whereNull('pr_number');
             })->useFilters();
 
 
@@ -81,6 +84,7 @@ class AddingPrController extends Controller
                 'business_unit_id' => $businessUnitId,
             ]);
         });
+        $this->activityLog($assetRequests, $prNumber);
 
         return $this->responseSuccess('PR No. added successfully');
     }
@@ -105,6 +109,7 @@ class AddingPrController extends Controller
                 'business_unit_id' => null,
             ]);
         });
+        $this->activityLog($assetRequests, null);
 
         return $this->responseSuccess('PR No. removed successfully');
     }

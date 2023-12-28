@@ -15,30 +15,30 @@ trait AddPRHandler
         activity()
             ->causedBy($user)
             ->performedOn($assetRequests)
-            // ->withProperties($this->composeLogProperties($assetRequest, $prNumber))
-            ->inLog('Added PR')
+            ->withProperties($this->composeLogProperties($assetRequest, $prNumber))
+            ->inLog($prNumber === null ? 'Removed PR Number' : 'Added PR Number')
             ->tap(function ($activity) use ($user, $assetRequest, $prNumber) {
                 $firstAssetRequest = $assetRequest->first();
                 if ($firstAssetRequest) {
                     $activity->subject_id = $firstAssetRequest->transaction_number;
                 }
             })
-            ->log('PR Number ' . $prNumber . ' has been added by ' . $user->employee_id . '.');
+            ->log($prNumber === null ? 'PR Number was removed by ' . $user->employee_id . '.' :
+                'PR Number ' . $prNumber . ' has been added by ' . $user->employee_id . '.');
     }
 
-    private function composeLogProperties($assetRequest, $prNumber): array
+    private function composeLogProperties($assetRequest, $prNumber = null): array
     {
-        $requester = $assetRequest->user;
-
+        $requestor = $assetRequest->first()->requestor;
         return [
-            'requester' => [
-                'id' => $requester->id,
-                'firstname' => $requester->firstname,
-                'lastname' => $requester->lastname,
-                'employee_id' => $requester->employee_id,
+            'requestor' => [
+                'id' => $requestor->id,
+                'firstname' => $requestor->firstname,
+                'lastname' => $requestor->lastname,
+                'employee_id' => $requestor->employee_id,
             ],
-            'pr_number' => $prNumber,
-            'remarks' => $assetRequest->remarks ?? null,
+            'pr_number' => $prNumber ?? null,
+            'remarks' => $assetRequest->first()->remarks ?? null,
         ];
     }
 }
