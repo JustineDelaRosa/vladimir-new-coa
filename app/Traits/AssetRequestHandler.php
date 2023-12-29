@@ -156,6 +156,8 @@ trait AssetRequestHandler
             'remarks' => $assetRequest->remarks ?? '',
             'status' => $assetRequest->status == 'Approved' ? $this->getAfterApprovedStatus($assetRequest) : $assetRequest->status,
             'pr_number' => $assetRequest->pr_number ?? '-',
+            'po_number' => $assetRequest->po_number ?? '-',
+            'rr_number' => $assetRequest->rr_number ?? '-',
             'acquisition_details' => $assetRequest->acquisition_details ?? '-',
             'created_at' => $this->getDateRequested($assetRequest->transaction_number),
             'approver_count' => $assetRequest->assetApproval->count(),
