@@ -50,7 +50,7 @@ trait AssetRequestHandler
         //check if the status of the request is 'For Approval of Approver 1'
         //if it is, then dont update the resubmit flag if it was 'Returned' then update the resubmit flag
         if ($assetRequest->status == 'For Approval of Approver 1') {
-            $assetRequest->update([
+            return   $assetRequest->update([
                 'type_of_request_id' => $request->type_of_request_id,
                 'attachment_type' => $request->attachment_type,
                 'accountability' => $request->accountability,
@@ -62,7 +62,7 @@ trait AssetRequestHandler
                 'quantity' => $request->quantity,
             ]);
         } else {
-            $assetRequest->update([
+            return   $assetRequest->update([
                 'type_of_request_id' => $request->type_of_request_id,
                 'attachment_type' => $request->attachment_type,
                 'accountability' => $request->accountability,
@@ -118,6 +118,7 @@ trait AssetRequestHandler
                         $fileAdder->toMediaCollection($collection);
                     });
                 } else {
+
                     $assetRequest->clearMediaCollection($collection);
                 }
             }

@@ -99,9 +99,9 @@ class AddingPrController extends Controller
     public function removePR($transactionNumber): JsonResponse
     {
         $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
-            ->where('status', 'Approved')->get();
+            ->where('status', 'Approved')->where('po_number', null)->get();
         if ($assetRequests->isEmpty()) {
-            return $this->responseUnprocessable('Asset Request is not yet approved');
+            return $this->responseUnprocessable('You cannot remove PR No. already has PO No.');
         }
         $assetRequests->each(function ($assetRequest) {
             $assetRequest->update([
