@@ -137,11 +137,12 @@ trait ApiResponse
     ): JsonResponse {
         return new JsonResponse(
             [
-                'message' => 'Invalid Request',
                 'errors' => [
-//                    'status' => $code,
-                    'title' => $title ?? 'Oops . Something went wrong , try again or contact the support',
-                    'detail' => $details,
+                    [
+                        'status' => $code,
+                        'title' => $title ?? 'Oops . Something went wrong , try again or contact the support',
+                        'detail' => $details,
+                    ],
                 ],
             ],
             $code,
