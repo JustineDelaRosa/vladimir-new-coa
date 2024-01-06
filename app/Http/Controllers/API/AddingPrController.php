@@ -28,30 +28,25 @@ class AddingPrController extends Controller
 
         $assetRequest = AssetRequest::where('status', 'Approved')
             ->when($toPr !== null, function ($query) use ($toPr) {
-                return $toPr == 0 ? $query->whereNotNull('pr_number') : $query->whereNull('pr_number');
-            })->when($toPr === null, function ($query) use ($toPr) {
-                return $query->whereNull('pr_number');
-            })->useFilters();
-
-
-        $assetRequest = $assetRequest->get()->groupBy('transaction_number')->map(function ($assetRequestCollection) {
-            $assetRequest = $assetRequestCollection->first();
-            //sum all the quantity per group
-            $assetRequest->quantity = $assetRequestCollection->sum('quantity');
-            return $this->transformIndexAssetRequest($assetRequest);
-        })->values();
-
+                return $query->where($toPr == 0 ? 'pr_number' : 'pr_number', $toPr == 0 ? '!=' : '=', null);
+            })
+            ->useFilters()
+            ->get()
+            ->groupBy('transaction_number')
+            ->map(function ($assetRequestCollection) {
+                $assetRequest = $assetRequestCollection->first();
+                $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+                return $this->transformIndexAssetRequest($assetRequest);
+            })
+            ->values();
 
         if ($perPage !== null) {
             $page = $request->input('page', 1);
-            $offset = ($page * $perPage) - $perPage;
-            $assetRequest = new LengthAwarePaginator(
-                $assetRequest->slice($offset, $perPage)->values(),
-                $assetRequest->count(),
-                $perPage,
-                $page,
-                ['path' => $request->url(), 'query' => $request->query()]
-            );
+            $offset = $page * $perPage - $perPage;
+            $assetRequest = new LengthAwarePaginator($assetRequest->slice($offset, $perPage)->values(), $assetRequest->count(), $perPage, $page, [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]);
         }
 
         return $assetRequest;
@@ -74,7 +69,8 @@ class AddingPrController extends Controller
         $prNumber = $request->pr_number;
         $businessUnitId = $request->business_unit_id;
         $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
-            ->where('status', 'Approved')->get();
+            ->where('status', 'Approved')
+            ->get();
         if ($assetRequests->isEmpty()) {
             return $this->responseUnprocessable('Asset Request is not yet approved');
         }
@@ -99,7 +95,9 @@ class AddingPrController extends Controller
     public function removePR($transactionNumber): JsonResponse
     {
         $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
-            ->where('status', 'Approved')->where('po_number', null)->get();
+            ->where('status', 'Approved')
+            ->where('po_number', null)
+            ->get();
         if ($assetRequests->isEmpty()) {
             return $this->responseUnprocessable('You cannot remove PR No. already has PO No.');
         }

@@ -18,9 +18,10 @@ use Illuminate\Http\JsonResponse;
 use App\Traits\AssetRequestHandler;
 use App\Http\Controllers\Controller;
 use Essa\APIToolKit\Api\ApiResponse;
+use Illuminate\Support\Facades\Cache;
 use App\Models\DepartmentUnitApprovers;
-use Illuminate\Database\Eloquent\Model;
 
+use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\Models\Activity;
 use App\Repositories\ApprovedRequestRepository;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -45,12 +46,13 @@ class AssetRequestController extends Controller
             'filter' => ['nullable', 'string'],
         ]);
 
-
         $forMonitoring = $request->for_monitoring ?? false;
 
         $requesterId = auth('sanctum')->user()->id;
-        $role = User::find($requesterId)->roleManagement->role_name;
-        // $roleName = User::find($requesterId)->roleManagement->role_name;
+        $role = Cache::remember("user_role_$requesterId", 60, function () use ($requesterId) {
+            return User::find($requesterId)->roleManagement->role_name;
+        });
+        // $role = User::find($requesterId)->roleManagement->role_name;
         $adminRoles = ['Super Admin', 'Admin', 'ERP'];
 
         $perPage = $request->input('per_page', null);
@@ -66,24 +68,23 @@ class AssetRequestController extends Controller
             'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => null],
             'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => ['!=', null]],
             'Released' => ['status' => 'Released'],
-
         ];
 
         $assetRequest = AssetRequest::query();
 
+        if (!in_array($role, $adminRoles)) {
+            $forMonitoring = false;
+        }
+
+        if (!$forMonitoring) {
+            $assetRequest->where('requester_id', $requesterId);
+        }
+
         if (!empty($filter)) {
-            $assetRequest->where(function ($query) use ($filter, $conditions, $requesterId, $forMonitoring, $role, $adminRoles) {
+            $assetRequest->where(function ($query) use ($filter, $conditions) {
                 foreach ($filter as $key) {
                     if (isset($conditions[$key])) {
-                        $query->orWhere(function ($query) use ($conditions, $key, $requesterId, $forMonitoring, $role, $adminRoles) {
-                            if (!in_array($role, $adminRoles)) {
-                                $forMonitoring = false;
-                            }
-
-                            if (!$forMonitoring) {
-                                $query->where('requester_id', $requesterId);
-                            }
-
+                        $query->orWhere(function ($query) use ($conditions, $key) {
                             foreach ($conditions[$key] as $field => $value) {
                                 if (is_array($value)) {
                                     $query->where($field, $value[0], $value[1]);
@@ -95,63 +96,45 @@ class AssetRequestController extends Controller
                     }
                 }
             });
-        } else {
-            if (!in_array($role, $adminRoles)) {
-                $forMonitoring = false;
-            }
-
-            if (!$forMonitoring) {
-                $assetRequest->where('requester_id', $requesterId);
-            }
-
-            // $assetRequest = AssetRequest::query()->orderByDesc('created_at')->useFilters();
         }
 
-
-
-        // if (!in_array($role, $adminRoles)) {
-        //     $forMonitoring = false;
-        // }
-
-        // if (!$forMonitoring) {
-        //     $assetRequest->where('requester_id', $requesterId);
-        //     echo 'asdfasdf';
-        // }
-
         $assetRequest = $assetRequest->orderByDesc('created_at')->useFilters();
-        $assetRequest = $assetRequest->get()->groupBy('transaction_number')->map(function ($assetRequestCollection) {
-            $assetRequest = $assetRequestCollection->first();
-            $assetRequest->quantity = $assetRequestCollection->sum('quantity');
-            return $this->transformIndexAssetRequest($assetRequest);
-        })->values();
+        $assetRequest = $assetRequest
+            ->get()
+            ->groupBy('transaction_number')
+            ->map(function ($assetRequestCollection) {
+                $assetRequest = $assetRequestCollection->first();
+                $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+                return $this->transformIndexAssetRequest($assetRequest);
+            })
+            ->values();
 
         if ($perPage !== null) {
             $page = $request->input('page', 1);
-            $offset = ($page * $perPage) - $perPage;
-            $assetRequest = new LengthAwarePaginator(
-                $assetRequest->slice($offset, $perPage)->values(),
-                $assetRequest->count(),
-                $perPage,
-                $page,
-                ['path' => $request->url(), 'query' => $request->query()]
-            );
+            $offset = $page * $perPage - $perPage;
+            $assetRequest = new LengthAwarePaginator($assetRequest->slice($offset, $perPage)->values(), $assetRequest->count(), $perPage, $page, [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]);
         }
         return $assetRequest;
     }
 
     public function store(CreateAssetRequestRequest $request)
     {
-
         $userRequest = $request->userRequest;
         $requesterId = auth('sanctum')->user()->id;
         $transactionNumber = AssetRequest::generateTransactionNumber();
-        $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $userRequest[0]['subunit_id'])
+        $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')
+            ->where('subunit_id', $userRequest[0]['subunit_id'])
             ->orderBy('layer', 'asc')
             ->get();
 
-        $layerIds = $departmentUnitApprovers->map(function ($approverObject) {
-            return $approverObject->approver->approver_id;
-        })->toArray();
+        $layerIds = $departmentUnitApprovers
+            ->map(function ($approverObject) {
+                return $approverObject->approver->approver_id;
+            })
+            ->toArray();
 
         $isRequesterApprover = in_array($requesterId, $layerIds);
         $requesterLayer = array_search($requesterId, $layerIds) + 1;
@@ -160,14 +143,10 @@ class AssetRequestController extends Controller
 
         foreach ($userRequest as $request) {
             $assetRequest = AssetRequest::create([
-                'status' => $isLastApprover
-                    ? 'Approved'
-                    : ($isRequesterApprover
-                        ? 'For Approval of Approver ' . ($requesterLayer + 1)
-                        : 'For Approval'),
+                'status' => $isLastApprover ? 'Approved' : ($isRequesterApprover ? 'For Approval of Approver ' . ($requesterLayer + 1) : 'For Approval'),
                 'requester_id' => $requesterId,
                 'transaction_number' => $transactionNumber,
-                'reference_number' => (new AssetRequest)->generateReferenceNumber(),
+                'reference_number' => (new AssetRequest())->generateReferenceNumber(),
                 'type_of_request_id' => $request['type_of_request_id']['id'],
                 'additional_info' => $request['additional_info'] ?? null,
                 'acquisition_details' => $request['acquisition_details'],
@@ -233,12 +212,10 @@ class AssetRequestController extends Controller
 
     public function show($transactionNumber)
     {
-
         $requestorId = auth('sanctum')->user()->id;
         $approverCheck = Approvers::where('approver_id', $requestorId)->first();
         if ($approverCheck) {
-            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
-                ->get();
+            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->get();
         } else {
             $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
                 ->where('requester_id', $requestorId)
@@ -254,7 +231,6 @@ class AssetRequestController extends Controller
 
     public function update(UpdateAssetRequestRequest $request, $referenceNumber)
     {
-
         $assetRequest = $this->getAssetRequest('reference_number', $referenceNumber);
         if (!$assetRequest) {
             return $this->responseUnprocessable('Asset Request not found.');
@@ -305,13 +281,11 @@ class AssetRequestController extends Controller
 
     public function removeRequestItem($transactionNumber, $referenceNumber = null)
     {
-
         if ($transactionNumber && $referenceNumber) {
             //            return 'both';
             return $this->deleteRequestItem($referenceNumber, $transactionNumber);
         }
         if ($transactionNumber) {
-
             //            return 'single';
             return $this->deleteAssetRequest($transactionNumber);
         }
@@ -322,7 +296,6 @@ class AssetRequestController extends Controller
         // Get the requester id from the request
         $requesterId = auth('sanctum')->user()->id;
         $transactionNumber = AssetRequest::generateTransactionNumber();
-
 
         // Get the items from Request-container
         $items = RequestContainer::where('requester_id', $requesterId)->get();
@@ -335,8 +308,7 @@ class AssetRequestController extends Controller
         }
 
         foreach ($items as $item) {
-
-            $assetRequest = new AssetRequest;
+            $assetRequest = new AssetRequest();
 
             $assetRequest->status = $item->status;
             $assetRequest->requester_id = $item->requester_id;
@@ -395,13 +367,18 @@ class AssetRequestController extends Controller
 
     public function getPerRequest($transactionNumber)
     {
-        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->orderByDesc('created_at')
-            ->useFilters()->get()->groupBy('transaction_number')->map(function ($assetRequestCollection) {
+        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
+            ->orderByDesc('created_at')
+            ->useFilters()
+            ->get()
+            ->groupBy('transaction_number')
+            ->map(function ($assetRequestCollection) {
                 $assetRequest = $assetRequestCollection->first();
                 //sum all the quantity per group
                 $assetRequest->quantity = $assetRequestCollection->sum('quantity');
                 return $this->transformIndexAssetRequest($assetRequest);
-            })->values();
+            })
+            ->values();
 
         return $assetRequest;
     }
