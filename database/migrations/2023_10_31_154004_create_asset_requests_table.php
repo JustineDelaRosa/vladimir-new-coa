@@ -18,7 +18,10 @@ class CreateAssetRequestsTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('requester_id');
             $table->string('status')->default('For Approval of Approver 1');
-            $table->string('transaction_number')->index()->nullable();
+            $table
+                ->string('transaction_number')
+                ->index()
+                ->nullable();
             $table->string('reference_number');
             $table->string('pr_number')->nullable();
             $table->string('po_number')->nullable();
@@ -28,6 +31,9 @@ class CreateAssetRequestsTable extends Migration
             $table->string('additional_info')->nullable();
             $table->string('acquisition_details');
             $table->boolean('is_resubmit')->default(0);
+            $table->date('delivery_date')->nullable();
+            $table->double('unit_price')->nullable();
+            $table->unsignedInteger('supplier_id')->nullable();
 
             //TO BE FILL UP BY THE REQUESTER
             $table->string('remarks')->nullable();
@@ -41,6 +47,7 @@ class CreateAssetRequestsTable extends Migration
             $table->string('cellphone_number')->nullable();
             $table->string('brand');
             $table->string('quantity')->nullable();
+            $table->integer('quantity_delivered')->nullable;
 
             //ATTACHMENT TYPE
             $table->enum('attachment_type', ['Budgeted', 'Unbudgeted']);
@@ -88,25 +95,74 @@ class CreateAssetRequestsTable extends Migration
             $table->softDeletes();
             $table->timestamp('last_printed')->nullable();
 
-            $table->foreign('requester_id')->references('id')->on('users');
-            $table->foreign('type_of_request_id')->references('id')->on('type_of_requests');
+            $table
+                ->foreign('requester_id')
+                ->references('id')
+                ->on('users');
+            $table
+                ->foreign('type_of_request_id')
+                ->references('id')
+                ->on('type_of_requests');
             //            $table->foreign('charged_department_id')->references('id')->on('departments');
-            $table->foreign('subunit_id')->references('id')->on('sub_units');
-            $table->foreign('company_id')->references('id')->on('companies');
-            $table->foreign('department_id')->references('id')->on('departments');
-            $table->foreign('location_id')->references('id')->on('locations');
-            $table->foreign('account_title_id')->references('id')->on('account_titles');
+            $table
+                ->foreign('subunit_id')
+                ->references('id')
+                ->on('sub_units');
+            $table
+                ->foreign('company_id')
+                ->references('id')
+                ->on('companies');
+            $table
+                ->foreign('department_id')
+                ->references('id')
+                ->on('departments');
+            $table
+                ->foreign('location_id')
+                ->references('id')
+                ->on('locations');
+            $table
+                ->foreign('account_title_id')
+                ->references('id')
+                ->on('account_titles');
 
             //            $table->foreign('sub_capex_id')->references('id')->on('sub_capexes');
             //            $table->foreign('capex_id')->references('id')->on('capexes');
-            $table->foreign('division_id')->references('id')->on('divisions');
-            $table->foreign('major_category_id')->references('id')->on('major_categories');
-            $table->foreign('minor_category_id')->references('id')->on('minor_categories');
-            $table->foreign('asset_status_id')->references('id')->on('asset_statuses');
-            $table->foreign('cycle_count_status_id')->references('id')->on('cycle_count_statuses');
-            $table->foreign('depreciation_status_id')->references('id')->on('depreciation_statuses');
-            $table->foreign('movement_status_id')->references('id')->on('movement_statuses');
-            $table->foreign('business_unit_id')->references('id')->on('companies');
+            $table
+                ->foreign('division_id')
+                ->references('id')
+                ->on('divisions');
+            $table
+                ->foreign('major_category_id')
+                ->references('id')
+                ->on('major_categories');
+            $table
+                ->foreign('minor_category_id')
+                ->references('id')
+                ->on('minor_categories');
+            $table
+                ->foreign('asset_status_id')
+                ->references('id')
+                ->on('asset_statuses');
+            $table
+                ->foreign('cycle_count_status_id')
+                ->references('id')
+                ->on('cycle_count_statuses');
+            $table
+                ->foreign('depreciation_status_id')
+                ->references('id')
+                ->on('depreciation_statuses');
+            $table
+                ->foreign('movement_status_id')
+                ->references('id')
+                ->on('movement_statuses');
+            $table
+                ->foreign('business_unit_id')
+                ->references('id')
+                ->on('companies');
+            $table
+                ->foreign('supplier_id')
+                ->references('id')
+                ->on('suppliers');
 
             $table->timestamps();
         });
