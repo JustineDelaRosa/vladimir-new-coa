@@ -90,24 +90,17 @@ class AddingPoController extends Controller
     public function destroy($id)
     {
         $assetRequest = AssetRequest::where('id', $id)->first();
-
-        // Check if the asset request exists
         if (!$assetRequest) {
             return $this->responseNotFound('Asset Request not found!');
         }
 
-        $totalDelivered = $assetRequest->quantity - $assetRequest->quantity_delivered;
-
-        // If no quantity has been delivered, delete the asset request
-        if ($assetRequest->quantity_delivered <= 0) {
-            $assetRequest->delete();
-            return $this->responseSuccess('Successfully deleted!');
+        if ($assetRequest->quantity !== $assetRequest->quantity_delivered) {
+            $assetRequest->quantity = $assetRequest->quantity_delivered;
+            $assetRequest->save();
+            return $this->responseSuccess('Successfully removed!');
         }
 
-        // If some quantity has been delivered, update the quantity and save
-        $assetRequest->quantity = $totalDelivered;
-        $assetRequest->save();
-
-        return $this->responseSuccess('Successfully updated!');
+        $assetRequest->delete();
+        return $this->responseSuccess('Successfully removed!');
     }
 }

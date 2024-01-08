@@ -31,7 +31,7 @@ class UpdateAddingPoRequest extends FormRequest
             "rr_number" => "required|string|unique:asset_requests,rr_number",
             "supplier_id" => "required|integer|exists:suppliers,id",
             "delivery_date" => "required|date",
-            "quatity_delivered" => [
+            "quantity_delivered" => [
                 "required", "integer",
                 function ($attribute, $value, $fail) use ($id) {
                     $assetRequest = AssetRequest::where('id', $id)->first();
