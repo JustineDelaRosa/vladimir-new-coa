@@ -30,47 +30,47 @@ class CreateAssetRequestRequest extends FormRequest
     public function rules(): array
     {
         if ($this->isMethod('POST')) {
-//            $typeOfRequestIdForCapex = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
-//            return [
-//                'requester_id' => [request()->merge(['requester_id' => $requesterId])],
-//                'type_of_request_id' => [
-//                    'required',
-//                    Rule::exists('type_of_requests', 'id')
-//                ],
-//                'sub_capex_id' => ['required_if:type_of_request_id,' . $typeOfRequestIdForCapex, Rule::exists('sub_capexes', 'id')],
-//                'asset_description' => 'required',
-//                'asset_specification' => 'nullable',
-//                'accountability' => 'required|in:Personal Issued,Common',
-//                'accountable' => ['required_if:accountability,Personal Issued', 'exists:users,id',
-//                    function ($attribute, $value, $fail) {
-//                        $accountable = request()->input('accountable');
-//                        //if the accountability is not Personal Issued, nullify the accountable field and return
-//                        if (request()->accountability != 'Personal Issued') {
-//                            request()->merge(['accountable' => null]);
-//                            return;
-//                        }
-//
-//                        // Get full ID number if it exists or fail validation
-//                        if (!empty($accountable['general_info']['full_id_number'])) {
-//                            $full_id_number = trim($accountable['general_info']['full_id_number']);
-//                            request()->merge(['accountable' => $full_id_number]);
-//                        } else {
-//                            $fail('The accountable person is required.');
-//                            return;
-//                        }
-//
-//                        // Validate full ID number
-//                        if (empty($full_id_number)) {
-//                            $fail('The accountable person cannot be empty.');
-//                        }
-//                    },
-//                ],
-//                'cellphone_number' => 'nullable|numeric',
-//                'brand' => 'nullable',
-//                'quantity' => 'required|numeric|min:1',
-//            ];
+            //            $typeOfRequestIdForCapex = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
+            //            return [
+            //                'requester_id' => [request()->merge(['requester_id' => $requesterId])],
+            //                'type_of_request_id' => [
+            //                    'required',
+            //                    Rule::exists('type_of_requests', 'id')
+            //                ],
+            //                'sub_capex_id' => ['required_if:type_of_request_id,' . $typeOfRequestIdForCapex, Rule::exists('sub_capexes', 'id')],
+            //                'asset_description' => 'required',
+            //                'asset_specification' => 'nullable',
+            //                'accountability' => 'required|in:Personal Issued,Common',
+            //                'accountable' => ['required_if:accountability,Personal Issued', 'exists:users,id',
+            //                    function ($attribute, $value, $fail) {
+            //                        $accountable = request()->input('accountable');
+            //                        //if the accountability is not Personal Issued, nullify the accountable field and return
+            //                        if (request()->accountability != 'Personal Issued') {
+            //                            request()->merge(['accountable' => null]);
+            //                            return;
+            //                        }
+            //
+            //                        // Get full ID number if it exists or fail validation
+            //                        if (!empty($accountable['general_info']['full_id_number'])) {
+            //                            $full_id_number = trim($accountable['general_info']['full_id_number']);
+            //                            request()->merge(['accountable' => $full_id_number]);
+            //                        } else {
+            //                            $fail('The accountable person is required.');
+            //                            return;
+            //                        }
+            //
+            //                        // Validate full ID number
+            //                        if (empty($full_id_number)) {
+            //                            $fail('The accountable person cannot be empty.');
+            //                        }
+            //                    },
+            //                ],
+            //                'cellphone_number' => 'nullable|numeric',
+            //                'brand' => 'nullable',
+            //                'quantity' => 'required|numeric|min:1',
+            //            ];
             return [
-//                'userRequest' => ['required','array'],
+                //                'userRequest' => ['required','array'],
 
 
                 'userRequest.*.type_of_request_id.id' => [
@@ -87,7 +87,8 @@ class CreateAssetRequestRequest extends FormRequest
                 'userRequest.*.location_id.id' => ['required', Rule::exists('locations', 'id')],
                 'userRequest.*.account_title_id.id' => ['required', Rule::exists('account_titles', 'id')],
                 'userRequest.*.accountability' => 'required|in:Personal Issued,Common',
-                'userRequest.*.accountable' => ['required_if:accountability,Personal Issued',
+                'userRequest.*.accountable' => [
+                    'required_if:accountability,Personal Issued',
                     function ($attribute, $value, $fail) {
                         $accountable = request()->input('accountable');
                         //if the accountability is not Personal Issued, nullify the accountable field and return
@@ -116,11 +117,11 @@ class CreateAssetRequestRequest extends FormRequest
                 'userRequest.*.cellphone_number' => 'nullable',
                 'userRequest.*.brand' => 'nullable',
                 'userRequest.*.quantity' => 'required|numeric|min:1',
-//                'userRequest.*.letter_of_request' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
-//                'userRequest.*.quotation' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
-//                'userRequest.*.specification_form' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
-//                'userRequest.*.tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
-//                'userRequest.*.other_attachments' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+                'userRequest.*.letter_of_request' => 'nullable|file|mimes:pdf,doc,docx|max:10000',
+                'userRequest.*.quotation' => 'nullable|file|mimes:pdf,doc,docx|max:10000',
+                'userRequest.*.specification_form' => 'nullable|file|mimes:pdf,doc,docx|max:10000',
+                'userRequest.*.tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx|max:10000',
+                'userRequest.*.other_attachments' => 'nullable|file|mimes:pdf,doc,docx|max:10000',
             ];
         }
 
@@ -152,7 +153,7 @@ class CreateAssetRequestRequest extends FormRequest
             'userRequest.*.department.company.company_id.exists' => 'The company is invalid.',
             'userRequest.*.accountability.in' => 'The accountability is invalid.',
             'userRequest.*.accountable.required_if' => 'The accountable is required.',
-//            'userRequest.*.accountable.exists' => 'The accountable is invalid.',
+            //            'userRequest.*.accountable.exists' => 'The accountable is invalid.',
             'userRequest.*.asset_description.required' => 'The asset description is required.',
             'userRequest.*.asset_specification.required' => 'The asset specification is required.',
             'userRequest.*.cellphone_number.numeric' => 'The cellphone number must be a number.',

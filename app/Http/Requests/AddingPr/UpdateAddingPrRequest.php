@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\AddingPr;
 
+use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateAddingPrRequest extends FormRequest
@@ -25,8 +26,14 @@ class UpdateAddingPrRequest extends FormRequest
     {
         // . $this->transactionNumber . ',transaction_number'
         return [
-            'pr_number' => 'required|string|unique:asset_requests,pr_number,',
             'business_unit_id' => 'required|exists:companies,id',
+            'pr_number' => [
+                'required',
+                'string',
+                Rule::unique('asset_requests')->where(function ($query) {
+                    return $query->where('business_unit_id', $this->business_unit_id);
+                })->ignore($this->transactionNumber, 'transaction_number'),
+            ],
         ];
     }
 

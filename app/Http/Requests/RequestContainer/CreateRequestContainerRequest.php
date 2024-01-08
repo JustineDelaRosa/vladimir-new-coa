@@ -111,6 +111,11 @@ class CreateRequestContainerRequest extends BaseRequest
             'cellphone_number' => 'nullable|numeric',
             'brand' => 'nullable',
             'quantity' => 'required|numeric|min:1',
+            'letter_of_request' => 'nullable|file|mimes:pdf,doc,docx|max:10000',
+            'quotation' => 'nullable|file|max:10000',
+            'specification_form' => 'nullable|file|mimes:pdf,doc,docx|max:10000',
+            'tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx|max:10000',
+            'other_attachments' => 'nullable|file|mimes:pdf,doc,docx|max:10000',
         ];
     }
 
@@ -144,21 +149,23 @@ class CreateRequestContainerRequest extends BaseRequest
             'quantity.min' => 'The quantity must be at least 1.',
             'additional_info.required' => 'The additional info is required.',
             'acquisition_details.required' => 'The acquisition details is required.',
-            /*'userRequest.*.letter_of_request.file' => 'The letter of request must be a file.',
-            'userRequest.*.letter_of_request.mimes' => 'The letter of request must be a file of type: pdf, doc, docx, xls, xlsx.',
-            'userRequest.*.letter_of_request.max' => 'The letter of request may not be greater than 10000 kilobytes.',
-            'userRequest.*.quotation.file' => 'The quotation must be a file.',
-            'userRequest.*.quotation.mimes' => 'The quotation must be a file of type: pdf, doc, docx, xls, xlsx.',
-            'userRequest.*.quotation.max' => 'The quotation may not be greater than 10000 kilobytes.',
-            'userRequest.*.specification_form.file' => 'The specification form must be a file.',
-            'userRequest.*.specification_form.mimes' => 'The specification form must be a file of type: pdf, doc, docx, xls, xlsx.',
-            'userRequest.*.specification_form.max' => 'The specification form may not be greater than 10000 kilobytes.',
-            'userRequest.*.tool_of_trade.file' => 'The tool of trade must be a file.',
-            'userRequest.*.tool_of_trade.mimes' => 'The tool of trade must be a file of type: pdf, doc, docx, xls, xlsx.',
-            'userRequest.*.tool_of_trade.max' => 'The tool of trade may not be greater than 10000 kilobytes.',
-            'userRequest.*.other_attachments.file' => 'The other attachments must be a file.',
-            'userRequest.*.other_attachments.mimes' => 'The other attachments must be a file of type: pdf, doc, docx, xls, xlsx.',
-            'userRequest.*.other_attachments.max' => 'The other attachments may not be greater than 10000 kilobytes.',*/
+            'letter_of_request.file' => 'The letter of request must be a file.',
+            'letter_of_request.mimes' => 'The letter of request must be a file of type: pdf, doc, docx.',
+            'letter_of_request.max' => 'The letter of request may not be greater than 10 megabytes.',
+            'quotation.file' => 'The quotation must be a file.',
+            'quotation.mimes' => 'The quotation must be a file of type: pdf, doc, docx.',
+            'quotation.max' => 'The quotation may not be greater than 10 megabytes.',
+            'specification_form.file' => 'The specification form must be a file.',
+            'specification_form.mimes' => 'The specification form must be a file of type: pdf, doc, docx.',
+            'specification_form.max' => 'The specification form may not be greater than 10 megabytes.',
+            'tool_of_trade.file' => 'The tool of trade must be a file.',
+            'tool_of_trade.mimes' => 'The tool of trade must be a file of type: pdf, doc, docx.',
+            'tool_of_trade.max' => 'The tool of trade may not be greater than 10 megabytes.',
+            'other_attachments.file' => 'The other attachments must be a file.',
+            'other_attachments.mimes' => 'The other attachments must be a file of type: pdf, doc, docx.',
+            'other_attachments.max' => 'The other attachments may not be greater than 10 megabytes.',
+
+
         ];
     }
 
