@@ -343,6 +343,9 @@ trait AssetRequestHandler
                 'cellphone_number' => $ar->cellphone_number ?? '-',
                 'brand' => $ar->brand ?? '-',
                 'quantity' => $ar->quantity,
+                'ordered' => $ar->quantity,
+                'delivered' => $ar->quantity_delivered ?? '-',
+                'remaining' => $ar->quantity - $ar->quantity_delivered ?? '-',
                 'requestor' => [
                     'id' => $ar->requestor->id,
                     'username' => $ar->requestor->username,
