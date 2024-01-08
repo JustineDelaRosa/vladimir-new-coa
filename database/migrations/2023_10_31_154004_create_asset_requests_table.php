@@ -23,7 +23,7 @@ class CreateAssetRequestsTable extends Migration
             $table->string('pr_number')->nullable();
             $table->string('po_number')->nullable();
             $table->string('rr_number')->nullable();
-            $table->boolean('is_add_cost')->default(0);
+            $table->boolean('is_addcost')->default(0);
             $table->unsignedInteger('fixed_asset_id')->nullable();
             $table->string('additional_info')->nullable();
             $table->string('acquisition_details');
