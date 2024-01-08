@@ -80,7 +80,7 @@ class CreateAssetRequestsTable extends Migration
             $table->unsignedInteger('department_id')->nullable();
             $table->unsignedInteger('location_id')->nullable();
             $table->unsignedInteger('account_title_id')->nullable();
-            $table->unsignedInteger('business_unit_id')->nullable(); //TODO: For the meantime
+            $table->unsignedInteger('business_unit_id')->nullable();
             $table->integer('print_count')->default(0);
             $table->softDeletes();
             $table->timestamp('last_printed')->nullable();
