@@ -27,7 +27,6 @@ class CreateAssetRequestsTable extends Migration
             $table->unsignedInteger('fixed_asset_id')->nullable();
             $table->string('additional_info')->nullable();
             $table->string('acquisition_details');
-            $table->boolean('is_resubmit')->default(0);
             $table->date('delivery_date')->nullable();
             $table->double('unit_price')->nullable();
             $table->unsignedInteger('supplier_id')->nullable();
