@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Setup\SetupController;
 use App\Http\Controllers\API\AddingPoController;
@@ -17,6 +16,7 @@ use App\Http\Controllers\API\AssignApproverController;
 use App\Http\Controllers\API\ApproverSettingController;
 use App\Http\Controllers\Masterlist\DivisionController;
 use App\Http\Controllers\Masterlist\SubCapexController;
+use App\Http\Controllers\Masterlist\SupplierController;
 use App\Http\Controllers\API\RequestContainerController;
 use App\Http\Controllers\Setup\RoleManagementController;
 use App\Http\Controllers\Masterlist\FixedAssetController;
@@ -105,6 +105,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('account-title', AccountTitleController::class);
     Route::get('account-titles/search', [AccountTitleController::class, 'search']);
     Route::patch('account-title/archived-account-title/{id}', [AccountTitleController::class, 'archived']);
+
+    //SUPPLIER//
+    Route::resource('supplier', SupplierController::class);
 
 
     ///AUTH//

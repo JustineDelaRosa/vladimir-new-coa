@@ -15,13 +15,13 @@ class CreateSuppliersTable extends Migration
     {
         Schema::create('suppliers', function (Blueprint $table) {
             $table->increments('id');
+            $table->unsignedInteger('sync_id')->unique();
+            $table->string('supplier_code');
             $table->string('supplier_name');
-            $table->string('address');
-            $table->string('contact_no');
             $table->boolean('is_active');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
-            $table->softDeletes($column='deleted_at',$precision=0);
+            $table->softDeletes($column = 'deleted_at', $precision = 0);
         });
     }
 

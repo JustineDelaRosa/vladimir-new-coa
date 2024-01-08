@@ -18,10 +18,7 @@ class CreateAssetRequestsTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('requester_id');
             $table->string('status')->default('For Approval of Approver 1');
-            $table
-                ->string('transaction_number')
-                ->index()
-                ->nullable();
+            $table->string('transaction_number')->index()->nullable();
             $table->string('reference_number');
             $table->string('pr_number')->nullable();
             $table->string('po_number')->nullable();
@@ -46,17 +43,11 @@ class CreateAssetRequestsTable extends Migration
             $table->string('asset_specification')->nullable();
             $table->string('cellphone_number')->nullable();
             $table->string('brand');
-            $table->string('quantity')->nullable();
-            $table->integer('quantity_delivered')->nullable;
+            $table->integer('quantity')->nullable();
+            $table->integer('quantity_delivered')->nullable();
 
             //ATTACHMENT TYPE
             $table->enum('attachment_type', ['Budgeted', 'Unbudgeted']);
-            //ATTACHMENTS
-            //            $table->text('letter_of_request')->nullable();
-            //            $table->text('quotation')->nullable();
-            //            $table->text('specification_form')->nullable();
-            //            $table->text('tool_of_trade')->nullable();
-            //            $table->json('other_attachments')->nullable();
 
             //ADDITIONAL FIELDS TO BE ADDED
             //            $table->unsignedInteger('capex_id')->nullable();

@@ -151,7 +151,6 @@ class AssetRequestController extends Controller
                 'additional_info' => $request['additional_info'] ?? null,
                 'acquisition_details' => $request['acquisition_details'],
                 'attachment_type' => $request['attachment_type'],
-                //                'charged_department_id' => $request['charged_department_id'],
                 'subunit_id' => $request['subunit_id']['id'],
                 'location_id' => $request['location_id']['id'],
                 'account_title_id' => $request['account_title_id']['id'],
@@ -179,33 +178,6 @@ class AssetRequestController extends Controller
         }
 
         $this->createAssetApprovals($departmentUnitApprovers, $isRequesterApprover, $requesterLayer, $assetRequest, $requesterId);
-
-        // foreach ($departmentUnitApprovers as $departmentUnitApprover) {
-        //     $approver_id = $departmentUnitApprover->approver_id;
-        //     $layer = $departmentUnitApprover->layer;
-
-        //     // initial status
-        //     $status = null;
-
-        //     // if the requester is the approver, decide on status
-        //     if ($isRequesterApprover) {
-        //         if ($layer == $requesterLayer || $layer < $requesterLayer) {
-        //             $status = "Approved";
-        //         } elseif ($layer == $requesterLayer + 1) {
-        //             $status = "For Approval";
-        //         }
-        //     } elseif ($layer == 1) { // if the requester is not an approver, only the first layer should be "For Approval"
-        //         $status = "For Approval";
-        //     }
-
-        //     AssetApproval::create([
-        //         'transaction_number' => $assetRequest->transaction_number,
-        //         'approver_id' => $approver_id,
-        //         'requester_id' => $requesterId,
-        //         'layer' => $layer,
-        //         'status' => $status,
-        //     ]);
-        // }
 
         return $this->responseCreated('AssetRequest created successfully');
     }
