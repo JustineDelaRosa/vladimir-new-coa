@@ -201,4 +201,9 @@ class AssetRequest extends Model implements HasMedia
     {
         return $this->belongsTo(Company::class, 'business_unit-id', 'id');
     }
+
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
+    }
 }
