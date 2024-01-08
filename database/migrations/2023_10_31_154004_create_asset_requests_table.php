@@ -114,9 +114,6 @@ class CreateAssetRequestsTable extends Migration
                 ->foreign('account_title_id')
                 ->references('id')
                 ->on('account_titles');
-
-            //            $table->foreign('sub_capex_id')->references('id')->on('sub_capexes');
-            //            $table->foreign('capex_id')->references('id')->on('capexes');
             $table
                 ->foreign('division_id')
                 ->references('id')
