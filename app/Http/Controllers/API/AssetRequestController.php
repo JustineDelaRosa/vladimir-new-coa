@@ -234,7 +234,7 @@ class AssetRequestController extends Controller
         return $this->approveRequestRepository->resubmitRequest($transactionNumber);
     }
 
-    public function updateRequest(Request $request, $referenceNumber): JsonResponse
+    public function updateRequest(UpdateAssetRequestRequest $request, $referenceNumber): JsonResponse
     {
         //        return $request->all();
 
