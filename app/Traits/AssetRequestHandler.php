@@ -383,8 +383,9 @@ trait AssetRequestHandler
                     'account_title_name' => $ar->accountTitle->account_title_name,
                 ],
                 'attachments' => [
+                    //TODO: This is the viewing if the attachments are multiple
                     /*
-                     * TODO: This is the viewing if the attachments are multiple
+                     *
                       $letterOfRequestMedia ? collect($letterOfRequestMedia)->map(function ($media) {
                           return [
                               'id' => $media->id,
