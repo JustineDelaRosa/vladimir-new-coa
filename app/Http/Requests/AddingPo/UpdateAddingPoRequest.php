@@ -27,8 +27,8 @@ class UpdateAddingPoRequest extends FormRequest
         //get the id
         $id = $this->route('adding_po');
         return [
-            "po_number" => "required|string|unique:asset_requests,po_number",
-            "rr_number" => "required|string|unique:asset_requests,rr_number",
+            "po_number" => "required|string|unique:asset_requests,po_number,{$id}",
+            "rr_number" => "required|string|unique:asset_requests,rr_number,{$id}",
             "supplier_id" => "required|integer|exists:suppliers,id",
             "delivery_date" => "required|date",
             "quantity_delivered" => [

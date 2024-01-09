@@ -4,53 +4,44 @@ namespace App\Http\Controllers\API;
 
 use App\Models\AssetRequest;
 use Illuminate\Http\Request;
+use App\Traits\AssetRequestHandler;
 use App\Http\Controllers\Controller;
 use Essa\APIToolKit\Api\ApiResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Http\Requests\AddingPO\UpdateAddingPoRequest;
+use App\Traits\AddingPoHandler;
 
 class AddingPoController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, AssetRequestHandler, AddingPoHandler;
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index(Request $request)
     {
         $toPo = $request->get('toPo', null);
-        return 'asfasfsafd';
+        $perPage = $request->input('per_page', null);
+
+        $assetRequest = $this->createAssetRequestQuery($toPo)->get()
+            ->groupBy('transaction_number')->map(function ($assetRequestCollection) {
+                $assetRequest = $assetRequestCollection->first();
+                $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+                return $this->transformIndexAssetRequest($assetRequest);
+            })->values();
+
+        if ($perPage !== null) {
+            $assetRequest = $this->paginate($request, $assetRequest, $perPage);
+        }
+
+        return $assetRequest;
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function show($id)
     {
-        //
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function update(UpdateAddingPoRequest $request, $id)
     {
         $poNumber = $request->po_number;
@@ -70,10 +61,22 @@ class AddingPoController extends Controller
             'rr_number' => $rrNumber,
             'supplier_id' => $supplierId,
             'delivery_date' => $deliveryDate,
-            'quantity' => $quantityDelivered,
-            'quantity_delivered' => $quantityDelivered,
+            'quantity_delivered' => $assetRequest->quantity_delivered + $quantityDelivered,
             'unit_price' => $unitPrice,
         ]);
+        //check if the quantity and quantity delivered is equal after updating
+        if ($assetRequest->quantity === $assetRequest->quantity_delivered) {
+            foreach (range(1, $assetRequest->quantity) as $index) {
+                $newAssetRequest = $assetRequest->replicate();
+                $newAssetRequest->quantity = 1;
+                $newAssetRequest->quantity_delivered = 1;
+                $newAssetRequest->save();
+            }
+            $assetRequest->update([
+                'quantity' => 1,
+                'quantity_delivered' => 1,
+            ]);
+        }
 
         return $this->responseSuccess(
             'PO number and RR number added successfully!',
@@ -81,12 +84,6 @@ class AddingPoController extends Controller
         );
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy($id)
     {
         $assetRequest = AssetRequest::where('id', $id)->first();

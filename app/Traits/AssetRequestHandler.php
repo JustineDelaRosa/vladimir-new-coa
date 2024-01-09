@@ -346,6 +346,8 @@ trait AssetRequestHandler
                 'ordered' => $ar->quantity,
                 'delivered' => $ar->quantity_delivered ?? '-',
                 'remaining' => $ar->quantity - $ar->quantity_delivered ?? '-',
+                'unit_price' => $ar->unit_price ?? '-',
+                'delivery_date' => $ar->delivery_date ?? '-',
                 'requestor' => [
                     'id' => $ar->requestor->id,
                     'username' => $ar->requestor->username,
@@ -381,6 +383,11 @@ trait AssetRequestHandler
                     'id' => $ar->accountTitle->id,
                     'account_title_code' => $ar->accountTitle->account_title_code,
                     'account_title_name' => $ar->accountTitle->account_title_name,
+                ],
+                'supplier' => [
+                    'id' => $ar->supplier->id ?? '-',
+                    'supplier_code' => $ar->supplier->supplier_code ?? '-',
+                    'supplier_name' => $ar->supplier->supplier_name ?? '-',
                 ],
                 'attachments' => [
                     //TODO: This is the viewing if the attachments are multiple
