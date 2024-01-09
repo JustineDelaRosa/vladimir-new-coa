@@ -29,7 +29,7 @@ class UpdateAddingPoRequest extends FormRequest
         return [
             "po_number" => "required|string|unique:asset_requests,po_number,{$id}",
             "rr_number" => "required|string|unique:asset_requests,rr_number,{$id}",
-            "supplier_id" => "required|integer|exists:suppliers,id",
+            "supplier_id" => "required|integer|exists:suppliers,id,is_active,1",
             "delivery_date" => "required|date",
             "quantity_delivered" => [
                 "required", "integer",
@@ -55,9 +55,9 @@ class UpdateAddingPoRequest extends FormRequest
             "po_number.string" => "PO Number must be a string",
             "rr_number.required" => "RR Number is required",
             "rr_number.string" => "RR Number must be a string",
-            "supplier_id.required" => "Supplier ID is required",
-            "supplier_id.integer" => "Supplier ID must be an integer",
-            "supplier_id.exists" => "Supplier ID must be an existing supplier",
+            "supplier_id.required" => "Supplier is required",
+            "supplier_id.integer" => "Supplier must be an integer",
+            "supplier_id.exists" => "Supplier must be an existing supplier",
             "delivery_date.required" => "Delivery Date is required",
             "delivery_date.date" => "Delivery Date must be a date",
             "quatity_delivered.required" => "Quantity Delivered is required",
