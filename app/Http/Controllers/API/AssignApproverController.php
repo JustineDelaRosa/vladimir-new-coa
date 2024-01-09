@@ -13,7 +13,6 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class AssignApproverController extends Controller
 {
-
     use ApiResponse;
 
     /**
@@ -33,21 +32,20 @@ class AssignApproverController extends Controller
                     ->orWhere('employee_id', 'like', "%$search%")
                     ->orWhere('firstname', 'like', "%$search%")
                     ->orWhere('lastname', 'like', "%$search%");
-
             });
-//                ->orWhereHas('approver.user', function ($query) use ($search) {
-//                $query->where('username', 'like', "%$search%")
-//                    ->orWhere('employee_id', 'like', "%$search%")
-//                    ->orWhere('firstname', 'like', "%$search%")
-//                    ->orWhere('lastname', 'like', "%$search%");
-//            })->orderBy('created_at', 'desc');
+            //                ->orWhereHas('approver.user', function ($query) use ($search) {
+            //                $query->where('username', 'like', "%$search%")
+            //                    ->orWhere('employee_id', 'like', "%$search%")
+            //                    ->orWhere('firstname', 'like', "%$search%")
+            //                    ->orWhere('lastname', 'like', "%$search%");
+            //            })->orderBy('created_at', 'desc');
         });
 
-//        if ($status === "deactivated") {
-//            $userApproverQuery->onlyTrashed();
-//        } elseif ($status === 'active') {
-//            $userApproverQuery->whereNull('deleted_at');
-//        }
+        //        if ($status === "deactivated") {
+        //            $userApproverQuery->onlyTrashed();
+        //        } elseif ($status === 'active') {
+        //            $userApproverQuery->whereNull('deleted_at');
+        //        }
 
         $transformedResults = $userApproverQuery->orderByDesc('created_at')->get()->groupBy('requester_id')->map(function ($item) {
             return [
@@ -94,24 +92,24 @@ class AssignApproverController extends Controller
         $requester_id = $request->requester_id;
         $approver_id = $request->approver_id;
 
-//        //Check Missing layer number in the approver layer
-//        $approver = ApproverLayer::where('requester_id', $requester_id)->exists();
-//        if ($approver) {
-//            //get the count of the approver
-//            $approverCount = ApproverLayer::where('requester_id', $requester_id)->count();
-//            //check what numbers is missing in the approver layer
-//            $missingLayers = [];
-//            for ($i = 1; $i <= $approverCount; $i++) {
-//                $layer = ApproverLayer::where('requester_id', $requester_id)->where('layer', $i)->exists();
-//                if (!$layer) {
-//                    array_push($missingLayers, $i);
-//                }
-//            }
-//            return response()->json([
-//                'message' => 'Approver Created Successfully',
-//                'data' => $missingLayers
-//            ], 201);
-//        }
+        //        //Check Missing layer number in the approver layer
+        //        $approver = ApproverLayer::where('requester_id', $requester_id)->exists();
+        //        if ($approver) {
+        //            //get the count of the approver
+        //            $approverCount = ApproverLayer::where('requester_id', $requester_id)->count();
+        //            //check what numbers is missing in the approver layer
+        //            $missingLayers = [];
+        //            for ($i = 1; $i <= $approverCount; $i++) {
+        //                $layer = ApproverLayer::where('requester_id', $requester_id)->where('layer', $i)->exists();
+        //                if (!$layer) {
+        //                    array_push($missingLayers, $i);
+        //                }
+        //            }
+        //            return response()->json([
+        //                'message' => 'Approver Created Successfully',
+        //                'data' => $missingLayers
+        //            ], 201);
+        //        }
 
         ////This is to re align the layer of the approver if the approver is deleted
         //approver_id is arrayed
@@ -206,27 +204,27 @@ class AssignApproverController extends Controller
         return $this->responseSuccess('Successfully Deleted!', null, 200);
 
 
-//        $userApprover = ApproverLayer::find($id);
-//
-//        if (!$userApprover) {
-//            return response()->json(['error' => 'Approver Layer Route Not Found'], 404);
-//        }
-//
-//        $requester_id = $userApprover->requester_id;
-//        $deletedLayer = $userApprover->layer;
-//        $userApprover->delete();
-//
-//        $higherLayers = ApproverLayer::where('requester_id', $requester_id)->where('layer', '>', $deletedLayer)->get();
-//
-//        if ($higherLayers->isNotEmpty()) {
-//            $higherLayers->each(function ($approverLayer) {
-//                $approverLayer->update([
-//                    'layer' => $approverLayer->layer - 1,
-//                ]);
-//            });
-//        }
-//
-//        return response()->json(['message' => 'Successfully Deleted!'], 200);
+        //        $userApprover = ApproverLayer::find($id);
+        //
+        //        if (!$userApprover) {
+        //            return response()->json(['error' => 'Approver Layer Route Not Found'], 404);
+        //        }
+        //
+        //        $requester_id = $userApprover->requester_id;
+        //        $deletedLayer = $userApprover->layer;
+        //        $userApprover->delete();
+        //
+        //        $higherLayers = ApproverLayer::where('requester_id', $requester_id)->where('layer', '>', $deletedLayer)->get();
+        //
+        //        if ($higherLayers->isNotEmpty()) {
+        //            $higherLayers->each(function ($approverLayer) {
+        //                $approverLayer->update([
+        //                    'layer' => $approverLayer->layer - 1,
+        //                ]);
+        //            });
+        //        }
+        //
+        //        return response()->json(['message' => 'Successfully Deleted!'], 200);
     }
 
 
@@ -270,7 +268,6 @@ class AssignApproverController extends Controller
                 return response()->json(['message' => 'Successfully Activated!'], 200);
             }
         }
-
     }
 
     public function requesterView(): JsonResponse
@@ -293,7 +290,7 @@ class AssignApproverController extends Controller
 
 
         $deletableApproverIds = array_diff($approverIds, $approverLayers);
-        if(count($deletableApproverIds) > 0) {
+        if (count($deletableApproverIds) > 0) {
             ApproverLayer::where('requester_id', $requesterId)
                 ->whereIn('approver_id', $deletableApproverIds)->delete();
         }
@@ -310,34 +307,34 @@ class AssignApproverController extends Controller
 
         return response()->json(['message' => 'Successfully arranged'], 200);
 
-//        $newLayer = $request->layer;
-//
-//        // Get the approver layer
-//        $approver = ApproverLayer::findOrFail($id);
-//
-//        $oldLayer = $approver->layer;
-//
-//        // Get the requester_id from the updated model instance
-//        $requester_id = $approver->requester_id;
-//
-//        if ($newLayer > $oldLayer) {
-//            // Moving layer up, so decrement layers between old layer and new layer
-//            ApproverLayer::where('requester_id', $requester_id)
-//                ->whereBetween('layer', [$oldLayer + 1, $newLayer])
-//                ->decrement('layer');
-//        } elseif ($newLayer < $oldLayer) {
-//            // Moving layer down, so increment layers between new layer and old layer
-//            ApproverLayer::where('requester_id', $requester_id)
-//                ->whereBetween('layer', [$newLayer, $oldLayer - 1])
-//                ->increment('layer');
-//        }
-//
-//        // Then we update the layer
-//        $approver->update(['layer' => $newLayer]);
-//
-//        return response()->json([
-//            'message' => 'Successfully Updated!',
-//            'data' => $approver
-//        ], 200);
+        //        $newLayer = $request->layer;
+        //
+        //        // Get the approver layer
+        //        $approver = ApproverLayer::findOrFail($id);
+        //
+        //        $oldLayer = $approver->layer;
+        //
+        //        // Get the requester_id from the updated model instance
+        //        $requester_id = $approver->requester_id;
+        //
+        //        if ($newLayer > $oldLayer) {
+        //            // Moving layer up, so decrement layers between old layer and new layer
+        //            ApproverLayer::where('requester_id', $requester_id)
+        //                ->whereBetween('layer', [$oldLayer + 1, $newLayer])
+        //                ->decrement('layer');
+        //        } elseif ($newLayer < $oldLayer) {
+        //            // Moving layer down, so increment layers between new layer and old layer
+        //            ApproverLayer::where('requester_id', $requester_id)
+        //                ->whereBetween('layer', [$newLayer, $oldLayer - 1])
+        //                ->increment('layer');
+        //        }
+        //
+        //        // Then we update the layer
+        //        $approver->update(['layer' => $newLayer]);
+        //
+        //        return response()->json([
+        //            'message' => 'Successfully Updated!',
+        //            'data' => $approver
+        //        ], 200);
     }
 }
