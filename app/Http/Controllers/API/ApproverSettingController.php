@@ -7,46 +7,34 @@ use App\Http\Requests\ApproverSetting\ApproverSettingRequest;
 use App\Models\Approvers;
 use App\Models\DepartmentUnitApprovers;
 use App\Models\User;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ApproverSettingController extends Controller
 {
+
+    use ApiResponse;
     /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request)
     {
-        $search = $request->input('search', '');
-        $status = $request->input('status', '');
-        $limit = $request->input('limit', null);
 
-        $ApproversQuery = Approvers::with([
-            'user' => function ($query) {
-                $query->withTrashed();
-            },
-        ])->where(function ($query) use ($search) {
-            $query->orwhereHas('user', function ($query) use ($search) {
-                $query->where('username', 'like', '%' . $search . '%')
-                    ->orWhere('employee_id', 'like', '%' . $search . '%');
-            });
-        })->orderBy('created_at', 'desc');
+        $perPage = $request->input('per_page', null);
+        $approverSettingStatus = $request->status ?? 'active';
+        $isActiveStatus = ($approverSettingStatus === 'deactivated') ? 0 : 1;
 
-        if ($status === "deactivated") {
-            $ApproversQuery->onlyTrashed();
-        } elseif ($status === 'active') {
-            $ApproversQuery->whereNull('deleted_at');
-        }
+        $ApproversQuery = Approvers::where('is_active', $isActiveStatus)
+            ->orderBy('created_at', 'desc')
+            ->useFilters()
+            ->dynamicPaginate();
 
-        if ($limit !== null) {
-            $result = is_numeric($limit) ? $ApproversQuery->paginate($limit) : $ApproversQuery->paginate(PHP_INT_MAX);
-        } else {
-            $result = $ApproversQuery->get();
-        }
 
-        $result->transform(function ($item) {
+
+        $ApproversQuery->transform(function ($item) {
             return [
                 'id' => $item->id,
                 'approver' => [
@@ -73,11 +61,7 @@ class ApproverSettingController extends Controller
             ];
         });
 
-        return response()->json([
-            'message' => 'Successfully Retrieved!',
-            'data' => $result
-        ], 200);
-
+        return $ApproversQuery;
     }
 
     /**
@@ -92,11 +76,9 @@ class ApproverSettingController extends Controller
         $user = User::query()->where('id', $approver_id)->first();
         $createApprovers = Approvers::create([
             'approver_id' => $approver_id,
-//            'full_name' => $user->firstname . ' ' . $user->lastname,
+            //            'full_name' => $user->firstname . ' ' . $user->lastname,
         ]);
-        return response()->json([
-            'message' => 'Approver Created Successfully',
-        ], 201);
+        return $this->responseSuccess('Successfully Added!');
     }
 
     /**
@@ -109,9 +91,7 @@ class ApproverSettingController extends Controller
     {
         $approver = Approvers::find($id);
         if (!$approver) {
-            return response()->json([
-                'error' => 'Approver Route Not Found.'
-            ], 404);
+            return $this->responseNotFound('Approver Route Not Found.');
         }
         $result = [
             'id' => $approver->id,
@@ -129,10 +109,7 @@ class ApproverSettingController extends Controller
             'updated_at' => $approver->updated_at,
         ];
 
-        return response()->json([
-            'message' => 'Successfully Retrieved!',
-            'data' => $result
-        ], 200);
+        return $result;
     }
 
     /**
@@ -147,24 +124,18 @@ class ApproverSettingController extends Controller
         $approver_id = $request->approver_id;
         $approvers = Approvers::find($id);
         if (!$approvers) {
-            return response()->json([
-                'error' => 'Approvers Route Not Found.'
-            ], 404);
+            return $this->responseNotFound('Approver Route Not Found.');
         }
 
         if ($approvers->approver_id == $approver_id) {
-            return response()->json([
-                'message' => 'No changes.',
-            ], 200);
+            return $this->responseSuccess('No Changes');
         }
 
         $updateUserApprover = Approvers::where('id', $id)->update([
             'approver_id' => $approver_id,
         ]);
 
-        return response()->json([
-            'message' => 'Approver Updated Successfully',
-        ], 201);
+        return $this->responseSuccess('Successfully Updated!');
     }
 
     public function archived(ApproverSettingRequest $request, $id)
@@ -173,37 +144,37 @@ class ApproverSettingController extends Controller
 
         $approver = Approvers::query();
         if (!$approver->withTrashed()->where('id', $id)->exists()) {
-            return response()->json(['error' => 'User Route Not Found'], 404);
+            return $this->responseNotFound('Approver Route Not Found.');
         }
         if ($status == false) {
             if (!Approvers::where('id', $id)->where('is_active', true)->exists()) {
-                return response()->json(['message' => 'No Changes'], 200);
+                return $this->responseSuccess('No Changes');
             } else {
                 $department_unit_approver = DepartmentUnitApprovers::where('approver_id', $id)->exists();
                 if ($department_unit_approver) {
-                    return response()->json(['error' => 'Unable to deactivate'], 422);
+                    return $this->responseUnprocessable('Unable to deactivate, Approver is still in use.');
                 }
 
                 $updateStatus = $approver->where('id', $id)->update(['is_active' => false]);
                 $approver->where('id', $id)->delete();
-                return response()->json(['message' => 'Successfully Deactivated!'], 200);
+                return $this->responseSuccess('Successfully Deactivated!');
             }
         }
         if ($status == true) {
             if (Approvers::where('id', $id)->where('is_active', true)->exists()) {
-                return response()->json(['message' => 'No Changes'], 200);
+                return $this->responseSuccess('No Changes');
             } else {
                 $approvers = Approvers::withTrashed()->where('id', $id)->first();
 
                 $userAccountCheck = User::Where('id', $approvers->approver_id)->exists();
                 if (!$userAccountCheck) {
-                    return response()->json(['error' => 'Unable to activate'], 422);
+                    return $this->responseUnprocessable('Unable to activate');
                 }
 
 
                 $approver->withTrashed()->where('id', $id)->restore();
                 $approver->update(['is_active' => true]);
-                return response()->json(['message' => 'Successfully Activated!'], 200);
+                return $this->responseSuccess('Successfully Activated!');
             }
         }
     }

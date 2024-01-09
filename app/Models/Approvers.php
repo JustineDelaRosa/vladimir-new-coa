@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Filters\ApproverFilters;
+use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Approvers extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, Filterable, SoftDeletes;
 
     protected $guarded = [];
+
+    protected string $default_filters = ApproverFilters::class;
 
     public function user()
     {
@@ -22,7 +26,8 @@ class Approvers extends Model
         return $this->hasMany(AssetApproval::class, 'approver_id', 'id');
     }
 
-    public function departmentUnitApprovers(){
-        return $this->hasMany(DepartmentUnitApprovers::class,'approver_id','id');
+    public function departmentUnitApprovers()
+    {
+        return $this->hasMany(DepartmentUnitApprovers::class, 'approver_id', 'id');
     }
 }
