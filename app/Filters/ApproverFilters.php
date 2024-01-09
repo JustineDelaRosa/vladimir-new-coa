@@ -10,12 +10,12 @@ class ApproverFilters extends QueryFilters
 
     protected array $columnSearch = ['approver_id'];
 
-    // protected array $relationSearch = [
-    //     'user' => [
-    //         'username',
-    //         'employee_id',
-    //         'firstname',
-    //         'lastname',
-    //     ],
-    // ];
+    protected array $relationSearch = [
+        'user' => [
+            'username',
+            'employee_id',
+            'firstname',
+            'lastname',
+        ],
+    ];
 }
