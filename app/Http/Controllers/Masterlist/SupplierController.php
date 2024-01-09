@@ -39,6 +39,9 @@ class SupplierController extends Controller
     public function store(Request $request)
     {
         $supplierData = $request->input('result.suppliers');
+        if (empty($request->all()) || empty($request->input('result.suppliers'))) {
+            return $this->responseUnprocessable('Data not Ready');
+        }
         foreach ($supplierData as $suppliers) {
             $sync_id = $suppliers['id'];
             $supplier_code = $suppliers['code'];
