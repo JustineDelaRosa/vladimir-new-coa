@@ -111,11 +111,11 @@ class CreateRequestContainerRequest extends BaseRequest
             'cellphone_number' => 'nullable|numeric',
             'brand' => 'nullable',
             'quantity' => 'required|numeric|min:1',
-            'letter_of_request' => 'nullable|file|mimes:pdf,doc,docx|max:10000',
-            'quotation' => 'nullable|file|max:10000',
-            'specification_form' => 'nullable|file|mimes:pdf,doc,docx|max:10000',
-            'tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx|max:10000',
-            'other_attachments' => 'nullable|file|mimes:pdf,doc,docx|max:10000',
+            'letter_of_request' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
+            'quotation' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
+            'specification_form' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
+            'tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
+            'other_attachments' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
         ];
     }
 

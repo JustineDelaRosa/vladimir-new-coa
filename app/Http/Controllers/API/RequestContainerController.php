@@ -143,9 +143,12 @@ class RequestContainerController extends Controller
     public function removeAll(int $id = null): \Illuminate\Http\JsonResponse
     {
         //if the $id is not null, then delete the specific request container
+        $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
         if ($id) {
             $requestContainer = RequestContainer::find($id);
-            $requestContainer->clearMediaCollection(); // remove all media
+            foreach ($fileKeys as $fileKey) {
+                $requestContainer->clearMediaCollection($fileKey);
+            }
             $requestContainer->delete();               // delete the container
             return $this->responseSuccess('Item Deleted');
         } else {
@@ -154,6 +157,9 @@ class RequestContainerController extends Controller
 
             foreach ($requestContainers as $requestContainer) {
                 $requestContainer->clearMediaCollection(); // remove all media
+                foreach ($fileKeys as $fileKey) {
+                    $requestContainer->clearMediaCollection($fileKey);
+                }
                 $requestContainer->delete();               // delete the container
             }
             return $this->responseSuccess('Request Deleted');
