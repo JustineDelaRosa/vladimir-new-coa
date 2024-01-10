@@ -182,23 +182,33 @@ class AssetRequestController extends Controller
         return $this->responseCreated('AssetRequest created successfully');
     }
 
-    public function show($transactionNumber)
+    public function show(Request $request, $transactionNumber)
     {
+        $perPage = $request->input('per_page', null);
         $requestorId = auth('sanctum')->user()->id;
         $approverCheck = Approvers::where('approver_id', $requestorId)->first();
         if ($approverCheck) {
             $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->get();
         } else {
             $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
-                ->where('requester_id', $requestorId)
-                ->get();
+                ->where('requester_id', $requestorId)->get();
+        }
+        $assetRequest = $this->transformShowAssetRequest($assetRequest);
+
+        if ($perPage !== null) {
+            $page = $request->input('page', 1);
+            $offset = $page * $perPage - $perPage;
+            $assetRequest = new LengthAwarePaginator($assetRequest->slice($offset, $perPage)->values(), $assetRequest->count(), $perPage, $page, [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]);
         }
 
         if ($assetRequest->isEmpty()) {
             return $this->responseUnprocessable('Asset Request not found.');
         }
 
-        return $this->transformShowAssetRequest($assetRequest);
+        return $assetRequest;
     }
 
     public function update(UpdateAssetRequestRequest $request, $referenceNumber)
@@ -228,7 +238,7 @@ class AssetRequestController extends Controller
 
         $resubmitCheck = AssetRequest::where('transaction_number', $transactionNumber)
             ->where('status', 'Returned')
-            ->where('is_resubmit', 1)
+            // ->where('is_resubmit', 1)
             ->get();
 
         return $this->approveRequestRepository->resubmitRequest($transactionNumber);

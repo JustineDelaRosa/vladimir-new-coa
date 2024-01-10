@@ -53,11 +53,12 @@ class UpdateAssetRequestRequest extends FormRequest
             'cellphone_number' => 'nullable|numeric',
             'brand' => 'nullable',
             'quantity' => 'required|numeric',
-            'letter_of_request' => ['bail', 'nullable', 'max:10000', 'mimes:doc,docx,pdf', new FileOrX],
-            'quotation' => ['bail', 'nullable', 'max:10000', 'mimes:doc,docx,pdf', new FileOrX],
-            'specification_form' => ['bail', 'nullable', 'max:10000', 'mimes:doc,docx,pdf', new FileOrX],
-            'tool_of_trade' => ['bail', 'nullable', 'max:10000', 'mimes:doc,docx,pdf', new FileOrX],
-            'other_attachments' => ['bail', 'nullable', 'max:10000', 'mimes:doc,docx,pdf', new FileOrX],
+            'letter_of_request' => ['bail', 'nullable', 'max:10000', new FileOrX],
+            'quotation' => ['bail', 'nullable', 'max:10000', new FileOrX],
+            'specification_form' => ['bail', 'nullable', 'max:10000', new FileOrX],
+            'tool_of_trade' => ['bail', 'nullable', 'max:10000', new FileOrX],
+            'other_attachments' => ['bail', 'nullable', 'max:10000', new FileOrX],
+            //
         ];
     }
 

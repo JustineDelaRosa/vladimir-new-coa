@@ -171,7 +171,7 @@ class ApprovedRequestRepository
         if ($status == 'Returned') {
             $assetRequest->each->update(['status' => $status, 'remarks' => $remarks]);
         } else {
-            $assetRequest->each->update(['status' => $status]);
+            $assetRequest->each->update(['status' => $status, 'remarks' => null]);
         }
     }
 

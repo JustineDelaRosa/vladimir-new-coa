@@ -5,6 +5,7 @@ namespace App\Traits;
 use App\Models\Approvers;
 use App\Models\AssetRequest;
 use App\Models\AssetApproval;
+use App\Traits\AddingPoHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Models\DepartmentUnitApprovers;
@@ -14,6 +15,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 trait AssetRequestHandler
 {
+
+    use AddingPoHandler;
     public function getAssetRequest($field, $value, $singleResult = true)
     {
         $query = AssetRequest::where($field, $value)
@@ -72,7 +75,7 @@ trait AssetRequestHandler
                 'cellphone_number' => $request->cellphone_number ?? null,
                 'brand' => $request->brand ?? null,
                 'quantity' => $request->quantity,
-                'is_resubmit' => 1,
+                // 'is_resubmit' => 1,
             ]);
         }
 
@@ -149,6 +152,7 @@ trait AssetRequestHandler
      */
     public function transformIndexAssetRequest($assetRequest)
     {
+        $test = $assetRequest;
         return [
             'id' => $assetRequest->transaction_number,
             'transaction_number' => $assetRequest->transaction_number,
@@ -163,6 +167,7 @@ trait AssetRequestHandler
             'created_at' => $this->getDateRequested($assetRequest->transaction_number),
             'approver_count' => $assetRequest->assetApproval->count(),
             'process_count' => $this->getProcessCount($assetRequest),
+            //$this->getProcessCount($assetRequest),
             'current_approver' => $assetRequest->assetApproval->filter(function ($approval) {
                 return $approval->status == 'For Approval';
             })->map(function ($approval) {
@@ -203,6 +208,7 @@ trait AssetRequestHandler
     {
         //check if the status is approved
         $approvers = $assetRequest->status == 'Approved';
+        $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number);
         if ($approvers) {
             //check if null pr number
             if ($assetRequest->pr_number == null) {
@@ -212,7 +218,9 @@ trait AssetRequestHandler
                 ];
             }
             //check if null po number
-            if ($assetRequest->po_number == null && $assetRequest->pr_number != null) {
+            if (($assetRequest->po_number == null && $assetRequest->pr_number != null) ||
+                ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
+            ) {
                 return [
                     'firstname' => 'Inputing of PO No.',
                     'lastname' => '',
@@ -233,13 +241,16 @@ trait AssetRequestHandler
     private function getAfterApprovedStatus($assetRequest): string
     {
         $approvers = $assetRequest->status == 'Approved';
+        $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number);
         if ($approvers) {
             //check if null pr number
             if ($assetRequest->pr_number == null) {
                 return 'Inputing of PR No.';
             }
             //check if null po number
-            if ($assetRequest->po_number == null && $assetRequest->pr_number != null) {
+            if (($assetRequest->po_number == null && $assetRequest->pr_number != null) ||
+                ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
+            ) {
                 return 'Inputing of PO No.';
             }
 
@@ -262,7 +273,7 @@ trait AssetRequestHandler
             $steps[] = $approver->approver->user->firstname . ' ' . $approver->approver->user->lastname;
         }
         $steps[] = 'Inputting of PR No.';
-        $steps[] = 'Matching of PR No. to Receiving';
+        $steps[] = 'Inputing of PO and RR No.';
         $steps[] = 'Asset Tagging';
         $steps[] = 'Ready to Pickup';
         $steps[] = 'Released';
@@ -272,10 +283,12 @@ trait AssetRequestHandler
 
     private function getProcessCount($assetRequest)
     {
+        // return $this->calculateRemainingQuantity($assetRequest->transaction_number);
         $statusForApproval = $assetRequest->assetApproval->where('status', 'For Approval');
         $highestLayerNumber = $assetRequest->assetApproval()->max('layer');
         $statusForApprovalCount = $statusForApproval->count();
         $returnStatus = $assetRequest->assetApproval->where('status', 'Returned')->count();
+        $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number);
 
         if ($statusForApprovalCount > 0) {
             $lastLayer = $statusForApproval->first()->layer;
@@ -285,8 +298,10 @@ trait AssetRequestHandler
             $lastLayer = $highestLayerNumber ?? 0;
 
             if ($assetRequest->pr_number == null) $lastLayer++;
-            if ($assetRequest->po_number == null && $assetRequest->pr_number != null) $lastLayer += 2;
-            if ($assetRequest->vladimir_tagNumber == null && $assetRequest->po_number != null && $assetRequest->pr_number != null) $lastLayer += 3;
+            if (($assetRequest->po_number == null && $assetRequest->pr_number != null) ||
+                ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
+            ) $lastLayer += 2;
+            if ($assetRequest->vladimir_tagNumber == null && $assetRequest->po_number != null && $assetRequest->pr_number != null && $remaining == 0) $lastLayer += 3;
         }
         return $lastLayer;
     }
