@@ -71,27 +71,35 @@ trait AddingPoHandler
             'remaining_to_po' => $this->calculateRemainingQuantity($assetRequest->transaction_number),
             'po_number' => $poNumber ?? null,
             'rr_number' => $rrnumber ?? null,
-            'remarks' => $assetRequest->remarks ?? null,
+            'remarks' => null,
         ];
     }
 
-    private function calculateRemainingQuantity($transactionNumber)
+    public function calculateRemainingQuantity($transactionNumber, $forTimeline = false)
     {
 
         $items = AssetRequest::where('transaction_number', $transactionNumber)->get();
         $remainingQuantities = $items->map(function ($item) {
             $remaining = $item->quantity - $item->quantity_delivered;
-            $remaining = $remaining . "/" . $item->quantity;
+            if ($forTimeline = false) {
+                $remaining = $remaining . "/" . $item->quantity;
+            }
+
             return $remaining;
         });
-
-        $remainingQuantities = $remainingQuantities->reduce(function ($carry, $item) {
-            $carry = explode("/", $carry);
-            $item = explode("/", $item);
-            $carry[0] = $carry[0] + $item[0];
-            $carry[1] = $carry[1] + $item[1];
-            return $carry[0] . "/" . $carry[1];
-        }, "0/0");
+        if ($forTimeline = false) {
+            $remainingQuantities = $remainingQuantities->reduce(function ($carry, $item) {
+                $carry = explode("/", $carry);
+                $item = explode("/", $item);
+                $carry[0] = $carry[0] + $item[0];
+                $carry[1] = $carry[1] + $item[1];
+                return $carry[0] . "/" . $carry[1];
+            }, "0/0");
+        } else {
+            $remainingQuantities = $remainingQuantities->reduce(function ($carry, $item) {
+                return $carry + $item;
+            }, 0);
+        }
 
         return $remainingQuantities;
     }
@@ -115,6 +123,14 @@ trait AddingPoHandler
             $newAssetRequest->quantity = 1;
             $newAssetRequest->quantity_delivered = 1;
             $newAssetRequest->save();
+
+            $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
+            foreach ($fileKeys as $fileKey) {
+                $media = $assetRequest->getMedia($fileKey);
+                foreach ($media as $file) {
+                    $file->copy($newAssetRequest, $fileKey);
+                }
+            }
         }
         $assetRequest->update([
             'quantity' => 1,

@@ -32,14 +32,14 @@ class UpdateAddingPoRequest extends FormRequest
             "supplier_id" => "required|integer|exists:suppliers,id,is_active,1",
             "delivery_date" => "required|date",
             "quantity_delivered" => [
-                "required", "integer",
+                "required", "integer", "min:1",
                 function ($attribute, $value, $fail) use ($id) {
                     $assetRequest = AssetRequest::where('id', $id)->first();
                     if ($assetRequest == null) {
                         $fail("Asset Request does not exist");
                         return;
                     }
-                    if ($assetRequest->quantity < $value) {
+                    if ($assetRequest->quantity < ($value + $assetRequest->quantity_delivered)) {
                         $fail("Too many quantity delivered for this");
                     }
                 }
