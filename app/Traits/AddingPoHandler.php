@@ -49,7 +49,7 @@ trait AddingPoHandler
             ->withProperties($this->composeLogPropertiesPo($assetRequest, $poNumber, $rrnumber))
             ->inLog($poNumber === null ? 'Removed PO Number' : 'Added PO Number')
             ->tap(function ($activity) use ($user, $assetRequest, $poNumber, $rrnumber) {
-                $firstAssetRequest = $assetRequest->first();
+                $firstAssetRequest = $assetRequest;
                 if ($firstAssetRequest) {
                     $activity->subject_id = $firstAssetRequest->transaction_number;
                 }
@@ -92,8 +92,33 @@ trait AddingPoHandler
             $carry[1] = $carry[1] + $item[1];
             return $carry[0] . "/" . $carry[1];
         }, "0/0");
-        dd($remainingQuantities);
 
         return $remainingQuantities;
+    }
+
+    public function updatePoAssetRequest($assetRequest, $request)
+    {
+        $assetRequest->update([
+            'po_number' => $request->po_number,
+            'rr_number' => $request->rr_number,
+            'supplier_id' => $request->supplier_id,
+            'delivery_date' => $request->delivery_date,
+            'quantity_delivered' => $assetRequest->quantity_delivered + $request->quantity_delivered,
+            'unit_price' => $request->unit_price,
+        ]);
+    }
+
+    public function createNewAssetRequests($assetRequest)
+    {
+        foreach (range(1, $assetRequest->quantity) as $index) {
+            $newAssetRequest = $assetRequest->replicate();
+            $newAssetRequest->quantity = 1;
+            $newAssetRequest->quantity_delivered = 1;
+            $newAssetRequest->save();
+        }
+        $assetRequest->update([
+            'quantity' => 1,
+            'quantity_delivered' => 1,
+        ]);
     }
 }

@@ -44,39 +44,16 @@ class AddingPoController extends Controller
 
     public function update(UpdateAddingPoRequest $request, $id)
     {
-        $poNumber = $request->po_number;
-        $rrNumber = $request->rr_number;
-        $supplierId = $request->supplier_id;
-        $deliveryDate = $request->delivery_date;
-        $quantityDelivered = $request->quantity_delivered;
-        $unitPrice = $request->unit_price;
-
-        $assetRequest = AssetRequest::where('id', $id)->first();
+        $assetRequest = AssetRequest::find($id);
         if ($assetRequest == null) {
             return $this->responseNotFound('Asset Request not found!');
         }
 
-        $assetRequest->update([
-            'po_number' => $poNumber,
-            'rr_number' => $rrNumber,
-            'supplier_id' => $supplierId,
-            'delivery_date' => $deliveryDate,
-            'quantity_delivered' => $assetRequest->quantity_delivered + $quantityDelivered,
-            'unit_price' => $unitPrice,
-        ]);
-        $this->activityLogPo($assetRequest, $poNumber, $rrNumber);
-        //check if the quantity and quantity delivered is equal after updating
+        $this->updatePoAssetRequest($assetRequest, $request);
+        $this->activityLogPo($assetRequest, $request->po_number, $request->rr_number);
+
         if ($assetRequest->quantity === $assetRequest->quantity_delivered) {
-            foreach (range(1, $assetRequest->quantity) as $index) {
-                $newAssetRequest = $assetRequest->replicate();
-                $newAssetRequest->quantity = 1;
-                $newAssetRequest->quantity_delivered = 1;
-                $newAssetRequest->save();
-            }
-            $assetRequest->update([
-                'quantity' => 1,
-                'quantity_delivered' => 1,
-            ]);
+            $this->createNewAssetRequests($assetRequest);
         }
 
         return $this->responseSuccess('PO number and RR number added successfully!');
