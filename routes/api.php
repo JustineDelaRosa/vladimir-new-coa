@@ -245,6 +245,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::put('remove-pr/{transactionNumber}', [AddingPrController::class, 'removePR']);
     //REQUEST CONTAINER//
     Route::resource('request-container', RequestContainerController::class);
+    // ->middleware('normalizeInput');
     Route::delete('remove-container-item/{id?}', [RequestContainerController::class, 'removeAll']);
     Route::post('update-container/{id}', [RequestContainerController::class, 'updateContainer']);
     //ADDING PO//
