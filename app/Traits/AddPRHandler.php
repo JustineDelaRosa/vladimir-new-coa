@@ -36,7 +36,7 @@ trait AddPRHandler
                 'employee_id' => $requestor->employee_id,
             ],
             'pr_number' => $prNumber ?? null,
-            'remarks' => $assetRequest->first()->remarks ?? null,
+            'remarks' => $assetRequest->remarks ?? null,
         ];
     }
 }
