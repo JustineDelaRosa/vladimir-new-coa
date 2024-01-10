@@ -64,6 +64,7 @@ class AddingPoController extends Controller
             'quantity_delivered' => $assetRequest->quantity_delivered + $quantityDelivered,
             'unit_price' => $unitPrice,
         ]);
+        $this->activityLogPo($assetRequest, $poNumber, $rrNumber);
         //check if the quantity and quantity delivered is equal after updating
         if ($assetRequest->quantity === $assetRequest->quantity_delivered) {
             foreach (range(1, $assetRequest->quantity) as $index) {
@@ -78,10 +79,7 @@ class AddingPoController extends Controller
             ]);
         }
 
-        return $this->responseSuccess(
-            'PO number and RR number added successfully!',
-            $assetRequest
-        );
+        return $this->responseSuccess('PO number and RR number added successfully!');
     }
 
     public function destroy($id)

@@ -8,8 +8,6 @@ trait AddPRHandler
 {
     public function activityLog($assetRequest, $prNumber)
     {
-
-
         $user = auth('sanctum')->user();
         $assetRequests = new AssetRequest();
         activity()
