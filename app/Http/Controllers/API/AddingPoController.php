@@ -67,8 +67,11 @@ class AddingPoController extends Controller
         }
 
         if ($assetRequest->quantity !== $assetRequest->quantity_delivered) {
+            $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, $remove = true);
             $assetRequest->quantity = $assetRequest->quantity_delivered;
             $assetRequest->save();
+            $this->createNewAssetRequests($assetRequest);
+            // $this->activityLogPo($assetRequest, $request->po_number, $request->rr_number, $remove = true);
             return $this->responseSuccess('Successfully removed!');
         }
 
