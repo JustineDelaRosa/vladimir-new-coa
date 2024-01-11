@@ -3,6 +3,7 @@
 namespace App\Http\Requests\AddingPO;
 
 use App\Models\AssetRequest;
+use App\Rules\UniqueWithIgnore;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateAddingPoRequest extends FormRequest
@@ -26,9 +27,11 @@ class UpdateAddingPoRequest extends FormRequest
     {
         //get the id
         $id = $this->route('adding_po');
+        $transactionNumber = AssetRequest::where('id', $id)->first()->transaction_number;
+        // dd($transactionNumber);
         return [
-            "po_number" => "required|string|unique:asset_requests,po_number,{$id}",
-            "rr_number" => "required|string|unique:asset_requests,rr_number,{$id}",
+            "po_number" => ['required', 'string', new UniqueWithIgnore('asset_requests', $id, $transactionNumber)],
+            "rr_number" => ['required', 'string', new UniqueWithIgnore('asset_requests', $id, $transactionNumber)],
             "supplier_id" => "required|integer|exists:suppliers,id,is_active,1",
             "delivery_date" => "required|date",
             "quantity_delivered" => [

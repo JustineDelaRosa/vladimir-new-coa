@@ -39,26 +39,26 @@ trait AddingPoHandler
         );
     }
 
-    public function activityLogPo($assetRequest, $poNumber, $rrnumber)
+    public function activityLogPo($assetRequest, $poNumber, $rrnumber, $remove = false)
     {
         $user = auth('sanctum')->user();
         $assetRequests = new AssetRequest();
         activity()
             ->causedBy($user)
             ->performedOn($assetRequests)
-            ->withProperties($this->composeLogPropertiesPo($assetRequest, $poNumber, $rrnumber))
-            ->inLog($poNumber === null ? 'Removed PO Number' : 'Added PO Number')
+            ->withProperties($this->composeLogPropertiesPo($assetRequest, $poNumber, $rrnumber, $remove))
+            ->inLog($remove === true ? 'Removed PO Number' : 'Added PO Number')
             ->tap(function ($activity) use ($user, $assetRequest, $poNumber, $rrnumber) {
                 $firstAssetRequest = $assetRequest;
                 if ($firstAssetRequest) {
                     $activity->subject_id = $firstAssetRequest->transaction_number;
                 }
             })
-            ->log($poNumber === null ? 'PO Number was removed by ' . $user->employee_id . '.' :
+            ->log($remove === true ? 'PO Number was removed by ' . $user->employee_id . '.' :
                 'PO Number ' . $poNumber . ' has been added by ' . $user->employee_id . '.');
     }
 
-    private function composeLogPropertiesPo($assetRequest, $poNumber = null, $rrnumber = null): array
+    private function composeLogPropertiesPo($assetRequest, $poNumber = null, $rrnumber = null, $remove = false): array
     {
         $requestor = $assetRequest->requestor;
         return [
@@ -68,7 +68,8 @@ trait AddingPoHandler
                 'lastname' => $requestor->lastname,
                 'employee_id' => $requestor->employee_id,
             ],
-            'remaining_to_po' => $this->calculateRemainingQuantity($assetRequest->transaction_number),
+            'remaining_to_po' => $remove === true ? 0 : $this->calculateRemainingQuantity($assetRequest->transaction_number),
+            'quantity_removed' => $remove === true ? $assetRequest->quantity - $assetRequest->quantity_delivered : null,
             'po_number' => $poNumber ?? null,
             'rr_number' => $rrnumber ?? null,
             'remarks' => null,
