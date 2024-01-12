@@ -39,7 +39,7 @@ trait AddingPoHandler
         );
     }
 
-    public function activityLogPo($assetRequest, $poNumber, $rrnumber, $remove = false)
+    public function activityLogPo($assetRequest, $poNumber, $rrnumber, $removeRemaining = false, $remove = false)
     {
         $user = auth('sanctum')->user();
         $assetRequests = new AssetRequest();
@@ -47,18 +47,18 @@ trait AddingPoHandler
             ->causedBy($user)
             ->performedOn($assetRequests)
             ->withProperties($this->composeLogPropertiesPo($assetRequest, $poNumber, $rrnumber, $remove))
-            ->inLog($remove === true ? 'Removed PO Number' : 'Added PO Number')
+            ->inLog($removeRemaining === true ? 'Removed Remaining Items' : $remove === true ? 'Removed Item To PO' : 'Added PO Number')
             ->tap(function ($activity) use ($user, $assetRequest, $poNumber, $rrnumber) {
                 $firstAssetRequest = $assetRequest;
                 if ($firstAssetRequest) {
                     $activity->subject_id = $firstAssetRequest->transaction_number;
                 }
             })
-            ->log($remove === true ? 'PO Number was removed by ' . $user->employee_id . '.' :
-                'PO Number ' . $poNumber . ' has been added by ' . $user->employee_id . '.');
+            ->log($removeRemaining === true ? 'Remaining item to items was removed by ' . $user->employee_id . '.' : $remove === true ?
+                'Item was removed by ' . $user->employee_id . '.' : 'PO Number: ' . $poNumber . ' has been added by ' . $user->employee_id . '.');
     }
 
-    private function composeLogPropertiesPo($assetRequest, $poNumber = null, $rrnumber = null, $remove = false): array
+    private function composeLogPropertiesPo($assetRequest, $poNumber = null, $rrnumber = null, $removeRemaining = false, $remove = false): array
     {
         $requestor = $assetRequest->requestor;
         return [
@@ -68,8 +68,9 @@ trait AddingPoHandler
                 'lastname' => $requestor->lastname,
                 'employee_id' => $requestor->employee_id,
             ],
-            'remaining_to_po' => $remove === true ? 0 : $this->calculateRemainingQuantity($assetRequest->transaction_number),
-            'quantity_removed' => $remove === true ? $assetRequest->quantity - $assetRequest->quantity_delivered : null,
+            'remaining_to_po' => $this->calculateRemainingQuantity($assetRequest->transaction_number) - $assetRequest->quantity,
+            'quantity_removed' => $removeRemaining === true ? $assetRequest->quantity - $assetRequest->quantity_delivered :
+                $remove === true ? $assetRequest->quantity : null,
             'po_number' => $poNumber ?? null,
             'rr_number' => $rrnumber ?? null,
             'remarks' => null,
@@ -119,17 +120,20 @@ trait AddingPoHandler
 
     public function createNewAssetRequests($assetRequest)
     {
-        foreach (range(1, $assetRequest->quantity) as $index) {
-            $newAssetRequest = $assetRequest->replicate();
-            $newAssetRequest->quantity = 1;
-            $newAssetRequest->quantity_delivered = 1;
-            $newAssetRequest->save();
+        if ($assetRequest->quantity > 1) {
+            foreach (range(1, $assetRequest->quantity - 1) as $index) {
+                $newAssetRequest = $assetRequest->replicate();
+                $newAssetRequest->quantity = 1;
+                $newAssetRequest->quantity_delivered = 1;
+                $newAssetRequest->reference_number = $newAssetRequest->generateReferenceNumber();
+                $newAssetRequest->save();
 
-            $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
-            foreach ($fileKeys as $fileKey) {
-                $media = $assetRequest->getMedia($fileKey);
-                foreach ($media as $file) {
-                    $file->copy($newAssetRequest, $fileKey);
+                $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
+                foreach ($fileKeys as $fileKey) {
+                    $media = $assetRequest->getMedia($fileKey);
+                    foreach ($media as $file) {
+                        $file->copy($newAssetRequest, $fileKey);
+                    }
                 }
             }
         }
@@ -137,5 +141,13 @@ trait AddingPoHandler
             'quantity' => 1,
             'quantity_delivered' => 1,
         ]);
+    }
+
+    public function deleteAssetRequestPo($assetRequest)
+    {
+        $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, false, true);
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        $assetRequest->delete();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
 }

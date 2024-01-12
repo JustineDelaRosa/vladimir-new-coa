@@ -4,12 +4,13 @@ namespace App\Http\Controllers\API;
 
 use App\Models\AssetRequest;
 use Illuminate\Http\Request;
+use App\Traits\AddingPoHandler;
+use Illuminate\Support\Facades\DB;
 use App\Traits\AssetRequestHandler;
 use App\Http\Controllers\Controller;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Http\Requests\AddingPO\UpdateAddingPoRequest;
-use App\Traits\AddingPoHandler;
 
 class AddingPoController extends Controller
 {
@@ -65,17 +66,17 @@ class AddingPoController extends Controller
         if (!$assetRequest) {
             return $this->responseNotFound('Asset Request not found!');
         }
-
+        if ($assetRequest->quantity_delivered == null || $assetRequest->quantity_delivered == 0) {
+            $this->deleteAssetRequestPo($assetRequest);
+            return $this->responseSuccess('Item removed successfully!');
+        }
         if ($assetRequest->quantity !== $assetRequest->quantity_delivered) {
-            $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, $remove = true);
+            $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, true);
             $assetRequest->quantity = $assetRequest->quantity_delivered;
             $assetRequest->save();
             $this->createNewAssetRequests($assetRequest);
             // $this->activityLogPo($assetRequest, $request->po_number, $request->rr_number, $remove = true);
-            return $this->responseSuccess('Successfully removed!');
+            return $this->responseSuccess('Remaining quantity removed successfully!');
         }
-
-        $assetRequest->delete();
-        return $this->responseSuccess('Successfully removed!');
     }
 }
