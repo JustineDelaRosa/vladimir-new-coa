@@ -51,7 +51,7 @@ class AddingPoController extends Controller
         }
 
         $this->updatePoAssetRequest($assetRequest, $request);
-        $this->activityLogPo($assetRequest, $request->po_number, $request->rr_number);
+        $this->activityLogPo($assetRequest, $request->po_number, $request->rr_number, 0, false, false);
 
         if ($assetRequest->quantity === $assetRequest->quantity_delivered) {
             $this->createNewAssetRequests($assetRequest);
@@ -71,9 +71,12 @@ class AddingPoController extends Controller
             return $this->responseSuccess('Item removed successfully!');
         }
         if ($assetRequest->quantity !== $assetRequest->quantity_delivered) {
-            $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, true);
+            // $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, true);
+            $removedQuantity = $this->quantityRemovedHolder($assetRequest);
+            $storedRemovedQuantity = $removedQuantity;
             $assetRequest->quantity = $assetRequest->quantity_delivered;
             $assetRequest->save();
+            $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, $storedRemovedQuantity, true, false);
             $this->createNewAssetRequests($assetRequest);
             // $this->activityLogPo($assetRequest, $request->po_number, $request->rr_number, $remove = true);
             return $this->responseSuccess('Remaining quantity removed successfully!');

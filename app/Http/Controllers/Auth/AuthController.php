@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Auth;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Approvers;
+use App\Models\AssetApproval;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 
@@ -19,6 +21,8 @@ class AuthController extends Controller
             return response()->json(['message' => 'The Username or Password is Incorrect!'], 404);
         }
         $pass_decrypt = Crypt::decryptString($user->password);
+        $approverId = Approvers::where('approver_id', $user->id)->value('id');
+        $toApproveCount = AssetApproval::where('approver_id', $approverId)->where('status', 'For Approval')->count();
 
         //if Username and password match
         // if ($username == $pass_decrypt) {
@@ -39,36 +43,37 @@ class AuthController extends Controller
         $response = [
             'user' => $user,
             'token' => $token,
-            'sessionTime' => config('sanctum.expiration')
+            'sessionTime' => config('sanctum.expiration'),
+            'toApproveCount' => $toApproveCount,
         ];
-//        $cookie = cookie('authcookie', $token);
-//        return response()->json([
-//            'data' => [
-//                'user' => [
-//                    'id' => $user->id,
-//                    'employee_id' => $user->employee_id,
-//                    'firstname' => $user->firstname,
-//                    'lastname' => $user->lastname,
-//                    'username' => $user->username,
-//                    'role_id' => $user->role_id,
-//                    'is_active' => $user->is_active,
-//                    'created_at' => $user->created_at,
-//                    'updated_at' => $user->updated_at,
-//                    'deleted_at' => $user->deleted_at,
-//                    'role' => [
-//                        'id' => $user->role->id,
-//                        'role_name' => $user->role->role_name,
-//                        'access_permission' => $user->role->access_permission . ', requester, approver',
-//                        'is_active' => $user->role->is_active,
-//                        'created_at' => $user->role->created_at,
-//                        'updated_at' => $user->role->updated_at,
-//                        'deleted_at' => $user->role->deleted_at,
-//                    ],
-//                ],
-//                'token' => $token
-//            ],
-//            'message' => 'Successfully Logged In'
-//        ], 200)->withCookie($cookie);
+        //        $cookie = cookie('authcookie', $token);
+        //        return response()->json([
+        //            'data' => [
+        //                'user' => [
+        //                    'id' => $user->id,
+        //                    'employee_id' => $user->employee_id,
+        //                    'firstname' => $user->firstname,
+        //                    'lastname' => $user->lastname,
+        //                    'username' => $user->username,
+        //                    'role_id' => $user->role_id,
+        //                    'is_active' => $user->is_active,
+        //                    'created_at' => $user->created_at,
+        //                    'updated_at' => $user->updated_at,
+        //                    'deleted_at' => $user->deleted_at,
+        //                    'role' => [
+        //                        'id' => $user->role->id,
+        //                        'role_name' => $user->role->role_name,
+        //                        'access_permission' => $user->role->access_permission . ', requester, approver',
+        //                        'is_active' => $user->role->is_active,
+        //                        'created_at' => $user->role->created_at,
+        //                        'updated_at' => $user->role->updated_at,
+        //                        'deleted_at' => $user->role->deleted_at,
+        //                    ],
+        //                ],
+        //                'token' => $token
+        //            ],
+        //            'message' => 'Successfully Logged In'
+        //        ], 200)->withCookie($cookie);
 
 
 
@@ -97,7 +102,7 @@ class AuthController extends Controller
         $auth_id = auth('sanctum')->user()->id;
         $user = User::where('id', $auth_id)->first();
 
-        if($old_password == $new_password){
+        if ($old_password == $new_password) {
             return response()->json(['message' => 'Old and New Password Match'], 422);
         }
         $decryptedPassword = Crypt::decryptString($user->password);

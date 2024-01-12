@@ -39,15 +39,16 @@ trait AddingPoHandler
         );
     }
 
-    public function activityLogPo($assetRequest, $poNumber, $rrnumber, $removeRemaining = false, $remove = false)
+    public function activityLogPo($assetRequest, $poNumber, $rrnumber, $removedCount, $removeRemaining = false, $remove = false)
     {
         $user = auth('sanctum')->user();
         $assetRequests = new AssetRequest();
+        // dd($remove);
         activity()
             ->causedBy($user)
             ->performedOn($assetRequests)
-            ->withProperties($this->composeLogPropertiesPo($assetRequest, $poNumber, $rrnumber, $remove))
-            ->inLog($removeRemaining === true ? 'Removed Remaining Items' : $remove === true ? 'Removed Item To PO' : 'Added PO Number')
+            ->withProperties($this->composeLogPropertiesPo($assetRequest, $poNumber, $rrnumber, $removedCount, $removeRemaining, $remove))
+            ->inLog(($removeRemaining == true) ? 'Removed Remaining Items' : (($remove == true) ? 'Removed Item To PO' : 'Added PO Number'))
             ->tap(function ($activity) use ($user, $assetRequest, $poNumber, $rrnumber) {
                 $firstAssetRequest = $assetRequest;
                 if ($firstAssetRequest) {
@@ -58,9 +59,10 @@ trait AddingPoHandler
                 'Item was removed by ' . $user->employee_id . '.' : 'PO Number: ' . $poNumber . ' has been added by ' . $user->employee_id . '.');
     }
 
-    private function composeLogPropertiesPo($assetRequest, $poNumber = null, $rrnumber = null, $removeRemaining = false, $remove = false): array
+    private function composeLogPropertiesPo($assetRequest, $poNumber = null, $rrnumber = null, $removedCount = 0, $removeRemaining = false, $remove = false): array
     {
         $requestor = $assetRequest->requestor;
+        $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number, true);
         return [
             'requestor' => [
                 'id' => $requestor->id,
@@ -68,13 +70,24 @@ trait AddingPoHandler
                 'lastname' => $requestor->lastname,
                 'employee_id' => $requestor->employee_id,
             ],
-            'remaining_to_po' => $this->calculateRemainingQuantity($assetRequest->transaction_number) - $assetRequest->quantity,
-            'quantity_removed' => $removeRemaining === true ? $assetRequest->quantity - $assetRequest->quantity_delivered :
-                $remove === true ? $assetRequest->quantity : null,
+            'remaining_to_po' => ($remaining == 0) ? 0 : (($removeRemaining == true) ? ($remaining - $removedCount) : $remaining),
+            'quantity_removed' => ($removeRemaining == true) ? $removedCount : (($remove == true) ? $assetRequest->quantity : null),
             'po_number' => $poNumber ?? null,
             'rr_number' => $rrnumber ?? null,
             'remarks' => null,
         ];
+    }
+
+    private function quantityRemovedHolder($assetRequest)
+    {
+        //hold the removed quantity for 'quantity_removed' to be used in activity log
+        $removedQuantity = 0;
+        if ($assetRequest->quantity_delivered > 0) {
+            $removedQuantity = $assetRequest->quantity - $assetRequest->quantity_delivered;
+        } else {
+            $removedQuantity = $assetRequest->quantity;
+        }
+        return $removedQuantity;
     }
 
     public function calculateRemainingQuantity($transactionNumber, $forTimeline = false)
@@ -109,12 +122,12 @@ trait AddingPoHandler
     public function updatePoAssetRequest($assetRequest, $request)
     {
         $assetRequest->update([
-            'po_number' => $request->po_number,
-            'rr_number' => $request->rr_number,
-            'supplier_id' => $request->supplier_id,
-            'delivery_date' => $request->delivery_date,
+            'po_number' => $assetRequest->po_number ? $assetRequest->po_number : $request->po_number,
+            'rr_number' => $assetRequest->rr_number ? $assetRequest->rr_number : $request->rr_number,
+            'supplier_id' => $assetRequest->supplier_id ? $assetRequest->supplier_id : $request->supplier_id,
+            'delivery_date' => $assetRequest->delivery_date ? $assetRequest->delivery_date : $request->delivery_date,
             'quantity_delivered' => $assetRequest->quantity_delivered + $request->quantity_delivered,
-            'unit_price' => $request->unit_price,
+            'unit_price' => $assetRequest->unit_price ? $assetRequest->unit_price : $request->unit_price,
         ]);
     }
 
@@ -145,7 +158,7 @@ trait AddingPoHandler
 
     public function deleteAssetRequestPo($assetRequest)
     {
-        $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, false, true);
+        $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, 0, false, true);
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         $assetRequest->delete();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
