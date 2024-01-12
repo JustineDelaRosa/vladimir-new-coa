@@ -222,7 +222,7 @@ trait AssetRequestHandler
                 ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
             ) {
                 return [
-                    'firstname' => 'Inputing of PO No.',
+                    'firstname' => 'Inputing of PO No. and RR No.',
                     'lastname' => '',
                 ];
             }
@@ -251,7 +251,7 @@ trait AssetRequestHandler
             if (($assetRequest->po_number == null && $assetRequest->pr_number != null) ||
                 ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
             ) {
-                return 'Inputing of PO No.';
+                return 'Inputing of PO No. and RR No.';
             }
 
             if ($assetRequest->vladimir_tagNumber == null && $assetRequest->po_number != null && $assetRequest->pr_number != null) {
@@ -273,7 +273,7 @@ trait AssetRequestHandler
             $steps[] = $approver->approver->user->firstname . ' ' . $approver->approver->user->lastname;
         }
         $steps[] = 'Inputting of PR No.';
-        $steps[] = 'Inputing of PO and RR No.';
+        $steps[] = 'Inputing of PO No. and RR No.';
         $steps[] = 'Asset Tagging';
         $steps[] = 'Ready to Pickup';
         $steps[] = 'Released';

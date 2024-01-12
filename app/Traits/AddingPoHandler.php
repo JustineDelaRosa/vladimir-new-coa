@@ -48,7 +48,7 @@ trait AddingPoHandler
             ->causedBy($user)
             ->performedOn($assetRequests)
             ->withProperties($this->composeLogPropertiesPo($assetRequest, $poNumber, $rrnumber, $removedCount, $removeRemaining, $remove))
-            ->inLog(($removeRemaining == true) ? 'Removed Remaining Items' : (($remove == true) ? 'Removed Item To PO' : 'Added PO Number'))
+            ->inLog(($removeRemaining == true) ? 'Removed Remaining Items' : (($remove == true) ? 'Removed Item To PO' : 'Added PO Number and RR Number'))
             ->tap(function ($activity) use ($user, $assetRequest, $poNumber, $rrnumber) {
                 $firstAssetRequest = $assetRequest;
                 if ($firstAssetRequest) {
