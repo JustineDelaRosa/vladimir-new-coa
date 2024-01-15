@@ -15,18 +15,18 @@ class CreateFormulasTable extends Migration
     {
         Schema::create('formulas', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('depreciation_method');
-//            $table->decimal('est_useful_life' , 10, 1);
-            $table->date('acquisition_date');
-            $table->double('acquisition_cost');
-            $table->double('scrap_value');
-            $table->double('depreciable_basis');
-            $table->double('accumulated_cost');
-            $table->integer('months_depreciated'); //months
+            $table->string('depreciation_method')->nullable();
+            //            $table->decimal('est_useful_life' , 10, 1);
+            $table->date('acquisition_date')->nullable();
+            $table->double('acquisition_cost')->nullable();
+            $table->double('scrap_value')->nullable();
+            $table->double('depreciable_basis')->nullable();
+            $table->double('accumulated_cost')->nullable();
+            $table->integer('months_depreciated')->nullable(); //months
             $table->string('end_depreciation')->nullable(); //date format yyyy-mm
-            $table->double('depreciation_per_year');
-            $table->double('depreciation_per_month');
-            $table->double('remaining_book_value');
+            $table->double('depreciation_per_year')->nullable();
+            $table->double('depreciation_per_month')->nullable();
+            $table->double('remaining_book_value')->nullable();
             $table->string('release_date')->nullable(); //date format yyyy-mm-dd
             $table->string('start_depreciation')->nullable(); //date format yyyy-mm
             $table->softDeletes();

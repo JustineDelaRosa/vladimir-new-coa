@@ -16,26 +16,28 @@ class CreateAssetRequestsTable extends Migration
         Schema::create('asset_requests', function (Blueprint $table) {
             //REQUEST FORM
             $table->increments('id');
-            $table->unsignedInteger('requester_id');
+            $table->unsignedInteger('requester_id')->nullable();
             $table->string('status')->default('For Approval of Approver 1');
             $table->string('transaction_number')->index()->nullable();
-            $table->string('reference_number');
+            $table->string('reference_number')->nullable();
             $table->string('pr_number')->nullable();
             $table->string('po_number')->nullable();
             $table->string('rr_number')->nullable();
+            $table->string('wh_number')->nullable();
             $table->boolean('is_addcost')->default(0);
             $table->unsignedInteger('fixed_asset_id')->nullable();
             $table->string('additional_info')->nullable();
             $table->string('acquisition_details');
-            $table->date('delivery_date')->nullable();
-            $table->double('unit_price')->nullable();
+            $table->date('delivery_date')->nullable(); //? Delivery Date = Acquisition Date
+            $table->double('unit_price')->nullable(); //? Unit Price = original price or acquisition cost
             $table->unsignedInteger('supplier_id')->nullable();
+            $table->boolean('released')->default(0);
 
             //TO BE FILL UP BY THE REQUESTER
             $table->string('remarks')->nullable();
             $table->unsignedInteger('type_of_request_id');
-            //            $table->UnsignedInteger('charged_department_id');
-            $table->unsignedInteger('subunit_id'); //For ChargedDepartment
+            //$table->UnsignedInteger('charged_department_id');
+            //For ChargedDepartment
             $table->enum('accountability', ['Personal Issued', 'Common']);
             $table->string('accountable')->nullable();
             $table->string('asset_description');
@@ -72,23 +74,26 @@ class CreateAssetRequestsTable extends Migration
             $table->date('acquisition_date')->nullable();
             $table->date('release_date')->nullable();
             $table->date('start_depreciation')->nullable();
-            $table->double('acquisition_cost')->nullable();
+            $table->double('acquisition_cost')->nullable(); //? unit price?
             $table->double('scrap_value')->nullable();
             $table->double('depreciable_basis')->nullable();
             //COA
             $table->unsignedInteger('company_id')->nullable();
             $table->unsignedInteger('department_id')->nullable();
+            $table->unsignedInteger('subunit_id');
             $table->unsignedInteger('location_id')->nullable();
             $table->unsignedInteger('account_title_id')->nullable();
             $table->unsignedInteger('business_unit_id')->nullable();
             $table->integer('print_count')->default(0);
-            $table->softDeletes();
             $table->timestamp('last_printed')->nullable();
-
+            $table->softDeletes();
             $table
                 ->foreign('requester_id')
                 ->references('id')
                 ->on('users');
+            $table->foreign('fixed_asset_id')
+                ->references('id')
+                ->on('fixed_assets');
             $table
                 ->foreign('type_of_request_id')
                 ->references('id')
