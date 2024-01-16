@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\User;
+use App\Models\Supplier;
 use App\Models\Status\AssetStatus;
-use App\Models\Status\CycleCountStatus;
-use App\Models\Status\DepreciationStatus;
 use App\Models\Status\MovementStatus;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Status\CycleCountStatus;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Status\DepreciationStatus;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class AdditionalCost extends Model
 {
@@ -90,5 +92,13 @@ class AdditionalCost extends Model
     public function movementStatus()
     {
         return $this->belongsTo(MovementStatus::class, 'movement_status_id', 'id');
+    }
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
+    }
+    public function requestor()
+    {
+        return $this->belongsTo(User::class, 'requester_id', 'id');
     }
 }

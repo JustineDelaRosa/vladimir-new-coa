@@ -31,23 +31,23 @@ class FixedAssetRepository
         $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
         $depreciationMethod = strtoupper($request['depreciation_method']);
         if ($depreciationMethod !== 'DONATION') {
-            $depstatus = DepreciationStatus::where('id',$request['depreciation_status_id'])->first();
+            $depstatus = DepreciationStatus::where('id', $request['depreciation_status_id'])->first();
             //if the depreciation status name id Fully depreciated, run end depreciation to check the validity
-            if($depstatus->depreciation_status_name == 'Fully Depreciated'){
+            if ($depstatus->depreciation_status_name == 'Fully Depreciated') {
                 //check if release date is not null
-                if(isset($request['release_date'])){
+                if (isset($request['release_date'])) {
                     $end_depreciation = $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])));
-//                    dd($end_depreciation);
+                    //                    dd($end_depreciation);
                     //check if it really fully depreciated and passed the date today
-                    if($end_depreciation >= Carbon::now()){
+                    if ($end_depreciation >= Carbon::now()) {
                         return 'Not yet fully depreciated';
                     }
                 }
             }
         }
 
-//        return $request['release_date'] ?? Null;
-//        return $departmentQuery;
+        //        return $request['release_date'] ?? Null;
+        //        return $departmentQuery;
 
         $formula = Formula::create([
             'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
@@ -61,11 +61,13 @@ class FixedAssetRepository
             'months_depreciated' => $request['months_depreciated'] ?? 0,
             'release_date' => $request['release_date'] ?? Null,
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
-                ? $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']),
+                ? $this->calculationRepository->getEndDepreciation(
+                    $this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
                     strtoupper($request['depreciation_method']) == 'STL'
                         ? strtoupper($request['depreciation_method'])
-                        : ucwords(strtolower($request['depreciation_method'])))
+                        : ucwords(strtolower($request['depreciation_method']))
+                )
                 : null,
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
@@ -82,12 +84,12 @@ class FixedAssetRepository
             'tag_number_old' => $request['tag_number_old'] ?? '-',
             'asset_description' => $request['asset_description'],
             'type_of_request_id' => $request['type_of_request_id'],
-            'charged_department'=> $request['department_id'] ,
+            'charged_department' => $request['department_id'],
             'asset_specification' => $request['asset_specification'],
             'accountability' => $request['accountability'],
             'accountable' => $request['accountable'] ?? '-',
             'cellphone_number' => $request['cellphone_number'] ?? '-',
-            'brand' => ucwords(strtolower($request['brand'] ?? '-')) ,
+            'brand' => ucwords(strtolower($request['brand'] ?? '-')),
             'major_category_id' => $request['major_category_id'],
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
@@ -118,15 +120,15 @@ class FixedAssetRepository
         $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
         $depreciationMethod = strtoupper($request['depreciation_method']);
         if ($depreciationMethod !== 'DONATION') {
-            $depstatus = DepreciationStatus::where('id',$request['depreciation_status_id'])->first();
+            $depstatus = DepreciationStatus::where('id', $request['depreciation_status_id'])->first();
             //if the depreciation status name id Fully depreciated, run end depreciation to check the validity
-            if($depstatus->depreciation_status_name == 'Fully Depreciated'){
+            if ($depstatus->depreciation_status_name == 'Fully Depreciated') {
                 //check if release date is not null
-                if(isset($request['release_date'])){
+                if (isset($request['release_date'])) {
                     $end_depreciation = $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])));
-//                    dd($end_depreciation);
+                    //                    dd($end_depreciation);
                     //check if it really fully depreciated and passed the date today
-                    if($end_depreciation >= Carbon::now()){
+                    if ($end_depreciation >= Carbon::now()) {
                         return 'Not yet fully depreciated';
                     }
                 }
@@ -141,12 +143,12 @@ class FixedAssetRepository
             'tag_number_old' => $request['tag_number_old'] ?? '-',
             'asset_description' => $request['asset_description'],
             'type_of_request_id' => $request['type_of_request_id'],
-            'charged_department'=> $request['department_id'] ,
+            'charged_department' => $request['department_id'],
             'asset_specification' => $request['asset_specification'],
             'accountability' => $request['accountability'],
             'accountable' => $request['accountable'] ?? '-',
             'cellphone_number' => $request['cellphone_number'] ?? '-',
-            'brand' => ucwords(strtolower($request['brand'] ?? '-')) ,
+            'brand' => ucwords(strtolower($request['brand'] ?? '-')),
             'major_category_id' => $request['major_category_id'],
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
@@ -168,8 +170,8 @@ class FixedAssetRepository
             'department_id' => $request['department_id'],
             'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
-//            'print_count' => $request['print_count'] ?? $fixedAsset->print_count,
-//            'last_printed' => $request['print_count'] == $fixedAsset->print_count ? $fixedAsset->last_printed : Carbon::now(),
+            //            'print_count' => $request['print_count'] ?? $fixedAsset->print_count,
+            //            'last_printed' => $request['print_count'] == $fixedAsset->print_count ? $fixedAsset->last_printed : Carbon::now(),
         ]);
 
         $fixedAsset->formula()->update([
@@ -184,11 +186,13 @@ class FixedAssetRepository
             'months_depreciated' => $request['months_depreciated'] ?? 0,
             'release_date' => $request['release_date'] ?? Null,
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
-                ? $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']),
+                ? $this->calculationRepository->getEndDepreciation(
+                    $this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
                     strtoupper($request['depreciation_method']) == 'STL'
                         ? strtoupper($request['depreciation_method'])
-                        : ucwords(strtolower($request['depreciation_method'])))
+                        : ucwords(strtolower($request['depreciation_method']))
+                )
                 : null,
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
@@ -206,8 +210,13 @@ class FixedAssetRepository
 
         $items = $items instanceof \Illuminate\Support\Collection ? $items : Collection::make($items);
 
-        $paginator = new LengthAwarePaginator($items->forPage($page, $perPage),
-            $items->count(), $perPage, $page, $options);
+        $paginator = new LengthAwarePaginator(
+            $items->forPage($page, $perPage),
+            $items->count(),
+            $perPage,
+            $page,
+            $options
+        );
 
         $paginator->setPath(url()->current());
 
@@ -218,11 +227,19 @@ class FixedAssetRepository
     {
         $fixedAssetFields = [
             'id',
+            'requester_id',
+            'transaction_number',
+            'reference_number',
+            'pr_number',
+            'po_number',
+            'rr_number',
+            'wh_number',
             'capex_id',
             'sub_capex_id',
             'vladimir_tag_number',
             'tag_number',
             'tag_number_old',
+            'from_request',
             'asset_description',
             'type_of_request_id',
             'asset_specification',
@@ -231,6 +248,7 @@ class FixedAssetRepository
             'capitalized',
             'cellphone_number',
             'brand',
+            'supplier_id',
             'major_category_id',
             'minor_category_id',
             'voucher',
@@ -248,6 +266,7 @@ class FixedAssetRepository
             'is_active',
             'care_of',
             'company_id',
+            'business_unit_id',
             'department_id',
             'charged_department',
             'location_id',
@@ -261,11 +280,19 @@ class FixedAssetRepository
 
         $additionalCostFields = [
             'additional_costs.id',
+            'additional_costs.requester_id',
+            'additional_costs.transaction_number',
+            'additional_costs.reference_number',
+            'additional_costs.pr_number',
+            'additional_costs.po_number',
+            'additional_costs.rr_number',
+            'additional_costs.wh_number',
             'fixed_assets.capex_id AS capex_id',
             'fixed_assets.sub_capex_id AS sub_capex_id',
             'fixed_assets.vladimir_tag_number AS vladimir_tag_number',
             'fixed_assets.tag_number AS tag_number',
             'fixed_assets.tag_number_old AS tag_number_old',
+            'additional_costs.from_request',
             'additional_costs.asset_description',
             'additional_costs.type_of_request_id',
             'additional_costs.asset_specification',
@@ -274,6 +301,7 @@ class FixedAssetRepository
             'additional_costs.capitalized',
             'additional_costs.cellphone_number',
             'additional_costs.brand',
+            'additional_costs.supplier_id',
             'additional_costs.major_category_id',
             'additional_costs.minor_category_id',
             'additional_costs.voucher',
@@ -291,6 +319,7 @@ class FixedAssetRepository
             'additional_costs.is_active',
             'additional_costs.care_of',
             'additional_costs.company_id',
+            'additional_costs.business_unit_id',
             'additional_costs.department_id',
             'fixed_assets.charged_department as charged_department',
             'additional_costs.location_id',
@@ -332,7 +361,7 @@ class FixedAssetRepository
         $fixed_assets_arr = [];
         foreach ($fixed_asset as $asset) {
             // Transform the current asset using the transformSingleFixedAsset method
-            $fixed_assets_arr [] = $this->transformSingleFixedAsset($asset);
+            $fixed_assets_arr[] = $this->transformSingleFixedAsset($asset);
         }
         return $fixed_assets_arr;
     }
@@ -346,6 +375,19 @@ class FixedAssetRepository
             'total_adcost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost),
             'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
+            'requestor_id' => [
+                'id' => $fixed_asset->requestor->id ?? '-',
+                'username' => $fixed_asset->requestor->username ?? '-',
+                'first_name' => $fixed_asset->requestor->first_name ?? '-',
+                'last_name' => $fixed_asset->requestor->last_name ?? '-',
+                'employee_id' => $fixed_asset->requestor->employee_id ?? '-',
+            ],
+            'transaction_number' => $fixed_asset->transaction_number ?? '-',
+            'reference_number' => $fixed_asset->reference_number ?? '-',
+            'pr_number' => $fixed_asset->pr_number ?? '-',
+            'po_number' => $fixed_asset->po_number ?? '-',
+            'rr_number' => $fixed_asset->rr_number ?? '-',
+            'wh_number' => $fixed_asset->wh_number ?? '-',
             'capex' => [
                 'id' => $fixed_asset->capex->id ?? '-',
                 'capex' => $fixed_asset->capex->capex ?? '-',
@@ -357,17 +399,17 @@ class FixedAssetRepository
                 'sub_project' => $fixed_asset->subCapex->sub_project ?? '-',
             ],
             'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
-            'tag_number' => $fixed_asset->tag_number,
-            'tag_number_old' => $fixed_asset->tag_number_old,
-            'asset_description' => $fixed_asset->asset_description,
+            'tag_number' => $fixed_asset->tag_number ?? '-',
+            'tag_number_old' => $fixed_asset->tag_number_old ?? '-',
+            'asset_description' => $fixed_asset->asset_description ?? '-',
             'type_of_request' => [
                 'id' => $fixed_asset->typeOfRequest->id ?? '-',
                 'type_of_request_name' => $fixed_asset->typeOfRequest->type_of_request_name ?? '-',
             ],
-            'asset_specification' => $fixed_asset->asset_specification,
-            'accountability' => $fixed_asset->accountability,
-            'accountable' => $fixed_asset->accountable,
-            'cellphone_number' => $fixed_asset->cellphone_number,
+            'asset_specification' => $fixed_asset->asset_specification ?? '-',
+            'accountability' => $fixed_asset->accountability ?? '-',
+            'accountable' => $fixed_asset->accountable ?? '-',
+            'cellphone_number' => $fixed_asset->cellphone_number ?? '-',
             'brand' => $fixed_asset->brand ?? '-',
             'division' => [
                 'id' => $fixed_asset->department->division->id ?? '-',
@@ -382,17 +424,17 @@ class FixedAssetRepository
                 'minor_category_name' => $fixed_asset->minorCategory->minor_category_name ?? '-',
             ],
             'est_useful_life' => $fixed_asset->majorCategory->est_useful_life ?? '-',
-            'voucher' => $fixed_asset->voucher,
+            'voucher' => $fixed_asset->voucher ?? '-',
             'voucher_date' => $fixed_asset->voucher_date ?? '-',
-            'receipt' => $fixed_asset->receipt,
-            'quantity' => $fixed_asset->quantity,
-            'depreciation_method' => $fixed_asset->depreciation_method,
+            'receipt' => $fixed_asset->receipt ?? '-',
+            'quantity' => $fixed_asset->quantity ?? '-',
+            'depreciation_method' => $fixed_asset->depreciation_method ?? '-',
             //                    'salvage_value' => $fixed_asset->salvage_value,
-            'acquisition_date' => $fixed_asset->acquisition_date,
-            'acquisition_cost' => $fixed_asset->acquisition_cost,
-            'scrap_value' => $fixed_asset->formula->scrap_value,
-            'depreciable_basis' => $fixed_asset->formula->depreciable_basis,
-            'accumulated_cost' => $fixed_asset->formula->accumulated_cost,
+            'acquisition_date' => $fixed_asset->acquisition_date ?? '-',
+            'acquisition_cost' => $fixed_asset->acquisition_cost ?? '-',
+            'scrap_value' => $fixed_asset->formula->scrap_value ?? '-',
+            'depreciable_basis' => $fixed_asset->formula->depreciable_basis ?? '-',
+            'accumulated_cost' => $fixed_asset->formula->accumulated_cost ?? '-',
             'asset_status' => [
                 'id' => $fixed_asset->assetStatus->id ?? '-',
                 'asset_status_name' => $fixed_asset->assetStatus->asset_status_name ?? '-',
@@ -409,17 +451,17 @@ class FixedAssetRepository
                 'id' => $fixed_asset->movementStatus->id ?? '-',
                 'movement_status_name' => $fixed_asset->movementStatus->movement_status_name ?? '-',
             ],
-            'is_additional_cost'=> $fixed_asset->is_additional_cost,
-            'is_old_asset' => $fixed_asset->is_old_asset,
-            'status' => $fixed_asset->is_active,
-            'care_of' => $fixed_asset->care_of,
-            'months_depreciated' => $fixed_asset->formula->months_depreciated,
-            'end_depreciation' => $fixed_asset->formula->end_depreciation,
-            'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year,
-            'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month,
-            'remaining_book_value' => $fixed_asset->formula->remaining_book_value,
+            'is_additional_cost' => $fixed_asset->is_additional_cost ?? '-',
+            'is_old_asset' => $fixed_asset->is_old_asset ?? '-',
+            'status' => $fixed_asset->is_active ?? '-',
+            'care_of' => $fixed_asset->care_of ?? '-',
+            'months_depreciated' => $fixed_asset->formula->months_depreciated ?? '-',
+            'end_depreciation' => $fixed_asset->formula->end_depreciation ?? '-',
+            'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year ?? '-',
+            'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month ?? '-',
+            'remaining_book_value' => $fixed_asset->formula->remaining_book_value ?? '-',
             'release_date' => $fixed_asset->formula->release_date ?? '-',
-            'start_depreciation' => $fixed_asset->formula->start_depreciation,
+            'start_depreciation' => $fixed_asset->formula->start_depreciation ?? '-',
             'company' => [
                 'id' => $fixed_asset->department->company->id ?? '-',
                 'company_code' => $fixed_asset->department->company->company_code ?? '-',
@@ -449,19 +491,20 @@ class FixedAssetRepository
             'print_count' => $fixed_asset->print_count,
             'print' => $fixed_asset->print_count > 0 ? 'Ready to Print' : 'Printed',
             'last_printed' => $fixed_asset->last_printed,
+            'tagging' => $fixed_asset->print_count > 0 ? 'Ready to Tag' : 'Tagged',
             'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
                 return [
-                    'id' => $additional_cost->id,
-                    'add_cost_sequence' => $additional_cost->add_cost_sequence,
-                    'asset_description' => $additional_cost->asset_description,
+                    'id' => $additional_cost->id ?? '-',
+                    'add_cost_sequence' => $additional_cost->add_cost_sequence ?? '-',
+                    'asset_description' => $additional_cost->asset_description ?? '-',
                     'type_of_request' => [
                         'id' => $additional_cost->typeOfRequest->id ?? '-',
                         'type_of_request_name' => $additional_cost->typeOfRequest->type_of_request_name ?? '-',
                     ],
-                    'asset_specification' => $additional_cost->asset_specification,
-                    'accountability' => $additional_cost->accountability,
-                    'accountable' => $additional_cost->accountable,
-                    'cellphone_number' => $additional_cost->cellphone_number,
+                    'asset_specification' => $additional_cost->asset_specification ?? '-',
+                    'accountability' => $additional_cost->accountability ?? '-',
+                    'accountable' => $additional_cost->accountable ?? '-',
+                    'cellphone_number' => $additional_cost->cellphone_number ?? '-',
                     'brand' => $additional_cost->brand ?? '-',
                     'division' => [
                         'id' => $additional_cost->department->division->id ?? '-',
@@ -476,17 +519,17 @@ class FixedAssetRepository
                         'minor_category_name' => $additional_cost->minorCategory->minor_category_name ?? '-',
                     ],
                     'est_useful_life' => $additional_cost->majorCategory->est_useful_life ?? '-',
-                    'voucher' => $additional_cost->voucher,
+                    'voucher' => $additional_cost->voucher ?? '-',
                     'voucher_date' => $additional_cost->voucher_date ?? '-',
-                    'receipt' => $additional_cost->receipt,
-                    'quantity' => $additional_cost->quantity,
-                    'depreciation_method' => $additional_cost->depreciation_method,
+                    'receipt' => $additional_cost->receipt ?? '-',
+                    'quantity' => $additional_cost->quantity ?? '-',
+                    'depreciation_method' => $additional_cost->depreciation_method ?? '-',
                     //                    'salvage_value' => $additional_cost->salvage_value,
-                    'acquisition_date' => $additional_cost->acquisition_date,
-                    'acquisition_cost' => $additional_cost->acquisition_cost,
-                    'scrap_value' => $additional_cost->formula->scrap_value,
-                    'depreciable_basis' => $additional_cost->formula->depreciable_basis,
-                    'accumulated_cost' => $additional_cost->formula->accumulated_cost,
+                    'acquisition_date' => $additional_cost->acquisition_date ?? '-',
+                    'acquisition_cost' => $additional_cost->acquisition_cost ?? '-',
+                    'scrap_value' => $additional_cost->formula->scrap_value ?? '-',
+                    'depreciable_basis' => $additional_cost->formula->depreciable_basis ?? '-',
+                    'accumulated_cost' => $additional_cost->formula->accumulated_cost ?? '-',
                     'asset_status' => [
                         'id' => $additional_cost->assetStatus->id ?? '-',
                         'asset_status_name' => $additional_cost->assetStatus->asset_status_name ?? '-',
@@ -503,16 +546,16 @@ class FixedAssetRepository
                         'id' => $additional_cost->movementStatus->id ?? '-',
                         'movement_status_name' => $additional_cost->movementStatus->movement_status_name ?? '-',
                     ],
-                    'is_additional_cost' => $additional_cost->is_additional_cost,
-                    'status' => $additional_cost->is_active,
-                    'care_of' => $additional_cost->care_of,
-                    'months_depreciated' => $additional_cost->formula->months_depreciated,
-                    'end_depreciation' => $additional_cost->formula->end_depreciation,
-                    'depreciation_per_year' => $additional_cost->formula->depreciation_per_year,
-                    'depreciation_per_month' => $additional_cost->formula->depreciation_per_month,
-                    'remaining_book_value' => $additional_cost->formula->remaining_book_value,
+                    'is_additional_cost' => $additional_cost->is_additional_cost ?? '-',
+                    'status' => $additional_cost->is_active ?? '-',
+                    'care_of' => $additional_cost->care_of ?? '-',
+                    'months_depreciated' => $additional_cost->formula->months_depreciated ?? '-',
+                    'end_depreciation' => $additional_cost->formula->end_depreciation ?? '-',
+                    'depreciation_per_year' => $additional_cost->formula->depreciation_per_year ?? '-',
+                    'depreciation_per_month' => $additional_cost->formula->depreciation_per_month ?? '-',
+                    'remaining_book_value' => $additional_cost->formula->remaining_book_value ?? '-',
                     'release_date' => $additional_cost->formula->release_date ?? '-',
-                    'start_depreciation' => $additional_cost->formula->start_depreciation,
+                    'start_depreciation' => $additional_cost->formula->start_depreciation ?? '-',
                     'company' => [
                         'id' => $additional_cost->department->company->id ?? '-',
                         'company_code' => $additional_cost->department->company->company_code ?? '-',
@@ -538,7 +581,7 @@ class FixedAssetRepository
                         'account_title_code' => $additional_cost->accountTitle->account_title_code ?? '-',
                         'account_title_name' => $additional_cost->accountTitle->account_title_name ?? '-',
                     ],
-                    'remarks' => $additional_cost->remarks,
+                    'remarks' => $additional_cost->remarks ?? '-',
                 ];
             }) : [],
         ];
@@ -548,9 +591,15 @@ class FixedAssetRepository
     {
         $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? count($fixed_asset->additionalCost) : 0;
         return [
-//            'totalCost' => $this->calculationRepository->getTotalCost($fixed_asset->acquisition_cost, $fixed_asset->additionalCost),
+            //            'totalCost' => $this->calculationRepository->getTotalCost($fixed_asset->acquisition_cost, $fixed_asset->additionalCost),
             'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
+            'transaction_number' => $fixed_asset->transaction_number ?? '-',
+            'reference_number' => $fixed_asset->reference_number ?? '-',
+            'pr_number' => $fixed_asset->pr_number ?? '-',
+            'po_number' => $fixed_asset->po_number ?? '-',
+            'rr_number' => $fixed_asset->rr_number ?? '-',
+            'wh_number' => $fixed_asset->wh_number ?? '-',
             'capex' => [
                 'id' => $fixed_asset->capex->id ?? '-',
                 'capex' => $fixed_asset->capex->capex ?? '-',
@@ -562,17 +611,17 @@ class FixedAssetRepository
                 'sub_project' => $fixed_asset->subCapex->sub_project ?? '-',
             ],
             'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
-            'tag_number' => $fixed_asset->tag_number,
-            'tag_number_old' => $fixed_asset->tag_number_old,
-            'asset_description' => $fixed_asset->asset_description,
+            'tag_number' => $fixed_asset->tag_number ?? '-',
+            'tag_number_old' => $fixed_asset->tag_number_old ?? '-',
+            'asset_description' => $fixed_asset->asset_description ?? '-',
             'type_of_request' => [
                 'id' => $fixed_asset->typeOfRequest->id ?? '-',
                 'type_of_request_name' => $fixed_asset->typeOfRequest->type_of_request_name ?? '-',
             ],
-            'asset_specification' => $fixed_asset->asset_specification,
-            'accountability' => $fixed_asset->accountability,
-            'accountable' => $fixed_asset->accountable,
-            'cellphone_number' => $fixed_asset->cellphone_number,
+            'asset_specification' => $fixed_asset->asset_specification ?? '-',
+            'accountability' => $fixed_asset->accountability ?? '-',
+            'accountable' => $fixed_asset->accountable ?? '-',
+            'cellphone_number' => $fixed_asset->cellphone_number ?? '-',
             'brand' => $fixed_asset->brand ?? '-',
             'division' => [
                 'id' => $fixed_asset->department->division->id ?? '-',
@@ -587,16 +636,16 @@ class FixedAssetRepository
                 'minor_category_name' => $fixed_asset->minorCategory->minor_category_name ?? '-',
             ],
             'est_useful_life' => $fixed_asset->majorCategory->est_useful_life ?? '-',
-            'voucher' => $fixed_asset->voucher,
+            'voucher' => $fixed_asset->voucher ?? '-',
             'voucher_date' => $fixed_asset->voucher_date ?? '-',
-            'receipt' => $fixed_asset->receipt,
-            'is_additional_cost' => $fixed_asset->is_additional_cost,
-            'status' => $fixed_asset->is_active,
-            'quantity' => $fixed_asset->quantity,
-            'depreciation_method' => $fixed_asset->depreciation_method,
+            'receipt' => $fixed_asset->receipt ?? '-',
+            'is_additional_cost' => $fixed_asset->is_additional_cost ?? '-',
+            'status' => $fixed_asset->is_active ?? '-',
+            'quantity' => $fixed_asset->quantity ?? '-',
+            'depreciation_method' => $fixed_asset->depreciation_method ?? '-',
             //                    'salvage_value' => $fixed_asset->salvage_value,
-            'acquisition_date' => $fixed_asset->acquisition_date,
-            'acquisition_cost' => $fixed_asset->acquisition_cost,
+            'acquisition_date' => $fixed_asset->acquisition_date ?? '-',
+            'acquisition_cost' => $fixed_asset->acquisition_cost ?? '-',
             'asset_status' => [
                 'id' => $fixed_asset->assetStatus->id ?? '-',
                 'asset_status_name' => $fixed_asset->assetStatus->asset_status_name ?? '-',
@@ -613,7 +662,7 @@ class FixedAssetRepository
                 'id' => $fixed_asset->movementStatus->id ?? '-',
                 'movement_status_name' => $fixed_asset->movementStatus->movement_status_name ?? '-',
             ],
-            'care_of' => $fixed_asset->care_of,
+            'care_of' => $fixed_asset->care_of ?? '-',
             'company' => [
                 'id' => $fixed_asset->department->company->id ?? '-',
                 'company_code' => $fixed_asset->department->company->company_code ?? '-',
@@ -639,11 +688,11 @@ class FixedAssetRepository
                 'account_title_code' => $fixed_asset->accountTitle->account_title_code ?? '-',
                 'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
             ],
-            'remarks' => $fixed_asset->remarks,
+            'remarks' => $fixed_asset->remarks ?? '-',
             'print_count' => $fixed_asset->print_count,
-            'print' => $fixed_asset->print_count > 0 ? 'Ready to Print' : 'Printed',
-            'last_printed' => $fixed_asset->last_printed,
-            'created_at' => $fixed_asset->created_at,
+            'print' => $fixed_asset->print_count > 0 ? 'Ready to Tag' : 'Tagged',
+            'last_printed' => $fixed_asset->last_printed ?? '-',
+            'created_at' => $fixed_asset->created_at ?? '-',
             'add_cost_sequence' => $fixed_asset->add_cost_sequence ?? null,
         ];
     }

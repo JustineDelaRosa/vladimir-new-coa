@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\User;
+use App\Models\Supplier;
 use App\Filters\FixedAssetFilters;
 use App\Models\Status\AssetStatus;
-use App\Models\Status\CycleCountStatus;
-use App\Models\Status\DepreciationStatus;
 use App\Models\Status\MovementStatus;
+use App\Models\Status\CycleCountStatus;
 use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Status\DepreciationStatus;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -44,10 +46,10 @@ class FixedAsset extends Model
         return $this->belongsTo(Formula::class, 'formula_id', 'id');
     }
 
-     public function typeOfRequest()
-     {
-         return $this->belongsTo(TypeOfRequest::class, 'type_of_request_id', 'id');
-     }
+    public function typeOfRequest()
+    {
+        return $this->belongsTo(TypeOfRequest::class, 'type_of_request_id', 'id');
+    }
 
     public function majorCategory()
     {
@@ -98,5 +100,13 @@ class FixedAsset extends Model
     public function movementStatus()
     {
         return $this->belongsTo(MovementStatus::class, 'movement_status_id', 'id');
+    }
+    public function requestor()
+    {
+        return $this->belongsTo(User::class, 'requester_id', 'id');
+    }
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
 }
