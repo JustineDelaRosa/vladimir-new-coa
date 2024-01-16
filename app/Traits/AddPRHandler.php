@@ -28,6 +28,7 @@ trait AddPRHandler
     private function composeLogProperties($assetRequest, $prNumber = null): array
     {
         $requestor = $assetRequest->first()->requestor;
+        // dd($assetRequest->first()->remarks);
         return [
             'requestor' => [
                 'id' => $requestor->id,
@@ -36,7 +37,7 @@ trait AddPRHandler
                 'employee_id' => $requestor->employee_id,
             ],
             'pr_number' => $prNumber ?? null,
-            'remarks' => $assetRequest->remarks ?? null,
+            'remarks' => $assetRequest->first()->remarks ?? null,
         ];
     }
 }

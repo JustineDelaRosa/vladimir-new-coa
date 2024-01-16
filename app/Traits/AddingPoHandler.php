@@ -2,11 +2,25 @@
 
 namespace App\Traits;
 
+use App\Models\Formula;
+use App\Models\FixedAsset;
 use App\Models\AssetRequest;
+use App\Models\Status\AssetStatus;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Repositories\VladimirTagGeneratorRepository;
 
 trait AddingPoHandler
 {
+
+    protected $vladimirTagGeneratorRepository;
+
+    public function __construct()
+    {
+        $this->vladimirTagGeneratorRepository = new VladimirTagGeneratorRepository();
+    }
+
+
     public function createAssetRequestQuery($toPo)
     {
         return AssetRequest::where('status', 'Approved')
@@ -137,9 +151,12 @@ trait AddingPoHandler
             foreach (range(1, $assetRequest->quantity - 1) as $index) {
                 $newAssetRequest = $assetRequest->replicate();
                 $newAssetRequest->quantity = 1;
+                $newAssetRequest->vladimir_tag_number = $this->vladimirTagGeneratorRepository->vladimirTagGenerator();
                 $newAssetRequest->quantity_delivered = 1;
                 $newAssetRequest->reference_number = $newAssetRequest->generateReferenceNumber();
+                $newAssetRequest->wh_number = $newAssetRequest->generateWhNumber();
                 $newAssetRequest->save();
+
 
                 $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
                 foreach ($fileKeys as $fileKey) {
@@ -148,12 +165,68 @@ trait AddingPoHandler
                         $file->copy($newAssetRequest, $fileKey);
                     }
                 }
+
+                $this->addToFixedAssets($newAssetRequest, $assetRequest->is_addcost);
             }
         }
+
+        // DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        // $assetRequest->delete();
+        // DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         $assetRequest->update([
             'quantity' => 1,
             'quantity_delivered' => 1,
+            'vladimir_tag_number' => $this->vladimirTagGeneratorRepository->vladimirTagGenerator(),
+            'wh_number' => $assetRequest->generateWhNumber(),
         ]);
+        $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost);
+    }
+
+    private function addToFixedAssets($asset, $isAddCost)
+    {
+        if ($isAddCost == 1) {
+            $addCost = new AddCost();
+            return;
+        } else {
+            $formula = Formula::create([
+                'depreciation_method' => $asset->depreciation_method,
+                'acquisition_date' => $asset->delivery_date,
+                'acquisition_cost' => $asset->unit_price,
+            ]);
+            $formula->fixedAsset()->create([
+                'requester_id' => $asset->requester_id,
+                'transaction_number' => $asset->transaction_number,
+                'reference_number' => $asset->reference_number,
+                'pr_number' => $asset->pr_number,
+                'po_number' => $asset->po_number,
+                'rr_number' => $asset->rr_number,
+                'wh_number' => $asset->wh_number,
+                'from_request' => 1,
+                'vladimir_tag_number' => $asset->vladimir_tag_number,
+                'asset_description' => $asset->asset_description,
+                'type_of_request_id' => $asset->type_of_request_id,
+                'charged_department' => $asset->department_id,
+                'asset_specification' => $asset->asset_specification,
+                'supplier_id' => $asset->supplier_id,
+                'accountability' => $asset->accountability,
+                'accountable' => $asset->accountable,
+                'cellphone_number' => $asset->cellphone_number,
+                'brand' => $asset->brand,
+                'quantity' => $asset->quantity,
+                'depreciation_method' => $asset->depreciation_method,
+                'acquisition_date' => $asset->delivery_date,
+                'acquisition_cost' => $asset->unit_price,
+                'asset_status_id' => AssetStatus::where('asset_status_name', 'Good')->first()->id,
+                'is_old_asset' => 0,
+                'is_additional_cost' => $asset->is_addcost,
+                'company_id' => $asset->company_id,
+                'business_unit_id' => $asset->business_unit_id,
+                'department_id' => $asset->department_id,
+                'location_id' => $asset->location_id,
+                'account_id' => $asset->account_title_id,
+                'remarks' => $asset->remarks,
+            ]);
+        }
     }
 
     public function deleteAssetRequestPo($assetRequest)

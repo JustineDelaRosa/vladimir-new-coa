@@ -80,6 +80,27 @@ class AssetRequest extends Model implements HasMedia
         }
     }
 
+    public function generateWhNumber()
+    {
+        try {
+            // Ensure the model has been saved and has an ID
+            if ($this->id === null) {
+                $this->save();
+            }
+            $warehouseNumber = $this->transaction_number + $this->id;
+            // Use the ID as the reference number
+            $this->wh_number = str_pad($warehouseNumber, 4, '0', STR_PAD_LEFT);
+
+            // Save the model again to store the reference number
+            $this->save();
+
+            return $this->wh_number;
+        } catch (\Exception $e) {
+            // Handle exception if necessary
+            return null;
+        }
+    }
+
     public static function generateTransactionNumber(): ?string
     {
         $transactionNumber = null;
@@ -95,6 +116,7 @@ class AssetRequest extends Model implements HasMedia
 
         return $transactionNumber;
     }
+
 
 
     public function currentApprover()
