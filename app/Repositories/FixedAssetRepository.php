@@ -388,6 +388,7 @@ class FixedAssetRepository
             'po_number' => $fixed_asset->po_number ?? '-',
             'rr_number' => $fixed_asset->rr_number ?? '-',
             'wh_number' => $fixed_asset->wh_number ?? '-',
+            'from_request' => $fixed_asset->from_request ?? '-',
             'capex' => [
                 'id' => $fixed_asset->capex->id ?? '-',
                 'capex' => $fixed_asset->capex->capex ?? '-',
@@ -411,6 +412,11 @@ class FixedAssetRepository
             'accountable' => $fixed_asset->accountable ?? '-',
             'cellphone_number' => $fixed_asset->cellphone_number ?? '-',
             'brand' => $fixed_asset->brand ?? '-',
+            'supplier' => [
+                'id' => $fixed_asset->supplier->id ?? '-',
+                'supplier_code' => $fixed_asset->supplier->supplier_code ?? '-',
+                'supplier_name' => $fixed_asset->supplier->supplier_name ?? '-',
+            ],
             'division' => [
                 'id' => $fixed_asset->department->division->id ?? '-',
                 'division_name' => $fixed_asset->department->division->division_name ?? '-',
@@ -467,6 +473,11 @@ class FixedAssetRepository
                 'company_code' => $fixed_asset->department->company->company_code ?? '-',
                 'company_name' => $fixed_asset->department->company->company_name ?? '-',
             ],
+            'business_unit' => [
+                'id' => $fixed_asset->department->businessUnit->id ?? '-',
+                'business_unit_code' => $fixed_asset->department->businessUnit->business_unit_code ?? '-',
+                'business_unit_name' => $fixed_asset->department->businessUnit->business_unit_name ?? '-',
+            ],
             'department' => [
                 'id' => $fixed_asset->department->id ?? '-',
                 'department_code' => $fixed_asset->department->department_code ?? '-',
@@ -489,9 +500,9 @@ class FixedAssetRepository
             ],
             'remarks' => $fixed_asset->remarks,
             'print_count' => $fixed_asset->print_count,
-            'print' => $fixed_asset->print_count > 0 ? 'Ready to Print' : 'Printed',
+            'print' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
             'last_printed' => $fixed_asset->last_printed,
-            'tagging' => $fixed_asset->print_count > 0 ? 'Ready to Tag' : 'Tagged',
+            'tagging' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
             'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
                 return [
                     'id' => $additional_cost->id ?? '-',
@@ -506,6 +517,11 @@ class FixedAssetRepository
                     'accountable' => $additional_cost->accountable ?? '-',
                     'cellphone_number' => $additional_cost->cellphone_number ?? '-',
                     'brand' => $additional_cost->brand ?? '-',
+                    'supplier' => [
+                        'id' => $fixed_asset->supplier->id ?? '-',
+                        'supplier_code' => $fixed_asset->supplier->supplier_code ?? '-',
+                        'supplier_name' => $fixed_asset->supplier->supplier_name ?? '-',
+                    ],
                     'division' => [
                         'id' => $additional_cost->department->division->id ?? '-',
                         'division_name' => $additional_cost->department->division->division_name ?? '-',
@@ -561,6 +577,11 @@ class FixedAssetRepository
                         'company_code' => $additional_cost->department->company->company_code ?? '-',
                         'company_name' => $additional_cost->department->company->company_name ?? '-',
                     ],
+                    'business_unit' => [
+                        'id' => $fixed_asset->department->businessUnit->id ?? '-',
+                        'business_unit_code' => $fixed_asset->department->businessUnit->business_unit_code ?? '-',
+                        'business_unit_name' => $fixed_asset->department->businessUnit->business_unit_name ?? '-',
+                    ],
                     'department' => [
                         'id' => $additional_cost->department->id ?? '-',
                         'department_code' => $additional_cost->department->department_code ?? '-',
@@ -594,12 +615,20 @@ class FixedAssetRepository
             //            'totalCost' => $this->calculationRepository->getTotalCost($fixed_asset->acquisition_cost, $fixed_asset->additionalCost),
             'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
+            'requestor_id' => [
+                'id' => $fixed_asset->requestor->id ?? '-',
+                'username' => $fixed_asset->requestor->username ?? '-',
+                'first_name' => $fixed_asset->requestor->first_name ?? '-',
+                'last_name' => $fixed_asset->requestor->last_name ?? '-',
+                'employee_id' => $fixed_asset->requestor->employee_id ?? '-',
+            ],
             'transaction_number' => $fixed_asset->transaction_number ?? '-',
             'reference_number' => $fixed_asset->reference_number ?? '-',
             'pr_number' => $fixed_asset->pr_number ?? '-',
             'po_number' => $fixed_asset->po_number ?? '-',
             'rr_number' => $fixed_asset->rr_number ?? '-',
             'wh_number' => $fixed_asset->wh_number ?? '-',
+            'from_request' => $fixed_asset->from_request ?? '-',
             'capex' => [
                 'id' => $fixed_asset->capex->id ?? '-',
                 'capex' => $fixed_asset->capex->capex ?? '-',
@@ -623,6 +652,11 @@ class FixedAssetRepository
             'accountable' => $fixed_asset->accountable ?? '-',
             'cellphone_number' => $fixed_asset->cellphone_number ?? '-',
             'brand' => $fixed_asset->brand ?? '-',
+            'supplier' => [
+                'id' => $fixed_asset->supplier->id ?? '-',
+                'supplier_code' => $fixed_asset->supplier->supplier_code ?? '-',
+                'supplier_name' => $fixed_asset->supplier->supplier_name ?? '-',
+            ],
             'division' => [
                 'id' => $fixed_asset->department->division->id ?? '-',
                 'division_name' => $fixed_asset->department->division->division_name ?? '-',
@@ -668,6 +702,11 @@ class FixedAssetRepository
                 'company_code' => $fixed_asset->department->company->company_code ?? '-',
                 'company_name' => $fixed_asset->department->company->company_name ?? '-',
             ],
+            'business_unit' => [
+                'id' => $fixed_asset->department->businessUnit->id ?? '-',
+                'business_unit_code' => $fixed_asset->department->businessUnit->business_unit_code ?? '-',
+                'business_unit_name' => $fixed_asset->department->businessUnit->business_unit_name ?? '-',
+            ],
             'department' => [
                 'id' => $fixed_asset->department->id ?? '-',
                 'department_code' => $fixed_asset->department->department_code ?? '-',
@@ -690,7 +729,7 @@ class FixedAssetRepository
             ],
             'remarks' => $fixed_asset->remarks ?? '-',
             'print_count' => $fixed_asset->print_count,
-            'print' => $fixed_asset->print_count > 0 ? 'Ready to Tag' : 'Tagged',
+            'print' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
             'last_printed' => $fixed_asset->last_printed ?? '-',
             'created_at' => $fixed_asset->created_at ?? '-',
             'add_cost_sequence' => $fixed_asset->add_cost_sequence ?? null,
@@ -711,12 +750,12 @@ class FixedAssetRepository
         ];
 
         // 'ready to print' specific case
-        if (strtolower($search) == 'ready to print' && $item->print_count < 1) {
+        if (strtolower($search) == 'ready to tag' && $item->print_count < 1) {
             return true;
         }
 
         // 'printed' specific case
-        if (strtolower($search) == 'printed' && $item->print_count > 0) {
+        if (strtolower($search) == 'tagged' && $item->print_count > 0) {
             return true;
         }
 

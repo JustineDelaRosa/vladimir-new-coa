@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Masterlist\PrintBarcode;
 
 use App\Http\Controllers\Controller;
+use App\Models\AssetRequest;
 use App\Models\FixedAsset;
 use App\Models\PrinterIP;
 use App\Models\TypeOfRequest;
@@ -22,14 +23,14 @@ class PrintBarCodeController extends Controller
     use ApiResponse;
 
 
-//    function getClientName() {
-//        $clientIP = $_SERVER['REMOTE_ADDR'];
-//        $clientName = gethostbyaddr($clientIP);
-//        $clientNameParts = explode('.', $clientName);
-//
-//        // Returns the computer name without domain
-//        return $clientNameParts[0];
-//    }
+    //    function getClientName() {
+    //        $clientIP = $_SERVER['REMOTE_ADDR'];
+    //        $clientName = gethostbyaddr($clientIP);
+    //        $clientNameParts = explode('.', $clientName);
+    //
+    //        // Returns the computer name without domain
+    //        return $clientNameParts[0];
+    //    }
 
     public function printBarcode(Request $request)
     {
@@ -44,13 +45,13 @@ class PrintBarCodeController extends Controller
 
         $printerIP = PrinterIP::where('ip', $clientIP)->first();
         if (!$printerIP || !$printerIP->is_active) {
-//            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
+            //            return response()->json(['message' => 'You are not allowed to print barcode'], 403);
             return $this->responseUnAuthorized('You are not allowed to print barcode');
         }
 
 
         if (!$tagNumber) {
-//            return response()->json(['message' => 'No data found'], 404);
+            //            return response()->json(['message' => 'No data found'], 404);
             return $this->responseNotFound('No data found');
         }
 
@@ -64,6 +65,7 @@ class PrintBarCodeController extends Controller
 
             foreach ($tagNumber as $VDM) {
                 $fixedAsset = FixedAsset::where('vladimir_tag_number', $VDM['vladimir_tag_number'])->first();
+                $AssetRequest = AssetRequest::where('vladimir_tag_number', $VDM['vladimir_tag_number'])->first();
                 if ($fixedAsset && $fixedAsset->print_count == 0) {
                     //original
                     $zplCode = "^XA
@@ -101,6 +103,8 @@ class PrintBarCodeController extends Controller
                     if ($fixedAsset) {
                         $fixedAsset->increment('print_count', 1);
                         $fixedAsset->update(['last_printed' => Carbon::now()]);
+                        $AssetRequest->increment('print_count', 1);
+                        $AssetRequest->update(['last_printed' => Carbon::now()]);
                     }
                 } else {
                     //Copy
@@ -139,6 +143,8 @@ class PrintBarCodeController extends Controller
                     if ($fixedAsset) {
                         $fixedAsset->increment('print_count', 1);
                         $fixedAsset->update(['last_printed' => Carbon::now()]);
+                        $AssetRequest->increment('print_count', 1);
+                        $AssetRequest->update(['last_printed' => Carbon::now()]);
                     }
                 }
                 $printer->textRaw($zplCode);
@@ -158,55 +164,28 @@ class PrintBarCodeController extends Controller
                     'data' => $tagNumber
                 ], 200);*/
             return $this->responseSuccess('Barcode printed successfully!', $tagNumber);
-
         } catch (Exception $e) {
             // Handle any exceptions that may occur during the printing process
-//            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
+            //            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
 
-//            return response()->json(['message' => 'Unable to Print'], 422);
+            //            return response()->json(['message' => 'Unable to Print'], 422);
             return $this->responseUnprocessable('Unable to Print, Please contact your support team');
         }
     }
 
     public function searchPrint(Request $request)
     {
-//        $request->validate([
-//            'tagNumber' => 'array|min:1',
-//        ],
-//            [
-//                'tagNumber.required' => 'Please select at least one asset',
-//                'tagNumber.array' => 'Please select at least one asset',
-//                'tagNumber.min' => 'Please select at least one assets',
-//            ]);
-
-        //array of vladimir tag number
         $vladimirTagNumbers = $request->get('tagNumber');
-
-        /*$typeOfRequestId = TypeOfRequest::where('type_of_request_name', 'Capex')->pluck('id')->first() ?? 0;
-
-        if($vladimirTagNumbers == null){
-            //get all vladimir tag number
-            $vladimirTagNumbers = FixedAsset::where('type_of_request_id', '!=', $typeOfRequestId)->pluck('vladimir_tag_number')->toArray();
-        }
-
-        $fixedAssetQuery = FixedAsset::whereIn('vladimir_tag_number', $vladimirTagNumbers)
-            ->where('type_of_request_id', '!=', $typeOfRequestId);*/
-
 
         $typesOfRequestId = TypeOfRequest::whereIn('type_of_request_name', ['Capex', 'Vehicle'])->pluck('id')->toArray();
 
         if (empty($vladimirTagNumbers)) {
-//            $vladimirTagNumbers = FixedAsset::whereNotIn('type_of_request_id', array_values($typesOfRequestId))->pluck('vladimir_tag_number')->toArray();
-//            $this->responseUnprocessable('Please select at least one asset');
             return null;
         }
 
         $fixedAssetQuery = FixedAsset::whereIn('vladimir_tag_number', $vladimirTagNumbers)
             ->whereNotIn('type_of_request_id', array_values($typesOfRequestId));
 
-
-//        $result = [];
-        // Chunk the results and populate the result array
         $fixedAssetQuery->chunk(500, function ($assets) use (&$result) {
             foreach ($assets as $asset) {
                 $result[] = [
@@ -221,7 +200,6 @@ class PrintBarCodeController extends Controller
                 ];
             }
         });
-        // Return the result array
         return $result;
     }
 
@@ -250,6 +228,7 @@ class PrintBarCodeController extends Controller
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
         $limit = $request->get('limit');
+        $filter = $request->get('isRequest');
 
         /*//type of request capex should not be printed
         $typeOfRequest = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
@@ -259,7 +238,10 @@ class PrintBarCodeController extends Controller
 
         $typesOfRequestId = TypeOfRequest::whereIn('type_of_request_name', ['Capex', 'Vehicle'])->pluck('id')->toArray();
 
-        $fixedAssetQuery = FixedAsset::whereNotIn('type_of_request_id', array_values($typesOfRequestId));
+        $fixedAssetQuery = FixedAsset::whereNotIn('type_of_request_id', array_values($typesOfRequestId))
+            ->when($filter, function ($query) use ($filter) {
+                return $query->where('from_request', $filter);
+            });
 
         if ($startDate) {
             $startDate = new DateTime($startDate);
@@ -276,65 +258,26 @@ class PrintBarCodeController extends Controller
                 return $this->responseUnprocessable('Invalid date range');
             }
         }
-
-
-        // Add search filter if search is given
-        /*if ($search) {
-            $fixedAssetQuery->where(function ($query) use ($search) {
-                $query->Where('vladimir_tag_number', '=', $search)
-                    ->orWhere('tag_number', 'LIKE', "%$search%")
-                    ->orWhere('tag_number_old', 'LIKE', "%$search%")
-                    ->orWhere('asset_description', 'LIKE', "%$search%")
-                    ->orWhere('accountability', 'LIKE', "%$search%")
-                    ->orWhere('accountable', 'LIKE', "%$search%")
-                    ->orWhere('brand', 'LIKE', "%$search%")
-                    ->orWhere('depreciation_method', 'LIKE', "%$search%");
-                $query->orWhereHas('subCapex', function ($query) use ($search) {
-                    $query->where('sub_capex', 'LIKE', '%' . $search . '%')
-                        ->orWhere('sub_project', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('majorCategory', function ($query) use ($search) {
-                    $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('minorCategory', function ($query) use ($search) {
-                    $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('department.division', function ($query) use ($search) {
-                    $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('assetStatus', function ($query) use ($search) {
-                    $query->where('asset_status_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('cycleCountStatus', function ($query) use ($search) {
-                    $query->where('cycle_count_status_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('depreciationStatus', function ($query) use ($search) {
-                    $query->where('depreciation_status_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('movementStatus', function ($query) use ($search) {
-                    $query->where('movement_status_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('location', function ($query) use ($search) {
-                    $query->where('location_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('company', function ($query) use ($search) {
-                    $query->where('company_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('department', function ($query) use ($search) {
-                    $query->where('department_name', 'LIKE', '%' . $search . '%');
-                });
-                $query->orWhereHas('accountTitle', function ($query) use ($search) {
-                    $query->where('account_title_name', 'LIKE', '%' . $search . '%');
-                });
-            });
-        }*/
-//        $assets = $fixedAssetQuery->paginate($limit);
         $assets = $fixedAssetQuery->useFilters()->dynamicPaginate();
 
         // Return the result array
         $assets->getCollection()->transform(function ($asset) {
             return [
                 'id' => $asset->id,
+                'requestor_id' => [
+                    'id' => $asset->requestor->id ?? '-',
+                    'username' => $asset->requestor->username ?? '-',
+                    'first_name' => $asset->requestor->first_name ?? '-',
+                    'last_name' => $asset->requestor->last_name ?? '-',
+                    'employee_id' => $asset->requestor->employee_id ?? '-',
+                ],
+                'transaction_number' => $asset->transaction_number ?? '-',
+                'reference_number' => $asset->reference_number ?? '-',
+                'pr_number' => $asset->pr_number ?? '-',
+                'po_number' => $asset->po_number ?? '-',
+                'rr_number' => $asset->rr_number ?? '-',
+                'wh_number' => $asset->wh_number ?? '-',
+                'from_request' => $asset->from_request ?? '-',
                 'capex' => [
                     'id' => $asset->capex->id ?? '-',
                     'capex' => $asset->capex->capex ?? '-',
@@ -358,6 +301,11 @@ class PrintBarCodeController extends Controller
                 'accountable' => $asset->accountable,
                 'cellphone_number' => $asset->cellphone_number,
                 'brand' => $asset->brand ?? '-',
+                'supplier' => [
+                    'id' => $asset->supplier->id ?? '-',
+                    'supplier_code' => $asset->supplier->supplier_code ?? '-',
+                    'supplier_name' => $asset->supplier->supplier_name ?? '-',
+                ],
                 'division' => [
                     'id' => $asset->department->division->id ?? '-',
                     'division_name' => $asset->department->division->division_name ?? '-',
@@ -425,6 +373,7 @@ class PrintBarCodeController extends Controller
                 'remarks' => $asset->remarks,
                 'print_count' => $asset->print_count,
                 'last_printed' => $asset->last_printed,
+                'print' => $asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
                 'created_at' => $asset->created_at,
             ];
         });
