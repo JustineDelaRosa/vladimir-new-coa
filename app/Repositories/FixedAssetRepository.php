@@ -2,19 +2,19 @@
 
 namespace App\Repositories;
 
-use App\Http\Controllers\Masterlist\FixedAssetController;
-use App\Models\AdditionalCost;
+use Carbon\Carbon;
 use App\Models\Company;
-use App\Models\FixedAsset;
 use App\Models\Formula;
 use App\Models\Location;
-use App\Models\MajorCategory;
-use App\Models\Status\DepreciationStatus;
 use App\Models\SubCapex;
-use Carbon\Carbon;
-use Illuminate\Pagination\LengthAwarePaginator;
+use App\Models\FixedAsset;
+use App\Models\MajorCategory;
+use App\Models\AdditionalCost;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use App\Models\Status\DepreciationStatus;
+use Illuminate\Pagination\LengthAwarePaginator;
+use App\Http\Controllers\Masterlist\FixedAssetController;
 
 class FixedAssetRepository
 {
@@ -612,7 +612,7 @@ class FixedAssetRepository
     {
         $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? count($fixed_asset->additionalCost) : 0;
         return [
-            //            'totalCost' => $this->calculationRepository->getTotalCost($fixed_asset->acquisition_cost, $fixed_asset->additionalCost),
+            //'totalCost' => $this->calculationRepository->getTotalCost($fixed_asset->acquisition_cost, $fixed_asset->additionalCost),
             'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
             'requestor_id' => [
@@ -795,7 +795,6 @@ class FixedAssetRepository
                 }
             }
         }
-
         return false;
     }
 }
