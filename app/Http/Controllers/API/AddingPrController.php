@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Models\AssetRequest;
-use App\Traits\AddingPrHandler;
-use App\Traits\AssetRequestHandler;
-use Essa\APIToolKit\Api\ApiResponse;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use App\Http\Controllers\Controller;
 
+use App\Models\Approvers;
+use App\Models\AssetRequest;
+use App\Traits\AddPRHandler;
+use Illuminate\Http\Request;
+use App\Traits\AddingPrHandler;
+use Illuminate\Http\JsonResponse;
+use App\Traits\AssetRequestHandler;
+use App\Http\Controllers\Controller;
+use Essa\APIToolKit\Api\ApiResponse;
+use function PHPUnit\Framework\isEmpty;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Http\Requests\AddingPr\CreateAddingPrRequest;
 use App\Http\Requests\AddingPr\UpdateAddingPrRequest;
-use App\Traits\AddPRHandler;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Pagination\LengthAwarePaginator;
-use function PHPUnit\Framework\isEmpty;
 
 class AddingPrController extends Controller
 {
@@ -59,9 +60,33 @@ class AddingPrController extends Controller
         return $this->responseCreated('AssetRequest created successfully', $assetRequest);
     }
 
-    public function show(AssetRequest $assetRequest): JsonResponse
+    public function show(Request $request, $transactionNumber)
     {
-        return $this->responseSuccess(null, $assetRequest);
+        $perPage = $request->input('per_page', null);
+        $requiredRole = ['Purchase Request', 'Admin', 'Super Admin'];
+        $checkUserRole = auth('sanctum')->user()->role->pluck('role_name')->intersect($requiredRole);
+
+        if ($checkUserRole) {
+            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->get();
+        } else {
+            return $this->responseUnprocessable('You are not allowed to view this transaction.');
+        }
+        $assetRequest = $this->transformShowAssetRequest($assetRequest);
+
+        if ($perPage !== null) {
+            $page = $request->input('page', 1);
+            $offset = $page * $perPage - $perPage;
+            $assetRequest = new LengthAwarePaginator($assetRequest->slice($offset, $perPage)->values(), $assetRequest->count(), $perPage, $page, [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]);
+        }
+
+        if ($assetRequest->isEmpty()) {
+            return $this->responseUnprocessable('Asset Request not found.');
+        }
+
+        return $assetRequest;
     }
 
     public function update(UpdateAddingPrRequest $request, $transactionNumber): JsonResponse
