@@ -139,47 +139,34 @@ trait AddingPoHandler
             'po_number' => $assetRequest->po_number ? $assetRequest->po_number : $request->po_number,
             'rr_number' => $assetRequest->rr_number ? $assetRequest->rr_number : $request->rr_number,
             'supplier_id' => $assetRequest->supplier_id ? $assetRequest->supplier_id : $request->supplier_id,
-            'delivery_date' => $assetRequest->delivery_date ? $assetRequest->delivery_date : $request->delivery_date,
+            'acquisition_date' => $assetRequest->acquisition_date ? $assetRequest->acquisition_date : $request->delivery_date,
             'quantity_delivered' => $assetRequest->quantity_delivered + $request->quantity_delivered,
-            'unit_price' => $assetRequest->unit_price ? $assetRequest->unit_price : $request->unit_price,
+            'acquisition_cost' => $assetRequest->acquisition_cost ? $assetRequest->acquisition_cost : $request->unit_price,
         ]);
+
+        // $this->createNewAssetRequests($assetRequest);
     }
 
-    public function createNewAssetRequests($assetRequest)
+    private function getAllitems($transactionNumber)
+    {
+        $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
+            ->where('status', 'Approved')
+            ->get();
+        $assetRequests->each(function ($assetRequest) {
+            $this->createNewAssetRequests($assetRequest);
+        });
+    }
+
+    private function createNewAssetRequests($assetRequest)
     {
         if ($assetRequest->quantity > 1) {
-            foreach (range(1, $assetRequest->quantity - 1) as $index) {
-                $newAssetRequest = $assetRequest->replicate();
-                $newAssetRequest->quantity = 1;
-                $newAssetRequest->vladimir_tag_number = $this->vladimirTagGeneratorRepository->vladimirTagGenerator();
-                $newAssetRequest->quantity_delivered = 1;
-                $newAssetRequest->reference_number = $newAssetRequest->generateReferenceNumber();
-                $newAssetRequest->wh_number = $newAssetRequest->generateWhNumber();
-                $newAssetRequest->save();
-
-
-                $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
-                foreach ($fileKeys as $fileKey) {
-                    $media = $assetRequest->getMedia($fileKey);
-                    foreach ($media as $file) {
-                        $file->copy($newAssetRequest, $fileKey);
-                    }
-                }
-
-                $this->addToFixedAssets($newAssetRequest, $assetRequest->is_addcost);
+            $newQuantity = $assetRequest->quantity_delivered;
+            foreach (range(1, $newQuantity) as $index) {
+                $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost);
             }
+        } else {
+            $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost, false);
         }
-
-        // DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        // $assetRequest->delete();
-        // DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-        $assetRequest->update([
-            'quantity' => 1,
-            'quantity_delivered' => 1,
-            'vladimir_tag_number' => $this->vladimirTagGeneratorRepository->vladimirTagGenerator(),
-            'wh_number' => $assetRequest->generateWhNumber(),
-        ]);
-        $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost);
     }
 
     private function addToFixedAssets($asset, $isAddCost)
@@ -190,19 +177,16 @@ trait AddingPoHandler
         } else {
             $formula = Formula::create([
                 'depreciation_method' => $asset->depreciation_method,
-                'acquisition_date' => $asset->delivery_date,
-                'acquisition_cost' => $asset->unit_price,
+                'acquisition_date' => $asset->acquisition_date,
+                'acquisition_cost' => $asset->acquisition_cost,
             ]);
-            $formula->fixedAsset()->create([
+            $fixedAsset =  $formula->fixedAsset()->create([
                 'requester_id' => $asset->requester_id,
-                'transaction_number' => $asset->transaction_number,
-                'reference_number' => $asset->reference_number,
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
                 'rr_number' => $asset->rr_number,
-                'wh_number' => $asset->wh_number,
                 'from_request' => 1,
-                'vladimir_tag_number' => $asset->vladimir_tag_number,
+                // 'vladimir_tag_number' => $asset->vladimir_tag_number,
                 'asset_description' => $asset->asset_description,
                 'type_of_request_id' => $asset->type_of_request_id,
                 'charged_department' => $asset->department_id,
@@ -214,8 +198,8 @@ trait AddingPoHandler
                 'brand' => $asset->brand,
                 'quantity' => $asset->quantity,
                 'depreciation_method' => $asset->depreciation_method,
-                'acquisition_date' => $asset->delivery_date,
-                'acquisition_cost' => $asset->unit_price,
+                'acquisition_date' => $asset->acquisition_date,
+                'acquisition_cost' => $asset->acquisition_cost,
                 'asset_status_id' => AssetStatus::where('asset_status_name', 'Good')->first()->id,
                 'is_old_asset' => 0,
                 'is_additional_cost' => $asset->is_addcost,
@@ -226,14 +210,32 @@ trait AddingPoHandler
                 'account_id' => $asset->account_title_id,
                 'remarks' => $asset->remarks,
             ]);
+            $fixedAsset->wh_number = $fixedAsset->generateWhNumber();
+            $fixedAsset->vladimir_tag_number = $this->vladimirTagGeneratorRepository->vladimirTagGenerator();
+            $fixedAsset->save();
         }
     }
 
-    public function deleteAssetRequestPo($assetRequest)
+    private function deleteAssetRequestPo($assetRequest)
     {
         $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, 0, false, true);
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         $assetRequest->delete();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+    }
+
+    private function handleQuantityMismatch($assetRequest)
+    {
+        $removedQuantity = $this->quantityRemovedHolder($assetRequest);
+        $storedRemovedQuantity = $removedQuantity;
+
+        $assetRequest->quantity = $assetRequest->quantity_delivered;
+        $assetRequest->save();
+        $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, $storedRemovedQuantity, true, false);
+        $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number, $forTimeline = false);
+        if ($remaining == 0) {
+            $this->getAllitems($assetRequest->transaction_number);
+        }
+        return $this->responseSuccess('Remaining quantity removed successfully!');
     }
 }
