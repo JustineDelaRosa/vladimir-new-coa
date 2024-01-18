@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Approvers;
 use App\Models\AssetApproval;
+use App\Models\FixedAsset;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 
@@ -23,6 +24,7 @@ class AuthController extends Controller
         $pass_decrypt = Crypt::decryptString($user->password);
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
         $toApproveCount = AssetApproval::where('approver_id', $approverId)->where('status', 'For Approval')->count();
+        $toTagCount = FixedAsset::where('from_request', 1)->where('print_count', 0)->count();
 
         //if Username and password match
         // if ($username == $pass_decrypt) {
@@ -45,6 +47,7 @@ class AuthController extends Controller
             'token' => $token,
             'sessionTime' => config('sanctum.expiration'),
             'toApproveCount' => $toApproveCount,
+            "toTagCount" => $toTagCount,
         ];
         //        $cookie = cookie('authcookie', $token);
         //        return response()->json([

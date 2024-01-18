@@ -101,237 +101,25 @@ class FixedAssetExportRepository
         ])->where('additional_costs.is_active', 1)
             ->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
-
-//        if ((!empty($startDate) && empty($endDate)) || (empty($startDate) && !empty($endDate))) {
-//            return response()->json(['error' => 'Please fill both start date and end date'], 400);
-//        }
-
-
-//        if ($search != null && ($startDate == null && $endDate == null)) {
-//            // apply the search condition on the firstQuery
-//            $firstQuery->Where('vladimir_tag_number', 'LIKE', "%$search%")
-//                ->orWhere('tag_number', 'LIKE', "%$search%")
-//                ->orWhere('tag_number_old', 'LIKE', "%$search%")
-//                ->orWhere('accountability', 'LIKE', "%$search%")
-//                ->orWhere('accountable', 'LIKE', "%$search%")
-//                ->orWhere('brand', 'LIKE', "%$search%")
-//                ->orWhere('depreciation_method', 'LIKE', "%$search%");
-//            $firstQuery->orWhereHas('subCapex', function ($query) use ($search) {
-//                $query->where('sub_capex', 'LIKE', '%' . $search . '%')
-//                    ->orWhere('sub_project', 'LIKE', '%' . $search . '%');
-//            });
-//            $firstQuery->orWhereHas('majorCategory', function ($query) use ($search) {
-//                $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $firstQuery->orWhereHas('minorCategory', function ($query) use ($search) {
-//                $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $firstQuery->orWhereHas('department.division', function ($query) use ($search) {
-//                $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $firstQuery->orWhereHas('assetStatus', function ($query) use ($search) {
-//                $query->where('asset_status_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $firstQuery->orWhereHas('cycleCountStatus', function ($query) use ($search) {
-//                $query->where('cycle_count_status_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $firstQuery->orWhereHas('depreciationStatus', function ($query) use ($search) {
-//                $query->where('depreciation_status_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $firstQuery->orWhereHas('movementStatus', function ($query) use ($search) {
-//                $query->where('movement_status_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $firstQuery->orWhereHas('location', function ($query) use ($search) {
-//                $query->where('location_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $firstQuery->orWhereHas('company', function ($query) use ($search) {
-//                $query->where('company_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $firstQuery->orWhereHas('department', function ($query) use ($search) {
-//                $query->where('department_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $firstQuery->orWhereHas('accountTitle', function ($query) use ($search) {
-//                $query->where('account_title_name', 'LIKE', '%' . $search . '%');
-//            });
-//
-//
-//            $secondQuery->Where('vladimir_tag_number', 'LIKE', "%$search%")
-//                ->orWhere('tag_number', 'LIKE', "%$search%")
-//                ->orWhere('tag_number_old', 'LIKE', "%$search%")
-//                ->orWhere('additional_costs.accountability', 'LIKE', "%$search%")
-//                ->orWhere('additional_costs.accountable', 'LIKE', "%$search%")
-//                ->orWhere('additional_costs.brand', 'LIKE', "%$search%")
-//                ->orWhere('additional_costs.depreciation_method', 'LIKE', "%$search%");
-//            $secondQuery->orWhereHas('fixedAsset.subCapex', function ($query) use ($search) {
-//                $query->where('sub_capex', 'LIKE', '%' . $search . '%')
-//                    ->orWhere('sub_project', 'LIKE', '%' . $search . '%');
-//            });
-//            $secondQuery->orWhereHas('majorCategory', function ($query) use ($search) {
-//                $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $secondQuery->orWhereHas('minorCategory', function ($query) use ($search) {
-//                $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $secondQuery->orWhereHas('department.division', function ($query) use ($search) {
-//                $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $secondQuery->orWhereHas('assetStatus', function ($query) use ($search) {
-//                $query->where('asset_status_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $secondQuery->orWhereHas('cycleCountStatus', function ($query) use ($search) {
-//                $query->where('cycle_count_status_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $secondQuery->orWhereHas('depreciationStatus', function ($query) use ($search) {
-//                $query->where('depreciation_status_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $secondQuery->orWhereHas('movementStatus', function ($query) use ($search) {
-//                $query->where('movement_status_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $secondQuery->orWhereHas('location', function ($query) use ($search) {
-//                $query->where('location_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $secondQuery->orWhereHas('company', function ($query) use ($search) {
-//                $query->where('company_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $secondQuery->orWhereHas('department', function ($query) use ($search) {
-//                $query->where('department_name', 'LIKE', '%' . $search . '%');
-//            });
-//            $secondQuery->orWhereHas('accountTitle', function ($query) use ($search) {
-//                $query->where('account_title_name', 'LIKE', '%' . $search . '%');
-//            });
-//        }
-//        if (($startDate && $endDate) || $search) {
-//            $firstQuery->withTrashed()->with([
-//                'formula' => function ($query) {
-//                    $query->withTrashed();
-//                },
-//            ]);
-//
-//// Add date filter if both startDate and endDate are given
-//            if ($startDate && $endDate) {
-//                $firstQuery->whereBetween('created_at', [$startDate, $endDate]);
-//            }
-//
-//// Add search filter if search is given
-//            if ($search) {
-//                $firstQuery->where(function ($query) use ($search) {
-//                    $query->Where('vladimir_tag_number', 'LIKE', "%$search%")
-//                        ->orWhere('tag_number', 'LIKE', "%$search%")
-//                        ->orWhere('tag_number_old', 'LIKE', "%$search%")
-//                        ->orWhere('accountability', 'LIKE', "%$search%")
-//                        ->orWhere('accountable', 'LIKE', "%$search%")
-//                        ->orWhere('brand', 'LIKE', "%$search%")
-//                        ->orWhere('depreciation_method', 'LIKE', "%$search%");
-//                    $query->orWhereHas('subCapex', function ($query) use ($search) {
-//                        $query->where('sub_capex', 'LIKE', '%' . $search . '%')
-//                            ->orWhere('sub_project', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('majorCategory', function ($query) use ($search) {
-//                        $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('minorCategory', function ($query) use ($search) {
-//                        $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('department.division', function ($query) use ($search) {
-//                        $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('assetStatus', function ($query) use ($search) {
-//                        $query->where('asset_status_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('cycleCountStatus', function ($query) use ($search) {
-//                        $query->where('cycle_count_status_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('depreciationStatus', function ($query) use ($search) {
-//                        $query->where('depreciation_status_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('movementStatus', function ($query) use ($search) {
-//                        $query->where('movement_status_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('location', function ($query) use ($search) {
-//                        $query->where('location_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('company', function ($query) use ($search) {
-//                        $query->where('company_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('department', function ($query) use ($search) {
-//                        $query->where('department_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('accountTitle', function ($query) use ($search) {
-//                        $query->where('account_title_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                });
-//            }
-//
-//
-//            $secondQuery->withTrashed()->with([
-//                'formula' => function ($query) {
-//                    $query->withTrashed();
-//                },
-//            ]);
-//
-//// Add date filter if both startDate and endDate are given
-//            if ($startDate && $endDate) {
-//                $secondQuery->whereBetween('fixed_assets.created_at', [$startDate, $endDate]);
-//            }
-//
-//// Add search filter if search is given
-//            if ($search) {
-//                $secondQuery->where(function ($query) use ($search) {
-//                    $query->Where('vladimir_tag_number', 'LIKE', "%$search%")
-//                        ->orWhere('tag_number', 'LIKE', "%$search%")
-//                        ->orWhere('tag_number_old', 'LIKE', "%$search%")
-//                        ->orWhere('additional_costs.accountability', 'LIKE', "%$search%")
-//                        ->orWhere('additional_costs.accountable', 'LIKE', "%$search%")
-//                        ->orWhere('additional_costs.brand', 'LIKE', "%$search%")
-//                        ->orWhere('additional_costs.depreciation_method', 'LIKE', "%$search%");
-//                    $query->orWhereHas('fixedAsset.subCapex', function ($query) use ($search) {
-//                        $query->where('sub_capex', 'LIKE', '%' . $search . '%')
-//                            ->orWhere('sub_project', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('majorCategory', function ($query) use ($search) {
-//                        $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('minorCategory', function ($query) use ($search) {
-//                        $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('department.division', function ($query) use ($search) {
-//                        $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('assetStatus', function ($query) use ($search) {
-//                        $query->where('asset_status_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('cycleCountStatus', function ($query) use ($search) {
-//                        $query->where('cycle_count_status_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('depreciationStatus', function ($query) use ($search) {
-//                        $query->where('depreciation_status_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('movementStatus', function ($query) use ($search) {
-//                        $query->where('movement_status_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('location', function ($query) use ($search) {
-//                        $query->where('location_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('company', function ($query) use ($search) {
-//                        $query->where('company_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('department', function ($query) use ($search) {
-//                        $query->where('department_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                    $query->orWhereHas('accountTitle', function ($query) use ($search) {
-//                        $query->where('account_title_name', 'LIKE', '%' . $search . '%');
-//                    });
-//                });
-//            }
-//
-//        }
-
         $firstQuery = $this->applyFilters($firstQuery, $search, $startDate, $endDate);
-        $secondQuery = $this->applyFilters($secondQuery, $search, $startDate, $endDate,
-            'fixed_assets.created_at', 'fixedAsset.subCapex', 'fixed_assets.accountability',
-            'fixed_assets.accountable', 'fixed_assets.brand', 'fixed_assets.depreciation_method', 'fixed_assets.is_active');
+        $secondQuery = $this->applyFilters(
+            $secondQuery,
+            $search,
+            $startDate,
+            $endDate,
+            'fixed_assets.created_at',
+            'fixedAsset.subCapex',
+            'fixed_assets.accountability',
+            'fixed_assets.accountable',
+            'fixed_assets.brand',
+            'fixed_assets.depreciation_method',
+            'fixed_assets.is_active'
+        );
 
-        $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number')->get();
+        $results = $firstQuery->unionAll($secondQuery)
+            ->whereNotNull('major_category_id')
+            ->orderBy('vladimir_tag_number')
+            ->get();
         //if results are empty
         if ($results->isEmpty()) {
             return response()->json([
@@ -344,8 +132,7 @@ class FixedAssetExportRepository
             ], 422);
         }
 
-
-//        return $results;
+        //        return $results;
         return $this->refactorExport($results);
     }
 
@@ -388,7 +175,7 @@ class FixedAssetExportRepository
                 'acquisition_cost' => $fixed_asset->formula->acquisition_cost,
                 'scrap_value' => $fixed_asset->formula->scrap_value,
                 'depreciable_basis' => $fixed_asset->formula->depreciable_basis,
-                'accumulated_cost' =>$fixed_asset->formula->accumulated_cost, //$accumulated_cost,
+                'accumulated_cost' => $fixed_asset->formula->accumulated_cost, //$accumulated_cost,
                 'asset_status' => $fixed_asset->assetStatus->asset_status_name,
                 'cycle_count_status' => $fixed_asset->cycleCountStatus->cycle_count_status_name,
                 'depreciation_status' => $fixed_asset->depreciationStatus->depreciation_status_name,
@@ -400,12 +187,12 @@ class FixedAssetExportRepository
                 'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month, //$depreciation_rate['monthly'],
                 'remaining_book_value' => $fixed_asset->formula->remaining_book_value,  //$this->calculateRemainingBookValue($fixed_asset, $accumulated_cost),
                 'release_date' => $fixed_asset->formula->release_date ?? '-',
-                'start_depreciation' =>$fixed_asset->formula->start_depreciation ? str_replace('-', '',$fixed_asset->formula->start_depreciation): '-',
+                'start_depreciation' => $fixed_asset->formula->start_depreciation ? str_replace('-', '', $fixed_asset->formula->start_depreciation) : '-',
                 'company_code' => $fixed_asset->company->company_code,
                 'company_name' => $fixed_asset->company->company_name,
                 'department_code' => $fixed_asset->department->department_code,
                 //get the department id of the charged department and get the department name
-                'charged_department' => $fixed_asset->department->where('id', $fixed_asset->charged_department)->first()->department_name ?? '-' ,
+                'charged_department' => $fixed_asset->department->where('id', $fixed_asset->charged_department)->first()->department_name ?? '-',
                 'department_name' => $fixed_asset->department->department_name,
                 'location_code' => $fixed_asset->location->location_code,
                 'location_name' => $fixed_asset->location->location_name,
@@ -453,91 +240,94 @@ class FixedAssetExportRepository
     }
 
 
-    function applyFilters($query, $search, $startDate, $endDate,
-                          $created_at = 'created_at',
-                          $relation = 'subCapex',
-                          $accountability = 'accountability',
-                          $accountable = 'accountable',
-                          $brand = 'brand',
-                          $depreciation_method = 'depreciation_method',
-                          $is_active = 'is_active')
-    {
+    function applyFilters(
+        $query,
+        $search,
+        $startDate,
+        $endDate,
+        $created_at = 'created_at',
+        $relation = 'subCapex',
+        $accountability = 'accountability',
+        $accountable = 'accountable',
+        $brand = 'brand',
+        $depreciation_method = 'depreciation_method',
+        $is_active = 'is_active'
+    ) {
         $query->where($is_active, 1);
-//        if ($search != null && ($startDate == null && $endDate == null)) {
-//
-//            $query->where(function ($q) use ($relation, $depreciation_method, $brand, $accountable, $accountability, $search) {
-//                $queryConditions = [
-//                    'vladimir_tag_number',
-//                    'tag_number',
-//                    'tag_number_old',
-//                    $accountability,
-//                    $accountable,
-//                    $brand,
-//                    $depreciation_method];
-//
-//                foreach ($queryConditions as $condition) {
-//                    $q->orWhere($condition, 'LIKE', "%$search%");
-//                }
-//                $q->orWhereHas('typeOfRequest', function ($query) use ($search) {
-//                    $query->where('type_of_request_name', $search);
-//                });
-//                $q->orWhereHas($relation, function ($query) use ($search) {
-//                    $query->where('sub_capex', 'LIKE', '%' . $search . '%')
-//                        ->orWhere('sub_project', 'LIKE', '%' . $search . '%');
-//                });
-//                $q->orWhereHas('majorCategory', function ($query) use ($search) {
-//                    $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $q->orWhereHas('minorCategory', function ($query) use ($search) {
-//                    $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $q->orWhereHas('department.division', function ($query) use ($search) {
-//                    $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $q->orWhereHas('assetStatus', function ($query) use ($search) {
-//                    $query->where('asset_status_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $q->orWhereHas('cycleCountStatus', function ($query) use ($search) {
-//                    $query->where('cycle_count_status_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $q->orWhereHas('depreciationStatus', function ($query) use ($search) {
-//                    $query->where('depreciation_status_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $q->orWhereHas('movementStatus', function ($query) use ($search) {
-//                    $query->where('movement_status_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $q->orWhereHas('location', function ($query) use ($search) {
-//                    $query->where('location_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $q->orWhereHas('company', function ($query) use ($search) {
-//                    $query->where('company_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $q->orWhereHas('department', function ($query) use ($search) {
-//                    $query->where('department_name', 'LIKE', '%' . $search . '%');
-//                });
-//                $q->orWhereHas('accountTitle', function ($query) use ($search) {
-//                    $query->where('account_title_name', 'LIKE', '%' . $search . '%');
-//                });
-//            });
-//        }
+        //        if ($search != null && ($startDate == null && $endDate == null)) {
+        //
+        //            $query->where(function ($q) use ($relation, $depreciation_method, $brand, $accountable, $accountability, $search) {
+        //                $queryConditions = [
+        //                    'vladimir_tag_number',
+        //                    'tag_number',
+        //                    'tag_number_old',
+        //                    $accountability,
+        //                    $accountable,
+        //                    $brand,
+        //                    $depreciation_method];
+        //
+        //                foreach ($queryConditions as $condition) {
+        //                    $q->orWhere($condition, 'LIKE', "%$search%");
+        //                }
+        //                $q->orWhereHas('typeOfRequest', function ($query) use ($search) {
+        //                    $query->where('type_of_request_name', $search);
+        //                });
+        //                $q->orWhereHas($relation, function ($query) use ($search) {
+        //                    $query->where('sub_capex', 'LIKE', '%' . $search . '%')
+        //                        ->orWhere('sub_project', 'LIKE', '%' . $search . '%');
+        //                });
+        //                $q->orWhereHas('majorCategory', function ($query) use ($search) {
+        //                    $query->withTrashed()->where('major_category_name', 'LIKE', '%' . $search . '%');
+        //                });
+        //                $q->orWhereHas('minorCategory', function ($query) use ($search) {
+        //                    $query->withTrashed()->where('minor_category_name', 'LIKE', '%' . $search . '%');
+        //                });
+        //                $q->orWhereHas('department.division', function ($query) use ($search) {
+        //                    $query->withTrashed()->where('division_name', 'LIKE', '%' . $search . '%');
+        //                });
+        //                $q->orWhereHas('assetStatus', function ($query) use ($search) {
+        //                    $query->where('asset_status_name', 'LIKE', '%' . $search . '%');
+        //                });
+        //                $q->orWhereHas('cycleCountStatus', function ($query) use ($search) {
+        //                    $query->where('cycle_count_status_name', 'LIKE', '%' . $search . '%');
+        //                });
+        //                $q->orWhereHas('depreciationStatus', function ($query) use ($search) {
+        //                    $query->where('depreciation_status_name', 'LIKE', '%' . $search . '%');
+        //                });
+        //                $q->orWhereHas('movementStatus', function ($query) use ($search) {
+        //                    $query->where('movement_status_name', 'LIKE', '%' . $search . '%');
+        //                });
+        //                $q->orWhereHas('location', function ($query) use ($search) {
+        //                    $query->where('location_name', 'LIKE', '%' . $search . '%');
+        //                });
+        //                $q->orWhereHas('company', function ($query) use ($search) {
+        //                    $query->where('company_name', 'LIKE', '%' . $search . '%');
+        //                });
+        //                $q->orWhereHas('department', function ($query) use ($search) {
+        //                    $query->where('department_name', 'LIKE', '%' . $search . '%');
+        //                });
+        //                $q->orWhereHas('accountTitle', function ($query) use ($search) {
+        //                    $query->where('account_title_name', 'LIKE', '%' . $search . '%');
+        //                });
+        //            });
+        //        }
 
         if (($startDate || $endDate) || $search) {
 
-//            if ($startDate && $endDate) {
-//                //Ensure the dates are in Y-m-d H:i:s format
-//                $startDate = new DateTime($startDate);
-//                $endDate = new DateTime($endDate);
-//
-//                //set time to end of day
-//                $endDate->setTime(23, 59, 59);
-//
-//                $query->whereBetween($created_at, [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
-//            }
+            //            if ($startDate && $endDate) {
+            //                //Ensure the dates are in Y-m-d H:i:s format
+            //                $startDate = new DateTime($startDate);
+            //                $endDate = new DateTime($endDate);
+            //
+            //                //set time to end of day
+            //                $endDate->setTime(23, 59, 59);
+            //
+            //                $query->whereBetween($created_at, [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]);
+            //            }
 
             if ($startDate) {
                 $startDate = new DateTime($startDate);
                 $query->where($created_at, '>=', $startDate->format('Y-m-d H:i:s'));
-
             }
 
             if ($endDate) {
@@ -557,7 +347,8 @@ class FixedAssetExportRepository
                         $accountability,
                         $accountable,
                         $brand,
-                        $depreciation_method];
+                        $depreciation_method
+                    ];
 
                     foreach ($queryConditions as $condition) {
                         $q->orWhere($condition, 'LIKE', "%$search%");
@@ -607,5 +398,4 @@ class FixedAssetExportRepository
         }
         return $query;
     }
-
 }

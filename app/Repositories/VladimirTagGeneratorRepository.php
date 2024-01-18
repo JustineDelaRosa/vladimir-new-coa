@@ -16,7 +16,7 @@ class VladimirTagGeneratorRepository
 
         return $generatedEan13Result;
     }
-    function generateEan13(): string
+    private function generateEan13(): string
     {
         $date = date('ymd');
         static $lastRandom = 0;
@@ -38,7 +38,7 @@ class VladimirTagGeneratorRepository
 
         return $ean13Result;
     }
-    function calculateCheckDigit(string $number): int
+    private function calculateCheckDigit(string $number): int
     {
         $evenSum = $this->calculateEvenSum($number);
         $oddSum = $this->calculateOddSum($number);
@@ -49,7 +49,7 @@ class VladimirTagGeneratorRepository
 
         return $checkDigit;
     }
-    function calculateEvenSum(string $number): int
+    private function calculateEvenSum(string $number): int
     {
         $evenSum = 0;
         for ($i = 1; $i < 12; $i += 2) {
@@ -57,7 +57,7 @@ class VladimirTagGeneratorRepository
         }
         return $evenSum * 3;
     }
-    function calculateOddSum(string $number): int
+    private function calculateOddSum(string $number): int
     {
         $oddSum = 0;
         for ($i = 0; $i < 12; $i += 2) {
@@ -65,7 +65,7 @@ class VladimirTagGeneratorRepository
         }
         return $oddSum;
     }
-    function checkDuplicateEan13(string $ean13Result): bool
+    private function checkDuplicateEan13(string $ean13Result): bool
     {
         $generated = [];
         return in_array($ean13Result, $generated) || FixedAsset::where('vladimir_tag_number', $ean13Result)->exists();

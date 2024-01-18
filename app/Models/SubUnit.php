@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 class SubUnit extends Model
 {
-    use HasFactory,Filterable,SoftDeletes;
+    use HasFactory, Filterable, SoftDeletes;
 
-protected string $default_filters = SubUnitFilters::class;
+    protected string $default_filters = SubUnitFilters::class;
 
     /**
      * Mass-assignable attributes.
@@ -22,18 +22,20 @@ protected string $default_filters = SubUnitFilters::class;
      */
     protected $guarded = [];
 
-//    private static function latest()
-//    {
-//        $subUnit = self::orderBy('id', 'desc')->first();
-//        return $subUnit;
-//    }
+    //    private static function latest()
+    //    {
+    //        $subUnit = self::orderBy('id', 'desc')->first();
+    //        return $subUnit;
+    //    }
 
 
-    public function department(){
-        return $this->belongsTo(Department::class,'department_id','id');
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id', 'id');
     }
-    public function departmentUnitApprovers(){
-        return $this->hasMany(DepartmentUnitApprovers::class,'subunit_id','id');
+    public function departmentUnitApprovers()
+    {
+        return $this->hasMany(DepartmentUnitApprovers::class, 'subunit_id', 'id');
     }
 
     public function archive($id)
@@ -43,7 +45,8 @@ protected string $default_filters = SubUnitFilters::class;
         $subUnit->delete();
         return $subUnit;
     }
-    public function restoreSubUnit($id){
+    public function restoreSubUnit($id)
+    {
         $subUnit = self::withTrashed()->find($id);
         $subUnit->restore();
         $subUnit->update(['is_active' => true]);
@@ -56,7 +59,7 @@ protected string $default_filters = SubUnitFilters::class;
     {
         $subUnitCode = null;
 
-        DB::transaction(function() use (&$subUnitCode) {
+        DB::transaction(function () use (&$subUnitCode) {
             $subUnit = self::withTrashed()->latest()->lockForUpdate()->first();
             $subUnitCode = (!empty($subUnit)) ? $subUnit->id + 1 : 1;
             $subUnitCode = str_pad($subUnitCode, 4, '0', STR_PAD_LEFT);

@@ -28,15 +28,15 @@ class AdditionalCostRepository
         $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
         $depreciationMethod = strtoupper($request['depreciation_method']);
         if ($depreciationMethod !== 'DONATION') {
-            $depstatus = DepreciationStatus::where('id',$request['depreciation_status_id'])->first();
+            $depstatus = DepreciationStatus::where('id', $request['depreciation_status_id'])->first();
             //if the depreciation status name id Fully depreciated, run end depreciation to check the validity
-            if($depstatus->depreciation_status_name == 'Fully Depreciated'){
+            if ($depstatus->depreciation_status_name == 'Fully Depreciated') {
                 //check if release date is not null
-                if(isset($request['release_date'])){
+                if (isset($request['release_date'])) {
                     $end_depreciation = $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])));
-//                    dd($end_depreciation);
+                    //                    dd($end_depreciation);
                     //check if it really fully depreciated and passed the date today
-                    if($end_depreciation >= Carbon::now()){
+                    if ($end_depreciation >= Carbon::now()) {
                         return 'Not yet fully depreciated';
                     }
                 }
@@ -55,11 +55,13 @@ class AdditionalCostRepository
             'months_depreciated' => $request['months_depreciated'] ?? 0,
             'release_date' => $request['release_date'] ?? Null,
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
-                ? $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']),
+                ? $this->calculationRepository->getEndDepreciation(
+                    $this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
                     strtoupper($request['depreciation_method']) == 'STL'
                         ? strtoupper($request['depreciation_method'])
-                        : ucwords(strtolower($request['depreciation_method'])))
+                        : ucwords(strtolower($request['depreciation_method']))
+                )
                 : null,
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
@@ -74,12 +76,12 @@ class AdditionalCostRepository
             'add_cost_sequence' => $this->getAddCostSequence($request['fixed_asset_id']) ?? '-',
             'asset_description' => $request['asset_description'],
             'type_of_request_id' => $request['type_of_request_id'],
-//            'charged_department'=> ucwords(strtolower($collection['charged_department'] ?? '-')) ,
+            //            'charged_department'=> ucwords(strtolower($collection['charged_department'] ?? '-')) ,
             'asset_specification' => $request['asset_specification'],
             'accountability' => $request['accountability'],
             'accountable' => $request['accountable'] ?? '-',
             'cellphone_number' => $request['cellphone_number'] ?? '-',
-            'brand' => ucwords(strtolower($request['brand'] ?? '-')) ,
+            'brand' => ucwords(strtolower($request['brand'] ?? '-')),
             'major_category_id' => $request['major_category_id'],
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
@@ -95,7 +97,7 @@ class AdditionalCostRepository
             'depreciation_status_id' => $request['depreciation_status_id'],
             'cycle_count_status_id' => $request['cycle_count_status_id'],
             'movement_status_id' => $request['movement_status_id'],
-//            'is_old_asset' => $request['is_old_asset'] ?? 0,
+            //            'is_old_asset' => $request['is_old_asset'] ?? 0,
             'care_of' => ucwords(strtolower($request['care_of'] ?? '-')),
             'company_id' => Company::where('sync_id', $departmentQuery->company_sync_id)->first()->id ?? null,
             'department_id' => $request['department_id'],
@@ -113,15 +115,15 @@ class AdditionalCostRepository
         $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
         $depreciationMethod = strtoupper($request['depreciation_method']);
         if ($depreciationMethod !== 'DONATION') {
-            $depstatus = DepreciationStatus::where('id',$request['depreciation_status_id'])->first();
+            $depstatus = DepreciationStatus::where('id', $request['depreciation_status_id'])->first();
             //if the depreciation status name id Fully depreciated, run end depreciation to check the validity
-            if($depstatus->depreciation_status_name == 'Fully Depreciated'){
+            if ($depstatus->depreciation_status_name == 'Fully Depreciated') {
                 //check if release date is not null
-                if(isset($request['release_date'])){
+                if (isset($request['release_date'])) {
                     $end_depreciation = $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])));
-//                    dd($end_depreciation);
+                    //                    dd($end_depreciation);
                     //check if it really fully depreciated and passed the date today
-                    if($end_depreciation >= Carbon::now()){
+                    if ($end_depreciation >= Carbon::now()) {
                         return 'Not yet fully depreciated';
                     }
                 }
@@ -129,15 +131,15 @@ class AdditionalCostRepository
         }
         $additionalCost = AdditionalCost::find($id);
         $additionalCost->update([
-//            'fixed_asset_id' => $request['fixed_asset_id'],
+            //            'fixed_asset_id' => $request['fixed_asset_id'],
             'asset_description' => $request['asset_description'],
             'type_of_request_id' => $request['type_of_request_id'],
-//            'charged_department'=> ucwords(strtolower($collection['charged_department'] ?? '-')) ,
+            //            'charged_department'=> ucwords(strtolower($collection['charged_department'] ?? '-')) ,
             'asset_specification' => $request['asset_specification'],
             'accountability' => $request['accountability'],
             'accountable' => $request['accountable'] ?? '-',
             'cellphone_number' => $request['cellphone_number'] ?? '-',
-            'brand' => ucwords(strtolower($request['brand'] ?? '-')) ,
+            'brand' => ucwords(strtolower($request['brand'] ?? '-')),
             'major_category_id' => $request['major_category_id'],
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
@@ -153,7 +155,7 @@ class AdditionalCostRepository
             'depreciation_status_id' => $request['depreciation_status_id'],
             'cycle_count_status_id' => $request['cycle_count_status_id'],
             'movement_status_id' => $request['movement_status_id'],
-//            'is_old_asset' => $request['is_old_asset'] ?? 0,
+            //            'is_old_asset' => $request['is_old_asset'] ?? 0,
             'care_of' => ucwords(strtolower($request['care_of'] ?? '-')),
             'company_id' => Company::where('sync_id', $departmentQuery->company_sync_id)->first()->id ?? null,
             'department_id' => $request['department_id'],
@@ -173,11 +175,13 @@ class AdditionalCostRepository
             'months_depreciated' => $request['months_depreciated'] ?? 0,
             'release_date' => $request['release_date'] ?? Null,
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
-                ? $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']),
+                ? $this->calculationRepository->getEndDepreciation(
+                    $this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
                     strtoupper($request['depreciation_method']) == 'STL'
                         ? strtoupper($request['depreciation_method'])
-                        : ucwords(strtolower($request['depreciation_method'])))
+                        : ucwords(strtolower($request['depreciation_method']))
+                )
                 : null,
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
@@ -195,7 +199,7 @@ class AdditionalCostRepository
         $additionalCostArr = [];
 
         foreach ($additionalCost as $additionalCosts) {
-            $additionalCostArr [] = $this->transformSingleAdditionalCost($additionalCosts);
+            $additionalCostArr[] = $this->transformSingleAdditionalCost($additionalCosts);
         }
         return $additionalCostArr;
     }
@@ -203,7 +207,7 @@ class AdditionalCostRepository
     public function transformSingleAdditionalCost($additional_cost): array
     {
         return [
-//            'total_adcost' => $this->calculationRepository->getTotalCost($additional_cost->fixedAsset->additionalCosts),
+            //            'total_adcost' => $this->calculationRepository->getTotalCost($additional_cost->fixedAsset->additionalCosts),
             'id' => $additional_cost->id,
             'add_cost_sequence' => $additional_cost->add_cost_sequence,
             'fixed_asset' => [
@@ -211,6 +215,18 @@ class AdditionalCostRepository
                 'vladimir_tag_number' => $additional_cost->fixedAsset->vladimir_tag_number,
                 'asset_description' => $additional_cost->fixedAsset->asset_description,
             ],
+            'requestor_id' => [
+                'id' => $additional_cost->requestor->id ?? '-',
+                'username' => $additional_cost->requestor->username ?? '-',
+                'first_name' => $additional_cost->requestor->first_name ?? '-',
+                'last_name' => $additional_cost->requestor->last_name ?? '-',
+                'employee_id' => $additional_cost->requestor->employee_id ?? '-',
+            ],
+            'pr_number' => $additional_cost->pr_number ?? '-',
+            'po_number' => $additional_cost->po_number ?? '-',
+            'rr_number' => $additional_cost->rr_number ?? '-',
+            'wh_number' => $additional_cost->wh_number ?? '-',
+            'from_request' => $additional_cost->from_request ?? '-',
             'capex' => [
                 'id' => $additional_cost->fixedAsset->capex->id ?? '-',
                 'capex' => $additional_cost->fixedAsset->capex->capex ?? '-',
@@ -234,6 +250,11 @@ class AdditionalCostRepository
             'accountable' => $additional_cost->accountable,
             'cellphone_number' => $additional_cost->cellphone_number,
             'brand' => $additional_cost->brand ?? '-',
+            'supplier' => [
+                'id' => $additional_cost->supplier->id ?? '-',
+                'supplier_code' => $additional_cost->supplier->supplier_code ?? '-',
+                'supplier_name' => $additional_cost->supplier->supplier_name ?? '-',
+            ],
             'division' => [
                 'id' => $additional_cost->department->division->id ?? '-',
                 'division_name' => $additional_cost->department->division->division_name ?? '-',
@@ -288,6 +309,11 @@ class AdditionalCostRepository
                 'company_code' => $additional_cost->department->company->company_code ?? '-',
                 'company_name' => $additional_cost->department->company->company_name ?? '-',
             ],
+            'business_unit' => [
+                'id' => $additional_cost->department->businessUnit->id ?? '-',
+                'business_unit_code' => $additional_cost->department->businessUnit->business_unit_code ?? '-',
+                'business_unit_name' => $additional_cost->department->businessUnit->business_unit_name ?? '-',
+            ],
             'department' => [
                 'id' => $additional_cost->department->id ?? '-',
                 'department_code' => $additional_cost->department->department_code ?? '-',
@@ -308,7 +334,7 @@ class AdditionalCostRepository
                 'account_title_code' => $additional_cost->accountTitle->account_title_code ?? '-',
                 'account_title_name' => $additional_cost->accountTitle->account_title_name ?? '-',
             ],
-            'main' =>[
+            'main' => [
                 'id' => $additional_cost->fixedAsset->id,
                 'capex' => [
                     'id' => $additional_cost->fixedAsset->capex->id ?? '-',
@@ -373,7 +399,7 @@ class AdditionalCostRepository
                     'id' => $additional_cost->fixedAsset->movementStatus->id ?? '-',
                     'movement_status_name' => $additional_cost->fixedAsset->movementStatus->movement_status_name ?? '-',
                 ],
-                'is_additional_cost'=> $additional_cost->fixedAsset->is_additional_cost,
+                'is_additional_cost' => $additional_cost->fixedAsset->is_additional_cost,
                 'is_old_asset' => $additional_cost->fixedAsset->is_old_asset,
                 'status' => $additional_cost->fixedAsset->is_active,
                 'care_of' => $additional_cost->fixedAsset->care_of,
@@ -425,7 +451,7 @@ class AdditionalCostRepository
         // Default next letter is 'A'
         $next_letter = 'A';
 
-        if(!$additional_costs->isEmpty()){
+        if (!$additional_costs->isEmpty()) {
             // Get the sequence of the last additional cost
             $last_sequence = $additional_costs->last()->add_cost_sequence;
 
@@ -433,7 +459,7 @@ class AdditionalCostRepository
             $last_letter = strtoupper(substr($last_sequence, -1));
 
             // If the last letter isn't 'Z', get the next letter in the alphabet
-            if($last_letter !== 'Z'){
+            if ($last_letter !== 'Z') {
                 $next_letter = chr(ord($last_letter) + 1);
             }
         }
