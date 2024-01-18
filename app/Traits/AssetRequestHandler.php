@@ -361,8 +361,8 @@ trait AssetRequestHandler
                 'ordered' => $ar->quantity,
                 'delivered' => $ar->quantity_delivered ?? '-',
                 'remaining' => $ar->quantity - $ar->quantity_delivered ?? '-',
-                'unit_price' => $ar->unit_price ?? '-',
-                'delivery_date' => $ar->delivery_date ?? '-',
+                // 'unit_price' => $ar->unit_price ?? '-',
+                // 'delivery_date' => $ar->delivery_date ?? '-',
                 'requestor' => [
                     'id' => $ar->requestor->id,
                     'username' => $ar->requestor->username,

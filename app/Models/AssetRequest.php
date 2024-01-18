@@ -2,21 +2,21 @@
 
 namespace App\Models;
 
-use App\Filters\AssetRequestFilters;
+use Exception;
 use App\Filters\LocationFilters;
+use Spatie\MediaLibrary\HasMedia;
 use App\Models\Status\AssetStatus;
-use App\Models\Status\CycleCountStatus;
-use App\Models\Status\DepreciationStatus;
+use Illuminate\Support\Facades\DB;
+use App\Filters\AssetRequestFilters;
 use App\Models\Status\MovementStatus;
+use App\Models\Status\CycleCountStatus;
 use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Model;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Activity;
-use Spatie\MediaLibrary\HasMedia;
+use App\Models\Status\DepreciationStatus;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 
 class AssetRequest extends Model implements HasMedia
@@ -28,36 +28,6 @@ class AssetRequest extends Model implements HasMedia
     protected $guarded = [];
 
     protected string $default_filters = AssetRequestFilters::class;
-
-    //    protected function last(){
-    //        $lastRecord = null;
-    //        try {
-    //            $lastRecord = static::withTrashed()->latest()->first();
-    //        } catch (\Exception $e) {
-    //            //add more appropriate exception handling here.
-    //        }
-    //        return $lastRecord;
-    //    }
-
-    // public function generateReferenceNumber(): ?string
-    // {
-    //     try {
-    //         $referenceNumber = null;
-
-    //         DB::transaction(function () use (&$referenceNumber) {
-    //             // Get last row with "FOR UPDATE" to prevent other processes from reading the same row
-    //             $last = static::withTrashed()->latest()->lockForUpdate()->first();
-
-    //             $lastId = $last ? $last->id : 0;
-    //             $referenceNumber = str_pad($lastId + 1, 4, '0', STR_PAD_LEFT);
-    //         });
-
-    //         return $referenceNumber;
-    //     } catch (\Exception $e) {
-    //         // Handle exception if necessary
-    //         return null;
-    //     }
-    // }
 
     public function generateReferenceNumber(): ?string
     {
@@ -74,27 +44,6 @@ class AssetRequest extends Model implements HasMedia
             $this->save();
 
             return $this->reference_number;
-        } catch (\Exception $e) {
-            // Handle exception if necessary
-            return null;
-        }
-    }
-
-    public function generateWhNumber()
-    {
-        try {
-            // Ensure the model has been saved and has an ID
-            if ($this->id === null) {
-                $this->save();
-            }
-            $warehouseNumber = $this->transaction_number + $this->id;
-            // Use the ID as the reference number
-            $this->wh_number = str_pad($warehouseNumber, 4, '0', STR_PAD_LEFT);
-
-            // Save the model again to store the reference number
-            $this->save();
-
-            return $this->wh_number;
         } catch (\Exception $e) {
             // Handle exception if necessary
             return null;
