@@ -23,8 +23,6 @@ class CreateAdditionalCostsTable extends Migration
                 ->references('id')
                 ->on('fixed_assets')
                 ->onDelete('cascade');
-            $table->string('transaction_number')->index()->nullable();
-            $table->string('reference_number');
             $table->string('pr_number')->nullable();
             $table->string('po_number')->nullable();
             $table->string('rr_number')->nullable();

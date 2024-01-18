@@ -28,8 +28,8 @@ class CreateAssetRequestsTable extends Migration
             $table->unsignedInteger('fixed_asset_id')->nullable();
             $table->string('additional_info')->nullable();
             $table->string('acquisition_details');
-            $table->date('delivery_date')->nullable(); //? Delivery Date = Acquisition Date
-            $table->double('unit_price')->nullable(); //? Unit Price = original price or acquisition cost
+            // $table->date('delivery_date')->nullable(); //? Delivery Date = Acquisition Date
+            //  $table->double('unit_price')->nullable(); //? Unit Price = original price or acquisition cost
             $table->unsignedInteger('supplier_id')->nullable();
             $table->boolean('released')->default(0);
 
@@ -45,7 +45,7 @@ class CreateAssetRequestsTable extends Migration
             $table->string('cellphone_number')->nullable();
             $table->string('brand');
             $table->integer('quantity')->nullable();
-            $table->integer('quantity_delivered')->nullable();
+            $table->integer('quantity_delivered')->nullable()->default(0);
 
             //ATTACHMENT TYPE
             $table->enum('attachment_type', ['Budgeted', 'Unbudgeted']);
@@ -53,7 +53,7 @@ class CreateAssetRequestsTable extends Migration
             //ADDITIONAL FIELDS TO BE ADDED
             //            $table->unsignedInteger('capex_id')->nullable();
             //            $table->unsignedInteger('sub_capex_id')->nullable();
-            $table->string('vladimir_tag_number')->nullable();
+            // $table->string('vladimir_tag_number')->nullable();
 
             $table->string('capitalized')->default('Capitalized');
 
