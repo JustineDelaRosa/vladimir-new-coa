@@ -225,7 +225,48 @@ class FixedAssetRepository
 
     public function searchFixedAsset($search, $status, $page, $per_page = null)
     {
-        $fixedAssetFields = [
+        $results = $this->getSearchResults($status);
+
+        if (!empty($search)) {
+            $results = $this->filterSearchResults($results, $search);
+        }
+
+        $results = $this->paginateResults($results, $per_page, $page);
+
+        $results->setCollection($results->getCollection()->values());
+        $results->getCollection()->transform(function ($item) {
+            return $this->transformSearchFixedAsset($item);
+        });
+
+        return $results;
+    }
+
+    private function getSearchResults($status)
+    {
+        $fixedAssetFields = $this->getFixedAssetFields();
+        $additionalCostFields = $this->getAdditionalCostFields();
+
+        $firstQuery = ($status === 'deactivated')
+            ? FixedAsset::onlyTrashed()->select($fixedAssetFields)
+            : FixedAsset::select($fixedAssetFields);
+
+        $secondQuery = ($status === 'deactivated')
+            ? AdditionalCost::onlyTrashed()->select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
+            : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
+
+        return $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'asc')->get();
+    }
+
+    private function filterSearchResults($results, $search)
+    {
+        return $results->filter(function ($item) use ($search) {
+            return $this->searchInMainAttributes($item, $search) || $this->searchInRelationAttributes($item, $search);
+        });
+    }
+
+    private function getFixedAssetFields()
+    {
+        return [
             'id',
             'requester_id',
             'pr_number',
@@ -275,8 +316,11 @@ class FixedAssetRepository
             'last_printed',
             DB::raw("NULL as add_cost_sequence"),
         ];
+    }
 
-        $additionalCostFields = [
+    private function getAdditionalCostFields()
+    {
+        return [
             'additional_costs.id',
             'additional_costs.requester_id',
             'additional_costs.pr_number',
@@ -326,30 +370,6 @@ class FixedAssetRepository
             'fixed_assets.last_printed',
             'additional_costs.add_cost_sequence',
         ];
-        $firstQuery = ($status === 'deactivated')
-            ? FixedAsset::onlyTrashed()->select($fixedAssetFields)
-            : FixedAsset::select($fixedAssetFields);
-
-        $secondQuery = ($status === 'deactivated')
-            ? AdditionalCost::onlyTrashed()->select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
-            : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
-
-        $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'asc')->get();
-
-        //if search is not empty
-        if (!empty($search)) {
-            $results = $results->filter(function ($item) use ($search) {
-                return $this->searchInMainAttributes($item, $search) || $this->searchInRelationAttributes($item, $search);
-            });
-        }
-
-        $results = $this->paginateResults($results, $per_page, $page);
-
-        $results->setCollection($results->getCollection()->values());
-        $results->getCollection()->transform(function ($item) {
-            return $this->transformSearchFixedAsset($item);
-        });
-        return $results;
     }
 
     public function transformFixedAsset($fixed_asset): array
