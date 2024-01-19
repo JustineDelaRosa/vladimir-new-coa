@@ -6,6 +6,7 @@ namespace App\Http\Controllers\API;
 use App\Models\Approvers;
 use App\Models\AssetRequest;
 use App\Traits\AddPRHandler;
+use App\Traits\RequestShowDataHandler;
 use Illuminate\Http\Request;
 use App\Traits\AddingPrHandler;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +21,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class AddingPrController extends Controller
 {
-    use ApiResponse, AssetRequestHandler, AddPRHandler;
+    use ApiResponse, AssetRequestHandler, AddPRHandler, RequestShowDataHandler;
 
     public function index(Request $request)
     {
@@ -62,25 +63,15 @@ class AddingPrController extends Controller
 
     public function show(Request $request, $transactionNumber)
     {
-        $perPage = $request->input('per_page', null);
         $requiredRole = ['Purchase Request', 'Admin', 'Super Admin'];
         $checkUserRole = auth('sanctum')->user()->role->pluck('role_name')->intersect($requiredRole);
 
         if ($checkUserRole) {
-            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->get();
+        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->dynamicPaginate();
         } else {
             return $this->responseUnprocessable('You are not allowed to view this transaction.');
         }
-        $assetRequest = $this->transformShowAssetRequest($assetRequest);
-
-        if ($perPage !== null) {
-            $page = $request->input('page', 1);
-            $offset = $page * $perPage - $perPage;
-            $assetRequest = new LengthAwarePaginator($assetRequest->slice($offset, $perPage)->values(), $assetRequest->count(), $perPage, $page, [
-                'path' => $request->url(),
-                'query' => $request->query(),
-            ]);
-        }
+        $assetRequest = $this->responseData($assetRequest);
 
         if ($assetRequest->isEmpty()) {
             return $this->responseUnprocessable('Asset Request not found.');
