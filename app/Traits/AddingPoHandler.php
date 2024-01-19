@@ -69,8 +69,8 @@ trait AddingPoHandler
                     $activity->subject_id = $firstAssetRequest->transaction_number;
                 }
             })
-            ->log($removeRemaining === true ? 'Remaining item to items was removed by ' . $user->employee_id . '.' : $remove === true ?
-                'Item was removed by ' . $user->employee_id . '.' : 'PO Number: ' . $poNumber . ' has been added by ' . $user->employee_id . '.');
+            ->log($removeRemaining === true ? 'Remaining item to items was removed by ' . $user->employee_id . '.' : ($remove === true ?
+                'Item was removed by ' . $user->employee_id . '.' : 'PO Number: ' . $poNumber . ' has been added by ' . $user->employee_id . '.'));
     }
 
     private function composeLogPropertiesPo($assetRequest, $poNumber = null, $rrnumber = null, $removedCount = 0, $removeRemaining = false, $remove = false): array

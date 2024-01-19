@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Models\Approvers;
 use App\Models\AssetRequest;
+use App\Traits\RequestShowDataHandler;
 use Illuminate\Http\Request;
 use App\Traits\AddingPoHandler;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,7 @@ use App\Http\Requests\AddingPO\UpdateAddingPoRequest;
 
 class AddingPoController extends Controller
 {
-    use ApiResponse, AssetRequestHandler, AddingPoHandler;
+    use ApiResponse, AssetRequestHandler, AddingPoHandler,RequestShowDataHandler;
 
     public function index(Request $request)
     {
@@ -48,20 +49,11 @@ class AddingPoController extends Controller
         if (in_array($checkUserRole, $requiredRole)) {
             $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
                 ->orderByRaw('(quantity > quantity_delivered) desc')
-                ->get();
+                ->dynamicPaginate();
         } else {
             return $this->responseUnprocessable('You are not allowed to view this transaction.');
         }
-        $assetRequest = $this->transformShowAssetRequest($assetRequest);
-
-        if ($perPage !== null) {
-            $page = $request->input('page', 1);
-            $offset = $page * $perPage - $perPage;
-            $assetRequest = new LengthAwarePaginator($assetRequest->slice($offset, $perPage)->values(), $assetRequest->count(), $perPage, $page, [
-                'path' => $request->url(),
-                'query' => $request->query(),
-            ]);
-        }
+        $assetRequest = $this->responseData($assetRequest);
 
         if ($assetRequest->isEmpty()) {
             return $this->responseUnprocessable('Asset Request not found.');
@@ -81,12 +73,6 @@ class AddingPoController extends Controller
         $this->activityLogPo($assetRequest, $request->po_number, $request->rr_number, 0, false, false);
         $this->getAllitems($assetRequest->transaction_number);
 
-        // $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number, $forTimeline = false);
-        // if ($remaining == 0) {
-        //     // $this->createNewAssetRequests($assetRequest);
-        //     $this->getAllitems($assetRequest->transaction_number);
-        // }
-
         return $this->responseSuccess('PO number and RR number added successfully!');
     }
 
@@ -101,8 +87,5 @@ class AddingPoController extends Controller
             return $this->responseSuccess('Item removed successfully!');
         }
         return $this->responseUnprocessable('Item cannot be removed!');
-        // if ($assetRequest->quantity !== $assetRequest->quantity_delivered) {
-        //     return $this->handleQuantityMismatch($assetRequest);
-        // }
     }
 }
