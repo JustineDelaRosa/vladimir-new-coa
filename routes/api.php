@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\AssetReleaseController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Auth\AuthController;
@@ -250,4 +251,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('update-container/{id}', [RequestContainerController::class, 'updateContainer']);
     //ADDING PO//
     Route::resource('adding-po', AddingPoController::class);
+    //RELEASE ASSET//
+    Route::resource('asset-release', AssetReleaseController::class);
 });

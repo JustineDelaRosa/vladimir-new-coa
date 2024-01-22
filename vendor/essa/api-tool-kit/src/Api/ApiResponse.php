@@ -167,12 +167,28 @@ trait ApiResponse
             [
                 "message" => "Invalid Request",
                 "errors" => [
-                    //                    'status' => $code,
+                    //'status' => $code,
                     "title" =>
                         $title ??
                         "Oops . Something went wrong , try again or contact the support",
                     "detail" => $details,
                 ],
+            ],
+            $code,
+            [
+                "Content-Type" => "application/problem+json",
+            ]
+        );
+    }
+
+    private function vladimirErrorResponse(
+        int $code,
+        ?string $title,
+        $details = null
+    ): JsonResponse {
+        return new JsonResponse(
+            [
+                "errors" => $details,
             ],
             $code,
             [
