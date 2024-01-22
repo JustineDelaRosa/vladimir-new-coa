@@ -25,7 +25,7 @@ class CreateFixedAssetsTable extends Migration
             $table->unsignedInteger('sub_capex_id')->nullable();
             //            $table->string('sub_project');
             $table->boolean('from_request')->default(0);
-            // $table->boolean('released')->default(0);
+            $table->boolean('can_release')->default(0);
             $table->string('vladimir_tag_number');
             $table->string('tag_number')->nullable();
             $table->string('tag_number_old')->nullable();
