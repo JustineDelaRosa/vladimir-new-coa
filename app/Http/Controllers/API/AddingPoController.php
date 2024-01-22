@@ -76,16 +76,14 @@ class AddingPoController extends Controller
         return $this->responseSuccess('PO number and RR number added successfully!');
     }
 
-    public function destroy($id)
+    public function destroy($id, Request $request)
     {
-        $assetRequest = AssetRequest::where('id', $id)->first();
-        if (!$assetRequest) {
-            return $this->responseNotFound('Asset Request not found!');
+        $transactionNumber = $request->get('transaction_number', null);
+
+        if ($transactionNumber) {
+            return $this->handleTransactionNumberCase($transactionNumber);
+        } else {
+            return $this->handleIdCase($id);
         }
-        if ($assetRequest->quantity_delivered == null || $assetRequest->quantity_delivered == 0) {
-            $this->deleteAssetRequestPo($assetRequest);
-            return $this->responseSuccess('Item removed successfully!');
-        }
-        return $this->responseUnprocessable('Item cannot be removed!');
     }
 }

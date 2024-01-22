@@ -9,6 +9,8 @@ use App\Models\SubCapex;
 use App\Models\Approvers;
 use App\Models\Department;
 use App\Models\AssetRequest;
+use App\Traits\RequestIndexDataHandler;
+use App\Traits\RequestShowDataHandler;
 use Illuminate\Http\Request;
 use App\Models\ApproverLayer;
 use App\Models\AssetApproval;
@@ -30,7 +32,7 @@ use App\Http\Requests\AssetRequest\UpdateAssetRequestRequest;
 
 class AssetRequestController extends Controller
 {
-    use ApiResponse, AssetRequestHandler;
+    use ApiResponse, AssetRequestHandler, RequestShowDataHandler, RequestIndexDataHandler;
 
     private $approveRequestRepository;
 
@@ -52,23 +54,13 @@ class AssetRequestController extends Controller
         $role = Cache::remember("user_role_$requesterId", 60, function () use ($requesterId) {
             return User::find($requesterId)->roleManagement->role_name;
         });
-        // $role = User::find($requesterId)->roleManagement->role_name;
+
         $adminRoles = ['Super Admin', 'Admin', 'ERP'];
 
         $perPage = $request->input('per_page', null);
         $filter = $request->input('filter', null);
         $filter = $filter ? explode(',', $filter) : [];
         $filter = array_map('trim', $filter);
-
-        $conditions = [
-            'Returned' => ['status' => 'Returned'],
-            'For Approval' => ['status' => ['like', 'For Approval%']],
-            'For PR' => ['status' => 'Approved', 'pr_number' => null],
-            'For PO' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => null],
-            'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => null],
-            'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => ['!=', null]],
-            'Released' => ['status' => 'Released'],
-        ];
 
         $assetRequest = AssetRequest::query();
 
@@ -81,30 +73,21 @@ class AssetRequestController extends Controller
         }
 
         if (!empty($filter)) {
-            $assetRequest->where(function ($query) use ($filter, $conditions) {
-                foreach ($filter as $key) {
-                    if (isset($conditions[$key])) {
-                        $query->orWhere(function ($query) use ($conditions, $key) {
-                            foreach ($conditions[$key] as $field => $value) {
-                                if (is_array($value)) {
-                                    $query->where($field, $value[0], $value[1]);
-                                } else {
-                                    $query->where($field, $value);
-                                }
-                            }
-                        });
-                    }
-                }
-            });
+            $assetRequest->filterByConditions($filter);
         }
 
         $assetRequest = $assetRequest->orderByDesc('created_at')->useFilters();
+
+        // Eager load the related models
+        $assetRequest->with(['requestor', 'assetApproval', 'activityLog']);
+
         $assetRequest = $assetRequest
             ->get()
             ->groupBy('transaction_number')
             ->map(function ($assetRequestCollection) {
                 $assetRequest = $assetRequestCollection->first();
                 $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+                $assetRequest->print_count = $assetRequestCollection->sum('print_count');
                 return $this->transformIndexAssetRequest($assetRequest);
             })
             ->values();
@@ -119,6 +102,7 @@ class AssetRequestController extends Controller
         }
         return $assetRequest;
     }
+
 
     public function store(CreateAssetRequestRequest $request)
     {
@@ -182,27 +166,17 @@ class AssetRequestController extends Controller
         return $this->responseCreated('AssetRequest created successfully');
     }
 
-    public function show(Request $request, $transactionNumber)
+    public function show($transactionNumber)
     {
-        $perPage = $request->input('per_page', null);
         $requestorId = auth('sanctum')->user()->id;
         $approverCheck = Approvers::where('approver_id', $requestorId)->first();
         if ($approverCheck) {
-            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->get();
+            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->dynamicPaginate();
         } else {
             $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
-                ->where('requester_id', $requestorId)->get();
+                ->where('requester_id', $requestorId)->dynamicPaginate();
         }
-        $assetRequest = $this->transformShowAssetRequest($assetRequest);
-
-        if ($perPage !== null) {
-            $page = $request->input('page', 1);
-            $offset = $page * $perPage - $perPage;
-            $assetRequest = new LengthAwarePaginator($assetRequest->slice($offset, $perPage)->values(), $assetRequest->count(), $perPage, $page, [
-                'path' => $request->url(),
-                'query' => $request->query(),
-            ]);
-        }
+        $assetRequest = $this->responseData($assetRequest);
 
         if ($assetRequest->isEmpty()) {
             return $this->responseUnprocessable('Asset Request not found.');
@@ -225,12 +199,12 @@ class AssetRequestController extends Controller
         return $this->responseSuccess('AssetRequest updated Successfully');
     }
 
-    public function destroy(AssetRequest $assetRequest): JsonResponse
-    {
-        $assetRequest->delete();
-
-        return $this->responseDeleted();
-    }
+//    public function destroy(AssetRequest $assetRequest): JsonResponse
+//    {
+//        $assetRequest->delete();
+//
+//        return $this->responseDeleted();
+//    }
 
     public function resubmitRequest(CreateAssetRequestRequest $request): JsonResponse
     {

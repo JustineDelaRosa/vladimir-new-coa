@@ -2,10 +2,12 @@
 
 namespace App\Traits;
 
+use App\Models\AdditionalCost;
 use App\Models\Formula;
 use App\Models\FixedAsset;
 use App\Models\AssetRequest;
 use App\Models\Status\AssetStatus;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Repositories\VladimirTagGeneratorRepository;
@@ -136,18 +138,16 @@ trait AddingPoHandler
     public function updatePoAssetRequest($assetRequest, $request)
     {
         $assetRequest->update([
-            'po_number' => $assetRequest->po_number ? $assetRequest->po_number : $request->po_number,
-            'rr_number' => $assetRequest->rr_number ? $assetRequest->rr_number : $request->rr_number,
-            'supplier_id' => $assetRequest->supplier_id ? $assetRequest->supplier_id : $request->supplier_id,
-            'acquisition_date' => $assetRequest->acquisition_date ? $assetRequest->acquisition_date : $request->delivery_date,
+            'po_number' => $assetRequest->po_number ?: $request->po_number,
+            'rr_number' => $assetRequest->rr_number ?: $request->rr_number,
+            'supplier_id' => $assetRequest->supplier_id ?: $request->supplier_id,
+            'acquisition_date' => $assetRequest->acquisition_date ?: $request->delivery_date,
             'quantity_delivered' => $assetRequest->quantity_delivered + $request->quantity_delivered,
-            'acquisition_cost' => $assetRequest->acquisition_cost ? $assetRequest->acquisition_cost : $request->unit_price,
+            'acquisition_cost' => $assetRequest->acquisition_cost ?: $request->unit_price,
         ]);
-
-        // $this->createNewAssetRequests($assetRequest);
     }
 
-    private function getAllitems($transactionNumber)
+    private function getAllItems($transactionNumber)
     {
         $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
             ->where('status', 'Approved')
@@ -172,7 +172,7 @@ trait AddingPoHandler
     private function addToFixedAssets($asset, $isAddCost)
     {
         if ($isAddCost == 1) {
-            $addCost = new AddCost();
+            $addCost = new AdditionalCost();
             return;
         } else {
             $formula = Formula::create([
@@ -216,15 +216,24 @@ trait AddingPoHandler
         }
     }
 
-    private function deleteAssetRequestPo($assetRequest)
+    public function deleteAssetRequestPo($assetRequest)
     {
-        $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, 0, false, true);
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        $assetRequest->delete();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if ($assetRequest instanceof \Illuminate\Database\Eloquent\Collection) {
+            $this->activityLogPo($assetRequest->first(), $assetRequest->first()->po_number, $assetRequest->first()->rr_number, 0, false, true);
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            $assetRequest->each(function ($request) {
+                $request->delete();
+            });
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        } else {
+            $this->activityLogPo($assetRequest, $assetRequest->po_number?? null, $assetRequest->rr_number?? null, 0, false, true);
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            $assetRequest->delete();
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
     }
 
-    private function handleQuantityMismatch($assetRequest)
+    public function handleQuantityMismatch($assetRequest)
     {
         $removedQuantity = $this->quantityRemovedHolder($assetRequest);
         $storedRemovedQuantity = $removedQuantity;
@@ -234,8 +243,55 @@ trait AddingPoHandler
         $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, $storedRemovedQuantity, true, false);
         $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number, $forTimeline = false);
         if ($remaining == 0) {
-            $this->getAllitems($assetRequest->transaction_number);
+            $this->getAllItems($assetRequest->transaction_number);
         }
         return $this->responseSuccess('Remaining quantity removed successfully!');
+    }
+
+
+    //FOR DELETING
+    private function handleTransactionNumberCase($transactionNumber): JsonResponse
+    {
+        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->get();
+
+        if ($assetRequest->isEmpty()) {
+            return $this->responseNotFound('Asset Request not found!');
+        }
+
+        foreach ($assetRequest as $asset) {
+            if ($asset->quantity_delivered !== null && $asset->quantity_delivered !== 0) {
+                return $this->responseUnprocessable('Cannot remove request, some items has been delivered!');
+            }
+        }
+
+        $this->deleteAssetRequestPo($assetRequest);
+
+        return $this->responseSuccess('Item removed successfully!');
+    }
+
+    private function handleIdCase($id)
+    {
+        $assetRequest = AssetRequest::where('id', $id)->first();
+
+        if (!$assetRequest) {
+            return $this->responseNotFound('Asset Request not found!');
+        }
+
+        $assetRequestCheck = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
+
+        if ($assetRequestCheck->count() == 1) {
+            return $this->responseUnprocessable('Cannot remove final item');
+        }
+
+        if ($assetRequest->quantity_delivered == null || $assetRequest->quantity_delivered == 0) {
+            $this->deleteAssetRequestPo($assetRequest);
+            return $this->responseSuccess('Item removed successfully!');
+        }
+
+        if ($assetRequest->quantity !== $assetRequest->quantity_delivered) {
+            return $this->handleQuantityMismatch($assetRequest);
+        }
+
+        return $this->responseUnprocessable('Item cannot be removed!');
     }
 }

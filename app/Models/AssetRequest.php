@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Exception;
 use App\Filters\LocationFilters;
+use Illuminate\Database\Eloquent\Builder;
 use Spatie\MediaLibrary\HasMedia;
 use App\Models\Status\AssetStatus;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,37 @@ class AssetRequest extends Model implements HasMedia
     protected $guarded = [];
 
     protected string $default_filters = AssetRequestFilters::class;
+
+    public function scopeFilterByConditions(Builder $query, array $filter): Builder
+    {
+        $conditions = [
+            'Returned' => ['status' => 'Returned'],
+            'For Approval' => ['status' => ['like', 'For Approval%']],
+            'For PR' => ['status' => 'Approved', 'pr_number' => null],
+            'For PO' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => null],
+            'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => null],
+            'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => ['!=', null]],
+            'Released' => ['status' => 'Released'],
+        ];
+
+        $query->where(function ($query) use ($filter, $conditions) {
+            foreach ($filter as $key) {
+                if (isset($conditions[$key])) {
+                    $query->orWhere(function ($query) use ($conditions, $key) {
+                        foreach ($conditions[$key] as $field => $value) {
+                            if (is_array($value)) {
+                                $query->where($field, $value[0], $value[1]);
+                            } else {
+                                $query->where($field, $value);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
+        return $query;
+    }
 
     public function generateReferenceNumber(): ?string
     {

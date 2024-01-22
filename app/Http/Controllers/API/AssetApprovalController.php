@@ -9,6 +9,7 @@ use App\Models\RoleManagement;
 use App\Repositories\ApprovedRequestRepository;
 use App\Traits\AssetApprovalHandler;
 use App\Traits\AssetRequestHandler;
+use App\Traits\RequestShowDataHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Essa\APIToolKit\Filters\DTO\FiltersDTO;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ use Spatie\Activitylog\Models\Activity;
 
 class AssetApprovalController extends Controller
 {
-    use ApiResponse, AssetApprovalHandler, assetRequestHandler;
+    use ApiResponse, AssetApprovalHandler, assetRequestHandler, RequestShowDataHandler;
 
     private ApprovedRequestRepository $approveRequestRepository;
 
@@ -85,9 +86,10 @@ class AssetApprovalController extends Controller
         if (!$assetApproval) {
             return $this->responseUnprocessable('Unauthorized Access');
         }
+        //TODO: Add pagination if needed
         $assetRequest = AssetRequest::where('transaction_number', $assetApproval->transaction_number)
             ->get();
-        return $this->transformShowAssetRequest($assetRequest);
+        return $this->responseData($assetRequest);
     }
 
     public function update(UpdateAssetApprovalRequest $request, AssetApproval $assetApproval): JsonResponse
@@ -136,7 +138,7 @@ class AssetApprovalController extends Controller
             return $this->responseNotFound('No Request Found');
         }
         $assetRequest = AssetRequest::where('transaction_number', $assetApproval->transaction_number)->get();
-        return $this->transformShowAssetRequest($assetRequest);
+        return $this->responseData($assetRequest);
     }
 
     //    public function approveRequest(Request $request, $id)

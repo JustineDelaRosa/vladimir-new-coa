@@ -94,3 +94,4 @@ Follow the steps below to install the Vladimir Asset Inventory Management System
    You can now navigate to `http://localhost:8000` (or whatever port you have configured) in your web browser to see the application live.
 
 _Note: Installation steps can vary depending on the specific configurations, modules, and dependencies of your project._
+
