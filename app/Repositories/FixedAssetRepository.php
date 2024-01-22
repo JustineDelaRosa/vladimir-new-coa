@@ -391,7 +391,7 @@ class FixedAssetRepository
             'total_adcost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost),
             'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
-            'requestor_id' => [
+            'requestor' => [
                 'id' => $fixed_asset->requestor->id ?? '-',
                 'username' => $fixed_asset->requestor->username ?? '-',
                 'first_name' => $fixed_asset->requestor->first_name ?? '-',
@@ -629,7 +629,7 @@ class FixedAssetRepository
             //'totalCost' => $this->calculationRepository->getTotalCost($fixed_asset->acquisition_cost, $fixed_asset->additionalCost),
             'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
-            'requestor_id' => [
+            'requestor' => [
                 'id' => $fixed_asset->requestor->id ?? '-',
                 'username' => $fixed_asset->requestor->username ?? '-',
                 'first_name' => $fixed_asset->requestor->first_name ?? '-',

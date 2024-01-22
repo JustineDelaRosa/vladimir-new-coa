@@ -11,13 +11,14 @@ use App\Models\DepartmentUnitApprovers;
 use App\Models\RequestContainer;
 use App\Models\SubUnit;
 use App\Traits\AssetRequestHandler;
+use App\Traits\RequestShowDataHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class RequestContainerController extends Controller
 {
-    use ApiResponse, AssetRequestHandler;
+    use ApiResponse, AssetRequestHandler, RequestShowDataHandler;
 
 
     /**
@@ -31,9 +32,9 @@ class RequestContainerController extends Controller
         $requestContainer = RequestContainer::where('requester_id', $requesterId)
             //            ->orderBy('created_at', 'desc')
             ->useFilters()
-            ->get();
+            ->dynamicPaginate();
 
-        return $this->transformShowAssetRequest($requestContainer);
+        return $this->responseData($requestContainer);
     }
 
     /**
