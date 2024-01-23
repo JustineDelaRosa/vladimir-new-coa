@@ -7,6 +7,7 @@ use App\Models\Formula;
 use App\Models\FixedAsset;
 use App\Models\AssetRequest;
 use App\Models\Status\AssetStatus;
+use App\Models\WarehouseNumber;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -180,13 +181,20 @@ trait AddingPoHandler
                 'acquisition_date' => $asset->acquisition_date,
                 'acquisition_cost' => $asset->acquisition_cost,
             ]);
-            $fixedAsset =  $formula->fixedAsset()->create([
+            $warehouseNumber = new WarehouseNumber();
+            $warehouseNumber->save(); // Save the WarehouseNumber instance to the database to generate an id
+            $generateWhNumber = $warehouseNumber->generateWhNumber(); // Now you can call generateWhNumber
+            $warehouseNumber->update([
+                'warehouse_number' => $generateWhNumber,
+            ]);
+            $fixedAsset = $formula->fixedAsset()->create([
                 'requester_id' => $asset->requester_id,
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
                 'rr_number' => $asset->rr_number,
+                'warehouse_number_id' => $warehouseNumber->id,
                 'from_request' => 1,
-                // 'vladimir_tag_number' => $asset->vladimir_tag_number,
+                'transaction_number' => $asset->transaction_number,
                 'asset_description' => $asset->asset_description,
                 'type_of_request_id' => $asset->type_of_request_id,
                 'charged_department' => $asset->department_id,
@@ -210,7 +218,6 @@ trait AddingPoHandler
                 'account_id' => $asset->account_title_id,
                 'remarks' => $asset->remarks,
             ]);
-            $fixedAsset->wh_number = $fixedAsset->generateWhNumber();
             $fixedAsset->vladimir_tag_number = $this->vladimirTagGeneratorRepository->vladimirTagGenerator();
             $fixedAsset->save();
         }
@@ -226,7 +233,7 @@ trait AddingPoHandler
             });
             DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         } else {
-            $this->activityLogPo($assetRequest, $assetRequest->po_number?? null, $assetRequest->rr_number?? null, 0, false, true);
+            $this->activityLogPo($assetRequest, $assetRequest->po_number ?? null, $assetRequest->rr_number ?? null, 0, false, true);
             DB::statement('SET FOREIGN_KEY_CHECKS=0;');
             $assetRequest->delete();
             DB::statement('SET FOREIGN_KEY_CHECKS=1;');
