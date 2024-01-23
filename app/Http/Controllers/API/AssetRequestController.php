@@ -9,7 +9,6 @@ use App\Models\SubCapex;
 use App\Models\Approvers;
 use App\Models\Department;
 use App\Models\AssetRequest;
-use App\Traits\RequestIndexDataHandler;
 use App\Traits\RequestShowDataHandler;
 use Illuminate\Http\Request;
 use App\Models\ApproverLayer;
@@ -32,7 +31,7 @@ use App\Http\Requests\AssetRequest\UpdateAssetRequestRequest;
 
 class AssetRequestController extends Controller
 {
-    use ApiResponse, AssetRequestHandler, RequestShowDataHandler, RequestIndexDataHandler;
+    use ApiResponse, AssetRequestHandler, RequestShowDataHandler;
 
     private $approveRequestRepository;
 
@@ -88,6 +87,7 @@ class AssetRequestController extends Controller
                 $assetRequest = $assetRequestCollection->first();
                 $assetRequest->quantity = $assetRequestCollection->sum('quantity');
                 $assetRequest->print_count = $assetRequestCollection->sum('print_count');
+                $assetRequest->is_claimed = $assetRequest->print_count >= $assetRequest->quantity ? 1 : 0;
                 return $this->transformIndexAssetRequest($assetRequest);
             })
             ->values();
