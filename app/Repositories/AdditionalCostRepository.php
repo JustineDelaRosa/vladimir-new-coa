@@ -225,8 +225,12 @@ class AdditionalCostRepository
             'pr_number' => $additional_cost->pr_number ?? '-',
             'po_number' => $additional_cost->po_number ?? '-',
             'rr_number' => $additional_cost->rr_number ?? '-',
-            'wh_number' => $additional_cost->wh_number ?? '-',
+            'warehouse_number' => [
+                'id' => $additional_cost->warehouseNumber->id ?? '-',
+                'warehouse_number' => $additional_cost->warehouseNumber->warehouse_number ?? '-',
+            ],
             'from_request' => $additional_cost->from_request ?? '-',
+            'can_release' => $additional_cost->can_release ?? '-',
             'capex' => [
                 'id' => $additional_cost->fixedAsset->capex->id ?? '-',
                 'capex' => $additional_cost->fixedAsset->capex->capex ?? '-',

@@ -101,4 +101,7 @@ class AdditionalCost extends Model
     {
         return $this->belongsTo(User::class, 'requester_id', 'id');
     }
+    public function warehouseNumber(){
+        return $this->belongsTo(WarehouseNumber::class, 'warehouse_number_id', 'id');
+    }
 }
