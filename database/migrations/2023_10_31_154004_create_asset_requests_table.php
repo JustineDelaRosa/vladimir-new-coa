@@ -31,7 +31,8 @@ class CreateAssetRequestsTable extends Migration
             // $table->date('delivery_date')->nullable(); //? Delivery Date = Acquisition Date
             //  $table->double('unit_price')->nullable(); //? Unit Price = original price or acquisition cost
             $table->unsignedInteger('supplier_id')->nullable();
-            $table->boolean('can_claim')->default(0);
+//            $table->boolean('can_claim')->default(0);
+            $table->boolean('is_claimed')->default(0);
 
             //TO BE FILL UP BY THE REQUESTER
             $table->string('remarks')->nullable();

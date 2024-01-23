@@ -26,8 +26,11 @@ class CreateAdditionalCostsTable extends Migration
             $table->string('pr_number')->nullable();
             $table->string('po_number')->nullable();
             $table->string('rr_number')->nullable();
-            $table->string('wh_number')->nullable();
+//            $table->string('wh_number')->nullable();
+            $table->unsignedInteger('warehouse_number')->nullable();
             $table->boolean('from_request')->default(0);
+            $table->boolean('can_release')->default(0);
+            $table->boolean('is_released')->default(0);
             $table->string('add_cost_sequence');
             $table->boolean('is_additional_cost')->default(true);
             $table->boolean('is_active')->default(true);
@@ -62,6 +65,10 @@ class CreateAdditionalCostsTable extends Migration
             $table->unsignedInteger('formula_id');
             $table->softDeletes();
             $table->timestamps();
+            $table->foreign('warehouse_number')
+                ->references('id')
+                ->on('warehouse_numbers')
+                ->onDelete('cascade');
             $table->foreign('requester_id')
                 ->references('id')
                 ->on('users')
