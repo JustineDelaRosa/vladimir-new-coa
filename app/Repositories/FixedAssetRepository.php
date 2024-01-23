@@ -231,7 +231,7 @@ class FixedAssetRepository
             $results = $this->filterSearchResults($results, $search);
         }
 
-        $results = $this->paginateResults($results, $per_page, $page);
+        $results = $this->paginateResults($results, $page, $per_page);
 
         $results->setCollection($results->getCollection()->values());
         $results->getCollection()->transform(function ($item) {
@@ -272,7 +272,7 @@ class FixedAssetRepository
             'pr_number',
             'po_number',
             'rr_number',
-            'wh_number',
+            'warehouse_number_id',
             'capex_id',
             'sub_capex_id',
             'vladimir_tag_number',
@@ -326,7 +326,7 @@ class FixedAssetRepository
             'additional_costs.pr_number',
             'additional_costs.po_number',
             'additional_costs.rr_number',
-            'additional_costs.wh_number',
+            'additional_costs.warehouse_number_id',
             'fixed_assets.capex_id AS capex_id',
             'fixed_assets.sub_capex_id AS sub_capex_id',
             'fixed_assets.vladimir_tag_number AS vladimir_tag_number',
@@ -401,8 +401,12 @@ class FixedAssetRepository
             'pr_number' => $fixed_asset->pr_number ?? '-',
             'po_number' => $fixed_asset->po_number ?? '-',
             'rr_number' => $fixed_asset->rr_number ?? '-',
-            'wh_number' => $fixed_asset->wh_number ?? '-',
+            'warehouse_number' => [
+                'id' => $fixed_asset->warehouseNumber->id ?? '-',
+                'warehouse_number' => $fixed_asset->warehouseNumber->warehouse_number ?? '-',
+            ],
             'from_request' => $fixed_asset->from_request ?? '-',
+            'can_release' => $fixed_asset->can_release ?? '-',
             'capex' => [
                 'id' => $fixed_asset->capex->id ?? '-',
                 'capex' => $fixed_asset->capex->capex ?? '-',
@@ -520,6 +524,22 @@ class FixedAssetRepository
             'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
                 return [
                     'id' => $additional_cost->id ?? '-',
+                    'requestor' => [
+                        'id' => $additional_cost->requestor->id ?? '-',
+                        'username' => $additional_cost->requestor->username ?? '-',
+                        'first_name' => $additional_cost->requestor->first_name ?? '-',
+                        'last_name' => $additional_cost->requestor->last_name ?? '-',
+                        'employee_id' => $additional_cost->requestor->employee_id ?? '-',
+                    ],
+                    'pr_number' => $additional_cost->pr_number ?? '-',
+                    'po_number' => $additional_cost->po_number ?? '-',
+                    'rr_number' => $additional_cost->rr_number ?? '-',
+                    'warehouse_number' => [
+                        'id' => $additional_cost->warehouseNumber->id ?? '-',
+                        'warehouse_number' => $additional_cost->warehouseNumber->warehouse_number ?? '-',
+                    ],
+                    'from_request' => $additional_cost->from_request ?? '-',
+                    'can_release' => $additional_cost->can_release ?? '-',
                     'add_cost_sequence' => $additional_cost->add_cost_sequence ?? '-',
                     'asset_description' => $additional_cost->asset_description ?? '-',
                     'type_of_request' => [
@@ -639,8 +659,12 @@ class FixedAssetRepository
             'pr_number' => $fixed_asset->pr_number ?? '-',
             'po_number' => $fixed_asset->po_number ?? '-',
             'rr_number' => $fixed_asset->rr_number ?? '-',
-            'wh_number' => $fixed_asset->wh_number ?? '-',
+            'warehouse_number' => [
+                'id' => $fixed_asset->warehouseNumber->id ?? '-',
+                'warehouse_number' => $fixed_asset->warehouseNumber->warehouse_number ?? '-',
+            ],
             'from_request' => $fixed_asset->from_request ?? '-',
+            'can_release' => $fixed_asset->can_release ?? '-',
             'capex' => [
                 'id' => $fixed_asset->capex->id ?? '-',
                 'capex' => $fixed_asset->capex->capex ?? '-',

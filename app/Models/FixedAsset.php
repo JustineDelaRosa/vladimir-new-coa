@@ -32,6 +32,7 @@ class FixedAsset extends Model
     {
         return $this->hasMany(AdditionalCost::class, 'fixed_asset_id', 'id');
     }
+
     public function capex()
     {
         return $this->belongsTo(Capex::class, 'capex_id', 'id');
@@ -102,33 +103,21 @@ class FixedAsset extends Model
     {
         return $this->belongsTo(MovementStatus::class, 'movement_status_id', 'id');
     }
+
     public function requestor()
     {
         return $this->belongsTo(User::class, 'requester_id', 'id');
     }
+
     public function supplier()
     {
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
 
-    public function generateWhNumber()
+    public function warehouseNumber()
     {
-        try {
-            // Ensure the model has been saved and has an ID
-            if ($this->id === null) {
-                $this->save();
-            }
-            $warehouseNumber = $this->transaction_number + $this->id;
-            // Use the ID as the reference number
-            $this->wh_number = str_pad($warehouseNumber, 4, '0', STR_PAD_LEFT);
-
-            // Save the model again to store the reference number
-            $this->save();
-
-            return $this->wh_number;
-        } catch (Exception $e) {
-            // Handle exception if necessary
-            return null;
-        }
+        return $this->belongsTo(WarehouseNumber::class, 'warehouse_number_id', 'id');
     }
+
+
 }

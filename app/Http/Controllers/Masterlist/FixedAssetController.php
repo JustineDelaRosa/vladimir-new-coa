@@ -272,11 +272,10 @@ class FixedAssetController extends Controller
 //        return FixedAsset::useFilters()->dynamicPaginate();
 
         $search = $request->get('search');
-//        $limit = $request->get('limit');
         $per_page = $request->get('per_page');
         $page = $request->get('page');
         $status = $request->get('status');
-        return $this->fixedAssetRepository->searchFixedAsset($search, $status, $per_page, $page);
+        return $this->fixedAssetRepository->searchFixedAsset($search, $status, $page, $per_page);
     }
 
     //todo change assetDescription
