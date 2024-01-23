@@ -103,7 +103,7 @@ class PrintBarCodeController extends Controller
                     if ($fixedAsset) {
                         $fixedAsset->increment('print_count', 1);
                         $fixedAsset->update(['last_printed' => Carbon::now()]);
-                        $fixedAsset->where('from_request', '1')->update(['can_release' => 1]);
+                        $fixedAsset->where('from_request', 1)->update(['can_release' => 1]);
                         $AssetRequest->increment('print_count', 1);
                         $AssetRequest->update(['last_printed' => Carbon::now()]);
                     }
@@ -277,7 +277,10 @@ class PrintBarCodeController extends Controller
                 'pr_number' => $asset->pr_number ?? '-',
                 'po_number' => $asset->po_number ?? '-',
                 'rr_number' => $asset->rr_number ?? '-',
-                'wh_number' => $asset->wh_number ?? '-',
+                'warehouse_number' => [
+                    'id' => $asset->warehouseNumber->id ?? '-',
+                    'warehouse_number' => $asset->warehouseNumber->warehouse_number ?? '-',
+                ],
                 'from_request' => $asset->from_request ?? '-',
                 'capex' => [
                     'id' => $asset->capex->id ?? '-',
