@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Models\RoleManagement;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -24,7 +25,14 @@ class AuthController extends Controller
         $pass_decrypt = Crypt::decryptString($user->password);
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
         $toApproveCount = AssetApproval::where('approver_id', $approverId)->where('status', 'For Approval')->count();
-        $toTagCount = FixedAsset::where('from_request', 1)->where('print_count', 0)->count();
+
+        $faAssociateRole = $this->getRoleIdByName('Fixed Asset Associate');
+        $isFaAssociate = $user->role_id == $faAssociateRole;
+        $toTagCount = $isFaAssociate ? $this->getFixedAssetCount(1, 0) : 0;
+
+        $wareHouseRole = $this->getRoleIdByName('Warehouse');
+        $isWarehouse = $user->role_id == $wareHouseRole;
+        $toRelease = $isWarehouse ? $this->getFixedAssetCount(1, 1, 1) : 0;
 
         //if Username and password match
         // if ($username == $pass_decrypt) {
@@ -46,8 +54,9 @@ class AuthController extends Controller
             'user' => $user,
             'token' => $token,
             'sessionTime' => config('sanctum.expiration'),
-            'toApproveCount' => $toApproveCount,
-            "toTagCount" => $toTagCount,
+            'toApproveCount' => $toApproveCount ?? 0,
+            'toTagCount' => $toTagCount ?? 0,
+            'toRelease' => $toRelease ?? 0,
         ];
         //        $cookie = cookie('authcookie', $token);
         //        return response()->json([
@@ -123,5 +132,17 @@ class AuthController extends Controller
     {
         auth('sanctum')->user()->currentAccessToken()->delete(); //logout currentAccessToken
         return response()->json(['message' => 'You are Successfully Logged Out!']);
+    }
+
+    private function getRoleIdByName($roleName) {
+        return RoleManagement::whereRaw('LOWER(role_name) = ?', strtolower($roleName))->first()->id;
+    }
+
+    private function getFixedAssetCount($fromRequest, $printCount, $canRelease = null) {
+        $query = FixedAsset::where('from_request', $fromRequest)->where('print_count', $printCount);
+        if (!is_null($canRelease)) {
+            $query->where('can_release', $canRelease);
+        }
+        return $query->count();
     }
 }
