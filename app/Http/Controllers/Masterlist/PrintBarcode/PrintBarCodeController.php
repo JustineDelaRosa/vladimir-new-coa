@@ -106,6 +106,21 @@ class PrintBarCodeController extends Controller
                         $fixedAsset->where('from_request', 1)->update(['can_release' => 1]);
                         $AssetRequest->increment('print_count', 1);
                         $AssetRequest->update(['last_printed' => Carbon::now()]);
+
+                        $fixedAssets = FixedAsset::where('vladimir_tag_number', $VDM['vladimir_tag_number'])->first();
+                        $assetRequest = new AssetRequest();
+                        if ($fixedAssets && $fixedAsset->from_requests) {
+                            activity()
+                                ->causedBy(auth('sanctum')->user()) // the user who caused the activity
+                                ->performedOn($assetRequest) // the object the activity is performed on
+                                ->inLog('Printed') // the log name (should same as in config)
+                                ->withProperties(['description' => $fixedAssets->asset_description]) // any properties relevant to the activity
+                                ->tap(function ($activity) use ($fixedAssets) {
+                                    $activity->subject_id = $fixedAssets->transaction_number;
+                                })
+                                ->log('Printed'); // a textual description of the activity
+                        }
+
                     }
                 } else {
                     //Copy
@@ -157,7 +172,6 @@ class PrintBarCodeController extends Controller
                 $printer->close();
 
                 // dd($VDM->vladimir_tag_number, $VDM->asset_description);
-
             }
 
             /*return response()->json(
