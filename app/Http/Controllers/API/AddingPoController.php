@@ -43,7 +43,6 @@ class AddingPoController extends Controller
 
     public function show(Request $request, $transactionNumber)
     {
-        $perPage = $request->input('per_page', null);
         $requiredRole = ['Purchase Order', 'Admin', 'Super Admin', 'Warehouse', 'Purchase Request'];
         $checkUserRole = auth('sanctum')->user()->role->role_name;
         if (in_array($checkUserRole, $requiredRole)) {

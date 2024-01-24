@@ -284,11 +284,11 @@ trait AddingPoHandler
             return $this->responseNotFound('Asset Request not found!');
         }
 
-        $assetRequestCheck = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
+//        $assetRequestCheck = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
 
-        if ($assetRequestCheck->count() == 1) {
-            return $this->responseUnprocessable('Cannot remove final item');
-        }
+//        if ($assetRequestCheck->count() == 1) {
+//            return $this->responseUnprocessable('Cannot remove final item');
+//        }
 
         if ($assetRequest->quantity_delivered == null || $assetRequest->quantity_delivered == 0) {
             $this->deleteAssetRequestPo($assetRequest);

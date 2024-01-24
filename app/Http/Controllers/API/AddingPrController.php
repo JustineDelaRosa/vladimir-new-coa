@@ -5,10 +5,9 @@ namespace App\Http\Controllers\API;
 
 use App\Models\Approvers;
 use App\Models\AssetRequest;
-use App\Traits\AddPRHandler;
+use App\Traits\AddingPRHandler;
 use App\Traits\RequestShowDataHandler;
 use Illuminate\Http\Request;
-use App\Traits\AddingPrHandler;
 use Illuminate\Http\JsonResponse;
 use App\Traits\AssetRequestHandler;
 use App\Http\Controllers\Controller;
@@ -21,7 +20,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class AddingPrController extends Controller
 {
-    use ApiResponse, AssetRequestHandler, AddPRHandler, RequestShowDataHandler;
+    use ApiResponse, AssetRequestHandler, AddingPRHandler, RequestShowDataHandler;
 
     public function index(Request $request)
     {

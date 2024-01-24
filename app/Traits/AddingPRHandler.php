@@ -4,7 +4,7 @@ namespace App\Traits;
 
 use App\Models\AssetRequest;
 
-trait AddPRHandler
+trait AddingPRHandler
 {
     public function activityLog($assetRequest, $prNumber)
     {
