@@ -5,6 +5,8 @@ namespace App\Models;
 use Exception;
 use App\Filters\LocationFilters;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 use App\Models\Status\AssetStatus;
 use Illuminate\Support\Facades\DB;
@@ -100,7 +102,7 @@ class AssetRequest extends Model implements HasMedia
 
 
 
-    public function currentApprover()
+    public function currentApprover(): HasMany
     {
         //pass who is the current approver of this asset request from asset approval table with status For Approval
         return $this->hasMany(AssetApproval::class, 'transaction_number', 'transaction_number')->where('status', 'For Approval');
@@ -111,101 +113,101 @@ class AssetRequest extends Model implements HasMedia
     //        return $this->belongsTo(Approvers::class, 'current_approver_id', 'id');
     //    }
 
-    public function assetApproval()
+    public function assetApproval(): HasMany
     {
         return $this->hasMany(AssetApproval::class, 'transaction_number', 'transaction_number');
     }
 
-    public function subunit()
+    public function subunit(): BelongsTo
     {
         return $this->belongsTo(Subunit::class, 'subunit_id', 'id');
     }
 
-    public function typeOfRequest()
+    public function typeOfRequest(): BelongsTo
     {
         return $this->belongsTo(TypeOfRequest::class, 'type_of_request_id', 'id');
     }
 
-    public function capex()
+    public function capex(): BelongsTo
     {
         return $this->belongsTo(Capex::class, 'capex_id', 'id');
     }
 
-    public function subCapex()
+    public function subCapex(): BelongsTo
     {
         return $this->belongsTo(SubCapex::class, 'sub_capex_id', 'id');
     }
 
-    public function requestor()
+    public function requestor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requester_id', 'id');
     }
 
-    public function division()
+    public function division(): BelongsTo
     {
         return $this->belongsTo(Division::class, 'division_id', 'id');
     }
 
-    public function majorCategory()
+    public function majorCategory(): BelongsTo
     {
         return $this->belongsTo(MajorCategory::class, 'major_category_id', 'id');
     }
 
-    public function minorCategory()
+    public function minorCategory(): BelongsTo
     {
         return $this->belongsTo(MinorCategory::class, 'minor_category_id', 'id');
     }
 
-    public function assetStatus()
+    public function assetStatus(): BelongsTo
     {
         return $this->belongsTo(AssetStatus::class, 'asset_status_id', 'id');
     }
 
-    public function cycleCountStatus()
+    public function cycleCountStatus(): BelongsTo
     {
         return $this->belongsTo(CycleCountStatus::class, 'cycle_count_status_id', 'id');
     }
 
-    public function depreciationStatus()
+    public function depreciationStatus(): BelongsTo
     {
         return $this->belongsTo(DepreciationStatus::class, 'depreciation_status_id', 'id');
     }
 
-    public function movementStatus()
+    public function movementStatus(): BelongsTo
     {
         return $this->belongsTo(MovementStatus::class, 'movement_status_id', 'id');
     }
 
-    public function company()
+    public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'company_id', 'id');
     }
 
-    public function department()
+    public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class, 'department_id', 'id');
     }
 
-    public function location()
+    public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class, 'location_id', 'id');
     }
-    public function accountTitle()
+    public function accountTitle(): BelongsTo
     {
         return $this->belongsTo(AccountTitle::class, 'account_title_id', 'id');
     }
 
-    public function activityLog()
+    public function activityLog(): hasMany
     {
         return $this->hasMany(Activity::class, 'subject_id', 'transaction_number');
     }
 
-    public function businessunit()
+    public function businessUnit(): BelongsTo
     {
-        return $this->belongsTo(Company::class, 'business_unit-id', 'id');
+        return $this->belongsTo(Company::class, 'business_unit_id', 'id');
     }
 
-    public function supplier()
+    public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }

@@ -41,6 +41,7 @@ class CreateAssetRequestsTable extends Migration
             //For ChargedDepartment
             $table->enum('accountability', ['Personal Issued', 'Common']);
             $table->string('accountable')->nullable();
+            $table->string('received_by')->nullable();
             $table->string('asset_description');
             $table->string('asset_specification')->nullable();
             $table->string('cellphone_number')->nullable();
