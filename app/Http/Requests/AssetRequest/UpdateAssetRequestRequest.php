@@ -32,6 +32,11 @@ class UpdateAssetRequestRequest extends FormRequest
                 'required',
                 Rule::exists('type_of_requests', 'id')
             ],
+            'company_id' => ['required', Rule::exists('companies', 'id')],
+            'department_id' => ['required', Rule::exists('departments', 'id')],
+            'sub_unit_id' => ['required', Rule::exists('sub_units', 'id')],
+            'location_id' => ['required', Rule::exists('locations', 'id')],
+            'account_title_id' => ['required', Rule::exists('account_titles', 'id')],
             //            'charged_department_id' => ['required', Rule::exists('departments', 'id')],
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
             //            'subunit_id' =>['required', Rule::exists('sub_units', 'id')],
@@ -94,8 +99,6 @@ class UpdateAssetRequestRequest extends FormRequest
             'other_attachments.file' => 'The other attachments must be a file',
             'other_attachments.mimes' => 'The other attachments must be a file of type: pdf, doc, docx',
             'other_attachments.max' => 'The other attachments may not be greater than 10 megabytes',
-
-
         ];
     }
 }

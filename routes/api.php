@@ -253,4 +253,5 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('adding-po', AddingPoController::class);
     //RELEASE ASSET//
     Route::resource('asset-release', AssetReleaseController::class);
+    Route::put('release-assets', [AssetReleaseController::class, 'releaseAssets']);
 });

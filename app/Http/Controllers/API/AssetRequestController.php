@@ -81,12 +81,10 @@ class AssetRequestController extends Controller
         $assetRequest->with(['requestor', 'assetApproval', 'activityLog']);
 
         $assetRequest = $assetRequest
+            ->selectRaw('transaction_number, requester_id, MIN(created_at) as created_at, MAX(status) as status, MAX(acquisition_details) as acquisition_details,  SUM(quantity) as quantity, SUM(print_count) as print_count')
+            ->groupBy('transaction_number', 'requester_id', 'created_at')
             ->get()
-            ->groupBy('transaction_number')
-            ->map(function ($assetRequestCollection) {
-                $assetRequest = $assetRequestCollection->first();
-                $assetRequest->quantity = $assetRequestCollection->sum('quantity');
-                $assetRequest->print_count = $assetRequestCollection->sum('print_count');
+            ->map(function ($assetRequest) {
                 $assetRequest->is_claimed = $assetRequest->print_count >= $assetRequest->quantity ? 1 : 0;
                 return $this->transformIndexAssetRequest($assetRequest);
             })

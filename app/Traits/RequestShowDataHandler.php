@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\Models\AssetRequest;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -24,7 +25,6 @@ trait RequestShowDataHandler
     private function collectionData($data)
     {
         return $data->transform(function ($ar) {
-
             return $this->response($ar);
         });
     }
@@ -48,6 +48,10 @@ trait RequestShowDataHandler
         $specificationFormMedia = $ar->getMedia('specification_form')->first();
         $toolOfTradeMedia = $ar->getMedia('tool_of_trade')->first();
         $otherAttachmentsMedia = $ar->getMedia('other_attachments')->first();
+        //sum all the total delivered of the asset request with the same transaction number
+        $totalDelivered = AssetRequest::where('transaction_number', $ar->transaction_number)->sum('quantity_delivered');
+        $totalOrdered = AssetRequest::where('transaction_number', $ar->transaction_number)->sum('quantity');
+        $isEqual = $totalDelivered == $totalOrdered;
 
         return [
             'can_edit' => $ar->status == 'Returned' || $ar->status == 'For Approval of Approver 1' ? 1 : 0,
@@ -75,8 +79,7 @@ trait RequestShowDataHandler
             'ordered' => $ar->quantity,
             'delivered' => $ar->quantity_delivered ?? '-',
             'remaining' => $ar->quantity - $ar->quantity_delivered ?? '-',
-            // 'unit_price' => $ar->unit_price ?? '-',
-            // 'delivery_date' => $ar->delivery_date ?? '-',
+            'is_equal' => $isEqual,
             'requestor' => [
                 'id' => $ar->requestor->id,
                 'username' => $ar->requestor->username,

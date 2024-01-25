@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class AssetRequest extends Model implements HasMedia
 {
     use HasFactory, Filterable, InteractsWithMedia;
+
     //, SoftDeletes
 
 
@@ -38,10 +39,10 @@ class AssetRequest extends Model implements HasMedia
             'Returned' => ['status' => 'Returned'],
             'For Approval' => ['status' => ['like', 'For Approval%']],
             'For PR' => ['status' => 'Approved', 'pr_number' => null],
-            'For PO' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => null],
-            'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => null],
-            'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'vladimir_tag_number' => ['!=', null]],
-            'Released' => ['status' => 'Released'],
+            'For PO' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'quantity' => ['!=', DB::raw('quantity_delivered')]],
+            'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'print_count' => ['!=', 'quantity']],
+            'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'print_count' => ['=', DB::raw('quantity')]],
+            'Released' => ['is_claimed' => 1],
         ];
 
         $query->where(function ($query) use ($filter, $conditions) {
@@ -59,7 +60,6 @@ class AssetRequest extends Model implements HasMedia
                 }
             }
         });
-
         return $query;
     }
 
@@ -99,7 +99,6 @@ class AssetRequest extends Model implements HasMedia
 
         return $transactionNumber;
     }
-
 
 
     public function currentApprover(): HasMany
@@ -192,6 +191,7 @@ class AssetRequest extends Model implements HasMedia
     {
         return $this->belongsTo(Location::class, 'location_id', 'id');
     }
+
     public function accountTitle(): BelongsTo
     {
         return $this->belongsTo(AccountTitle::class, 'account_title_id', 'id');
