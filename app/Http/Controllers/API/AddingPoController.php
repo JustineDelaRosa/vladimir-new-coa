@@ -78,6 +78,7 @@ class AddingPoController extends Controller
     public function destroy($id, Request $request)
     {
         $transactionNumber = $request->get('transaction_number', null);
+        $remarks = $request->get('remarks', null);
 
         if ($transactionNumber) {
             return $this->handleTransactionNumberCase($transactionNumber);
