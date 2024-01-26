@@ -18,10 +18,6 @@ class CreateRequestContainersTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('requester_id');
             $table->string('status')->default('For Approval of Approver 1');
-            $table->string('transaction_number')->index()->nullable();
-            $table->string('reference_number')->nullable();
-            $table->string('pr_number')->nullable();
-            $table->string('po_number')->nullable();
             $table->boolean('is_addcost')->default(0);
             $table->unsignedInteger('fixed_asset_id')->nullable();
             $table->string('additional_info')->nullable();

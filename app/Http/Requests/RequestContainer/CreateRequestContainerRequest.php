@@ -37,10 +37,6 @@ class CreateRequestContainerRequest extends BaseRequest
                 'required',
                 Rule::exists('type_of_requests', 'id')
             ],
-            //            'department_id.company.company_id' => [
-            //                'required',
-            //                Rule::exists('companies', 'id')
-            //            ],
             'company_id' => ['required', Rule::exists('companies', 'id')],
             'department_id' => ['required', Rule::exists('departments', 'id')],
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
@@ -55,14 +51,6 @@ class CreateRequestContainerRequest extends BaseRequest
                     //check if this is the sub unit of the selected department
                     if ($subunit->department_id != request()->department_id) {
                         $fail('Subunit does not match department.');
-                    }
-                    //check if this use have item stored on request container
-                    $requestContainer = RequestContainer::where('requester_id',  auth('sanctum')->user()->id)->get();
-                    if ($requestContainer->isNotEmpty()) {
-                        //check if the this and the subunit is the same on the request container
-                        if ($requestContainer->first()->subunit_id != $value) {
-                            $fail('You have an existing request container with different subunit.');
-                        }
                     }
                 },
             ],
@@ -88,20 +76,6 @@ class CreateRequestContainerRequest extends BaseRequest
                         request()->merge(['accountable' => null]);
                         return;
                     }
-
-                    //                    // Get full ID number if it exists or fail validation
-                    //                    if (!empty($accountable['general_info']['full_id_number'])) {
-                    //                        $full_id_number = trim($accountable['general_info']['full_id_number']);
-                    //                        request()->merge(['accountable' => $full_id_number]);
-                    //                    } else {
-                    //                        $fail('The accountable person is required.');
-                    //                        return;
-                    //                    }
-                    //
-                    //                    // Validate full ID number
-                    //                    if ($value->isEmpty()) {
-                    //                        $fail('The accountable person cannot be empty.');
-                    //                    }
                 },
             ],
             'additional_info' => 'nullable',
