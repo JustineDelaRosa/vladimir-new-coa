@@ -1,0 +1,111 @@
+<?php
+namespace App\Traits;
+
+use App\Models\RequestContainer;
+
+trait RequestContainerHandler
+{
+    private function checkIfRequesterIsApprover($requesterId, $departmentUnitApprovers)
+    {
+        $layerIds = $departmentUnitApprovers->map(function ($approverObject) {
+            return $approverObject->approver->approver_id;
+        })->toArray();
+
+        $isRequesterApprover = in_array($requesterId, $layerIds);
+        $isLastApprover = false;
+        $requesterLayer = 0;
+        if ($isRequesterApprover) {
+            $requesterLayer = array_search($requesterId, $layerIds) + 1;
+            $maxLayer = $departmentUnitApprovers->max('layer');
+            $isLastApprover = $maxLayer == $requesterLayer;
+        }
+
+        return [$isRequesterApprover, $isLastApprover, $requesterLayer];
+    }
+
+    private function createRequestContainer($request, $isRequesterApprover, $isLastApprover, $requesterLayer, $requesterId)
+    {
+        return RequestContainer::create([
+            'status' => $isLastApprover
+                ? 'Approved'
+                : ($isRequesterApprover
+                    ? 'For Approval of Approver ' . ($requesterLayer + 1)
+                    : 'For Approval of Approver 1'),
+            'requester_id' => $requesterId,
+            'type_of_request_id' => $request->type_of_request_id,
+            'attachment_type' => $request->attachment_type,
+            'subunit_id' => $request->subunit_id,
+            'location_id' => $request->location_id,
+            'account_title_id' => $request->account_title_id,
+            'accountability' => $request->accountability,
+            'company_id' => $request->company_id,
+            'department_id' => $request->department_id,
+            'accountable' => $request->accountable ?? null,
+            'additional_info' => $request->additional_info ?? null,
+            'acquisition_details' => $request->acquisition_details,
+            'asset_description' => $request->asset_description,
+            'asset_specification' => $request->asset_specification ?? null,
+            'cellphone_number' => $request->cellphone_number ?? null,
+            'brand' => $request->brand ?? null,
+            'quantity' => $request->quantity,
+        ]);
+    }
+
+    private function addMediaToRequestContainer($request, $assetRequest)
+    {
+        $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
+
+        foreach ($fileKeys as $fileKey) {
+            if (isset($request->$fileKey)) {
+                $files = is_array($request->$fileKey) ? $request->$fileKey : [$request->$fileKey];
+                foreach ($files as $file) {
+                    $assetRequest->addMedia($file)->toMediaCollection($fileKey);
+                }
+            }
+        }
+    }
+
+    private function checkDifferentCOA($request)
+    {
+        $requesterId = auth('sanctum')->user()->id;
+        $requestContainer = RequestContainer::where('requester_id', $requesterId)->get();
+        if ($requestContainer->isNotEmpty()) {
+            $this->updateRequestContainer($request, $requestContainer);
+        }
+        return;
+    }
+
+    private function updateRequestContainer($request, $requestContainer)
+    {
+        if ($requestContainer->first()->subunit_id != $request->subunit_id) {
+            foreach ($requestContainer as $requestContainerItem) {
+                $requestContainerItem->update([
+                    'company_id' => $request->company_id,
+                    'department_id' => $request->department_id,
+                    'subunit_id' => $request->subunit_id,
+                    'location_id' => $request->location_id,
+                ]);
+            }
+        } elseif ($requestContainer->first()->acquisition_details != $request->acquisition_details) {
+            foreach ($requestContainer as $requestContainerItem) {
+                $requestContainerItem->update([
+                    'acquisition_details' => $request->acquisition_details,
+                ]);
+            }
+        }
+    }
+
+    private function updateStatusIfDifferent($newStatus)
+    {
+
+        $secondLatestRequestContainer = RequestContainer::latest()->skip(1)->first();
+        $requester = auth('sanctum')->user();
+
+        if ($secondLatestRequestContainer && $secondLatestRequestContainer->status !== $newStatus) {
+
+            RequestContainer::where('requester_id', $requester->id)->update([
+                'status' => $newStatus,
+            ]);
+        }
+    }
+}
