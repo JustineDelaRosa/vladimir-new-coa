@@ -102,7 +102,7 @@ class AssetRequestController extends Controller
     }
 
 
-    public function store(CreateAssetRequestRequest $request)
+    public function store(CreateAssetRequestRequest $request): JsonResponse
     {
         $userRequest = $request->userRequest;
         $requesterId = auth('sanctum')->user()->id;
@@ -183,7 +183,7 @@ class AssetRequestController extends Controller
         return $assetRequest;
     }
 
-    public function update(UpdateAssetRequestRequest $request, $referenceNumber)
+    public function update(UpdateAssetRequestRequest $request, $referenceNumber): JsonResponse
     {
         $assetRequest = $this->getAssetRequest('reference_number', $referenceNumber);
         if (!$assetRequest) {
@@ -197,22 +197,9 @@ class AssetRequestController extends Controller
         return $this->responseSuccess('AssetRequest updated Successfully');
     }
 
-//    public function destroy(AssetRequest $assetRequest): JsonResponse
-//    {
-//        $assetRequest->delete();
-//
-//        return $this->responseDeleted();
-//    }
-
     public function resubmitRequest(CreateAssetRequestRequest $request): JsonResponse
     {
         $transactionNumber = $request->transaction_number;
-
-        $resubmitCheck = AssetRequest::where('transaction_number', $transactionNumber)
-            ->where('status', 'Returned')
-            // ->where('is_resubmit', 1)
-            ->get();
-
         return $this->approveRequestRepository->resubmitRequest($transactionNumber);
     }
 

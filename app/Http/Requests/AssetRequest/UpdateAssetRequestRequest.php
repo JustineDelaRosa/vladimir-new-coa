@@ -34,7 +34,7 @@ class UpdateAssetRequestRequest extends FormRequest
             ],
             'company_id' => ['required', Rule::exists('companies', 'id')],
             'department_id' => ['required', Rule::exists('departments', 'id')],
-            'sub_unit_id' => ['required', Rule::exists('sub_units', 'id')],
+            'subunit_id' => ['required', Rule::exists('sub_units', 'id')],
             'location_id' => ['required', Rule::exists('locations', 'id')],
             'account_title_id' => ['required', Rule::exists('account_titles', 'id')],
             //            'charged_department_id' => ['required', Rule::exists('departments', 'id')],
