@@ -14,7 +14,7 @@
 
 # Vladimir: Asset Inventory Management System
 
-Vladimir is a comprehensive, robust, and intuitive asset inventory management system. It incorporates advanced features to deliver a sleekly designed, user-friendly platform that manages and tracks your assets with unparalleled precision.
+Vladimir is a fixed asset management system that is used to track and monitor fixed assets using the barcoding method. It uses barcode labels and a barcode scanner for checking the inventory status. This system can be used to improve accuracy, reduce costs and keep up-to-date records of the company’s fixed assets.
 
 ## Highlighted Features
 

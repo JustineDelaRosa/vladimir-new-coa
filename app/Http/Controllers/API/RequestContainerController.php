@@ -11,6 +11,7 @@ use App\Models\DepartmentUnitApprovers;
 use App\Models\RequestContainer;
 use App\Models\SubUnit;
 use App\Traits\AssetRequestHandler;
+use App\Traits\RequestContainerHandler;
 use App\Traits\RequestShowDataHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Exception;
@@ -20,14 +21,8 @@ use Illuminate\Support\Facades\DB;
 
 class RequestContainerController extends Controller
 {
-    use ApiResponse, AssetRequestHandler, RequestShowDataHandler;
+    use ApiResponse, AssetRequestHandler, RequestShowDataHandler, RequestContainerHandler;
 
-
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index()
     {
         $requesterId = auth('sanctum')->user()->id;
@@ -43,93 +38,27 @@ class RequestContainerController extends Controller
     {
         DB::beginTransaction();
         try {
-            //        return $request->all();
             $requesterId = auth('sanctum')->user()->id;
-            //        $transactionNumber = RequestContainer::generateTransactionNumber($requesterId);
             $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $request->subunit_id)
                 ->orderBy('layer', 'asc')
                 ->get();
 
-            $layerIds = $departmentUnitApprovers->map(function ($approverObject) {
-                return $approverObject->approver->approver_id;
-            })->toArray();
-
-            $isRequesterApprover = in_array($requesterId, $layerIds);
-            $isLastApprover = false;
-            if ($isRequesterApprover) {
-                $requesterLayer = array_search($requesterId, $layerIds) + 1;
-                // Get the maximum (last) layer
-                $maxLayer = $departmentUnitApprovers->max('layer');
-
-                // Check if reqesuter is the last approver
-                $isLastApprover = $maxLayer == $requesterLayer;
-            }
+            list($isRequesterApprover, $isLastApprover, $requesterLayer) = $this->checkIfRequesterIsApprover($requesterId, $departmentUnitApprovers);
+//            return $isRequesterApprover;
             $this->checkDifferentCOA($request);
 
-            $assetRequest = RequestContainer::create([
-                'status' => $isLastApprover
-                    ? 'Approved'
-                    : ($isRequesterApprover
-                        ? 'For Approval of Approver ' . ($requesterLayer + 1)
-                        : 'For Approval of Approver 1'),
-                'requester_id' => $requesterId,
-                'type_of_request_id' => $request->type_of_request_id,
-                'attachment_type' => $request->attachment_type,
-                'subunit_id' => $request->subunit_id,
-                'location_id' => $request->location_id,
-                'account_title_id' => $request->account_title_id,
-                'accountability' => $request->accountability,
-                'company_id' => $request->company_id,
-                //Department::find($request->department_id)->company->id,
-                'department_id' => $request->department_id,
-                'accountable' => $request->accountable ?? null,
-                'additional_info' => $request->additional_info ?? null,
-                'acquisition_details' => $request->acquisition_details,
-                'asset_description' => $request->asset_description,
-                'asset_specification' => $request->asset_specification ?? null,
-                'cellphone_number' => $request->cellphone_number ?? null,
-                'brand' => $request->brand ?? null,
-                'quantity' => $request->quantity,
-            ]);
+            $assetRequest = $this->createRequestContainer($request, $isRequesterApprover, $isLastApprover, $requesterLayer, $requesterId);
 
-            $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
+            $this->addMediaToRequestContainer($request, $assetRequest);
+//            return $assetRequest->status;
+            $this->updateStatusIfDifferent($assetRequest->status);
 
-            foreach ($fileKeys as $fileKey) {
-                if (isset($request->$fileKey)) {
-                    $files = is_array($request->$fileKey) ? $request->$fileKey : [$request->$fileKey];
-                    foreach ($files as $file) {
-                        $assetRequest->addMedia($file)->toMediaCollection($fileKey);
-                    }
-                }
-            }
             DB::commit();
             return $this->responseCreated('Request Container Created', $assetRequest);
         } catch (Exception $e) {
             DB::rollback();
-            return $this->responseUnprocessable('Failed to create RequestContainer');
+            return $this->responseUnprocessable('Something went wrong. Please try again later.');
         }
-    }
-
-    private function checkDifferentCOA($request)
-    {
-        $requesterId = auth('sanctum')->user()->id;
-        $requestContainer = RequestContainer::where('requester_id', $requesterId)->get();
-        if ($requestContainer->isNotEmpty()) {
-            //check if the this and the subunit is the same on the request container
-            if ($requestContainer->first()->subunit_id != $request->subunit_id) {
-                foreach ($requestContainer as $requestContainerItem)
-                    $requestContainerItem->update([
-                        'company_id' => $request->company_id,
-                        'department_id' => $request->department_id,
-                        'subunit_id' => $request->subunit_id,
-                        'location_id' => $request->location_id,
-//                'account_title_id' => $request->account_title_id,
-                        'acquisition_details' => $request->acquisition_details ?? null,
-
-                    ]);
-            }
-        }
-        return;
     }
 
     public function show($id)
@@ -142,13 +71,7 @@ class RequestContainerController extends Controller
         return $this->transformForSingleItemOnly($requestContainer);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param int $id
-     * @return \Illuminate\Http\Response
-     */
+
     public function update(UpdateRequestContainerRequest $request, $id)
     {
     }

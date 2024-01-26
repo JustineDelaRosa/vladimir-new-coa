@@ -3,15 +3,15 @@
 namespace App\Traits;
 
 use App\Models\AdditionalCost;
-use App\Models\Formula;
-use App\Models\FixedAsset;
 use App\Models\AssetRequest;
+use App\Models\FixedAsset;
+use App\Models\Formula;
 use App\Models\Status\AssetStatus;
 use App\Models\WarehouseNumber;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Pagination\LengthAwarePaginator;
 use App\Repositories\VladimirTagGeneratorRepository;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 trait AddingPoHandler
 {
@@ -22,7 +22,6 @@ trait AddingPoHandler
     {
         $this->vladimirTagGeneratorRepository = new VladimirTagGeneratorRepository();
     }
-
 
     public function createAssetRequestQuery($toPo)
     {
@@ -255,7 +254,6 @@ trait AddingPoHandler
         return $this->responseSuccess('Remaining quantity removed successfully!');
     }
 
-
     //FOR DELETING
     private function handleTransactionNumberCase($transactionNumber): JsonResponse
     {
@@ -287,8 +285,8 @@ trait AddingPoHandler
 //        $assetRequestCheck = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
 
 //        if ($assetRequestCheck->count() == 1) {
-//            return $this->responseUnprocessable('Cannot remove final item');
-//        }
+        //            return $this->responseUnprocessable('Cannot remove final item');
+        //        }
 
         if ($assetRequest->quantity_delivered == null || $assetRequest->quantity_delivered == 0) {
             $this->deleteAssetRequestPo($assetRequest);
