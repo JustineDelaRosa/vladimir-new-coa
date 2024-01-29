@@ -43,8 +43,9 @@ class AddingPoController extends Controller
 
     public function show(Request $request, $transactionNumber)
     {
-        $requiredRole = ['Purchase Order', 'Admin', 'Super Admin', 'Warehouse', 'Purchase Request'];
-        $checkUserRole = auth('sanctum')->user()->role->role_name;
+
+        $requiredRole =array_map('strtolower',['Purchase Order', 'Admin', 'Super Admin', 'Warehouse', 'Purchase Request']);
+        $checkUserRole = strtolower(auth('sanctum')->user()->role->role_name);
         if (in_array($checkUserRole, $requiredRole)) {
             $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
                 ->orderByRaw('(quantity > quantity_delivered) desc')

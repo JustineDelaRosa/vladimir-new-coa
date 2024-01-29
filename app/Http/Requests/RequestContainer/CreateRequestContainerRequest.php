@@ -4,6 +4,7 @@ namespace App\Http\Requests\RequestContainer;
 
 use App\Http\Requests\BaseRequest;
 use App\Models\Approvers;
+use App\Models\FixedAsset;
 use App\Models\Location;
 use App\Models\RequestContainer;
 use App\Models\SubUnit;
@@ -40,6 +41,16 @@ class CreateRequestContainerRequest extends BaseRequest
             'company_id' => ['required', Rule::exists('companies', 'id')],
             'department_id' => ['required', Rule::exists('departments', 'id')],
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
+            'is_additional_cost' => 'nullable|boolean',
+            'fixed_asset_id' => [
+                'required-if:is_additional_cost,true',
+                Rule::exists('fixed_assets', 'id'),
+                //check if the fixed asset is already requested
+                function ($attribute, $value, $fail) {
+                    $fixedAsset = FixedAsset::find($value);
+//                    if(($fixedAsset->from_request == 1 && $fixedAsset->is_released == 0 ))
+                },
+            ],
             'subunit_id' => [
                 'required', Rule::exists('sub_units', 'id'),
                 //check if the subunit already has approvers assigned

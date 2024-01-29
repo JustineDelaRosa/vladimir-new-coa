@@ -165,15 +165,55 @@ trait AddingPoHandler
                 $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost);
             }
         } else {
-            $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost, false);
+            $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost);
         }
     }
 
     private function addToFixedAssets($asset, $isAddCost)
     {
         if ($isAddCost == 1) {
-            $addCost = new AdditionalCost();
-            return;
+            $formula = Formula::create([
+                'depreciation_method' => $asset->depreciation_method,
+                'acquisition_date' => $asset->acquisition_date,
+                'acquisition_cost' => $asset->acquisition_cost,
+            ]);
+            $warehouseNumber = new WarehouseNumber();
+            $warehouseNumber->save(); // Save the WarehouseNumber instance to the database to generate an id
+            $generateWhNumber = $warehouseNumber->generateWhNumber(); // Now you can call generateWhNumber
+            $warehouseNumber->update([
+                'warehouse_number' => $generateWhNumber,
+            ]);
+            $additionalCost = $formula->additionalCost()->create([
+                'requester_id' => $asset->requester_id,
+                'pr_number' => $asset->pr_number,
+                'po_number' => $asset->po_number,
+                'rr_number' => $asset->rr_number,
+                'warehouse_number_id' => $warehouseNumber->id,
+                'from_request' => 1,
+                'transaction_number' => $asset->transaction_number,
+                'asset_description' => $asset->asset_description,
+                'type_of_request_id' => $asset->type_of_request_id,
+                'charged_department' => $asset->department_id,
+                'asset_specification' => $asset->asset_specification,
+                'supplier_id' => $asset->supplier_id,
+                'accountability' => $asset->accountability,
+                'accountable' => $asset->accountable,
+                'cellphone_number' => $asset->cellphone_number,
+                'brand' => $asset->brand,
+                'quantity' => $asset->quantity,
+                'depreciation_method' => $asset->depreciation_method,
+                'acquisition_date' => $asset->acquisition_date,
+                'acquisition_cost' => $asset->acquisition_cost,
+                'asset_status_id' => AssetStatus::where('asset_status_name', 'Good')->first()->id,
+                'is_old_asset' => 0,
+                'is_additional_cost' => $asset->is_addcost,
+                'company_id' => $asset->company_id,
+                'business_unit_id' => $asset->business_unit_id,
+                'department_id' => $asset->department_id,
+                'location_id' => $asset->location_id,
+                'account_id' => $asset->account_title_id,
+                'remarks' => $asset->remarks,
+            ]);
         } else {
             $formula = Formula::create([
                 'depreciation_method' => $asset->depreciation_method,

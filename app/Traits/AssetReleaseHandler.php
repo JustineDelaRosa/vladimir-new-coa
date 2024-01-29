@@ -203,8 +203,8 @@ trait AssetReleaseHandler
             'requestor' => [
                 'id' => $fixed_asset->requestor->id ?? '-',
                 'username' => $fixed_asset->requestor->username ?? '-',
-                'first_name' => $fixed_asset->requestor->first_name ?? '-',
-                'last_name' => $fixed_asset->requestor->last_name ?? '-',
+                'firstname' => $fixed_asset->requestor->first_name ?? '-',
+                'lastname' => $fixed_asset->requestor->last_name ?? '-',
                 'employee_id' => $fixed_asset->requestor->employee_id ?? '-',
             ],
             'pr_number' => $fixed_asset->pr_number ?? '-',
@@ -336,8 +336,8 @@ trait AssetReleaseHandler
                     'requestor' => [
                         'id' => $additional_cost->requestor->id ?? '-',
                         'username' => $additional_cost->requestor->username ?? '-',
-                        'first_name' => $additional_cost->requestor->first_name ?? '-',
-                        'last_name' => $additional_cost->requestor->last_name ?? '-',
+                        'firstname' => $additional_cost->requestor->first_name ?? '-',
+                        'lastname' => $additional_cost->requestor->last_name ?? '-',
                         'employee_id' => $additional_cost->requestor->employee_id ?? '-',
                     ],
                     'pr_number' => $additional_cost->pr_number ?? '-',
@@ -461,8 +461,8 @@ trait AssetReleaseHandler
             'requestor' => [
                 'id' => $fixed_asset->requestor->id ?? '-',
                 'username' => $fixed_asset->requestor->username ?? '-',
-                'first_name' => $fixed_asset->requestor->first_name ?? '-',
-                'last_name' => $fixed_asset->requestor->last_name ?? '-',
+                'firstname' => $fixed_asset->requestor->first_name ?? '-',
+                'lastname' => $fixed_asset->requestor->last_name ?? '-',
                 'employee_id' => $fixed_asset->requestor->employee_id ?? '-',
             ],
             'pr_number' => $fixed_asset->pr_number ?? '-',
@@ -658,8 +658,8 @@ trait AssetReleaseHandler
             'requestor_id' => [
                 'id' => $additional_cost->requestor->id ?? '-',
                 'username' => $additional_cost->requestor->username ?? '-',
-                'first_name' => $additional_cost->requestor->first_name ?? '-',
-                'last_name' => $additional_cost->requestor->last_name ?? '-',
+                'firstname' => $additional_cost->requestor->first_name ?? '-',
+                'lastname' => $additional_cost->requestor->last_name ?? '-',
                 'employee_id' => $additional_cost->requestor->employee_id ?? '-',
             ],
             'pr_number' => $additional_cost->pr_number ?? '-',

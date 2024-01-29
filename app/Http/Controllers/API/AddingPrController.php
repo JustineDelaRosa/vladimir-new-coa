@@ -62,10 +62,10 @@ class AddingPrController extends Controller
 
     public function show(Request $request, $transactionNumber)
     {
-        $requiredRole = ['Purchase Request', 'Admin', 'Super Admin'];
-        $checkUserRole = auth('sanctum')->user()->role->pluck('role_name')->intersect($requiredRole);
+        $requiredRole = array_map('strtolower', ['Purchase Request', 'Admin', 'Super Admin', 'Etd Manager']);
+        $userRole = strtolower(auth('sanctum')->user()->role->role_name);
 
-        if ($checkUserRole) {
+        if (in_array($userRole, $requiredRole)) {
         $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->dynamicPaginate();
         } else {
             return $this->responseUnprocessable('You are not allowed to view this transaction.');

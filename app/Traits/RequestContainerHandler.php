@@ -32,6 +32,8 @@ trait RequestContainerHandler
                     ? 'For Approval of Approver ' . ($requesterLayer + 1)
                     : 'For Approval of Approver 1'),
             'requester_id' => $requesterId,
+            'is_addcost' => $request->is_additional_cost ?? 0,
+            'fixed_asset_id' => $request->fixed_asset_id ?? null,
             'type_of_request_id' => $request->type_of_request_id,
             'attachment_type' => $request->attachment_type,
             'subunit_id' => $request->subunit_id,

@@ -252,6 +252,8 @@ class AssetRequestController extends Controller
             $assetRequest = new AssetRequest();
 
             $assetRequest->status = $item->status;
+            $assetRequest->is_addcost = $item->is_addcost;
+            $assetRequest->fixed_asset_id = $item->fixed_asset_id;
             $assetRequest->requester_id = $item->requester_id;
             $assetRequest->type_of_request_id = $item->type_of_request_id;
             $assetRequest->attachment_type = $item->attachment_type;
