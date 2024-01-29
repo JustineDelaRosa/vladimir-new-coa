@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\Validator;
 class FixedAssetController extends Controller
 {
     use ApiResponse;
+
     protected $fixedAssetRepository, $vladimirTagGeneratorRepository, $calculationRepository;
 
     public function __construct()
@@ -42,8 +43,15 @@ class FixedAssetController extends Controller
 
     public function index()
     {
+
         $fixed_assets = FixedAsset::with(['formula', 'additionalCost'])
-            ->get();
+            ->where(function ($query) {
+                $query->where('from_request', '!=', 1)
+                    ->orWhere(function ($query) {
+                        $query->where('from_request', 1)
+                            ->where('is_released', 1);
+                    });
+            })->get();
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
             'data' => $this->fixedAssetRepository->transformFixedAsset($fixed_assets)

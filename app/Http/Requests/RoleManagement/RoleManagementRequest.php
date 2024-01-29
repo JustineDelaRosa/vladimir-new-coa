@@ -28,7 +28,8 @@ class RoleManagementRequest extends FormRequest
             'masterlist' => ['company', 'department', 'location', 'account-title', 'division', 'type-of-request', 'capex', 'category', 'status-category'],
             'user-management' => ['user-accounts', 'role-management', 'user-requestor', 'user-approver'],
             'settings' => ['approver-settings', 'form-settings'],
-            'request' => ['disposal', 'requisition', 'transfer', 'pull-out', 'disposal']
+            'asset-movement' => ['transfer', 'pull-out', 'disposal', 'evaluation'],
+            'asset-requisition' => ['requisition', 'purchase-request', 'requisition-receiving', 'requisition-releasing'],
         ];
 
         if ($this->isMethod('post')) {
