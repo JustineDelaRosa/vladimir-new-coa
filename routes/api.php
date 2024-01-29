@@ -124,9 +124,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
 
     //ServiceProvider
-    Route::resource('service-provider', ServiceProviderController::class);
-    Route::put('service-provider/archived-service-provider/{id}', [ServiceProviderController::class, 'archived']);
-    Route::get('service-providers/search', [ServiceProviderController::class, 'search']);
+//    Route::resource('service-provider', ServiceProviderController::class);
+//    Route::put('service-provider/archived-service-provider/{id}', [ServiceProviderController::class, 'archived']);
+//    Route::get('service-providers/search', [ServiceProviderController::class, 'search']);
 
 
     //MAJOR CATEGORY//
@@ -140,10 +140,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::put('minor-category/archived-minor-category/{id}', [MinorCategoryController::class, 'archived']);
     Route::get('minor-categories/search', [MinorCategoryController::class, 'search']);
 
-    Route::resource('category-list', CategoryListController::class);
-    Route::put('category-list/archived-category-list/{id}', [CategoryListController::class, 'archived']);
-    Route::get('category-lists/search', [CategoryListController::class, 'search']);
-    Route::put('category-list/add-update-minorcategory/{id}', [CategoryListController::class, 'UpdateMinorCategory']);
+//    Route::resource('category-list', CategoryListController::class);
+//    Route::put('category-list/archived-category-list/{id}', [CategoryListController::class, 'archived']);
+//    Route::get('category-lists/search', [CategoryListController::class, 'search']);
+//    Route::put('category-list/add-update-minorcategory/{id}', [CategoryListController::class, 'UpdateMinorCategory']);
 
     Route::resource('supplier', SupplierController::class);
     Route::put('supplier/archived-supplier/{id}', [SupplierController::class, 'archived']);
