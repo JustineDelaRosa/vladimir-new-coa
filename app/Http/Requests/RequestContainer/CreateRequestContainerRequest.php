@@ -45,10 +45,9 @@ class CreateRequestContainerRequest extends BaseRequest
             'fixed_asset_id' => [
                 'required-if:is_additional_cost,true',
                 Rule::exists('fixed_assets', 'id'),
-                //check if the fixed asset is already requested
+                //check if this has different fixed asset id from other request container
                 function ($attribute, $value, $fail) {
-                    $fixedAsset = FixedAsset::find($value);
-//                    if(($fixedAsset->from_request == 1 && $fixedAsset->is_released == 0 ))
+
                 },
             ],
             'subunit_id' => [

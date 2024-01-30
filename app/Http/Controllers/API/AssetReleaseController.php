@@ -36,83 +36,38 @@ class AssetReleaseController extends Controller
             return $this->searchFixedAsset($search, $page, $isReleased, $per_page);
         }
     }
-
-    public function store(Request $request)
-    {
-        //
-    }
-
-
     public function show(int $warehouseId)
     {
         $fixed_asset = FixedAsset::where('warehouse_number_id', $warehouseId)->first();
         $additionalCost = AdditionalCost::where('warehouse_number_id', $warehouseId)->first();
 
-        if(!$fixed_asset && !$additionalCost){
+        if (!$fixed_asset && !$additionalCost) {
             return $this->responseNotFound('Asset Not Found');
         }
 
-        if($additionalCost){
+        if ($additionalCost) {
             return $this->transformSingleAdditionalCost($additionalCost);
         }
 
         return $this->transformSingleFixedAsset($fixed_asset);
     }
 
-
-    public function update(UpdateAssetReleaseRequest $request, $warehouseId): JsonResponse
+    public function releaseAssets(MultipleReleaseRequest $request): JsonResponse
     {
-        $data = $request->only(['accountability', 'accountable', 'received_by']);
-
-        $fixedAsset = FixedAsset::where('warehouse_number_id', $warehouseId)->first();
-        $additionalCost = AdditionalCost::where('warehouse_number_id', $warehouseId)->first();
-
-        if(!$fixedAsset && !$additionalCost){
-            return $this->responseNotFound('Asset Not Found');
-        }
-
-        if($fixedAsset){
-            $fixedAsset->update([
-                'accountability' => $data['accountab ility'],
-                'accountable' => $data['accountable'],
-                'received_by' => $data['received_by'],
-                'is_released' => 1,
-            ]);
-            return $this->responseSuccess('Fixed Asset Accountability Updated');
-        }
-
-        $additionalCost->update([
-            'accountability' => $data['accountability'],
-            'accountable' => $data['accountable'],
-            'received_by' => $data['received_by'],
-            'is_released' => 1,
-        ]);
-        return $this->responseSuccess('Additional Cost Accountability Updated');
-    }
-
-    public function destroy($id)
-    {
-        //
-    }
-
-    public function releaseAssets(MultipleReleaseRequest $request){
-
-//        return $request->warehouse_number_id;
-
         $warehouseIds = $request->get('warehouse_number_id');
         $accountability = $request->get('accountability');
         $accountable = $request->get('accountable');
         $receivedBy = $request->get('received_by');
 
         foreach ($warehouseIds as $warehouseId) {
-            $fixedAsset = FixedAsset::where('warehouse_number_id', $warehouseId)->where('is_released',0)->first();
-            $additionalCost = AdditionalCost::where('warehouse_number_id', $warehouseId)->where('is_released',0)->first();
+            $fixedAsset = FixedAsset::where('warehouse_number_id', $warehouseId)->where('is_released', 0)->first();
+            $additionalCost = AdditionalCost::where('warehouse_number_id', $warehouseId)->where('is_released', 0)->first();
 
-            if(!$fixedAsset && !$additionalCost){
+            if (!$fixedAsset && !$additionalCost) {
                 return $this->responseNotFound('Asset Not Found');
             }
 
-            if($fixedAsset){
+            if ($fixedAsset) {
                 $fixedAsset->update([
                     'accountability' => $accountability,
                     'accountable' => $accountable,
@@ -121,7 +76,7 @@ class AssetReleaseController extends Controller
                 ]);
             }
 
-            if($additionalCost){
+            if ($additionalCost) {
                 $additionalCost->update([
                     'accountability' => $accountability,
                     'accountable' => $accountable,
@@ -130,5 +85,6 @@ class AssetReleaseController extends Controller
                 ]);
             }
         }
+        return $this->responseSuccess('Assets Released');
     }
 }

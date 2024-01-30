@@ -15,6 +15,7 @@ use App\Traits\RequestContainerHandler;
 use App\Traits\RequestShowDataHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,7 @@ class RequestContainerController extends Controller
         return $this->responseData($requestContainer);
     }
 
-    public function store(CreateRequestContainerRequest $request)
+    public function store(CreateRequestContainerRequest $request): JsonResponse
     {
         DB::beginTransaction();
         try {
@@ -57,7 +58,7 @@ class RequestContainerController extends Controller
             return $this->responseCreated('Request Container Created', $assetRequest);
         } catch (Exception $e) {
             DB::rollback();
-            return $this->responseUnprocessable('Something went wrong. Please try again later.');
+            return $this->responseUnprocessable('Something went wrong. Please try again later.'. $e->getMessage());
         }
     }
 
