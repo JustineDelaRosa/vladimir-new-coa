@@ -66,6 +66,7 @@ trait RequestShowDataHandler
             'pr_number' => $ar->pr_number,
             'po_number' => $ar->po_number,
             'attachment_type' => $ar->attachment_type,
+            'is_addcost' => $ar->is_addcost ?? 0,
             'remarks' => $ar->remarks ?? '',
             'accountability' => $ar->accountability,
             'accountable' => $ar->accountable ?? '-',

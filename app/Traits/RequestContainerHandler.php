@@ -1,10 +1,13 @@
 <?php
+
 namespace App\Traits;
 
 use App\Models\RequestContainer;
+use Essa\APIToolKit\Api\ApiResponse;
 
 trait RequestContainerHandler
 {
+    use ApiResponse;
     private function checkIfRequesterIsApprover($requesterId, $departmentUnitApprovers)
     {
         $layerIds = $departmentUnitApprovers->map(function ($approverObject) {
@@ -32,7 +35,7 @@ trait RequestContainerHandler
                     ? 'For Approval of Approver ' . ($requesterLayer + 1)
                     : 'For Approval of Approver 1'),
             'requester_id' => $requesterId,
-            'is_addcost' => $request->is_additional_cost ?? 0,
+            'is_addcost' => $request->is_addcost ?? 0,
             'fixed_asset_id' => $request->fixed_asset_id ?? null,
             'type_of_request_id' => $request->type_of_request_id,
             'attachment_type' => $request->attachment_type,
@@ -72,6 +75,7 @@ trait RequestContainerHandler
         $requesterId = auth('sanctum')->user()->id;
         $requestContainer = RequestContainer::where('requester_id', $requesterId)->get();
         if ($requestContainer->isNotEmpty()) {
+            $this->differentFixedAssetId($request, $requestContainer, $requesterId);
             $this->updateRequestContainer($request, $requestContainer);
         }
         return;
@@ -94,12 +98,17 @@ trait RequestContainerHandler
                     'acquisition_details' => $request->acquisition_details,
                 ]);
             }
+        } elseif ($requestContainer->first()->fixed_asset_id != $request->fixed_asset_id && $request->fixed_asset_id != null) {
+            foreach ($requestContainer as $requestContainerItem) {
+                $requestContainerItem->update([
+                    'fixed_asset_id' => $request->fixed_asset_id,
+                ]);
+            }
         }
     }
 
     private function updateStatusIfDifferent($newStatus)
     {
-
         $secondLatestRequestContainer = RequestContainer::latest()->skip(1)->first();
         $requester = auth('sanctum')->user();
 
@@ -108,6 +117,13 @@ trait RequestContainerHandler
             RequestContainer::where('requester_id', $requester->id)->update([
                 'status' => $newStatus,
             ]);
+        }
+    }
+
+    private function differentFixedAssetId($request, $requestContainer, $requesterId)
+    {
+        if ($requestContainer->first()->fixed_asset_id != $request->fixed_asset_id && $request->fixed_asset_id != null) {
+            return $this->responseUnprocessable('Different Fixed Asset Id');
         }
     }
 }

@@ -8,6 +8,8 @@ use App\Models\FixedAsset;
 use App\Models\Formula;
 use App\Models\Status\AssetStatus;
 use App\Models\WarehouseNumber;
+use App\Repositories\AdditionalCostRepository;
+use App\Repositories\CalculationRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -16,10 +18,12 @@ use Illuminate\Support\Facades\DB;
 trait AddingPoHandler
 {
 
-    protected $vladimirTagGeneratorRepository;
+    protected VladimirTagGeneratorRepository $vladimirTagGeneratorRepository;
+    protected AdditionalCostRepository $additionalCostRepository;
 
     public function __construct()
     {
+        $this->additionalCostRepository = new AdditionalCostRepository();
         $this->vladimirTagGeneratorRepository = new VladimirTagGeneratorRepository();
     }
 
@@ -178,18 +182,20 @@ trait AddingPoHandler
                 'acquisition_cost' => $asset->acquisition_cost,
             ]);
             $warehouseNumber = new WarehouseNumber();
-            $warehouseNumber->save(); // Save the WarehouseNumber instance to the database to generate an id
-            $generateWhNumber = $warehouseNumber->generateWhNumber(); // Now you can call generateWhNumber
+            $warehouseNumber->save();
+            $generateWhNumber = $warehouseNumber->generateWhNumber();
             $warehouseNumber->update([
                 'warehouse_number' => $generateWhNumber,
             ]);
-            $additionalCost = $formula->additionalCost()->create([
+            $formula->additionalCost()->create([
                 'requester_id' => $asset->requester_id,
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
                 'rr_number' => $asset->rr_number,
                 'warehouse_number_id' => $warehouseNumber->id,
                 'from_request' => 1,
+                'can_release' => 1,
+                'add_cost_sequence' => $this->additionalCostRepository->getAddCostSequence($asset->fixed_asset_id) ?? '-',
                 'transaction_number' => $asset->transaction_number,
                 'asset_description' => $asset->asset_description,
                 'type_of_request_id' => $asset->type_of_request_id,
@@ -214,6 +220,7 @@ trait AddingPoHandler
                 'account_id' => $asset->account_title_id,
                 'remarks' => $asset->remarks,
             ]);
+
         } else {
             $formula = Formula::create([
                 'depreciation_method' => $asset->depreciation_method,
