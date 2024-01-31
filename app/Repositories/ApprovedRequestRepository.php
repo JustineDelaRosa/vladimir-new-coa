@@ -5,12 +5,14 @@ namespace App\Repositories;
 use App\Models\Approvers;
 use App\Models\AssetApproval;
 use App\Models\AssetRequest;
+use App\Models\DepartmentUnitApprovers;
+use App\Traits\AssetRequestHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class ApprovedRequestRepository
 {
-    use ApiResponse;
+    use ApiResponse,AssetRequestHandler;
 
     public function approveRequest($assetApprovalId): JsonResponse
     {
@@ -77,9 +79,24 @@ class ApprovedRequestRepository
     }
 
     //RESUBMITTING REQUEST
-    public function resubmitRequest($transactionNumber): JsonResponse
+    public function resubmitRequest($transactionNumber)
     {
         $user = auth('sanctum')->user();
+        $subUnitId = $this->getSubUnitId($transactionNumber);
+        $approverIds = $this->getApproverIds($subUnitId);
+        $assetApprovalIds = $this->getAssetApprovalIds($transactionNumber);
+        if ($this->isApproverListChanged($approverIds, $assetApprovalIds)) {
+            // Delete the previous approvers
+            AssetApproval::where('transaction_number', $transactionNumber)->delete();
+
+            // Get the items related to the transaction
+            $items = AssetRequest::where('transaction_number', $transactionNumber)->get();
+            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->first();
+
+            // Add the new approvers
+            $this->createAssetApprovals($items, $user->id, $assetRequest);
+        }
+
         $defaultLayer = $this->getUserLayer($transactionNumber);
 
         $assetApproval = AssetApproval::where('transaction_number', $transactionNumber)
@@ -95,6 +112,27 @@ class ApprovedRequestRepository
         $this->updateAssetApprovalStatus($assetApproval, 'For Approval');
         $this->logActivity($assetApproval, 'Resubmitted');
         return $this->responseSuccess('Asset Request Resubmitted Successfully');
+    }
+
+
+    private function getSubUnitId($transactionNumber)
+    {
+        return AssetRequest::where('transaction_number', $transactionNumber)->first()->subunit_id;
+    }
+
+    private function getApproverIds($subUnitId)
+    {
+        return DepartmentUnitApprovers::where('subunit_id', $subUnitId)->get()->pluck('approver_id')->toArray();
+    }
+
+    private function getAssetApprovalIds($transactionNumber)
+    {
+        return AssetApproval::where('transaction_number', $transactionNumber)->get()->pluck('approver_id')->toArray();
+    }
+
+    private function isApproverListChanged($approverIds, $assetApprovalIds)
+    {
+        return array_diff($approverIds, $assetApprovalIds);
     }
 
     //VOID REQUEST

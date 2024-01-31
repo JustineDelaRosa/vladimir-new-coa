@@ -211,15 +211,15 @@ class CalculationRepository
                     $fail('Not yet fully depreciated');
                 }
             }
-//            elseif ($depreciation_status->depreciation_status_name == 'Running Depreciation') {
-//                //check if the value of end depreciation is not yet passed the current date (yyyymm)
-//                $current_date = Carbon::now()->format('Y-m');
-//                $value = substr_replace($value, '-', 4, 0);
-//                //check if the value is parsable or not
-//                if (Carbon::parse($value)->isBefore($current_date)) {
-//                    $fail('The asset is fully depreciated');
-//                }
-//            }
+            elseif ($depreciation_status->depreciation_status_name == 'Running Depreciation') {
+                //check if the value of end depreciation is not yet passed the current date (yyyymm)
+                $current_date = Carbon::now()->format('Y-m');
+                $value = substr_replace($value, '-', 4, 0);
+                //check if the value is parsable or not
+                if (Carbon::parse($value)->isBefore($current_date)) {
+                    $fail('The asset is fully depreciated');
+                }
+            }
         }
     }
 
@@ -253,6 +253,137 @@ class CalculationRepository
 //                $fail('Same voucher with different date found');
 //                return;
 //            }
+//        }
+//    }
+
+
+
+//    public function validationForDate($attribute, $value, $fail, $collections = null)
+//    {
+//        $newAttribute = $this->formatAttribute($attribute);
+//        $this->validateDateFormat($newAttribute, $value, $fail);
+//        $this->validateYearAndMonth($value, $newAttribute, $fail);
+//
+//        if ($newAttribute === 'voucher date') {
+//            $this->validateVoucherDate($value, $collections, $fail);
+//        }
+//
+//        if ($newAttribute == 'end depreciation') {
+//            $this->validateEndDepreciation($value, $collections, $fail);
+//        }
+//    }
+//
+//    private function formatAttribute($attribute)
+//    {
+//        $newAttribute = preg_replace('/^\d+\./', '', $attribute);
+//        return str_replace('_', ' ', $newAttribute);
+//    }
+//
+//    private function validateDateFormat($newAttribute, $value, $fail)
+//    {
+//        $length = $newAttribute === 'voucher date' ? 8 : 6;
+//        if (strlen($value) !== $length) {
+//            $fail('Invalid format');
+//        }
+//    }
+//
+//    private function validateYearAndMonth($value, $newAttribute, $fail)
+//    {
+//        $year = substr($value, 0, 4);
+//        $month = substr($value, 4, 2);
+//
+//        if (!is_numeric($year) || (int)$year < 1900 || (int)$year > 2100) {
+//            $fail("Invalid year in the $newAttribute format");
+//        }
+//
+//        if (!is_numeric($month) || (int)$month < 1 || (int)$month > 12) {
+//            $fail("Invalid month in the $newAttribute format");
+//        }
+//    }
+//
+//    private function validateVoucherDate($value, $collections, $fail)
+//    {
+//        $voucherDates = [];
+//        $voucherValues = [];
+//        $day = substr($value, 6, 2);
+//        $month = substr($value, 4, 2);
+//        $year = substr($value, 0, 4);
+//
+//        if (!checkdate($month, $day, $year)) {
+//            $fail("Invalid voucher date format");
+//            return;
+//        }
+//
+//        foreach ($collections as $collection) {
+//            $year = substr($collection['voucher_date'], 0, 4);
+//            $month = substr($collection['voucher_date'], 4, 2);
+//            $day = substr($collection['voucher_date'], 6, 2);
+//
+//            if (checkdate((int)$month, (int)$day, (int)$year)) {
+//                $date = Carbon::createFromFormat('Y-m-d', "$year-$month-$day");
+//                $voucherDates[$collection['voucher']][] = $date->format('Y-m-d');
+//            }
+//
+//            $voucherValues[] = $collection['voucher'];
+//        }
+//
+//        $this->checkForDuplicateVouchers($voucherValues, $voucherDates, $fail);
+//        $this->checkVoucherDateInDatabase($value, $collections, $fail);
+//    }
+//
+//    private function checkForDuplicateVouchers($voucherValues, $voucherDates, $fail)
+//    {
+//        $uniqueVouchers = array_unique($voucherValues);
+//        if (count($uniqueVouchers) != count($voucherValues)) {
+//            asort($voucherValues);
+//            $duplicateVouchers = array_keys(array_filter(array_count_values($voucherValues), function ($count) {
+//                return $count > 1;
+//            }));
+//
+//            foreach ($duplicateVouchers as $duplicateVoucher) {
+//                if ($duplicateVoucher == '-') {
+//                    continue;
+//                }
+//                $dates = $voucherDates[$duplicateVoucher];
+//                if (count(array_unique($dates)) != 1) {
+//                    $fail('Same voucher with different date found');
+//                    return;
+//                }
+//            }
+//        }
+//    }
+//
+//    private function checkVoucherDateInDatabase($value, $collections, $fail)
+//    {
+//        if(!is_array($collections)) {
+//            $collections = $collections->toArray();
+//        }
+//        $index = array_search('voucher_date', array_keys($collections));
+//        $voucherValue = $collections[$index]['voucher'];
+//        $matchingAssets = FixedAsset::where('voucher', $voucherValue)->get();
+//        $matchingAddCosts = AdditionalCost::where('voucher', $voucherValue)->get();
+//        $this->checkVoucherDate($matchingAssets, $value, $fail);
+//        $this->checkVoucherDate($matchingAddCosts, $value, $fail);
+//    }
+//
+//    private function validateEndDepreciation($value, $collections, $fail)
+//    {
+//        if (!is_array($collections)) {
+//            $collections = $collections->toArray();
+//        }
+//
+//        $index = array_search('end_depreciation', array_keys($collections));
+//        $depreciation_status_name = $collections[$index]['depreciation_status'];
+//        $depreciation_status = DepreciationStatus::where('depreciation_status_name', $depreciation_status_name)->first();
+//        $current_date = Carbon::now()->format('Y-m');
+//        $value = substr_replace($value, '-', 4, 0);
+//
+//        if ($depreciation_status->depreciation_status_name == 'Fully Depreciated' && Carbon::parse($value)->isAfter($current_date)) {
+//            $fail('Not yet fully depreciated');
+//        }
+//
+//        if ($depreciation_status->depreciation_status_name == 'Running Depreciation' && Carbon::parse($value)->isBefore($current_date)) {
+//            $fail('The asset is fully depreciated');
 //        }
 //    }
 }

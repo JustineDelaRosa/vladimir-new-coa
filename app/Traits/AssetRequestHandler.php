@@ -7,6 +7,7 @@ use App\Models\AssetRequest;
 use App\Models\AssetApproval;
 use App\Traits\AddingPoHandler;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use App\Models\DepartmentUnitApprovers;
 use Spatie\Activitylog\Models\Activity;
@@ -48,9 +49,10 @@ trait AssetRequestHandler
         }
     }
 
-    public function updateAssetRequest($assetRequest, $request)
+    public function updateAssetRequest($assetRequest, $request, $save = true)
     {
-        $updateRequest = $assetRequest->update([
+        // Make changes to the $assetRequest object but don't save them
+        $assetRequest->fill([
             'type_of_request_id' => $request->type_of_request_id,
             'attachment_type' => $request->attachment_type,
             'accountability' => $request->accountability,
@@ -61,24 +63,33 @@ trait AssetRequestHandler
             'brand' => $request->brand ?? null,
             'quantity' => $request->quantity,
         ]);
-        if ($updateRequest) {
-            $this->updateOtherRequestChargingDetails($assetRequest, $request);
+
+        // Update other request charging details
+        $ar = $this->updateOtherRequestChargingDetails($assetRequest, $request, $save);
+        if ($save) {
+            $assetRequest->save();
+            $ar->save();
         }
-        return $updateRequest;
+        return [$assetRequest, $ar];
     }
 
-    public function updateOtherRequestChargingDetails($assetRequest, $request)
+    public function updateOtherRequestChargingDetails($assetRequest, $request, $save = true)
     {
         $allRequest = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
+        $ar = null;
         foreach ($allRequest as $ar) {
-            $ar->update([
+            // Make changes to the $ar object but don't save them
+            $ar->fill([
                 'company_id' => $request->company_id,
                 'department_id' => $request->department_id,
                 'subunit_id' => $request->subunit_id,
                 'location_id' => $request->location_id,
-//                'account_title_id' => $request->account_title_id,
                 'acquisition_details' => $request->acquisition_details ?? null,
             ]);
+            if ($save) {
+                $ar->save();
+            }
+            return $ar;
         }
     }
 
@@ -92,18 +103,16 @@ trait AssetRequestHandler
             'other_attachments'
         ];
 
-        //        foreach ($collections as $collection) {
-        //            if (isset($request->$collection)) {
-        //                $assetRequest->clearMediaCollection($collection);
-        //                $assetRequest->addMultipleMediaFromRequest([$collection], $collection)->each(function ($fileAdder) use ($collection) {
-        //                    $fileAdder->toMediaCollection($collection);
-        //                });
-        //            } else {
-        //                $assetRequest->clearMediaCollection($collection);
-        //            }
-        //        }
+        //count the media attachments before the update
+        // Initialize total counts
+        $totalBeforeCount = 0;
+        $totalAfterCount = 0;
 
         foreach ($collections as $collection) {
+            // Get the count of media items in the collection before the update
+            $beforeCount = $assetRequest->getMedia($collection)->count();
+            $totalBeforeCount += $beforeCount;
+
             if ($request->$collection !== 'x') {
                 if (isset($request->$collection)) {
                     $assetRequest->clearMediaCollection($collection);
@@ -111,10 +120,17 @@ trait AssetRequestHandler
                         $fileAdder->toMediaCollection($collection);
                     });
                 } else {
-
                     $assetRequest->clearMediaCollection($collection);
                 }
             }
+
+            // Get the count of media items in the collection after the update
+            $afterCount = $assetRequest->getMedia($collection)->count();
+            $totalAfterCount += $afterCount;
+
+        }
+        if ($totalAfterCount !== $totalBeforeCount) {
+            Cache::put('isFileDataUpdated', true);
         }
     }
 
@@ -443,8 +459,8 @@ trait AssetRequestHandler
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-
-        return $this->responseSuccess('Asset Request deleted Successfully');
+        $cookie = cookie('is_changed', true);
+        return $this->responseSuccess('Asset Request deleted Successfully')->withCookie($cookie);
     }
 
     public function deleteAssetRequest($transactionNumber)
@@ -470,7 +486,8 @@ trait AssetRequestHandler
             $ar->activityLog()->delete();
             $ar->delete();
         }
-        return $this->responseSuccess('Asset Request deleted Successfully');
+        $cookie = cookie('is_changed', true);
+        return $this->responseSuccess('Asset Request deleted Successfully')->withCookie($cookie);
     }
 
     private function isUserAnApprover($transactionNumber)

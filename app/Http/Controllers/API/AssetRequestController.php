@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Events\AssetRequestUpdatedCheck;
 use App\Models\User;
 use App\Models\Company;
 use App\Models\SubUnit;
@@ -23,6 +24,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\DepartmentUnitApprovers;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Spatie\Activitylog\Models\Activity;
 use App\Repositories\ApprovedRequestRepository;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -34,6 +36,7 @@ class AssetRequestController extends Controller
     use ApiResponse, AssetRequestHandler, RequestShowDataHandler;
 
     private $approveRequestRepository;
+    protected $isDataUpdated = 'false';
 
     public function __construct(ApprovedRequestRepository $approveRequestRepository)
     {
@@ -197,31 +200,49 @@ class AssetRequestController extends Controller
         return $this->responseSuccess('AssetRequest updated Successfully');
     }
 
-    public function resubmitRequest(CreateAssetRequestRequest $request): JsonResponse
+    public function resubmitRequest(CreateAssetRequestRequest $request)
     {
+        $isFileDataUpdated = Cache::get('isFileDataUpdated');
+        $isDataUpdated = Cache::get('isDataUpdated');
         $transactionNumber = $request->transaction_number;
-        return $this->approveRequestRepository->resubmitRequest($transactionNumber);
+        if ($isDataUpdated == 'true' || $isFileDataUpdated == 'true') {
+            $this->approveRequestRepository->resubmitRequest($transactionNumber);
+            Cache::forget('isDataUpdated');
+            Cache::forget('isFileDataUpdated');
+            return $this->responseSuccess('AssetRequest resubmitted Successfully');
+        } else {
+            return $this->responseUnprocessable('You can\'t resubmit this request.');
+        }
     }
 
-    public function updateRequest(UpdateAssetRequestRequest $request, $referenceNumber): JsonResponse
+    public function updateRequest(UpdateAssetRequestRequest $request, $referenceNumber)
     {
-        //        return $request->all();
-
         $assetRequest = $this->getAssetRequest('reference_number', $referenceNumber);
         if (!$assetRequest) {
             return $this->responseUnprocessable('Asset Request not found.');
         }
 
-        $updateResult = $this->updateAssetRequest($assetRequest, $request);
-        if ($updateResult) {
-            $this->handleMediaAttachments($assetRequest, $request);
+        // Make changes to the $assetRequest and $ar objects but don't save them
+        [$assetRequest, $ar] = $this->updateAssetRequest($assetRequest, $request, $save = false);
+
+        // Check if the $assetRequest and $ar objects are dirty
+        $isDataUpdated = $assetRequest->isDirty() || ($ar && $ar->isDirty()) ? 'true' : 'false';
+
+        // Save the changes to the $assetRequest and $ar objects
+        $assetRequest->save();
+        if ($ar) {
+            $ar->save();
         }
 
+        $this->handleMediaAttachments($assetRequest, $request);
+
+        Cache::put('isDataUpdated', $isDataUpdated, 60);
         return $this->responseSuccess('AssetRequest updated Successfully');
     }
 
     public function removeRequestItem($transactionNumber, $referenceNumber = null)
     {
+
         if ($transactionNumber && $referenceNumber) {
             //            return 'both';
             return $this->deleteRequestItem($referenceNumber, $transactionNumber);
