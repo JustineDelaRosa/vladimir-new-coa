@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\DepartmentUnitApprovers;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Spatie\Activitylog\Models\Activity;
 use App\Repositories\ApprovedRequestRepository;
@@ -56,13 +57,23 @@ class AssetRequestController extends Controller
         $role = Cache::remember("user_role_$requesterId", 60, function () use ($requesterId) {
             return User::find($requesterId)->roleManagement->role_name;
         });
-
+        // $role = User::find($requesterId)->roleManagement->role_name;
         $adminRoles = ['Super Admin', 'Admin', 'ERP'];
 
         $perPage = $request->input('per_page', null);
         $filter = $request->input('filter', null);
         $filter = $filter ? explode(',', $filter) : [];
         $filter = array_map('trim', $filter);
+
+        $conditions = [
+            'Returned' => ['status' => 'Returned'],
+            'For Approval' => ['status' => ['like', 'For Approval%']],
+            'For PR' => ['status' => 'Approved', 'pr_number' => null],
+            'For PO' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'quantity' => ['!=', DB::raw('quantity_delivered')]],
+            'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'print_count' => ['!=', 'quantity']],
+            'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'print_count' => ['=', DB::raw('quantity')]],
+            'Released' => ['is_claimed' => 1],
+        ];
 
         $assetRequest = AssetRequest::query();
 
@@ -75,20 +86,30 @@ class AssetRequestController extends Controller
         }
 
         if (!empty($filter)) {
-            $assetRequest->filterByConditions($filter);
+            $assetRequest->where(function ($query) use ($filter, $conditions) {
+                foreach ($filter as $key) {
+                    if (isset($conditions[$key])) {
+                        $query->orWhere(function ($query) use ($conditions, $key) {
+                            foreach ($conditions[$key] as $field => $value) {
+                                if (is_array($value)) {
+                                    $query->where($field, $value[0], $value[1]);
+                                } else {
+                                    $query->where($field, $value);
+                                }
+                            }
+                        });
+                    }
+                }
+            });
         }
 
         $assetRequest = $assetRequest->orderByDesc('created_at')->useFilters();
-
-        // Eager load the related models
-        $assetRequest->with(['requestor', 'assetApproval', 'activityLog']);
-
         $assetRequest = $assetRequest
-            ->selectRaw('transaction_number, requester_id, MIN(created_at) as created_at, MAX(status) as status, MAX(acquisition_details) as acquisition_details,  SUM(quantity) as quantity, SUM(print_count) as print_count')
-            ->groupBy('transaction_number', 'requester_id', 'created_at')
             ->get()
-            ->map(function ($assetRequest) {
-                $assetRequest->is_claimed = $assetRequest->print_count >= $assetRequest->quantity ? 1 : 0;
+            ->groupBy('transaction_number')
+            ->map(function ($assetRequestCollection) {
+                $assetRequest = $assetRequestCollection->first();
+                $assetRequest->quantity = $assetRequestCollection->sum('quantity');
                 return $this->transformIndexAssetRequest($assetRequest);
             })
             ->values();
@@ -211,7 +232,8 @@ class AssetRequestController extends Controller
             Cache::forget('isFileDataUpdated');
             return $this->responseSuccess('AssetRequest resubmitted Successfully');
         } else {
-            return $this->responseUnprocessable('You can\'t resubmit this request.');
+            return $this->responseUnprocessable('No changes and did not resubmit');
+//            return $this->responseUnprocessable('You can\'t resubmit this request.');
         }
     }
 
@@ -261,6 +283,9 @@ class AssetRequestController extends Controller
 
         // Get the items from Request-container
         $items = RequestContainer::where('requester_id', $requesterId)->get();
+        if($items->isEmpty()){
+            return $this->responseUnprocessable('No data to move');
+        }
         //check if the item inside item have different subunit id
         $subunitId = $items[0]->subunit_id;
         foreach ($items as $item) {

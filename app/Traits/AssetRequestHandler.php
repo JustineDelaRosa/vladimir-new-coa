@@ -29,7 +29,9 @@ trait AssetRequestHandler
 
     public function getAssetRequestForApprover($field, $transactionNumber, $referenceNumber = null, $singleResult = true)
     {
-        $approverCount = AssetApproval::where('transaction_number', $transactionNumber)->where('status', 'For Approval')
+
+        //TODO:: CHECK THIS
+        $approverCount = AssetApproval::where('transaction_number', $transactionNumber)->whereIN('status', ['For Approval', 'returned'])
             ->first()->layer;
         if ($singleResult == true) {
             $query = AssetRequest::where($field, $referenceNumber)
@@ -212,7 +214,7 @@ trait AssetRequestHandler
             //check if null pr number
             if ($assetRequest->pr_number == null) {
                 return [
-                    'firstname' => 'Inputing of PR No.',
+                    'firstname' => 'Inputting of PR No.',
                     'lastname' => '',
                 ];
             }
@@ -314,7 +316,8 @@ trait AssetRequestHandler
             $lastLayer = 1;
         } else {
             $lastLayer = $highestLayerNumber ?? 0;
-            if ($assetRequest->pr_number == null) $lastLayer++;
+//            dd($assetRequest->pr_number);
+            if ($assetRequest->pr_number === null) $lastLayer++;
             if (($assetRequest->po_number == null && $assetRequest->pr_number != null) ||
                 ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
             ) $lastLayer += 2;
@@ -486,8 +489,7 @@ trait AssetRequestHandler
             $ar->activityLog()->delete();
             $ar->delete();
         }
-        $cookie = cookie('is_changed', true);
-        return $this->responseSuccess('Asset Request deleted Successfully')->withCookie($cookie);
+        return $this->responseSuccess('Asset Request deleted Successfully');
     }
 
     private function isUserAnApprover($transactionNumber)

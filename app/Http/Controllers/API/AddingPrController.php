@@ -62,7 +62,7 @@ class AddingPrController extends Controller
 
     public function show(Request $request, $transactionNumber)
     {
-        $requiredRole = array_map('strtolower', ['Purchase Request', 'Admin', 'Super Admin', 'Etd Manager']);
+        $requiredRole = array_map('strtolower', ['Purchase Request', 'Admin', 'Super Admin']);
         $userRole = strtolower(auth('sanctum')->user()->role->role_name);
 
         if (in_array($userRole, $requiredRole)) {

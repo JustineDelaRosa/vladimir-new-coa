@@ -9,6 +9,7 @@
 	"license": "MIT",
 	"require": {
 		"php": "^7.4|^8.0",
+		"ext-json": "*",
 		"essa/api-tool-kit": "^1.1",
 		"fruitcake/laravel-cors": "^2.0",
 		"guzzlehttp/guzzle": "^7.5",
@@ -19,8 +20,7 @@
 		"mike42/escpos-php": "^4.0",
 		"pusher/pusher-php-server": "^7.2",
 		"spatie/laravel-activitylog": "^3.17",
-		"spatie/laravel-medialibrary": "9.0.0",
-		"ext-json": "*"
+		"spatie/laravel-medialibrary": "9.0.0"
 	},
 	"require-dev": {
 		"facade/ignition": "^2.5",
