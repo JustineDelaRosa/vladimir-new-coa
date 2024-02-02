@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AssetRelease\MultipleReleaseRequest;
 use App\Http\Requests\AssetRelease\UpdateAssetReleaseRequest;
 use App\Models\AdditionalCost;
+use App\Models\AssetRequest;
 use App\Models\FixedAsset;
 use App\Repositories\CalculationRepository;
 use App\Repositories\FixedAssetRepository;
@@ -36,6 +37,7 @@ class AssetReleaseController extends Controller
             return $this->searchFixedAsset($search, $page, $isReleased, $per_page);
         }
     }
+
     public function show(int $warehouseId)
     {
         $fixed_asset = FixedAsset::where('warehouse_number_id', $warehouseId)->first();
@@ -60,15 +62,40 @@ class AssetReleaseController extends Controller
         $receivedBy = $request->get('received_by');
 
         foreach ($warehouseIds as $warehouseId) {
-            $fixedAsset = FixedAsset::where('warehouse_number_id', $warehouseId)->where('is_released', 0)->first();
-            $additionalCost = AdditionalCost::where('warehouse_number_id', $warehouseId)->where('is_released', 0)->first();
+            $fixedAssetQuery = FixedAsset::where('warehouse_number_id', $warehouseId)->where('is_released', 0);
+            $fixedAssetCount = (clone $fixedAssetQuery)->count();
 
-            if (!$fixedAsset && !$additionalCost) {
+            $additionalCostQuery = AdditionalCost::where('warehouse_number_id', $warehouseId)->where('is_released', 0);
+            $additionalCostCount = (clone $additionalCostQuery)->count();
+
+            if ($fixedAssetCount == 0 && $additionalCostCount == 0) {
                 return $this->responseNotFound('Asset Not Found');
             }
 
-            if ($fixedAsset) {
-                $fixedAsset->update([
+
+            if ($fixedAssetCount == 1 || $additionalCostCount == 1) {
+                $assetRequest = AssetRequest::where(function ($query) use ($fixedAssetQuery, $additionalCostQuery) {
+                    $fixedAsset = $fixedAssetQuery->first();
+                    if ($fixedAsset) {
+                        $query->where('transaction_number', $fixedAsset->transaction_number)
+                            ->whereRaw('quantity = quantity_delivered')
+                            ->whereRaw('print_count = quantity');
+                    }
+                })->orWhere(function ($query) use ($additionalCostQuery) {
+                    $additionalCost = $additionalCostQuery->first();
+                    if ($additionalCost) {
+                        $query->where('transaction_number', $additionalCost->transaction_number)
+                            ->whereRaw('quantity = quantity_delivered');
+                    }
+                });
+
+                if ($assetRequest->exists()) {
+                    $assetRequest->update(['is_claimed' => 1]);
+                }
+            }
+
+            if ($fixedAssetCount > 0) {
+                (clone $fixedAssetQuery)->update([
                     'accountability' => $accountability,
                     'accountable' => $accountable,
                     'received_by' => $receivedBy,
@@ -76,8 +103,8 @@ class AssetReleaseController extends Controller
                 ]);
             }
 
-            if ($additionalCost) {
-                $additionalCost->update([
+            if ($additionalCostCount > 0) {
+                (clone $additionalCostQuery)->update([
                     'accountability' => $accountability,
                     'accountable' => $accountable,
                     'received_by' => $receivedBy,
