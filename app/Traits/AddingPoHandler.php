@@ -140,31 +140,42 @@ trait AddingPoHandler
 
     public function updatePoAssetRequest($assetRequest, $request)
     {
+        $printCount = $this->calculatePrintCount($assetRequest, $request);
+
         $assetRequest->update([
-            'po_number' => $assetRequest->po_number ?: $request->po_number,
-            'rr_number' => $assetRequest->rr_number ?: $request->rr_number,
-            'supplier_id' => $assetRequest->supplier_id ?: $request->supplier_id,
-            'acquisition_date' => $assetRequest->acquisition_date ?: $request->delivery_date,
+            'po_number' => $request->po_number,
+            'rr_number' => $request->rr_number,
+            'supplier_id' => $request->supplier_id,
+            'acquisition_date' => $request->delivery_date,
             'quantity_delivered' => $assetRequest->quantity_delivered + $request->quantity_delivered,
-            'acquisition_cost' => $assetRequest->acquisition_cost ?: $request->unit_price,
+            'acquisition_cost' => $request->unit_price,
+            'print_count' => $assetRequest->print_count + $printCount,
         ]);
     }
 
-    private function getAllItems($transactionNumber)
+    private function calculatePrintCount($assetRequest, $request)
     {
-        $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
-            ->where('status', 'Approved')
-            ->get();
-        $assetRequests->each(function ($assetRequest) {
-            $this->createNewAssetRequests($assetRequest);
-        });
+        if($assetRequest->is_addcost == 1){
+            $printCount = FixedAsset::where('id', $assetRequest->fixed_asset_id)->first()->print_count;
+            return $printCount > 0 ? $request->quantity_delivered : 0;
+        }
+
+        return 0;
     }
 
-    private function createNewAssetRequests($assetRequest)
+    private function getAllItems($assetId, $quantityDelivered)
+    {
+        $assetRequest = AssetRequest::find($assetId);
+
+        if ($assetRequest && $assetRequest->status == 'Approved') {
+            $this->createNewAssetRequests($assetRequest, $quantityDelivered);
+        }
+    }
+
+    private function createNewAssetRequests($assetRequest, $quantityDelivered)
     {
         if ($assetRequest->quantity > 1) {
-            $newQuantity = $assetRequest->quantity_delivered;
-            foreach (range(1, $newQuantity) as $index) {
+            foreach (range(1, $quantityDelivered) as $index) {
                 $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost);
             }
         } else {
@@ -192,25 +203,26 @@ trait AddingPoHandler
                 'po_number' => $asset->po_number,
                 'rr_number' => $asset->rr_number,
                 'warehouse_number_id' => $warehouseNumber->id,
+                'fixed_asset_id' => $asset->fixed_asset_id,
                 'from_request' => 1,
                 'can_release' => 1,
                 'add_cost_sequence' => $this->additionalCostRepository->getAddCostSequence($asset->fixed_asset_id) ?? '-',
                 'transaction_number' => $asset->transaction_number,
                 'asset_description' => $asset->asset_description,
                 'type_of_request_id' => $asset->type_of_request_id,
-                'charged_department' => $asset->department_id,
+//                'charged_department' => $asset->department_id,
                 'asset_specification' => $asset->asset_specification,
                 'supplier_id' => $asset->supplier_id,
                 'accountability' => $asset->accountability,
                 'accountable' => $asset->accountable,
                 'cellphone_number' => $asset->cellphone_number,
                 'brand' => $asset->brand,
-                'quantity' => $asset->quantity,
+                'quantity' => 1,
                 'depreciation_method' => $asset->depreciation_method,
                 'acquisition_date' => $asset->acquisition_date,
                 'acquisition_cost' => $asset->acquisition_cost,
                 'asset_status_id' => AssetStatus::where('asset_status_name', 'Good')->first()->id,
-                'is_old_asset' => 0,
+//                'is_old_asset' => 0,
                 'is_additional_cost' => $asset->is_addcost,
                 'company_id' => $asset->company_id,
                 'business_unit_id' => $asset->business_unit_id,
@@ -249,7 +261,7 @@ trait AddingPoHandler
                 'accountable' => $asset->accountable,
                 'cellphone_number' => $asset->cellphone_number,
                 'brand' => $asset->brand,
-                'quantity' => $asset->quantity,
+                'quantity' => 1,
                 'depreciation_method' => $asset->depreciation_method,
                 'acquisition_date' => $asset->acquisition_date,
                 'acquisition_cost' => $asset->acquisition_cost,
