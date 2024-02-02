@@ -41,7 +41,7 @@ class CreateRequestContainerRequest extends BaseRequest
             'company_id' => ['required', Rule::exists('companies', 'id')],
             'department_id' => ['required', Rule::exists('departments', 'id')],
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
-            'is_additional_cost' => 'nullable|boolean',
+//            'is_additional_cost' => 'nullable|boolean',
             'fixed_asset_id' => [
                 'required-if:is_additional_cost,true',
                 Rule::exists('fixed_assets', 'id'),
