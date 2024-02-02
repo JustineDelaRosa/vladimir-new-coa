@@ -41,6 +41,6 @@ class UniqueWithIgnore implements Rule
      */
     public function message()
     {
-        return ':attribute already exists.';
+        return 'This ';
     }
 }

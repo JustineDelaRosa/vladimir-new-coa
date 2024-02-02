@@ -33,7 +33,7 @@ trait AssetRequestHandler
         //TODO:: CHECK THIS
         $approverCount = AssetApproval::where('transaction_number', $transactionNumber)->whereIN('status', ['For Approval', 'returned'])
             ->first()->layer;
-        if ($singleResult == true) {
+        if ($singleResult) {
             $query = AssetRequest::where($field, $referenceNumber)
                 ->whereIn('status', [
                     'For Approval of Approver ' . $approverCount,
@@ -64,35 +64,35 @@ trait AssetRequestHandler
             'cellphone_number' => $request->cellphone_number ?? null,
             'brand' => $request->brand ?? null,
             'quantity' => $request->quantity,
+            'company_id' => $request->company_id,
+            'department_id' => $request->department_id,
+            'subunit_id' => $request->subunit_id,
+            'location_id' => $request->location_id,
+            'acquisition_details' => $request->acquisition_details ?? null,
         ]);
 
-        // Update other request charging details
-        $ar = $this->updateOtherRequestChargingDetails($assetRequest, $request, $save);
+        $this->updateOtherRequestChargingDetails($assetRequest, $request, $save);
         if ($save) {
             $assetRequest->save();
-            $ar->save();
         }
-        return [$assetRequest, $ar];
+        return $assetRequest;
     }
 
     public function updateOtherRequestChargingDetails($assetRequest, $request, $save = true)
     {
-        $allRequest = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
+        $allRequest = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->where('id', '!=', $assetRequest->id)
+            ->get();
         $ar = null;
         foreach ($allRequest as $ar) {
-            // Make changes to the $ar object but don't save them
-            $ar->fill([
+            $ar->update([
                 'company_id' => $request->company_id,
                 'department_id' => $request->department_id,
                 'subunit_id' => $request->subunit_id,
                 'location_id' => $request->location_id,
                 'acquisition_details' => $request->acquisition_details ?? null,
             ]);
-            if ($save) {
-                $ar->save();
-            }
-            return $ar;
         }
+        return $ar;
     }
 
     public function handleMediaAttachments($assetRequest, $request)
@@ -159,7 +159,7 @@ trait AssetRequestHandler
             'item_count' => $assetRequest->quantity ?? 0,
             'date_requested' => $this->getDateRequested($assetRequest->transaction_number),
             'remarks' => $assetRequest->remarks ?? '',
-            'status' => $assetRequest->status == 'Approved' ? $this->getAfterApprovedStatus($assetRequest) : $assetRequest->status,
+            'status' => $this->getStatus($assetRequest),
             'pr_number' => $assetRequest->pr_number ?? '-',
             'po_number' => $assetRequest->po_number ?? '-',
             'rr_number' => $assetRequest->rr_number ?? '-',
@@ -168,41 +168,60 @@ trait AssetRequestHandler
             'created_at' => $this->getDateRequested($assetRequest->transaction_number),
             'approver_count' => $assetRequest->assetApproval->count(),
             'process_count' => $this->getProcessCount($assetRequest),
-            //$this->getProcessCount($assetRequest),
-            'current_approver' => $assetRequest->assetApproval->filter(function ($approval) {
-                    return $approval->status == 'For Approval';
-                })->map(function ($approval) {
-                    return [
-                        'id' => $approval->approver->user->id,
-                        'username' => $approval->approver->user->username,
-                        'employee_id' => $approval->approver->user->employee_id,
-                        'firstname' => $approval->approver->user->firstname,
-                        'lastname' => $approval->approver->user->lastname,
-                        'department' => $approval->approver->user->department->department_name ?? '-',
-                        'subunit' => $approval->approver->user->subUnit->sub_unit_name ?? '-',
-                        'layer' => $approval->layer ?? '',
-                    ];
-                })->values()->first() ?? $this->getAfterApprovedStep($assetRequest),
-            'requestor' => [
-                'id' => $assetRequest->requestor->id ?? '-',
-                'username' => $assetRequest->requestor->username ?? '-',
-                'employee_id' => $assetRequest->requestor->employee_id ?? '-',
-                'firstname' => $assetRequest->requestor->firstname ?? '-',
-                'lastname' => $assetRequest->requestor->lastname ?? '-',
-                'department' => $assetRequest->requestor->department->department_name ?? '-',
-                'subunit' => $assetRequest->requestor->subUnit->sub_unit_name ?? '-',
-            ],
-            'history' => $assetRequest->activityLog->map(function ($activityLog) {
-                return [
-                    'id' => $activityLog->id,
-                    'action' => $activityLog->log_name,
-                    'causer' => $activityLog->causer,
-                    'created_at' => $activityLog->created_at,
-                    'remarks' => $activityLog->properties['remarks'] ?? null,
-                ];
-            }),
+            'current_approver' => $this->getCurrentApprover($assetRequest),
+            'requestor' => $this->getRequestor($assetRequest),
+            'history' => $this->getHistory($assetRequest),
             'steps' => $this->getSteps($assetRequest),
         ];
+    }
+
+    private function getStatus($assetRequest)
+    {
+        return $assetRequest->status == 'Approved' ? $this->getAfterApprovedStatus($assetRequest) : $assetRequest->status;
+    }
+
+    private function getCurrentApprover($assetRequest)
+    {
+        return $assetRequest->assetApproval->filter(function ($approval) {
+            return $approval->status == 'For Approval';
+        })->map(function ($approval) {
+            return [
+                'id' => $approval->approver->user->id,
+                'username' => $approval->approver->user->username,
+                'employee_id' => $approval->approver->user->employee_id,
+                'firstname' => $approval->approver->user->firstname,
+                'lastname' => $approval->approver->user->lastname,
+                'department' => $approval->approver->user->department->department_name ?? '-',
+                'subunit' => $approval->approver->user->subUnit->sub_unit_name ?? '-',
+                'layer' => $approval->layer ?? '',
+            ];
+        })->values()->first() ?? $this->getAfterApprovedStep($assetRequest);
+    }
+
+    private function getRequestor($assetRequest)
+    {
+        return [
+            'id' => $assetRequest->requestor->id ?? '-',
+            'username' => $assetRequest->requestor->username ?? '-',
+            'employee_id' => $assetRequest->requestor->employee_id ?? '-',
+            'firstname' => $assetRequest->requestor->firstname ?? '-',
+            'lastname' => $assetRequest->requestor->lastname ?? '-',
+            'department' => $assetRequest->requestor->department->department_name ?? '-',
+            'subunit' => $assetRequest->requestor->subUnit->sub_unit_name ?? '-',
+        ];
+    }
+
+    private function getHistory($assetRequest)
+    {
+        return $assetRequest->activityLog->map(function ($activityLog) {
+            return [
+                'id' => $activityLog->id,
+                'action' => $activityLog->log_name,
+                'causer' => $activityLog->causer,
+                'created_at' => $activityLog->created_at,
+                'remarks' => $activityLog->properties['remarks'] ?? null,
+            ];
+        });
     }
 
     private function getAfterApprovedStep($assetRequest)
@@ -228,13 +247,14 @@ trait AssetRequestHandler
                 ];
             }
 
-            if ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count != $assetRequest->quantity) {
+            if ($assetRequest->is_addcost != 1 && $assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count != $assetRequest->quantity) {
                 return [
                     'firstname' => 'Asset Tagging',
                     'lastname' => '',
                 ];
             }
-            if ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count >= $assetRequest->quantity && $assetRequest->is_claimed == 0) {
+            if (($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count >= $assetRequest->quantity && $assetRequest->is_claimed == 0) ||
+                ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->is_claimed == 0 && $assetRequest->is_addcost == 1)) {
                 return [
                     'firstname' => 'Ready to Pickup',
                     'lastname' => '',
@@ -268,13 +288,14 @@ trait AssetRequestHandler
                 return 'Inputting of PO No. and RR No.';
             }
 
-            if ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count != $assetRequest->quantity) {
+            if ($assetRequest->is_addcost != 1 && $assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count != $assetRequest->quantity) {
                 return 'Asset Tagging';
             }
-            if ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count >= $assetRequest->quantity && $assetRequest->is_claimed == 0) {
+            if (($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count >= $assetRequest->quantity && $assetRequest->is_claimed == 0) ||
+                ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->is_claimed == 0 && $assetRequest->is_addcost == 1)) {
                 return 'Ready to Pickup';
             }
-            if ($assetRequest->is_claimed == 1 && $assetRequest->print_count >= $assetRequest->quantity) {
+            if (($assetRequest->is_claimed == 1 && $assetRequest->print_count = $assetRequest->quantity) || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1)) {
                 return 'Claimed';
             }
         }
@@ -321,9 +342,10 @@ trait AssetRequestHandler
             if (($assetRequest->po_number == null && $assetRequest->pr_number != null) ||
                 ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
             ) $lastLayer += 2;
-            if ($assetRequest->po_number != null && $assetRequest->pr_number != null && $remaining == 0 && $assetRequest->print_count != $assetRequest->quantity) $lastLayer += 3;
-            if ($assetRequest->po_number != null && $assetRequest->pr_number != null && $remaining == 0 && $assetRequest->print_count >= $assetRequest->quantity && $assetRequest->is_claimed == 0) $lastLayer += 4;
-            if ($assetRequest->is_claimed == 1 && $assetRequest->print_count = $assetRequest->quantity) $lastLayer += 6;
+            if ($assetRequest->is_addcost != 1 && $assetRequest->po_number != null && $assetRequest->pr_number != null && $remaining == 0 && $assetRequest->print_count != $assetRequest->quantity) $lastLayer += 3;
+            if (($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count >= $assetRequest->quantity && $assetRequest->is_claimed == 0) ||
+                ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->is_claimed == 0 && $assetRequest->is_addcost == 1)) $lastLayer += 4;
+            if (($assetRequest->is_claimed == 1 && $assetRequest->print_count = $assetRequest->quantity) || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1)) $lastLayer += 6;
         }
         return $lastLayer;
     }

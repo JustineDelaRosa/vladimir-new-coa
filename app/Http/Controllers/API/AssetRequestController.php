@@ -70,8 +70,8 @@ class AssetRequestController extends Controller
             'For Approval' => ['status' => ['like', 'For Approval%']],
             'For PR' => ['status' => 'Approved', 'pr_number' => null],
             'For PO' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'quantity' => ['!=', DB::raw('quantity_delivered')]],
-            'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'print_count' => ['!=', 'quantity']],
-            'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'print_count' => ['=', DB::raw('quantity')]],
+            'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'is_claimed' => 0, 'print_count' => ['!=', DB::raw('quantity')], 'is_addcost' => 0,  'quantity' => ['=', DB::raw('quantity_delivered')] ] ,
+            'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'is_claimed' => 0, 'quantity' => ['=', DB::raw('quantity_delivered')], 'print_count' => ['=', DB::raw('quantity')]],
             'Released' => ['is_claimed' => 1],
         ];
 
@@ -225,6 +225,7 @@ class AssetRequestController extends Controller
     {
         $isFileDataUpdated = Cache::get('isFileDataUpdated');
         $isDataUpdated = Cache::get('isDataUpdated');
+//        return "isFileDataUpdated: $isFileDataUpdated, isDataUpdated: $isDataUpdated";
         $transactionNumber = $request->transaction_number;
         if ($isDataUpdated == 'true' || $isFileDataUpdated == 'true') {
             $this->approveRequestRepository->resubmitRequest($transactionNumber);
@@ -232,7 +233,7 @@ class AssetRequestController extends Controller
             Cache::forget('isFileDataUpdated');
             return $this->responseSuccess('AssetRequest resubmitted Successfully');
         } else {
-            return $this->responseUnprocessable('No changes and did not resubmit');
+            return $this->responseUnprocessable('No changes, need to update first.');
 //            return $this->responseUnprocessable('You can\'t resubmit this request.');
         }
     }
@@ -245,16 +246,12 @@ class AssetRequestController extends Controller
         }
 
         // Make changes to the $assetRequest and $ar objects but don't save them
-        [$assetRequest, $ar] = $this->updateAssetRequest($assetRequest, $request, $save = false);
-
+        $assetRequest = $this->updateAssetRequest($assetRequest, $request, $save = false);
         // Check if the $assetRequest and $ar objects are dirty
-        $isDataUpdated = $assetRequest->isDirty() || ($ar && $ar->isDirty()) ? 'true' : 'false';
+        $isDataUpdated = $assetRequest->isDirty() ? 'true' : 'false';
 
         // Save the changes to the $assetRequest and $ar objects
         $assetRequest->save();
-        if ($ar) {
-            $ar->save();
-        }
 
         $this->handleMediaAttachments($assetRequest, $request);
 
