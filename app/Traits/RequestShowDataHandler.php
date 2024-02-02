@@ -106,6 +106,7 @@ trait RequestShowDataHandler
                 'id' => $ar->department->id,
                 'department_code' => $ar->department->department_code,
                 'department_name' => $ar->department->department_name,
+                'sync_id' => $ar->department->sync_id,
             ],
             'subunit' => [
                 'id' => $ar->subunit->id,
