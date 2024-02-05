@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Http\Resources\UserResource;
+use App\Models\AdditionalCost;
+use App\Models\AssetRequest;
 use App\Models\RoleManagement;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -23,16 +26,6 @@ class AuthController extends Controller
             return response()->json(['message' => 'The Username or Password is Incorrect!'], 404);
         }
         $pass_decrypt = Crypt::decryptString($user->password);
-        $approverId = Approvers::where('approver_id', $user->id)->value('id');
-        $toApproveCount = AssetApproval::where('approver_id', $approverId)->where('status', 'For Approval')->count();
-
-        $faAssociateRole = $this->getRoleIdByName('Fixed Asset Associate');
-        $isFaAssociate = $user->role_id == $faAssociateRole;
-        $toTagCount = $isFaAssociate ? $this->getFixedAssetCount(1, 0) : 0;
-
-        $wareHouseRole = $this->getRoleIdByName('Warehouse');
-        $isWarehouse = $user->role_id == $wareHouseRole;
-        $toRelease = $isWarehouse ? $this->getFixedAssetCount(1, 1, 1) : 0;
 
         //if Username and password match
         // if ($username == $pass_decrypt) {
@@ -49,45 +42,14 @@ class AuthController extends Controller
             ], 401);
         }
 
+        //add to user resource
+        $user = new UserResource($user);
+
         $token = $user->createToken('myapptoken')->plainTextToken;
         $response = [
             'user' => $user,
             'token' => $token,
-            'sessionTime' => config('sanctum.expiration'),
-            'toApproveCount' => $toApproveCount ?? 0,
-            'toTagCount' => $toTagCount ?? 0,
-            'toRelease' => $toRelease ?? 0,
         ];
-        //        $cookie = cookie('authcookie', $token);
-        //        return response()->json([
-        //            'data' => [
-        //                'user' => [
-        //                    'id' => $user->id,
-        //                    'employee_id' => $user->employee_id,
-        //                    'firstname' => $user->firstname,
-        //                    'lastname' => $user->lastname,
-        //                    'username' => $user->username,
-        //                    'role_id' => $user->role_id,
-        //                    'is_active' => $user->is_active,
-        //                    'created_at' => $user->created_at,
-        //                    'updated_at' => $user->updated_at,
-        //                    'deleted_at' => $user->deleted_at,
-        //                    'role' => [
-        //                        'id' => $user->role->id,
-        //                        'role_name' => $user->role->role_name,
-        //                        'access_permission' => $user->role->access_permission . ', requester, approver',
-        //                        'is_active' => $user->role->is_active,
-        //                        'created_at' => $user->role->created_at,
-        //                        'updated_at' => $user->role->updated_at,
-        //                        'deleted_at' => $user->role->deleted_at,
-        //                    ],
-        //                ],
-        //                'token' => $token
-        //            ],
-        //            'message' => 'Successfully Logged In'
-        //        ], 200)->withCookie($cookie);
-
-
 
         $cookie = cookie('authcookie', $token);
         return response()->json([
@@ -134,15 +96,56 @@ class AuthController extends Controller
         return response()->json(['message' => 'You are Successfully Logged Out!']);
     }
 
-    private function getRoleIdByName($roleName) {
+    private function getRoleIdByName($roleName)
+    {
         return RoleManagement::whereRaw('LOWER(role_name) = ?', strtolower($roleName))->first()->id;
     }
 
-    private function getFixedAssetCount($fromRequest, $printCount, $canRelease = null) {
+    private function getFixedAssetCount($fromRequest, $printCount, $canRelease = null)
+    {
         $query = FixedAsset::where('from_request', $fromRequest)->where('print_count', $printCount);
         if (!is_null($canRelease)) {
             $query->where('can_release', $canRelease);
         }
         return $query->count();
+    }
+
+    public function notificationCount()
+    {
+
+        $user = auth('sanctum')->user();
+        $adminRole = RoleManagement::whereRaw('LOWER(role_name) = ?', 'admin')->first()->id;
+        //FOR APPROVAL
+        $approverId = Approvers::where('approver_id', $user->id)->value('id');
+        $toApproveCount = AssetApproval::where('approver_id', $approverId)->where('status', 'For Approval')->count();
+
+        //FOR ASSET TAGGING
+        $faAssociateRole = RoleManagement::whereRaw('LOWER(role_name) = ?', 'Fixed Asset Associate')->first()->id;
+        $isFaAssociate = ($user->role_id == $faAssociateRole) || ($user->role_id == $adminRole);
+        $toTagCount = $isFaAssociate ? FixedAsset::where('from_request', 1)->where('print_count', 0)->count() : 0;
+
+        //FOR ASSET RELEASE
+        $wareHouseRole = RoleManagement::whereRaw('LOWER(role_name) = ?', 'Warehouse')->first()->id;
+        $isWarehouse = ($user->role_id == $wareHouseRole) || ($user->role_id == $adminRole);
+        $fixeAssetCount = $isWarehouse ? FixedAsset::where('from_request', 1)->where('print_count', 1)->where('can_release', 1)->where('is_released', 0)->count() : 0;
+        $additionalCostCount = $isWarehouse ? AdditionalCost::where('from_request', 1)->where('can_release', 1)->where('is_released', 0)->count() : 0;
+        $toRelease = $fixeAssetCount + $additionalCostCount;
+
+        //FOR PURCHASE REQUEST
+        $purchaseRequestRole = RoleManagement::whereRaw('LOWER(role_name) = ?', 'Purchase Request')->first()->id;
+        $isPurchaseRequest = ($user->role_id == $purchaseRequestRole) || ($user->role_id == $adminRole);
+        $toPurchaseRequest = $isPurchaseRequest ? AssetRequest::where('status', 'Approved')->where('pr_number', null)->distinct('transaction_number')->count() : 0;
+
+        //FOR PURCHASE ORDER AND RR
+        $toReceive = $isWarehouse ? AssetRequest::where('status', 'Approved')->where('pr_number', '!=', null)->where('po_number', null)
+            ->whereRaw('quantity != quantity_delivered')->count() : 0;
+
+        return response()->json([
+            'toApproveCount' => $toApproveCount,
+            'toPR' => $toPurchaseRequest,
+            'toReceive' => $toReceive,
+            'toTagCount' => $toTagCount,
+            'toRelease' => $toRelease,
+        ]);
     }
 }
