@@ -368,4 +368,21 @@ class AssetRequestController extends Controller
 
         return $assetRequest;
     }
+
+    public function downloadAttachments(Request $request)
+    {
+        $assetRequest = AssetRequest::find($request->id);
+
+        if (!$assetRequest) {
+            return $this->responseUnprocessable('No asset request found');
+        }
+
+        $media = $assetRequest->getMedia($request->media);
+
+        if ($media->isEmpty()) {
+            return $this->responseUnprocessable('No media found');
+        }
+
+        return response()->download($media->first()->getPath());
+    }
 }

@@ -254,4 +254,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //RELEASE ASSET//
     Route::resource('asset-release', AssetReleaseController::class);
     Route::put('release-assets', [AssetReleaseController::class, 'releaseAssets']);
+
+    Route::get('dl', [AssetRequestController::class, 'downloadAttachments']);
+    Route::get('notification-count', [AuthController::class, 'notificationCount']);
 });
+

@@ -7,6 +7,7 @@ use App\Models\FixedAsset;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 trait AssetReleaseHandler
 {
@@ -199,6 +200,7 @@ trait AssetReleaseHandler
 
     public function transformSingleFixedAsset($fixed_asset): array
     {
+            $signature = $fixed_asset->getMedia(Str::slug($fixed_asset->received_by) . '-signature')->first();
         return [
 //            'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
@@ -334,6 +336,14 @@ trait AssetReleaseHandler
             'print' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
             'last_printed' => $fixed_asset->last_printed,
             'tagging' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
+            'signature' => $signature ? [
+                'id' => $signature->id,
+                'file_name' => $signature->file_name,
+                'file_path' => $signature->getPath(),
+                'file_url' => $signature->getUrl(),
+                'collection_name' => $signature->collection_name,
+                'viewing' => $this->convertImageToBase64($signature->getPath()),
+            ] : null,
             'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
                 return [
                     'id' => $additional_cost->id ?? '-',
@@ -654,6 +664,7 @@ trait AssetReleaseHandler
 
     public function transformSingleAdditionalCost($additional_cost): array
     {
+        $signature = $additional_cost->getMedia(Str::slug($additional_cost->received_by) . '-signature')->first();
         return [
             //            'total_adcost' => $this->calculationRepository->getTotalCost($additional_cost->fixedAsset->additionalCosts),
             'id' => $additional_cost->id,
@@ -722,17 +733,17 @@ trait AssetReleaseHandler
                 'minor_category_name' => $additional_cost->minorCategory->minor_category_name ?? '-',
             ],
             'est_useful_life' => $additional_cost->majorCategory->est_useful_life ?? '-',
-            'voucher' => $additional_cost->voucher,
+            'voucher' => $additional_cost->voucher ?? '-',
             'voucher_date' => $additional_cost->voucher_date ?? '-',
-            'receipt' => $additional_cost->receipt,
-            'quantity' => $additional_cost->quantity,
-            'depreciation_method' => $additional_cost->depreciation_method,
+            'receipt' => $additional_cost->receipt ?? '-',
+            'quantity' => $additional_cost->quantity ?? '-',
+            'depreciation_method' => $additional_cost->depreciation_method ?? '-',
             //                    'salvage_value' => $additional_cost->salvage_value,
-            'acquisition_date' => $additional_cost->acquisition_date,
-            'acquisition_cost' => $additional_cost->acquisition_cost,
-            'scrap_value' => $additional_cost->formula->scrap_value,
-            'depreciable_basis' => $additional_cost->formula->depreciable_basis,
-            'accumulated_cost' => $additional_cost->formula->accumulated_cost,
+            'acquisition_date' => $additional_cost->acquisition_date ?? '-',
+            'acquisition_cost' => $additional_cost->acquisition_cost ?? 0,
+            'scrap_value' => $additional_cost->formula->scrap_value ?? 0,
+            'depreciable_basis' => $additional_cost->formula->depreciable_basis ?? 0,
+            'accumulated_cost' => $additional_cost->formula->accumulated_cost ?? 0,
             'asset_status' => [
                 'id' => $additional_cost->assetStatus->id ?? '-',
                 'asset_status_name' => $additional_cost->assetStatus->asset_status_name ?? '-',
@@ -749,15 +760,15 @@ trait AssetReleaseHandler
                 'id' => $additional_cost->movementStatus->id ?? '-',
                 'movement_status_name' => $additional_cost->movementStatus->movement_status_name ?? '-',
             ],
-            'is_additional_cost' => $additional_cost->is_additional_cost,
-            'care_of' => $additional_cost->care_of,
-            'months_depreciated' => $additional_cost->formula->months_depreciated,
-            'end_depreciation' => $additional_cost->formula->end_depreciation,
-            'depreciation_per_year' => $additional_cost->formula->depreciation_per_year,
-            'depreciation_per_month' => $additional_cost->formula->depreciation_per_month,
-            'remaining_book_value' => $additional_cost->formula->remaining_book_value,
+            'is_additional_cost' => $additional_cost->is_additional_cost ?? '-',
+            'care_of' => $additional_cost->care_of ?? '-',
+            'months_depreciated' => $additional_cost->formula->months_depreciated ?? '-',
+            'end_depreciation' => $additional_cost->formula->end_depreciation ?? '-',
+            'depreciation_per_year' => $additional_cost->formula->depreciation_per_year ?? '-',
+            'depreciation_per_month' => $additional_cost->formula->depreciation_per_month ?? '-',
+            'remaining_book_value' => $additional_cost->formula->remaining_book_value ?? '-',
             'release_date' => $additional_cost->formula->release_date ?? '-',
-            'start_depreciation' => $additional_cost->formula->start_depreciation,
+            'start_depreciation' => $additional_cost->formula->start_depreciation ?? '-',
             'company' => [
                 'id' => $additional_cost->department->company->id ?? '-',
                 'company_code' => $additional_cost->department->company->company_code ?? '-',
@@ -788,6 +799,14 @@ trait AssetReleaseHandler
                 'account_title_code' => $additional_cost->accountTitle->account_title_code ?? '-',
                 'account_title_name' => $additional_cost->accountTitle->account_title_name ?? '-',
             ],
+            'signature' => $signature ? [
+                'id' => $signature->id,
+                'file_name' => $signature->file_name,
+                'file_path' => $signature->getPath(),
+                'file_url' => $signature->getUrl(),
+                'collection_name' => $signature->collection_name,
+                'viewing' => $this->convertImageToBase64($signature->getPath()),
+            ] : null,
             'main' => [
                 'id' => $additional_cost->fixedAsset->id,
                 'capex' => [
@@ -894,5 +913,24 @@ trait AssetReleaseHandler
                 'last_printed' => $additional_cost->fixedAsset->last_printed,
             ],
         ];
+    }
+
+    private function convertImageToBase64($filePath): ?string
+    {
+        // Check if the file exists
+        if (!file_exists($filePath)) {
+            return null;
+        }
+
+        // Get the file type
+        $type = pathinfo($filePath, PATHINFO_EXTENSION);
+
+        // Get the file data
+        $data = file_get_contents($filePath);
+
+        // Convert the file data to base64
+        $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+
+        return $base64;
     }
 }

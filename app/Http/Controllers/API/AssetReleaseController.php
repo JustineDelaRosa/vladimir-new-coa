@@ -54,13 +54,14 @@ class AssetReleaseController extends Controller
         return $this->transformSingleFixedAsset($fixed_asset);
     }
 
-    public function releaseAssets(MultipleReleaseRequest $request): JsonResponse
+    public function releaseAssets(MultipleReleaseRequest $request)
     {
+//        return $request->all();
         $warehouseIds = $request->get('warehouse_number_id');
         $accountability = $request->get('accountability');
         $accountable = $request->get('accountable');
         $receivedBy = $request->get('received_by');
-
+        $signature = $request->get('signature');
         foreach ($warehouseIds as $warehouseId) {
             $fixedAssetQuery = FixedAsset::where('warehouse_number_id', $warehouseId)->where('is_released', 0);
             $fixedAssetCount = (clone $fixedAssetQuery)->count();
@@ -95,15 +96,21 @@ class AssetReleaseController extends Controller
             }
 
             if ($fixedAssetCount > 0) {
+                $fixedAsset = (clone $fixedAssetQuery)->first();
+                $fixedAsset->storeBase64Image($signature, $receivedBy);
                 (clone $fixedAssetQuery)->update([
                     'accountability' => $accountability,
                     'accountable' => $accountable,
                     'received_by' => $receivedBy,
                     'is_released' => 1,
                 ]);
+
+
             }
 
             if ($additionalCostCount > 0) {
+                $additionalCost = (clone $additionalCostQuery)->first();
+                $additionalCost->storeBase64Image($signature, $receivedBy);
                 (clone $additionalCostQuery)->update([
                     'accountability' => $accountability,
                     'accountable' => $accountable,
