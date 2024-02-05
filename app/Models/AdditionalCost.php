@@ -11,12 +11,49 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Status\DepreciationStatus;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Str;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig;
 
-class AdditionalCost extends Model
+class AdditionalCost extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, InteractsWithMedia;
 
     protected $guarded = [];
+
+
+    /**
+     * @throws FileDoesNotExist
+     * @throws FileIsTooBig
+     */
+    public function storeBase64Image(string $base64Image, string $receiver)
+    {
+        // Decode the base64 image data
+        $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64Image));
+
+        // Create a temporary image file
+        $receiver = Str::slug($receiver);
+        $fileName = $receiver . '-signature.png';
+        $filePath = sys_get_temp_dir() . '/' . $fileName;
+        file_put_contents($filePath, $imageData);
+        //check if the file exists
+        if (!file_exists($filePath)) {
+            return response()->json(['message' => 'File not found'], 404);
+        }
+
+        // Store the image file to the Spatie Media Library
+        $this->addMedia($filePath)
+            ->toMediaCollection($receiver . '-signature');
+        //return the media collection
+//        return $this->getMedia($receiver.'-signature')->first()->getPath();
+
+        // Delete the temporary image file
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
+    }
 
     public function fixedAsset()
     {
@@ -93,15 +130,19 @@ class AdditionalCost extends Model
     {
         return $this->belongsTo(MovementStatus::class, 'movement_status_id', 'id');
     }
+
     public function supplier()
     {
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
+
     public function requestor()
     {
         return $this->belongsTo(User::class, 'requester_id', 'id');
     }
-    public function warehouseNumber(){
+
+    public function warehouseNumber()
+    {
         return $this->belongsTo(WarehouseNumber::class, 'warehouse_number_id', 'id');
     }
 }

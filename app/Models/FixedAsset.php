@@ -14,18 +14,44 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Status\DepreciationStatus;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Str;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig;
 
-class FixedAsset extends Model
+class FixedAsset extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes, Filterable;
+    use HasFactory, SoftDeletes, Filterable, InteractsWithMedia;
 
     protected $guarded = [];
 
-    // protected $casts =[
-
-    // ]
-
     protected string $default_filters = FixedAssetFilters::class;
+
+    /**
+     * @throws FileIsTooBig
+     * @throws FileDoesNotExist
+     */
+    public function storeBase64Image(string $base64Image, string $receiver)
+    {
+        // Decode the base64 image data
+        $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64Image));
+
+        // Create a temporary image file
+        $receiver = Str::slug($receiver);
+        $fileName = $receiver.'-signature.png';
+        $filePath = sys_get_temp_dir().'/'.$fileName;
+        file_put_contents($filePath, $imageData);
+
+        // Store the image file to the Spatie Media Library
+        $this->addMedia($filePath)
+            ->toMediaCollection($receiver.'-signature');
+
+        // Delete the temporary image file
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
+    }
 
 
     public function additionalCost()
