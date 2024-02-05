@@ -254,8 +254,17 @@ class PrintBarCodeController extends Controller
         $typesOfRequestId = TypeOfRequest::whereIn('type_of_request_name', ['Capex', 'Vehicle'])->pluck('id')->toArray();
 
         $fixedAssetQuery = FixedAsset::whereNotIn('type_of_request_id', array_values($typesOfRequestId))
-            ->when($filter, function ($query) use ($filter) {
-                return $query->where('from_request', $filter);
+            ->when($filter == 0 || $filter == null, function ($query) {
+                return $query->where(function ($query) {
+                    $query->where('from_request', 0)
+                        ->orWhere(function ($query) {
+                            $query->where('from_request', 1)
+                                ->where('is_released', 1);
+                        });
+                });
+            })
+            ->when($filter == 1, function ($query) {
+                return $query->where('from_request', 1)->where('is_released', 0);
             });
 
         if ($startDate) {
@@ -310,6 +319,7 @@ class PrintBarCodeController extends Controller
                 'tag_number' => $asset->tag_number,
                 'tag_number_old' => $asset->tag_number_old,
                 'asset_description' => $asset->asset_description,
+                'is_released' => $asset->is_released,
                 'type_of_request' => [
                     'id' => $asset->typeOfRequest->id ?? '-',
                     'type_of_request_name' => $asset->typeOfRequest->type_of_request_name ?? '-',
