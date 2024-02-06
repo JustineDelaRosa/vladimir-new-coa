@@ -42,7 +42,7 @@ trait AssetRequestHandler
             return $query->first();
         } else {
             $query = AssetRequest::where($field, $transactionNumber)
-                ->whereNotIn('status', [
+                ->whereIn('status', [
                     'For Approval of Approver ' . $approverCount,
                     'Approved',
                     'Returned'
@@ -502,8 +502,9 @@ trait AssetRequestHandler
         } else {
             $assetRequest = $this->getAssetRequestForApprover('transaction_number', $transactionNumber, null, false);
         }
-
-        // return $this->deleteApprovals($assetRequest->transaction_number, 'Void') . 'asdfasdf';
+//        return $assetRequest;
+//
+//        // return $this->deleteApprovals($assetRequest->transaction_number, 'Void') . 'asdfasdf';
         $this->deleteApprovals($transactionNumber);
         // $assetRequest->activityLog()->delete();
         foreach ($assetRequest as $ar) {
