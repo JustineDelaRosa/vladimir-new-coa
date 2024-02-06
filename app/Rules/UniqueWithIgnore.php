@@ -41,6 +41,6 @@ class UniqueWithIgnore implements Rule
      */
     public function message()
     {
-        return 'This ';
+        return 'This :attribute has already been taken.';
     }
 }

@@ -254,7 +254,7 @@ class FixedAssetRepository
             ? AdditionalCost::onlyTrashed()->select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
             : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
-        return $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'asc')->get();
+        return $firstQuery->unionAll($secondQuery)->orderBy('asset_description', 'ASC')->get();
     }
 
     private function filterSearchResults($results, $search)

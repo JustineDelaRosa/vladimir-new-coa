@@ -282,7 +282,7 @@ class PrintBarCodeController extends Controller
                 return $this->responseUnprocessable('Invalid date range');
             }
         }
-        $assets = $fixedAssetQuery->useFilters()->dynamicPaginate();
+        $assets = $fixedAssetQuery->orderBy('asset_description', 'ASC')->useFilters()->dynamicPaginate();
 
         // Return the result array
         $assets->getCollection()->transform(function ($asset) {

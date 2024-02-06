@@ -118,7 +118,7 @@ class FixedAssetExportRepository
 
         $results = $firstQuery->unionAll($secondQuery)
             ->whereNotNull('major_category_id')
-            ->orderBy('vladimir_tag_number')
+            ->orderBy('asset_description', 'ASC')
             ->get();
         //if results are empty
         if ($results->isEmpty()) {
