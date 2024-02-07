@@ -8,6 +8,7 @@ use App\Http\Requests\AssetRelease\UpdateAssetReleaseRequest;
 use App\Models\AdditionalCost;
 use App\Models\AssetRequest;
 use App\Models\FixedAsset;
+use App\Models\Status\DepreciationStatus;
 use App\Repositories\CalculationRepository;
 use App\Repositories\FixedAssetRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
@@ -62,6 +63,7 @@ class AssetReleaseController extends Controller
         $accountable = $request->get('accountable');
         $receivedBy = $request->get('received_by');
         $signature = $request->get('signature');
+        $depreciation = DepreciationStatus::where('depreciation_status_name', 'For Depreciation')->first()->id;
         foreach ($warehouseIds as $warehouseId) {
             $fixedAssetQuery = FixedAsset::where('warehouse_number_id', $warehouseId)->where('is_released', 0);
             $fixedAssetCount = (clone $fixedAssetQuery)->count();
@@ -103,6 +105,7 @@ class AssetReleaseController extends Controller
                     'accountable' => $accountable,
                     'received_by' => $receivedBy,
                     'is_released' => 1,
+                    'depreciation_status' => $depreciation
                 ]);
 
 
@@ -116,6 +119,7 @@ class AssetReleaseController extends Controller
                     'accountable' => $accountable,
                     'received_by' => $receivedBy,
                     'is_released' => 1,
+                    'depreciation_status' => $depreciation
                 ]);
             }
         }

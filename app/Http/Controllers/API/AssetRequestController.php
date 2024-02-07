@@ -377,10 +377,10 @@ class AssetRequestController extends Controller
             return $this->responseUnprocessable('No asset request found');
         }
 
-        $media = $assetRequest->getMedia($request->media);
+        $media = $assetRequest->getMedia($request->attachment);
 
         if ($media->isEmpty()) {
-            return $this->responseUnprocessable('No media found');
+            return $this->responseUnprocessable('No attachment found');
         }
 
         return response()->download($media->first()->getPath());
