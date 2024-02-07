@@ -137,8 +137,8 @@ class AuthController extends Controller
         $toPurchaseRequest = $isPurchaseRequest ? AssetRequest::where('status', 'Approved')->where('pr_number', null)->distinct('transaction_number')->count() : 0;
 
         //FOR PURCHASE ORDER AND RR
-        $toReceive = $isWarehouse ? AssetRequest::where('status', 'Approved')->where('pr_number', '!=', null)->where('po_number', null)
-            ->whereRaw('quantity != quantity_delivered')->count() : 0;
+       $toReceive = $isWarehouse ? AssetRequest::where('status', 'Approved')->where('pr_number', '!=', null)
+            ->whereRaw('quantity != quantity_delivered')->distinct('transaction_number')->count() : 0;
 
         return response()->json([
             'toApproveCount' => $toApproveCount,

@@ -68,6 +68,7 @@ Route::post('/auth/login', [AuthController::class, 'Login']);
 Route::get('capex-sample-file', [CapexController::class, 'sampleCapexDownload']);
 Route::get('fixed-asset-sample-file', [FixedAssetController::class, 'sampleFixedAssetDownload']);
 Route::get('additional-cost-sample-file', [AdditionalCostController::class, 'sampleAdditionalCostDownload']);
+Route::get('dl', [AssetRequestController::class, 'downloadAttachments']);
 
 Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
 
@@ -255,7 +256,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('asset-release', AssetReleaseController::class);
     Route::put('release-assets', [AssetReleaseController::class, 'releaseAssets']);
 
-    Route::get('dl', [AssetRequestController::class, 'downloadAttachments']);
+
     Route::get('notification-count', [AuthController::class, 'notificationCount']);
 });
 
