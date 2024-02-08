@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\AssetReleaseController;
+use App\Http\Controllers\Masterlist\COA\BusinessUnitController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Auth\AuthController;
@@ -90,6 +91,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //COMPANY//
     Route::resource('company', CompanyController::class);
     Route::get('companies/search', [CompanyController::class, 'search']);
+
+    //BUSINESS UNIT//
+    Route::resource('business-unit', BusinessUnitController::class);
 
     //DEPARTMENT//
     Route::resource('department', DepartmentController::class);
