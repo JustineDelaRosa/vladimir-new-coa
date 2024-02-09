@@ -833,4 +833,170 @@ class FixedAssetRepository
         }
         return false;
     }
+
+
+
+
+    //todo FASTER SEARCH
+//    public function searchFixedAsset($search, $status, $page, $limit = null)
+//    {
+//        $fixedAssetFields = [
+//            'id',
+//            'capex_id',
+//            'sub_capex_id',
+//            'vladimir_tag_number',
+//            'tag_number',
+//            'tag_number_old',
+//            'asset_description',
+//            'type_of_request_id',
+//            'asset_specification',
+//            'accountability',
+//            'accountable',
+//            'capitalized',
+//            'cellphone_number',
+//            'brand',
+//            'major_category_id',
+//            'minor_category_id',
+//            'voucher',
+//            'voucher_date',
+//            'receipt',
+//            'quantity',
+//            'depreciation_method',
+//            'acquisition_cost',
+//            'asset_status_id',
+//            'cycle_count_status_id',
+//            'depreciation_status_id',
+//            'movement_status_id',
+//            'is_old_asset',
+//            'is_additional_cost',
+//            'is_active',
+//            'care_of',
+//            'company_id',
+//            'department_id',
+//            'charged_department',
+//            'location_id',
+//            'account_id',
+//            'remarks',
+//            'created_at',
+//            DB::raw("NULL as add_cost_sequence"),
+//        ];
+//
+//        $additionalCostFields = [
+//            'additional_costs.id',
+//            'fixed_assets.capex_id AS capex_id',
+//            'fixed_assets.sub_capex_id AS sub_capex_id',
+//            'fixed_assets.vladimir_tag_number AS vladimir_tag_number',
+//            'fixed_assets.tag_number AS tag_number',
+//            'fixed_assets.tag_number_old AS tag_number_old',
+//            'additional_costs.asset_description',
+//            'additional_costs.type_of_request_id',
+//            'additional_costs.asset_specification',
+//            'additional_costs.accountability',
+//            'additional_costs.accountable',
+//            'additional_costs.capitalized',
+//            'additional_costs.cellphone_number',
+//            'additional_costs.brand',
+//            'additional_costs.major_category_id',
+//            'additional_costs.minor_category_id',
+//            'additional_costs.voucher',
+//            'additional_costs.voucher_date',
+//            'additional_costs.receipt',
+//            'additional_costs.quantity',
+//            'additional_costs.depreciation_method',
+//            'additional_costs.acquisition_cost',
+//            'additional_costs.asset_status_id',
+//            'additional_costs.cycle_count_status_id',
+//            'additional_costs.depreciation_status_id',
+//            'additional_costs.movement_status_id',
+//            'fixed_assets.is_old_asset as is_old_asset',
+//            'additional_costs.is_additional_cost',
+//            'additional_costs.is_active',
+//            'additional_costs.care_of',
+//            'additional_costs.company_id',
+//            'additional_costs.department_id',
+//            'fixed_assets.charged_department as charged_department',
+//            'additional_costs.location_id',
+//            'additional_costs.account_id',
+//            'additional_costs.remarks',
+//            'fixed_assets.created_at',
+//            'additional_costs.add_cost_sequence',
+//        ];
+//        $firstQuery = ($status === 'deactivated')
+//            ? FixedAsset::onlyTrashed()->select($fixedAssetFields)
+//            : FixedAsset::select($fixedAssetFields);
+//
+//        $secondQuery = ($status === 'deactivated')
+//            ? AdditionalCost::onlyTrashed()->select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
+//            : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
+//
+//
+//
+//        if (!empty($search)) {
+//            $mainAttributesFixedAsset = [
+//                'vladimir_tag_number',
+//                'tag_number',
+//                'tag_number_old',
+//                'asset_description',
+//                'accountability',
+//                'accountable',
+//                'brand',
+//                'depreciation_method',
+//            ];
+//
+//            $mainAttributesAdditionalCost = [
+//                'vladimir_tag_number',
+//                'tag_number',
+//                'tag_number_old',
+//            ];
+//
+//            foreach ($mainAttributesFixedAsset as $attribute) {
+//                $firstQuery->orWhere($attribute, 'like', '%' . $search . '%');
+//            }
+//
+//            foreach ($mainAttributesAdditionalCost as $attribute) {
+//                $secondQuery->orWhere($attribute, 'like', '%' . $search . '%');
+//            }
+//
+//            $relationAttributes = [
+//                'subCapex' => ['sub_capex', 'sub_project'],
+//                'majorCategory' => ['major_category_name'],
+//                'minorCategory' => ['minor_category_name'],
+//                'department' => ['department_name'],
+//                'department.division' => ['division_name'],
+//                'assetStatus' => ['asset_status_name'],
+//                'typeOfRequest' => ['type_of_request_name'],
+//                'cycleCountStatus' => ['cycle_count_status_name'],
+//                'depreciationStatus' => ['depreciation_status_name'],
+//                'movementStatus' => ['movement_status_name'],
+//                'location' => ['location_name'],
+//                'company' => ['company_name'],
+//                'accountTitle' => ['account_title_name'],
+//            ];
+//
+//            foreach ($relationAttributes as $relation => $attributes) {
+//                foreach ($attributes as $attribute) {
+//                    $firstQuery->orWhereHas($relation, function ($query) use ($attribute, $search) {
+//                        $query->where($attribute, 'like', '%' . $search . '%');
+//                    });
+//
+//                    // Skip 'subCapex' when building the second query
+//                    if ($relation !== 'subCapex') {
+//                        $secondQuery->orWhereHas($relation, function ($query) use ($attribute, $search) {
+//                            $query->where($attribute, 'like', '%' . $search . '%');
+//                        });
+//                    }
+//                }
+//            }
+//        }
+//
+//        $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'asc')->get();
+//
+//        $results = $this->paginateResults($results, $limit, $page);
+//
+//        $results->setCollection($results->getCollection()->values());
+//        $results->getCollection()->transform(function ($item) {
+//            return $this->transformSearchFixedAsset($item);
+//        });
+//        return $results;
+//    }
 }
