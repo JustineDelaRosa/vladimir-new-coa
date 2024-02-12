@@ -259,8 +259,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //RELEASE ASSET//
     Route::resource('asset-release', AssetReleaseController::class);
     Route::put('release-assets', [AssetReleaseController::class, 'releaseAssets']);
-
-
+    //NOTIFICATION COUNT//
     Route::get('notification-count', [AuthController::class, 'notificationCount']);
 });
 

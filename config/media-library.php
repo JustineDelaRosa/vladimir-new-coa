@@ -14,7 +14,7 @@ return [
      * Adding a larger file will result in an exception.
      */
     'max_file_size' => 1024 * 1024 * 10,
-
+//    'max_file_size' => 50 * 1024 * 1024,
     /*
      * This queue will be used to generate derived and responsive images.
      * Leave empty to use the default queue.
