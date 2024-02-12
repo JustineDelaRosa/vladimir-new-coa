@@ -10,6 +10,7 @@ use App\Models\SubCapex;
 use App\Models\FixedAsset;
 use App\Models\MajorCategory;
 use App\Models\AdditionalCost;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use App\Models\Status\DepreciationStatus;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Masterlist\FixedAssetController;
 
 class FixedAssetRepository
 {
+    use ApiResponse;
 
     protected $calculationRepository;
 
@@ -225,48 +227,7 @@ class FixedAssetRepository
 
     public function searchFixedAsset($search, $status, $page, $per_page = null)
     {
-        $results = $this->getSearchResults($status);
-
-        if (!empty($search)) {
-            $results = $this->filterSearchResults($results, $search);
-        }
-
-        $results = $this->paginateResults($results, $page, $per_page);
-
-        $results->setCollection($results->getCollection()->values());
-        $results->getCollection()->transform(function ($item) {
-            return $this->transformSearchFixedAsset($item);
-        });
-
-        return $results;
-    }
-
-    private function getSearchResults($status)
-    {
-        $fixedAssetFields = $this->getFixedAssetFields();
-        $additionalCostFields = $this->getAdditionalCostFields();
-
-        $firstQuery = ($status === 'deactivated')
-            ? FixedAsset::onlyTrashed()->select($fixedAssetFields)
-            : FixedAsset::select($fixedAssetFields);
-
-        $secondQuery = ($status === 'deactivated')
-            ? AdditionalCost::onlyTrashed()->select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
-            : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
-
-        return $firstQuery->unionAll($secondQuery)->orderBy('asset_description', 'ASC')->get();
-    }
-
-    private function filterSearchResults($results, $search)
-    {
-        return $results->filter(function ($item) use ($search) {
-            return $this->searchInMainAttributes($item, $search) || $this->searchInRelationAttributes($item, $search);
-        });
-    }
-
-    private function getFixedAssetFields()
-    {
-        return [
+        $fixedAssetFields = [
             'id',
             'requester_id',
             'pr_number',
@@ -316,11 +277,8 @@ class FixedAssetRepository
             'last_printed',
             DB::raw("NULL as add_cost_sequence"),
         ];
-    }
 
-    private function getAdditionalCostFields()
-    {
-        return [
+        $additionalCostFields = [
             'additional_costs.id',
             'additional_costs.requester_id',
             'additional_costs.pr_number',
@@ -370,16 +328,89 @@ class FixedAssetRepository
             'fixed_assets.last_printed',
             'additional_costs.add_cost_sequence',
         ];
+        $firstQuery = ($status === 'deactivated')
+            ? FixedAsset::onlyTrashed()->select($fixedAssetFields)
+            : FixedAsset::select($fixedAssetFields);
+
+        $secondQuery = ($status === 'deactivated')
+            ? AdditionalCost::onlyTrashed()->select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
+            : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
+
+
+        if (!empty($search)) {
+            $mainAttributesFixedAsset = [
+                'vladimir_tag_number',
+                'tag_number',
+                'tag_number_old',
+                'asset_description',
+                'accountability',
+                'accountable',
+                'brand',
+                'depreciation_method',
+            ];
+
+            $mainAttributesAdditionalCost = [
+                'vladimir_tag_number',
+                'tag_number',
+                'tag_number_old',
+            ];
+
+            foreach ($mainAttributesFixedAsset as $attribute) {
+                $firstQuery->orWhere($attribute, 'like', '%' . $search . '%');
+            }
+
+            foreach ($mainAttributesAdditionalCost as $attribute) {
+                $secondQuery->orWhere($attribute, 'like', '%' . $search . '%');
+            }
+
+            $relationAttributes = [
+                'subCapex' => ['sub_capex', 'sub_project'],
+                'majorCategory' => ['major_category_name'],
+                'minorCategory' => ['minor_category_name'],
+                'department' => ['department_name'],
+                'department.division' => ['division_name'],
+                'assetStatus' => ['asset_status_name'],
+                'typeOfRequest' => ['type_of_request_name'],
+                'cycleCountStatus' => ['cycle_count_status_name'],
+                'depreciationStatus' => ['depreciation_status_name'],
+                'movementStatus' => ['movement_status_name'],
+                'location' => ['location_name'],
+                'company' => ['company_name'],
+                'accountTitle' => ['account_title_name'],
+            ];
+
+            foreach ($relationAttributes as $relation => $attributes) {
+                foreach ($attributes as $attribute) {
+                    $firstQuery->orWhereHas($relation, function ($query) use ($attribute, $search) {
+                        $query->where($attribute, 'like', '%' . $search . '%');
+                    });
+
+                    // Skip 'subCapex' when building the second query
+                    if ($relation !== 'subCapex') {
+                        $secondQuery->orWhereHas($relation, function ($query) use ($attribute, $search) {
+                            $query->where($attribute, 'like', '%' . $search . '%');
+                        });
+                    }
+                }
+            }
+        }
+
+        $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'asc')->get();
+
+        $results = $this->paginateResults($results, $page, $per_page);
+
+        $results->setCollection($results->getCollection()->values());
+        $results->getCollection()->transform(function ($item) {
+            return $this->transformSearchFixedAsset($item);
+        });
+        return $results;
     }
 
-    public function transformFixedAsset($fixed_asset): array
+    public function transformFixedAsset($fixed_asset): Collection
     {
-        $fixed_assets_arr = [];
-        foreach ($fixed_asset as $asset) {
-            // Transform the current asset using the transformSingleFixedAsset method
-            $fixed_assets_arr[] = $this->transformSingleFixedAsset($asset);
-        }
-        return $fixed_assets_arr;
+        return collect($fixed_asset)->map(function ($asset) {
+            return $this->transformSingleFixedAsset($asset);
+        });
     }
 
     public function transformSingleFixedAsset($fixed_asset): array
@@ -772,68 +803,6 @@ class FixedAssetRepository
         ];
     }
 
-    function searchInMainAttributes($item, $search): bool
-    {
-        $mainAttributes = [
-            'vladimir_tag_number',
-            'tag_number',
-            'tag_number_old',
-            'asset_description',
-            'accountability',
-            'accountable',
-            'brand',
-            'depreciation_method',
-        ];
-
-        // 'ready to print' specific case
-        if (strtolower($search) == 'ready to tag' && $item->print_count < 1) {
-            return true;
-        }
-
-        // 'printed' specific case
-        if (strtolower($search) == 'tagged' && $item->print_count > 0) {
-            return true;
-        }
-
-        foreach ($mainAttributes as $attribute) {
-            if (stripos($item->$attribute, $search) !== false) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function searchInRelationAttributes($item, $search): bool
-    {
-        $relationAttributes = [
-            'subCapex' => ['sub_capex', 'sub_project'],
-            'majorCategory' => ['major_category_name'],
-            'minorCategory' => ['minor_category_name'],
-            'department' => ['division', 'department_name'],
-            'assetStatus' => ['asset_status_name'],
-            'typeOfRequest' => ['type_of_request_name'],
-            'cycleCountStatus' => ['cycle_count_status_name'],
-            'depreciationStatus' => ['depreciation_status_name'],
-            'movementStatus' => ['movement_status_name'],
-            'location' => ['location_name'],
-            'company' => ['company_name'],
-            'accountTitle' => ['account_title_name'],
-        ];
-
-        foreach ($relationAttributes as $relation => $attributes) {
-            if (!isset($item->$relation)) {
-                continue;
-            }
-
-            foreach ($attributes as $attribute) {
-                if (stripos($item->$relation->$attribute, $search) !== false) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
 
 
 
@@ -841,53 +810,69 @@ class FixedAssetRepository
 //    public function searchFixedAsset($search, $status, $page, $limit = null)
 //    {
 //        $fixedAssetFields = [
-//            'id',
-//            'capex_id',
-//            'sub_capex_id',
-//            'vladimir_tag_number',
-//            'tag_number',
-//            'tag_number_old',
-//            'asset_description',
-//            'type_of_request_id',
-//            'asset_specification',
-//            'accountability',
-//            'accountable',
-//            'capitalized',
-//            'cellphone_number',
-//            'brand',
-//            'major_category_id',
-//            'minor_category_id',
-//            'voucher',
-//            'voucher_date',
-//            'receipt',
-//            'quantity',
-//            'depreciation_method',
-//            'acquisition_cost',
-//            'asset_status_id',
-//            'cycle_count_status_id',
-//            'depreciation_status_id',
-//            'movement_status_id',
-//            'is_old_asset',
-//            'is_additional_cost',
-//            'is_active',
-//            'care_of',
-//            'company_id',
-//            'department_id',
-//            'charged_department',
-//            'location_id',
-//            'account_id',
-//            'remarks',
-//            'created_at',
-//            DB::raw("NULL as add_cost_sequence"),
+//'id',
+//'requester_id',
+//'pr_number',
+//'po_number',
+//'rr_number',
+//'warehouse_number_id',
+//'capex_id',
+//'sub_capex_id',
+//'vladimir_tag_number',
+//'tag_number',
+//'tag_number_old',
+//'from_request',
+//'asset_description',
+//'type_of_request_id',
+//'asset_specification',
+//'accountability',
+//'accountable',
+//'capitalized',
+//'cellphone_number',
+//'brand',
+//'supplier_id',
+//'major_category_id',
+//'minor_category_id',
+//'voucher',
+//'voucher_date',
+//'receipt',
+//'quantity',
+//'depreciation_method',
+//'acquisition_cost',
+//'asset_status_id',
+//'cycle_count_status_id',
+//'depreciation_status_id',
+//'movement_status_id',
+//'is_old_asset',
+//'is_additional_cost',
+//'is_active',
+//'care_of',
+//'company_id',
+//'business_unit_id',
+//'department_id',
+//'charged_department',
+//'location_id',
+//'account_id',
+//'remarks',
+//'created_at',
+//'print_count',
+//'last_printed',
+//DB::raw("NULL as add_cost_sequence"),
 //        ];
 //
 //        $additionalCostFields = [
 //            'additional_costs.id',
+//            'additional_costs.requester_id',
+//            'additional_costs.pr_number',
+//            'additional_costs.po_number',
+//            'additional_costs.rr_number',
+//            'additional_costs.warehouse_number_id',
 //            'fixed_assets.capex_id AS capex_id',
 //            'fixed_assets.sub_capex_id AS sub_capex_id',
 //            'fixed_assets.vladimir_tag_number AS vladimir_tag_number',
 //            'fixed_assets.tag_number AS tag_number',
 //            'fixed_assets.tag_number_old AS tag_number_old',
+//            'additional_costs.from_request',
 //            'additional_costs.asset_description',
 //            'additional_costs.type_of_request_id',
 //            'additional_costs.asset_specification',
@@ -896,6 +881,7 @@ class FixedAssetRepository
 //            'additional_costs.capitalized',
 //            'additional_costs.cellphone_number',
 //            'additional_costs.brand',
+//            'additional_costs.supplier_id',
 //            'additional_costs.major_category_id',
 //            'additional_costs.minor_category_id',
 //            'additional_costs.voucher',
@@ -913,12 +899,15 @@ class FixedAssetRepository
 //            'additional_costs.is_active',
 //            'additional_costs.care_of',
 //            'additional_costs.company_id',
+//            'additional_costs.business_unit_id',
 //            'additional_costs.department_id',
 //            'fixed_assets.charged_department as charged_department',
 //            'additional_costs.location_id',
 //            'additional_costs.account_id',
 //            'additional_costs.remarks',
 //            'fixed_assets.created_at',
+//            'fixed_assets.print_count',
+//            'fixed_assets.last_printed',
 //            'additional_costs.add_cost_sequence',
 //        ];
 //        $firstQuery = ($status === 'deactivated')

@@ -44,7 +44,27 @@ class FixedAssetController extends Controller
     public function index()
     {
 
-        $fixed_assets = FixedAsset::with(['formula', 'additionalCost'])
+
+        $fixed_assets = FixedAsset::with([
+            'formula',
+            'additionalCost',
+            'requestor',
+            'warehouseNumber',
+            'capex',
+            'subCapex',
+            'typeOfRequest',
+            'supplier',
+            'department.division',
+            'majorCategory',
+            'minorCategory',
+            'assetStatus',
+            'cycleCountStatus',
+            'depreciationStatus',
+            'movementStatus',
+            'department.company',
+            'department',
+            'location',
+            'accountTitle'])
             ->where(function ($query) {
                 $query->where('from_request', '!=', 1)
                     ->orWhere(function ($query) {
@@ -52,6 +72,7 @@ class FixedAssetController extends Controller
                             ->where('is_released', 1);
                     });
             })->get();
+
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
             'data' => $this->fixedAssetRepository->transformFixedAsset($fixed_assets)
