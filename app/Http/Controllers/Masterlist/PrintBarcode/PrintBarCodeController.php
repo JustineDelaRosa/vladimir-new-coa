@@ -120,7 +120,6 @@ class PrintBarCodeController extends Controller
                                 })
                                 ->log('Printed'); // a textual description of the activity
                         }
-
                     }
                 } else {
                     //Copy
@@ -282,9 +281,10 @@ class PrintBarCodeController extends Controller
                 return $this->responseUnprocessable('Invalid date range');
             }
         }
+
         $assets = $fixedAssetQuery->orderBy('asset_description', 'ASC')->useFilters()->dynamicPaginate();
 
-        // Return the result array
+//         Return the result array
         $assets->getCollection()->transform(function ($asset) {
             return [
                 'id' => $asset->id,

@@ -304,7 +304,8 @@ class FixedAssetController extends Controller
         $per_page = $request->get('per_page');
         $page = $request->get('page');
         $status = $request->get('status');
-        return $this->fixedAssetRepository->searchFixedAsset($search, $status, $page, $per_page);
+        $filter = $request->get('filter');
+        return $this->fixedAssetRepository->searchFixedAsset($search, $status, $page, $per_page, $filter);
     }
 
     //todo change assetDescription

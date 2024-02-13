@@ -225,7 +225,7 @@ class FixedAssetRepository
         return $paginator;
     }
 
-    public function searchFixedAsset($search, $status, $page, $per_page = null)
+    public function searchFixedAsset($search, $status, $page, $per_page = null, $filter = null)
     {
         $fixedAssetFields = [
             'id',
@@ -336,6 +336,10 @@ class FixedAssetRepository
             ? AdditionalCost::onlyTrashed()->select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
             : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
+        if ($filter == "toDepreciate") {
+            $firstQuery->where('depreciation_method', null);
+            $secondQuery->where('additional_costs.depreciation_method', null);
+        }
 
         if (!empty($search)) {
             $mainAttributesFixedAsset = [
@@ -394,6 +398,8 @@ class FixedAssetRepository
                 }
             }
         }
+
+
 
         $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'asc')->get();
 
