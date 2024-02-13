@@ -65,6 +65,7 @@ class AssetReleaseController extends Controller
         $signature = $request->get('signature');
         $depreciation = DepreciationStatus::where('depreciation_status_name', 'For Depreciation')->first()->id;
         foreach ($warehouseIds as $warehouseId) {
+            $assetToRelease= null;
             $fixedAssetQuery = FixedAsset::where('warehouse_number_id', $warehouseId)->where('is_released', 0);
             $fixedAssetCount = (clone $fixedAssetQuery)->count();
 
@@ -74,7 +75,13 @@ class AssetReleaseController extends Controller
             if ($fixedAssetCount == 0 && $additionalCostCount == 0) {
                 return $this->responseNotFound('Asset Not Found');
             }
+            if ($fixedAssetCount > 0) {
+                $assetToRelease = (clone $fixedAssetQuery)->first();
+            }
 
+            if ($additionalCostCount > 0) {
+                $assetToRelease = (clone $additionalCostQuery)->first();
+            }
 
             if ($fixedAssetCount == 1 || $additionalCostCount == 1) {
                 $assetRequest = AssetRequest::where(function ($query) use ($fixedAssetQuery, $additionalCostQuery) {
@@ -96,7 +103,6 @@ class AssetReleaseController extends Controller
                     $assetRequest->update(['is_claimed' => 1]);
                 }
             }
-
             if ($fixedAssetCount > 0) {
                 $fixedAsset = (clone $fixedAssetQuery)->first();
                 $fixedAsset->storeBase64Image($signature, $receivedBy);
@@ -105,10 +111,10 @@ class AssetReleaseController extends Controller
                     'accountable' => $accountable,
                     'received_by' => $receivedBy,
                     'is_released' => 1,
-                    'depreciation_status' => $depreciation
+                    'depreciation_status_id' => $depreciation
                 ]);
-
-
+                $formula = $fixedAsset->formula;
+                $formula->update(['release_date' => now()->format('Y-m-d')]);
             }
 
             if ($additionalCostCount > 0) {
@@ -119,9 +125,12 @@ class AssetReleaseController extends Controller
                     'accountable' => $accountable,
                     'received_by' => $receivedBy,
                     'is_released' => 1,
-                    'depreciation_status' => $depreciation
+                    'depreciation_status_id' => $depreciation
                 ]);
+                $formula = $additionalCost->formula;
+                $formula->update(['release_date' => now()->format('Y-m-d')]);
             }
+            $this->assetReleaseActivityLog($assetToRelease);
         }
         return $this->responseSuccess('Assets Released');
     }

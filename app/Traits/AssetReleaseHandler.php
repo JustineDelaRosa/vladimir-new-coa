@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Models\AdditionalCost;
+use App\Models\AssetRequest;
 use App\Models\FixedAsset;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -11,6 +12,32 @@ use Illuminate\Support\Str;
 
 trait AssetReleaseHandler
 {
+    public function assetReleaseActivityLog($AssetToRelease){
+        $user = auth('sanctum')->user();
+        $assetRequests = new AssetRequest();
+        activity()
+            ->causedBy($user)
+            ->performedOn($assetRequests)
+            ->withProperties($this->composeLogPropertiesRelease($AssetToRelease))
+            ->inLog("Asset Release $assetRequests->description")
+            ->tap(function ($activity) use ($user, $AssetToRelease) {
+                $firstAssetRequest = $AssetToRelease;
+                if ($firstAssetRequest) {
+                    $activity->subject_id = $AssetToRelease->transaction_number;
+                }
+            })
+            ->log("Asset is Released by $user->employee_id - $user->firstname $user->lastname");
+    }
+
+    private function composeLogPropertiesRelease($assetToRelease): array
+    {
+        return [
+            'transaction_number' => $assetToRelease->transaction_number,
+            'description' => $assetToRelease->description,
+            'received_by' => $assetToRelease->received_by,
+        ];
+    }
+
     public function paginateResults($items, $page = null, $perPage = 15, $options = []): LengthAwarePaginator
     {
         $page = $page ?: (LengthAwarePaginator::resolveCurrentPage() ?: 1);
