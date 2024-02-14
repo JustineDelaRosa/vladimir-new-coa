@@ -337,8 +337,8 @@ class FixedAssetRepository
             : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
         if ($filter == "toDepreciate") {
-            $firstQuery->where('depreciation_method', null);
-            $secondQuery->where('additional_costs.depreciation_method', null);
+            $firstQuery->where('depreciation_method', null)->where('is_released', 1);
+            $secondQuery->where('additional_costs.depreciation_method', null)->where('additional_costs.is_released', 1);
         }
 
         if (!empty($search)) {

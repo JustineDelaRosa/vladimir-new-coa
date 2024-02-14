@@ -183,6 +183,7 @@ trait AddingPoHandler
         }
     }
 
+
     private function addToFixedAssets($asset, $isAddCost)
     {
         if ($isAddCost == 1) {
