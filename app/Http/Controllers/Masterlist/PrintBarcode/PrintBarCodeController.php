@@ -263,7 +263,10 @@ class PrintBarCodeController extends Controller
                 });
             })
             ->when($filter == 1, function ($query) {
-                return $query->where('from_request', 1)->where('is_released', 0);
+                return $query->where('from_request', 1)
+                    ->where('is_released', 0)
+                    ->where('print_count', 0)
+                    ->where('can_release', 0);
             });
 
         if ($startDate) {
