@@ -37,6 +37,8 @@ class AdditionalCostRequest extends FormRequest
             $id = $this->route()->parameter('additional_cost');
             return [
 //                'fixed_asset_id' => 'required|exists:fixed_assets,id',
+                'po_number' => 'required',
+                'rr_number' => 'required',
                 'asset_description' => 'required',
                 'type_of_request_id' => 'required',
                 'asset_specification' => 'required',

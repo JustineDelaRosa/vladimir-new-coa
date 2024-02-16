@@ -34,6 +34,8 @@ class FixedAssetUpdateRequest extends FormRequest
     {
         $id = $this->route()->parameter('fixed_asset');
         return [
+            'po_number' => 'required',
+//            'rr_number' => 'required',
             'sub_capex_id' => ['nullable', function ($attribute, $value, $fail) {
                 // Get the type_of_request_id from request
                 $type_of_request_id = request()->input('type_of_request_id');
