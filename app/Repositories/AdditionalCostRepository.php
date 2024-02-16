@@ -137,6 +137,8 @@ class AdditionalCostRepository
             //            'charged_department'=> ucwords(strtolower($collection['charged_department'] ?? '-')) ,
             'asset_specification' => $request['asset_specification'],
             'accountability' => $request['accountability'],
+            'po_number' => $request['po_number'],
+//            'rr_number' => $request['rr_number'],
             'accountable' => $request['accountable'] ?? '-',
             'cellphone_number' => $request['cellphone_number'] ?? '-',
             'brand' => ucwords(strtolower($request['brand'] ?? '-')),
@@ -144,7 +146,7 @@ class AdditionalCostRepository
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
             'voucher_date' => $request['voucher_date'] ?? null,
-            'receipt' => $request['receipt'] ?? '-',
+            'receipt' => $request['rr_number'] ?? '-',
             'quantity' => $request['quantity'],
             'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
                 ? strtoupper($request['depreciation_method'])

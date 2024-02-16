@@ -7,6 +7,7 @@ use App\Filters\LocationFilters;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\MediaLibrary\HasMedia;
 use App\Models\Status\AssetStatus;
 use Illuminate\Support\Facades\DB;
@@ -210,5 +211,9 @@ class AssetRequest extends Model implements HasMedia
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
+    }
+    public function fixedAsset():BelongsTo
+    {
+        return $this->belongsTo(FixedAsset::class, 'fixed_asset_id', 'id');
     }
 }

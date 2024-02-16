@@ -34,6 +34,8 @@ class FixedAsset extends Model implements HasMedia
      */
     public function storeBase64Image(string $base64Image, string $receiver)
     {
+//        if(empty($base64Image)){
+//            return;
         // Decode the base64 image data
         $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64Image));
 
@@ -45,6 +47,7 @@ class FixedAsset extends Model implements HasMedia
 
         // Store the image file to the Spatie Media Library
         $this->addMedia($filePath)
+//        }
             ->toMediaCollection($receiver.'-signature');
 
         // Delete the temporary image file
