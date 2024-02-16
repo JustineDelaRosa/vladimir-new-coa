@@ -53,6 +53,7 @@ trait RequestContainerHandler
             'cellphone_number' => $request->cellphone_number ?? null,
             'brand' => $request->brand ?? null,
             'quantity' => $request->quantity,
+            'date_needed' => $request->date_needed,
         ]);
     }
 

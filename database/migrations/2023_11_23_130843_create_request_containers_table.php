@@ -35,6 +35,7 @@ class CreateRequestContainersTable extends Migration
             $table->string('cellphone_number')->nullable();
             $table->string('brand');
             $table->string('quantity')->nullable();
+            $table->date('date_needed')->nullable();
 
             //ATTACHMENT TYPE
             $table->enum('attachment_type', ['Budgeted', 'Unbudgeted']);
