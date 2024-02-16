@@ -10,6 +10,7 @@ use App\Models\Status\MovementStatus;
 use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -168,5 +169,8 @@ class RequestContainer extends Model implements HasMedia
 
     }
 
-
+    public function fixedAsset():BelongsTo
+    {
+        return $this->belongsTo(FixedAsset::class, 'fixed_asset_id', 'id');
+    }
 }

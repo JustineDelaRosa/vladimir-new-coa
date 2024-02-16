@@ -41,13 +41,20 @@ class CreateRequestContainerRequest extends BaseRequest
             'company_id' => ['required', Rule::exists('companies', 'id')],
             'department_id' => ['required', Rule::exists('departments', 'id')],
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
-//            'is_additional_cost' => 'nullable|boolean',
+            'is_addcost' => 'nullable|boolean',
             'fixed_asset_id' => [
-                'required-if:is_additional_cost,true',
+                'required-if:is_addcost,true',
                 Rule::exists('fixed_assets', 'id'),
                 //check if this has different fixed asset id from other request container
                 function ($attribute, $value, $fail) {
-
+//                    $userId = auth()->user()->id;
+//                    $requestContainerFA = RequestContainer::where('requester_id', $userId)->first()->fixed_asset->id ?? null;
+//                    if(!$requestContainerFA){
+//                        return;
+//                    }
+//                    if($requestContainerFA !== $value){
+//                        $fail('The selected fixed asset is different from the other item.');
+//                    }
                 },
             ],
             'subunit_id' => [
@@ -95,6 +102,7 @@ class CreateRequestContainerRequest extends BaseRequest
             'cellphone_number' => 'nullable|numeric',
             'brand' => 'nullable',
             'quantity' => 'required|numeric|min:1',
+            'date_needed' => 'nullable|date',
             'letter_of_request' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'quotation' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'specification_form' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',

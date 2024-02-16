@@ -31,8 +31,8 @@ trait AssetRequestHandler
     {
 
         //TODO:: CHECK THIS
-        $approverCount = AssetApproval::where('transaction_number', $transactionNumber)->whereIN('status', ['For Approval', 'returned'])
-            ->first()->layer;
+        $approverCount = AssetApproval::where('transaction_number', $transactionNumber)->whereIN('status', ['For Approval', 'Returned'])
+            ->first()->layer ;
         if ($singleResult) {
             $query = AssetRequest::where($field, $referenceNumber)
                 ->whereIn('status', [
@@ -69,6 +69,8 @@ trait AssetRequestHandler
             'subunit_id' => $request->subunit_id,
             'location_id' => $request->location_id,
             'acquisition_details' => $request->acquisition_details ?? null,
+            'date_needed' => $request->date_needed ?? null,
+            'fixed_asset_id' => $request->fixed_asset_id ?? null,
         ]);
 
         $this->updateOtherRequestChargingDetails($assetRequest, $request, $save);
@@ -90,6 +92,7 @@ trait AssetRequestHandler
                 'subunit_id' => $request->subunit_id,
                 'location_id' => $request->location_id,
                 'acquisition_details' => $request->acquisition_details ?? null,
+                'fixed_asset_id' => $request->fixed_asset_id ?? null,
             ]);
         }
         return $ar;
@@ -164,6 +167,10 @@ trait AssetRequestHandler
             'po_number' => $assetRequest->po_number ?? '-',
             'rr_number' => $assetRequest->rr_number ?? '-',
             'is_addcost' => $assetRequest->is_addcost ?? 0,
+            'fixed_asset' => [
+                'id' => $ar->fixedAsset->id ?? '-',
+                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
+            ],
             'acquisition_details' => $assetRequest->acquisition_details ?? '-',
             'created_at' => $this->getDateRequested($assetRequest->transaction_number),
             'approver_count' => $assetRequest->assetApproval->count(),
@@ -377,6 +384,10 @@ trait AssetRequestHandler
             'accountability' => $assetRequest->accountability,
             'accountable' => $assetRequest->accountable ?? '-',
             'asset_description' => $assetRequest->asset_description,
+            'fixed_asset' => [
+                'id' => $ar->fixedAsset->id ?? '-',
+                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
+            ],
             'asset_specification' => $assetRequest->asset_specification ?? '-',
             'cellphone_number' => $assetRequest->cellphone_number ?? '-',
             'brand' => $assetRequest->brand ?? '-',
