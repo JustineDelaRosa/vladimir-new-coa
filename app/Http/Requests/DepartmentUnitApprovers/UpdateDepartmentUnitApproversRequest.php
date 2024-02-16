@@ -38,7 +38,8 @@ class UpdateDepartmentUnitApproversRequest extends FormRequest
                 'required',
                 'exists:approvers,id',
                 'array',
-                'unique_in_array'
+                'unique_in_array',
+                'min:2'
             ],
         ];
     }

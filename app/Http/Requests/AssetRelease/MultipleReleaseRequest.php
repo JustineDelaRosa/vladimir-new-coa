@@ -28,6 +28,7 @@ class MultipleReleaseRequest extends FormRequest
             'accountability' => ['required', 'string', 'in:Common,Personal Issued'],
             'accountable' => ['required_if:accountability,Personal Issued', 'string'],
             'received_by' => ['required', 'string'],
+            'signature' => ['required']
         ];
     }
 

@@ -34,7 +34,7 @@ class CreateDepartmentUnitApproversRequest extends FormRequest
                     }
                 }
             ],
-            'approver_id' => ['required', 'exists:approvers,id', 'array', 'unique_in_array'],
+            'approver_id' => ['required', 'exists:approvers,id', 'array', 'unique_in_array', 'min:2'],
         ];
     }
 
