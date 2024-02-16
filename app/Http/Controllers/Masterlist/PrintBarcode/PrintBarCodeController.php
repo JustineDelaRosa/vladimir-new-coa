@@ -12,6 +12,7 @@ use DateTime;
 use Essa\APIToolKit\Api\ApiResponse;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 use Mike42\Escpos\Printer;
 
@@ -62,10 +63,10 @@ class PrintBarCodeController extends Controller
 
             // Create a new Printer object and assign the connector to it
             $printer = new Printer($connector);
-
+//            DB::beginTransaction();
             foreach ($tagNumber as $VDM) {
                 $fixedAsset = FixedAsset::where('vladimir_tag_number', $VDM['vladimir_tag_number'])->first();
-                $AssetRequest = AssetRequest::where('vladimir_tag_number', $VDM['vladimir_tag_number'])->first();
+                $assetRequest = AssetRequest::where('transaction_number', $fixedAsset->transaction_number)->where('asset_description', $fixedAsset->asset_description)->first();
                 if ($fixedAsset && $fixedAsset->print_count == 0) {
                     //original
                     $zplCode = "^XA
@@ -103,20 +104,21 @@ class PrintBarCodeController extends Controller
                     if ($fixedAsset) {
                         $fixedAsset->increment('print_count', 1);
                         $fixedAsset->update(['last_printed' => Carbon::now()]);
-                        $fixedAsset->where('from_request', 1)->update(['can_release' => 1]);
-                        $AssetRequest->increment('print_count', 1);
-                        $AssetRequest->update(['last_printed' => Carbon::now()]);
+                        if($assetRequest) {
+                            $assetRequest->increment('print_count', 1);
+                            $assetRequest->update(['last_printed' => Carbon::now()]);
+                        }
 
-                        $fixedAssets = FixedAsset::where('vladimir_tag_number', $VDM['vladimir_tag_number'])->first();
                         $assetRequest = new AssetRequest();
-                        if ($fixedAssets && $fixedAsset->from_requests) {
+                        if ($fixedAsset->from_request == 1) {
+                            $fixedAsset->update(['can_release' => 1]);
                             activity()
                                 ->causedBy(auth('sanctum')->user()) // the user who caused the activity
                                 ->performedOn($assetRequest) // the object the activity is performed on
                                 ->inLog('Printed') // the log name (should same as in config)
-                                ->withProperties(['description' => $fixedAssets->asset_description]) // any properties relevant to the activity
-                                ->tap(function ($activity) use ($fixedAssets) {
-                                    $activity->subject_id = $fixedAssets->transaction_number;
+                                ->withProperties(['description' => $fixedAsset->asset_description]) // any properties relevant to the activity
+                                ->tap(function ($activity) use ($fixedAsset) {
+                                    $activity->subject_id = $fixedAsset->transaction_number;
                                 })
                                 ->log('Printed'); // a textual description of the activity
                         }
@@ -158,8 +160,8 @@ class PrintBarCodeController extends Controller
                     if ($fixedAsset) {
                         $fixedAsset->increment('print_count', 1);
                         $fixedAsset->update(['last_printed' => Carbon::now()]);
-                        $AssetRequest->increment('print_count', 1);
-                        $AssetRequest->update(['last_printed' => Carbon::now()]);
+                        //$assetRequest->increment('print_count', 1);
+                        //$assetRequest->update(['last_printed' => Carbon::now()]);
                     }
                 }
                 $printer->textRaw($zplCode);
@@ -177,8 +179,10 @@ class PrintBarCodeController extends Controller
                 ['message' => 'Barcode printed successfully!',
                     'data' => $tagNumber
                 ], 200);*/
+//            DB::commit();
             return $this->responseSuccess('Barcode printed successfully!', $tagNumber);
         } catch (Exception $e) {
+//            DB::rollBack();
             // Handle any exceptions that may occur during the printing process
             //            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
 

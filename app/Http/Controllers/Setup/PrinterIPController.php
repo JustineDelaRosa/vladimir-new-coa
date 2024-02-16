@@ -21,8 +21,8 @@ class PrinterIPController extends Controller
         $printerIPStatus = $request->status ?? 'active';
         $isActiveStatus = ($printerIPStatus === 'deactivated') ? 0 : 1;
 
-
-        $printerIP = PrinterIP::where('is_active', $isActiveStatus)
+//        where('is_active', $isActiveStatus)->
+        $printerIP = PrinterIP::orderByDesc('is_active')
             ->orderByDesc('created_at')
             ->useFilters()
             ->dynamicPaginate();

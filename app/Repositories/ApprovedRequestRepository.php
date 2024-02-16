@@ -114,6 +114,39 @@ class ApprovedRequestRepository
         return $this->responseSuccess('Asset Request Resubmitted Successfully');
     }
 
+    public function isApproverChange($transactionNumber){
+        $user = auth('sanctum')->user();
+        $subUnitId = $this->getSubUnitId($transactionNumber);
+        $approverIds = $this->getApproverIds($subUnitId);
+        $assetApprovalIds = $this->getAssetApprovalIds($transactionNumber);
+        if ($this->isApproverListChanged($approverIds, $assetApprovalIds)) {
+            // Delete the previous approvers
+            AssetApproval::where('transaction_number', $transactionNumber)->delete();
+
+            // Get the items related to the transaction
+            $items = AssetRequest::where('transaction_number', $transactionNumber)->get();
+            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->first();
+
+            // Add the new approvers
+            $this->createAssetApprovals($items, $user->id, $assetRequest);
+        }
+
+        $defaultLayer = $this->getUserLayer($transactionNumber);
+
+        $assetApproval = AssetApproval::where('transaction_number', $transactionNumber)
+            ->where('status', '!=', 'Void')
+            ->where('layer', $defaultLayer)->first();
+
+
+        if (!$assetApproval || $assetApproval->requester_id != $user->id) {
+            return $this->responseUnprocessable('Invalid Action');
+        }
+        $this->updateToNullOrVoid($transactionNumber);
+        $this->updateAssetRequestStatus($assetApproval->transaction_number, 'For Approval of Approver ' . ($assetApproval->layer));
+        $this->updateAssetApprovalStatus($assetApproval, 'For Approval');
+//        $this->logActivity($assetApproval, 'Resubmitted');
+        return $this->responseSuccess('Asset Request Resubmitted Successfully');
+    }
 
     private function getSubUnitId($transactionNumber)
     {

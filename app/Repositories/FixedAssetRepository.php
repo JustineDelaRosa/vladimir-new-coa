@@ -139,6 +139,8 @@ class FixedAssetRepository
 
         $fixedAsset = FixedAsset::find($id);
         $fixedAsset->update([
+            'po_number' => $request['po_number'],
+//            'rr_number' => $request['rr_number'],
             'capex_id' => isset($request['sub_capex_id']) ? SubCapex::find($request['sub_capex_id'])->capex_id : null,
             'sub_capex_id' => $request['sub_capex_id'] ?? null,
             'tag_number' => $request['tag_number'] ?? '-',
@@ -155,7 +157,7 @@ class FixedAssetRepository
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
             'voucher_date' => $request['voucher_date'] ?? null,
-            'receipt' => $request['receipt'] ?? '-',
+            'receipt' => $request['rr_number'] ?? '-',
             'quantity' => $request['quantity'],
             'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
                 ? strtoupper($request['depreciation_method'])
