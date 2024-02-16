@@ -40,7 +40,7 @@ trait AssetApprovalHandler
                     'date_requested' => $assetApproval->assetRequest->created_at ?? '-',
                     'status' => $assetApproval->assetRequest->status ?? '-',
                     'additional_info' => $assetApproval->assetRequest->additional_info ?? '-',
-                    'aquisition_details' => $assetApproval->assetRequest->aquisition_details ?? '-',
+                    'acquisition_details' => $assetApproval->assetRequest->acquisition_details ?? '-',
                 ],
             ];
         });

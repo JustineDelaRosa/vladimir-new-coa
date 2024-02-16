@@ -7,6 +7,8 @@ use App\Models\AssetRequest;
 use App\Models\FixedAsset;
 use App\Models\Formula;
 use App\Models\Status\AssetStatus;
+use App\Models\Status\CycleCountStatus;
+use App\Models\Status\MovementStatus;
 use App\Models\WarehouseNumber;
 use App\Repositories\AdditionalCostRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
@@ -202,6 +204,7 @@ trait AddingPoHandler
                 'requester_id' => $asset->requester_id,
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
+                'receipt' => $asset->rr_number,
                 'rr_number' => $asset->rr_number,
                 'warehouse_number_id' => $warehouseNumber->id,
                 'fixed_asset_id' => $asset->fixed_asset_id,
@@ -231,6 +234,9 @@ trait AddingPoHandler
                 'location_id' => $asset->location_id,
                 'account_id' => $asset->account_title_id,
                 'remarks' => $asset->remarks,
+                'movement_status_id' => MovementStatus::where('movement_status_name', 'New')->first()->id,
+                'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id,
+
             ]);
 
         } else {
@@ -250,6 +256,7 @@ trait AddingPoHandler
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
                 'rr_number' => $asset->rr_number,
+                'receipt' => $asset->rr_number,
                 'warehouse_number_id' => $warehouseNumber->id,
                 'from_request' => 1,
                 'transaction_number' => $asset->transaction_number,
@@ -275,6 +282,8 @@ trait AddingPoHandler
                 'location_id' => $asset->location_id,
                 'account_id' => $asset->account_title_id,
                 'remarks' => $asset->remarks,
+                'movement_status_id' => MovementStatus::where('movement_status_name', 'New')->first()->id,
+                'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id,
             ]);
             $fixedAsset->vladimir_tag_number = $this->vladimirTagGeneratorRepository->vladimirTagGenerator();
             $fixedAsset->save();
