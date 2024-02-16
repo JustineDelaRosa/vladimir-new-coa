@@ -62,7 +62,7 @@ class AssetReleaseController extends Controller
         $accountability = $request->get('accountability');
         $accountable = $request->get('accountable');
         $receivedBy = $request->get('received_by');
-        $signature = $request->get('signature');
+        $signature = $request->get('signature') ?? null;
         $depreciation = DepreciationStatus::where('depreciation_status_name', 'For Depreciation')->first()->id;
         foreach ($warehouseIds as $warehouseId) {
             $assetToRelease= null;

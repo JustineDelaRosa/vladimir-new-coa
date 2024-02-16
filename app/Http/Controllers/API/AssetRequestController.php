@@ -240,7 +240,8 @@ class AssetRequestController extends Controller
 
     public function updateRequest(UpdateAssetRequestRequest $request, $referenceNumber)
     {
-        $assetRequest = $this->getAssetRequest('reference_number', $referenceNumber);
+        $transactionNumber = AssetRequest::where('reference_number', $referenceNumber)->first()->transaction_number;
+        $assetRequest = $this->getAssetRequestForApprover('reference_number', $transactionNumber, $referenceNumber);
         if (!$assetRequest) {
             return $this->responseUnprocessable('Asset Request not found.');
         }
@@ -256,6 +257,7 @@ class AssetRequestController extends Controller
         $this->handleMediaAttachments($assetRequest, $request);
 
         Cache::put('isDataUpdated', $isDataUpdated, 60);
+        $this->approveRequestRepository->isApproverChange($transactionNumber);
         return $this->responseSuccess('AssetRequest updated Successfully');
     }
 
@@ -314,6 +316,7 @@ class AssetRequestController extends Controller
             $assetRequest->cellphone_number = $item->cellphone_number;
             $assetRequest->brand = $item->brand;
             $assetRequest->quantity = $item->quantity;
+            $assetRequest->date_needed = $item->date_needed;
 
             // Add transaction number and reference number
             $assetRequest->transaction_number = $transactionNumber;
