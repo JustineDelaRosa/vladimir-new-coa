@@ -92,6 +92,10 @@ class CreateAssetRequestsTable extends Migration
             $table->unsignedInteger('deleter_id')->nullable();
             $table->softDeletes();
             $table
+                ->foreign('deleter_id')
+                ->references('id')
+                ->on('users');
+            $table
                 ->foreign('requester_id')
                 ->references('id')
                 ->on('users');

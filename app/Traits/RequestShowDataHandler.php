@@ -76,7 +76,9 @@ trait RequestShowDataHandler
         $isUserLastApprover = $approver ? $isUserLastApprover == $approver->layer : false;
 
         return [
-            'is_trashed' => $ar->trashed() ? 1 : 0,
+            'is_removed' => $ar->trashed() ? 1 : 0,
+            //check if the requester_id is equal to deleter_id then the requester deleted it else get the role name of the deleter
+            'removed_by' => $ar->deleter_id == $ar->requester_id ? 'Requester' : $ar->deleter->role->role_name,
             'can_edit' => ($ar->status == 'Returned' || $ar->status == 'For Approval of Approver 1') || ($isUserLastApprover) ? 1 : 0,
             'can_resubmit' => $ar->status == 'Returned' ? 1 : 0,
             'asset_approval_id' => $ar->assetApproval->first(function ($approval) {

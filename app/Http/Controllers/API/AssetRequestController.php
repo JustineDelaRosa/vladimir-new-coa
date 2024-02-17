@@ -197,7 +197,7 @@ class AssetRequestController extends Controller
         $assetRequestQuery = AssetRequest::withTrashed()->where('transaction_number', $transactionNumber);
 
         if (!$adminCheck) {
-            $assetRequestQuery->where('requester_id', $requestorId->id);
+            $assetRequestQuery->where('requester_id', $requestorId->id)->where('deleter_id', '!=', $requestorId->id);
         }
 
         $assetRequest = $this->responseData($assetRequestQuery->dynamicPaginate());
