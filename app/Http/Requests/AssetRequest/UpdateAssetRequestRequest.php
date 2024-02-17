@@ -60,7 +60,7 @@ class UpdateAssetRequestRequest extends FormRequest
             'asset_specification' => 'nullable',
             'cellphone_number' => 'nullable|numeric',
             'brand' => 'nullable',
-            'quantity' => 'required|numeric',
+            'quantity' => 'required|numeric|min:1',
             'letter_of_request' => ['bail', 'nullable', 'max:10000', new FileOrX],
             'quotation' => ['bail', 'nullable', 'max:10000', new FileOrX],
             'specification_form' => ['bail', 'nullable', 'max:10000', new FileOrX],

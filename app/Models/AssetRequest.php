@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class AssetRequest extends Model implements HasMedia
 {
-    use HasFactory, Filterable, InteractsWithMedia;
+    use HasFactory, Filterable, InteractsWithMedia, SoftDeletes;
 
     //, SoftDeletes
 

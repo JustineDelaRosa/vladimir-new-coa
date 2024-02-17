@@ -167,10 +167,10 @@ trait AssetRequestHandler
             'po_number' => $assetRequest->po_number ?? '-',
             'rr_number' => $assetRequest->rr_number ?? '-',
             'is_addcost' => $assetRequest->is_addcost ?? 0,
-            'fixed_asset' => [
-                'id' => $ar->fixedAsset->id ?? '-',
-                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
-            ],
+//            'fixed_asset' => [
+//                'id' => $ar->fixedAsset->id ?? '-',
+//                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
+//            ],
             'acquisition_details' => $assetRequest->acquisition_details ?? '-',
             'created_at' => $this->getDateRequested($assetRequest->transaction_number),
             'approver_count' => $assetRequest->assetApproval->count(),
@@ -487,7 +487,7 @@ trait AssetRequestHandler
         if ($this->requestCount($transactionNumber) == 1) {
             return $this->responseUnprocessable('You cannot delete the last item.');
         }
-        $this->removeMediaAttachments($assetRequest);
+//        $this->removeMediaAttachments($assetRequest);
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
         // Perform the delete operation
@@ -519,8 +519,8 @@ trait AssetRequestHandler
         $this->deleteApprovals($transactionNumber);
         // $assetRequest->activityLog()->delete();
         foreach ($assetRequest as $ar) {
-            $this->removeMediaAttachments($ar);
-            $ar->activityLog()->delete();
+//            $this->removeMediaAttachments($ar);
+//            $ar->activityLog()->delete();
             $ar->delete();
         }
         return $this->responseSuccess('Asset Request deleted Successfully');
@@ -544,8 +544,13 @@ trait AssetRequestHandler
 
     public function deleteApprovals($transactionNumber)
     {
-        // $toVoid = AssetApproval::where('transaction_number', $transactionNumber)->get()
-        return AssetApproval::where('transaction_number', $transactionNumber)->delete();
+         $toNull = AssetApproval::where('transaction_number', $transactionNumber)->get();
+            foreach ($toNull as $tn) {
+                $tn->update([
+                    'status' => null
+                ]);
+            }
+//        return AssetApproval::where('transaction_number', $transactionNumber)->delete();
     }
 
     //THIS IS FOR STORE ASSET REQUEST

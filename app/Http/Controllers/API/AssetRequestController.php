@@ -70,7 +70,7 @@ class AssetRequestController extends Controller
             'For Approval' => ['status' => ['like', 'For Approval%']],
             'For PR' => ['status' => 'Approved', 'pr_number' => null],
             'For PO' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'quantity' => ['!=', DB::raw('quantity_delivered')]],
-            'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'is_claimed' => 0, 'print_count' => ['!=', DB::raw('quantity')], 'is_addcost' => 0,  'quantity' => ['=', DB::raw('quantity_delivered')] ] ,
+            'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'is_claimed' => 0, 'print_count' => ['!=', DB::raw('quantity')], 'is_addcost' => 0, 'quantity' => ['=', DB::raw('quantity_delivered')]],
             'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'is_claimed' => 0, 'quantity' => ['=', DB::raw('quantity_delivered')], 'print_count' => ['=', DB::raw('quantity')]],
             'Released' => ['is_claimed' => 1],
         ];
@@ -190,15 +190,17 @@ class AssetRequestController extends Controller
 
     public function show($transactionNumber)
     {
-        $requestorId = auth('sanctum')->user()->id;
-        $approverCheck = Approvers::where('approver_id', $requestorId)->first();
-        if ($approverCheck) {
-            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->dynamicPaginate();
-        } else {
-            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
-                ->where('requester_id', $requestorId)->dynamicPaginate();
+        $requestorId = auth('sanctum')->user();
+        $roleName = $requestorId->role->role_name;
+        $adminCheck = ($roleName == 'Admin' || $roleName == 'Super Admin');
+
+        $assetRequestQuery = AssetRequest::withTrashed()->where('transaction_number', $transactionNumber);
+
+        if (!$adminCheck) {
+            $assetRequestQuery->where('requester_id', $requestorId->id);
         }
-        $assetRequest = $this->responseData($assetRequest);
+
+        $assetRequest = $this->responseData($assetRequestQuery->dynamicPaginate());
 
         if ($assetRequest->isEmpty()) {
             return $this->responseUnprocessable('Asset Request not found.');
@@ -282,7 +284,7 @@ class AssetRequestController extends Controller
 
         // Get the items from Request-container
         $items = RequestContainer::where('requester_id', $requesterId)->get();
-        if($items->isEmpty()){
+        if ($items->isEmpty()) {
             return $this->responseUnprocessable('No data to move');
         }
         //check if the item inside item have different subunit id

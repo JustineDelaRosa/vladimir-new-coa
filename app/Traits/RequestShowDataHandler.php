@@ -76,6 +76,7 @@ trait RequestShowDataHandler
         $isUserLastApprover = $approver ? $isUserLastApprover == $approver->layer : false;
 
         return [
+            'is_trashed' => $ar->trashed() ? 1 : 0,
             'can_edit' => ($ar->status == 'Returned' || $ar->status == 'For Approval of Approver 1') || ($isUserLastApprover) ? 1 : 0,
             'can_resubmit' => $ar->status == 'Returned' ? 1 : 0,
             'asset_approval_id' => $ar->assetApproval->first(function ($approval) {

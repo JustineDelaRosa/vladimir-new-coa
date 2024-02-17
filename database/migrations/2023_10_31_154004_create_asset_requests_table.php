@@ -89,6 +89,7 @@ class CreateAssetRequestsTable extends Migration
             $table->unsignedInteger('business_unit_id')->nullable();
             $table->integer('print_count')->default(0);
             $table->timestamp('last_printed')->nullable();
+            $table->unsignedInteger('deleter_id')->nullable();
             $table->softDeletes();
             $table
                 ->foreign('requester_id')
