@@ -317,10 +317,45 @@ trait AddingPoHandler
         $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, $storedRemovedQuantity, true, false);
         $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number, $forTimeline = false);
         if ($remaining == 0) {
-            $this->getAllItems($assetRequest->transaction_number);
+            $this->getAllItems($assetRequest->transaction_number, $storedRemovedQuantity);
         }
         return $this->responseSuccess('Remaining quantity removed successfully!');
     }
+
+//TODO:FOR SOFT DELETING
+
+//    public function handleQuantityMismatch($assetRequest)
+//    {
+//        $removedQuantity = $this->quantityRemovedHolder($assetRequest);
+//        $storedRemovedQuantity = $removedQuantity;
+//
+//        $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number, $forTimeline = false);
+//
+//        if ($remaining > 0) {
+//            // Create a duplicate asset request with the remaining quantity
+//            $duplicateAssetRequest = $assetRequest->replicate();
+//            $duplicateAssetRequest->quantity = $remaining;
+//            $duplicateAssetRequest->save();
+//        }
+//
+//        // Update the original asset request's quantity to the delivered quantity
+//        $assetRequest->quantity = $assetRequest->quantity_delivered;
+//        $assetRequest->save();
+//
+//        // Log this activity
+//        $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, $storedRemovedQuantity, true, false);
+//
+//        if ($remaining == 0) {
+//            $this->getAllItems($assetRequest->transaction_number, $storedRemovedQuantity);
+//        }
+//
+//        // Delete the duplicate asset request if it exists
+//        if (isset($duplicateAssetRequest)) {
+//            $duplicateAssetRequest->delete();
+//        }
+//
+//        return $this->responseSuccess('Remaining quantity removed successfully!');
+//    }
 
     //FOR DELETING
     private function handleTransactionNumberCase($transactionNumber): JsonResponse
