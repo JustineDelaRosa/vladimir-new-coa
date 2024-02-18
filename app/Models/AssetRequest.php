@@ -218,6 +218,6 @@ class AssetRequest extends Model implements HasMedia
     }
     public function deleter(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'deleted_by', 'id');
+        return $this->belongsTo(User::class, 'deleter_id', 'id');
     }
 }

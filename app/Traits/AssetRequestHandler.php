@@ -489,7 +489,9 @@ trait AssetRequestHandler
         }
 //        $this->removeMediaAttachments($assetRequest);
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-
+        $assetRequest->update([
+            'deleter_id' => auth('sanctum')->user()->id,
+        ]);
         // Perform the delete operation
         $assetRequest->delete();
 
@@ -521,6 +523,9 @@ trait AssetRequestHandler
         foreach ($assetRequest as $ar) {
 //            $this->removeMediaAttachments($ar);
 //            $ar->activityLog()->delete();
+            $ar->update([
+                'deleter_id' => auth('sanctum')->user()->id,
+            ]);
             $ar->delete();
         }
         return $this->responseSuccess('Asset Request deleted Successfully');

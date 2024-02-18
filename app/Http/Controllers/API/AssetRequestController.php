@@ -199,6 +199,7 @@ class AssetRequestController extends Controller
         if (!$adminCheck) {
             $assetRequestQuery->where('requester_id', $requestorId->id)->where('deleter_id', '!=', $requestorId->id);
         }
+        $assetRequestQuery->orderByRaw('deleted_at IS NULL DESC');
 
         $assetRequest = $this->responseData($assetRequestQuery->dynamicPaginate());
 
