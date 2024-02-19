@@ -61,6 +61,7 @@ class AssetRequestController extends Controller
         $adminRoles = ['Super Admin', 'Admin', 'ERP'];
 
         $perPage = $request->input('per_page', null);
+        $status = $request->input('status', 'active');
         $filter = $request->input('filter', null);
         $filter = $filter ? explode(',', $filter) : [];
         $filter = array_map('trim', $filter);
@@ -75,7 +76,7 @@ class AssetRequestController extends Controller
             'Released' => ['is_claimed' => 1],
         ];
 
-        $assetRequest = AssetRequest::query();
+        $assetRequest = AssetRequest::query()->withTrashed();
 
         if (!in_array($role, $adminRoles)) {
             $forMonitoring = false;
@@ -107,11 +108,27 @@ class AssetRequestController extends Controller
         $assetRequest = $assetRequest
             ->get()
             ->groupBy('transaction_number')
-            ->map(function ($assetRequestCollection) {
-                $assetRequest = $assetRequestCollection->first();
-                $assetRequest->quantity = $assetRequestCollection->sum('quantity');
-                return $this->transformIndexAssetRequest($assetRequest);
+            ->map(function ($assetRequestCollection) use ($filter, $status) {
+                // If 'Deleted' filter is active and all items in the group are trashed, include the group in the result
+//                if (in_array('Deleted', $filter) && $assetRequestCollection->every->trashed()) {
+//                    $assetRequest = $assetRequestCollection->first();
+//                    $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+//                    return $this->transformIndexAssetRequest($assetRequest);
+//                }
+                // If status is 'deactivated', check if all items in the group are trashed
+                if ($status == 'deactivated' && $assetRequestCollection->every->trashed() && !in_array('Deleted', $filter)) {
+                    $assetRequest = $assetRequestCollection->first();
+                    $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+                    return $this->transformIndexAssetRequest($assetRequest);
+                }
+                // If status is 'active', check if any item in the group is not trashed id all is trash return null
+                else if ($status == 'active' && !$assetRequestCollection->every->trashed() && !in_array('Deleted', $filter)) {
+                    $assetRequest = $assetRequestCollection->first();
+                    $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+                    return $this->transformIndexAssetRequest($assetRequest);
+                }
             })
+            ->filter()
             ->values();
 
         if ($perPage !== null) {

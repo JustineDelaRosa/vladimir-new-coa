@@ -32,7 +32,7 @@ trait AssetRequestHandler
 
         //TODO:: CHECK THIS
         $approverCount = AssetApproval::where('transaction_number', $transactionNumber)->whereIN('status', ['For Approval', 'Returned'])
-            ->first()->layer ;
+            ->first()->layer;
         if ($singleResult) {
             $query = AssetRequest::where($field, $referenceNumber)
                 ->whereIn('status', [
@@ -172,6 +172,7 @@ trait AssetRequestHandler
 //                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
 //            ],
             'acquisition_details' => $assetRequest->acquisition_details ?? '-',
+            'deleted_at' => $assetRequest->deleted_at,
             'created_at' => $this->getDateRequested($assetRequest->transaction_number),
             'approver_count' => $assetRequest->assetApproval->count(),
             'process_count' => $this->getProcessCount($assetRequest),
@@ -184,6 +185,15 @@ trait AssetRequestHandler
 
     private function getStatus($assetRequest)
     {
+        $allItems = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
+
+        $allDeleted = $allItems->every(function ($item) {
+            return $item->deleted_at !== null;
+        });
+
+        if ($allDeleted) {
+            return 'Cancelled';
+        }
         return $assetRequest->status == 'Approved' ? $this->getAfterApprovedStatus($assetRequest) : $assetRequest->status;
     }
 
@@ -273,8 +283,20 @@ trait AssetRequestHandler
                     'lastname' => '',
                 ];
             }
-
+            if ($assetRequest->deleted_at != null) {
+                return [
+                    'firstname' => 'Deleted',
+                    'lastname' => '',
+                ];
+            }
         }
+        else{
+            return [
+                'firstname' => $this->deletedItemCheck($assetRequest),
+                'lastname' => '',
+            ];
+        }
+
 
         return 'Something went wrong';
     }
@@ -306,6 +328,7 @@ trait AssetRequestHandler
                 return 'Claimed';
             }
         }
+//        $this->deletedItemCheck($assetRequest);
 
         return 'Something went wrong';
     }
@@ -353,8 +376,23 @@ trait AssetRequestHandler
             if (($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count >= $assetRequest->quantity && $assetRequest->is_claimed == 0) ||
                 ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->is_claimed == 0 && $assetRequest->is_addcost == 1)) $lastLayer += 4;
             if (($assetRequest->is_claimed == 1 && $assetRequest->print_count = $assetRequest->quantity) || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1)) $lastLayer += 6;
+            if ($assetRequest->deleted_at != null) $lastLayer = -1;
         }
         return $lastLayer;
+    }
+
+    public function deletedItemCheck($assetRequest)
+    {
+        $allItems = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
+
+        $allDeleted = $allItems->every(function ($item) {
+            return $item->deleted_at !== null;
+        });
+
+        if ($allDeleted) {
+            return 'Cancelled';
+        }
+        return;
     }
 
     private function getDateRequested($transactionNumber)
@@ -468,6 +506,24 @@ trait AssetRequestHandler
         ];
     }
 
+    private function activityForRequestorDelete($assetRequest){
+        $user = auth('sanctum')->user();
+        $assetRequests = new AssetRequest();
+        activity()
+            ->causedBy($user)
+            ->performedOn($assetRequests)
+            ->withProperties('delete')
+            ->inLog("removed")
+            ->tap(function ($activity) use ($user, $assetRequest) {
+                $firstAssetRequest = $assetRequest;
+                if ($firstAssetRequest) {
+                    $activity->subject_id = $firstAssetRequest->transaction_number;
+                }
+            })
+            ->log('removed');
+
+    }
+
     public function deleteRequestItem($referenceNumber, $transactionNumber): JsonResponse
     {
 
@@ -549,12 +605,12 @@ trait AssetRequestHandler
 
     public function deleteApprovals($transactionNumber)
     {
-         $toNull = AssetApproval::where('transaction_number', $transactionNumber)->get();
-            foreach ($toNull as $tn) {
-                $tn->update([
-                    'status' => null
-                ]);
-            }
+        $toNull = AssetApproval::where('transaction_number', $transactionNumber)->get();
+        foreach ($toNull as $tn) {
+            $tn->update([
+                'status' => null
+            ]);
+        }
 //        return AssetApproval::where('transaction_number', $transactionNumber)->delete();
     }
 
