@@ -312,10 +312,29 @@ trait AddingPoHandler
         $removedQuantity = $this->quantityRemovedHolder($assetRequest);
         $storedRemovedQuantity = $removedQuantity;
 
+        // Check if the quantity and quantity delivered are not equal
+        if ($assetRequest->quantity != $assetRequest->quantity_delivered) {
+            // Calculate the remaining quantity
+            $remainingQuantity = $assetRequest->quantity - $assetRequest->quantity_delivered;
+
+            // Create a duplicate asset request with the remaining quantity
+            $duplicateAssetRequest = $assetRequest->replicate();
+            $duplicateAssetRequest->quantity = $remainingQuantity;
+            $duplicateAssetRequest->quantity_delivered = 0;
+            $duplicateAssetRequest->deleter_id = auth('sanctum')->user()->id;
+            $duplicateAssetRequest->reference_number = $duplicateAssetRequest->generateReferenceNumber();
+
+            // Save the duplicate asset request
+            $duplicateAssetRequest->save();
+
+            // Delete the duplicate asset request
+            $duplicateAssetRequest->delete();
+        }
+
         $assetRequest->quantity = $assetRequest->quantity_delivered;
         $assetRequest->save();
         $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, $storedRemovedQuantity, true, false);
-        $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number, $forTimeline = false);
+        $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number, false);
         if ($remaining == 0) {
             $this->getAllItems($assetRequest->transaction_number, $storedRemovedQuantity);
         }

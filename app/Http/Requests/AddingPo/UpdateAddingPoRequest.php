@@ -30,7 +30,7 @@ class UpdateAddingPoRequest extends FormRequest
         $transactionNumber = AssetRequest::where('id', $id)->first()->transaction_number;
         // dd($transactionNumber);
         return [
-            "po_number" => ['required', 'string', new UniqueWithIgnore('asset_requests', $id, $transactionNumber)],
+            "po_number" => ['required', new UniqueWithIgnore('asset_requests', $id, $transactionNumber)],
             "rr_number" => ['required', 'string', new UniqueWithIgnore('asset_requests', $id, $transactionNumber)],
             "supplier_id" => "required|integer|exists:suppliers,id,is_active,1",
             "delivery_date" => "required|date",
