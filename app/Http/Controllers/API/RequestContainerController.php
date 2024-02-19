@@ -86,7 +86,7 @@ class RequestContainerController extends Controller
             foreach ($fileKeys as $fileKey) {
                 $requestContainer->clearMediaCollection($fileKey);
             }
-            $requestContainer->delete();               // delete the container
+            $requestContainer->forceDelete();             // delete the container
             return $this->responseSuccess('Item Deleted');
         } else {
             $requestorId = auth('sanctum')->user()->id;
@@ -97,7 +97,7 @@ class RequestContainerController extends Controller
                 foreach ($fileKeys as $fileKey) {
                     $requestContainer->clearMediaCollection($fileKey);
                 }
-                $requestContainer->delete();               // delete the container
+                $requestContainer->forceDelete();        // delete the container
             }
             return $this->responseSuccess('Request Deleted');
         }
