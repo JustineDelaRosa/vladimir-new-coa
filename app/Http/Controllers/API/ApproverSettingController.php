@@ -27,7 +27,7 @@ class ApproverSettingController extends Controller
         $approverSettingStatus = $request->status ?? 'active';
         $isActiveStatus = ($approverSettingStatus === 'deactivated') ? 0 : 1;
 
-        $ApproversQuery = Approvers::where('is_active', $isActiveStatus)
+        $ApproversQuery = Approvers::withTrashed()->where('is_active', $isActiveStatus)
             ->orderBy('created_at', 'desc')
             ->useFilters()
             ->dynamicPaginate();
