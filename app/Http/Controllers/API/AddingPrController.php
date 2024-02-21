@@ -28,10 +28,12 @@ class AddingPrController extends Controller
         $perPage = $request->input('per_page', null);
 
         $assetRequest = AssetRequest::where('status', 'Approved')
+            ->whereNull('deleted_at')
             ->when($toPr !== null, function ($query) use ($toPr) {
                 return $query->where($toPr == 0 ? 'pr_number' : 'pr_number', $toPr == 0 ? '!=' : '=', null);
             })
             ->useFilters()
+            ->orderBy('created_at', 'desc')
             ->get()
             ->groupBy('transaction_number')
             ->map(function ($assetRequestCollection) {
