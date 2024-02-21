@@ -12,28 +12,28 @@ use Illuminate\Support\Str;
 
 trait AssetReleaseHandler
 {
-    public function assetReleaseActivityLog($AssetToRelease){
+    public function assetReleaseActivityLog($AssetToRelease, $isClaimed = false){
         $user = auth('sanctum')->user();
         $assetRequests = new AssetRequest();
         activity()
             ->causedBy($user)
             ->performedOn($assetRequests)
             ->withProperties($this->composeLogPropertiesRelease($AssetToRelease))
-            ->inLog("Asset Release $assetRequests->description")
+            ->inLog($isClaimed ? 'Claimed' : "Asset Release $assetRequests->description")
             ->tap(function ($activity) use ($user, $AssetToRelease) {
                 $firstAssetRequest = $AssetToRelease;
                 if ($firstAssetRequest) {
                     $activity->subject_id = $AssetToRelease->transaction_number;
                 }
             })
-            ->log("Asset is Released by $user->employee_id - $user->firstname $user->lastname");
+            ->log($isClaimed ? "Claimed by $assetRequests->received_by"  : "Asset is Released by $user->employee_id - $user->firstname $user->lastname");
     }
 
     private function composeLogPropertiesRelease($assetToRelease): array
     {
         return [
             'transaction_number' => $assetToRelease->transaction_number,
-            'description' => $assetToRelease->description,
+            'description' => $assetToRelease->asset_description,
             'received_by' => $assetToRelease->received_by,
         ];
     }
@@ -91,7 +91,7 @@ trait AssetReleaseHandler
             ->where('additional_costs.can_release', 1)
             ->where('additional_costs.is_released', $isReleased);
 
-        return $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'asc')->get();
+        return $firstQuery->unionAll($secondQuery)->orderBy('created_at', 'desc')->get();
     }
 
     private function filterSearchResults($results, $search)

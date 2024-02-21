@@ -74,6 +74,7 @@ trait RequestShowDataHandler
             ->where('approver_id', $approverId)->first();
 
         $isUserLastApprover = $approver ? $isUserLastApprover == $approver->layer : false;
+        $totalRemaining = $totalOrdered - $totalDelivered;
 
         return [
             'is_removed' => $ar->trashed() ? 1 : 0,
@@ -85,6 +86,7 @@ trait RequestShowDataHandler
                     return $approval->status == 'For Approval';
                 })->id ?? '',
             'id' => $ar->id,
+            'total_remaining' => $totalRemaining,
             'status' => $ar->status,
             'transaction_number' => $ar->transaction_number,
             'reference_number' => $ar->reference_number,

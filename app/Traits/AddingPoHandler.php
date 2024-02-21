@@ -32,14 +32,17 @@ trait AddingPoHandler
     {
         return AssetRequest::where('status', 'Approved')
             ->wherenotnull('pr_number')
+            ->whereNull('deleted_at') // Exclude soft deleted records
             ->when($toPo !== null, function ($query) use ($toPo) {
                 return $query->whereNotIn('transaction_number', function ($query) use ($toPo) {
                     $query->select('transaction_number')
                         ->from('asset_requests')
+                        ->whereNull('deleted_at') // Exclude soft deleted records
                         ->groupBy('transaction_number')
                         ->havingRaw('SUM(quantity) ' . ($toPo == 1 ? '=' : '!=') . ' SUM(quantity_delivered)');
                 });
             })
+            ->orderBy('created_at', 'desc')
             ->useFilters();
     }
 
@@ -60,7 +63,7 @@ trait AddingPoHandler
         );
     }
 
-    public function activityLogPo($assetRequest, $poNumber, $rrnumber, $removedCount, $removeRemaining = false, $remove = false)
+    public function activityLogPo($assetRequest, $poNumber, $rrNumber, $removedCount, $removeRemaining = false, $remove = false)
     {
         $user = auth('sanctum')->user();
         $assetRequests = new AssetRequest();
@@ -68,19 +71,19 @@ trait AddingPoHandler
         activity()
             ->causedBy($user)
             ->performedOn($assetRequests)
-            ->withProperties($this->composeLogPropertiesPo($assetRequest, $poNumber, $rrnumber, $removedCount, $removeRemaining, $remove))
-            ->inLog(($removeRemaining == true) ? 'Removed Remaining Items' : (($remove == true) ? 'Removed Item To PO' : 'Added PO Number and RR Number'))
-            ->tap(function ($activity) use ($user, $assetRequest, $poNumber, $rrnumber) {
+            ->withProperties($this->composeLogPropertiesPo($assetRequest, $poNumber, $rrNumber, $removedCount, $removeRemaining, $remove))
+            ->inLog(($removeRemaining == true) ? 'Cancelled Remaining Items' : (($remove == true) ? 'Cancelled Item To PO' : 'Added PO Number and RR Number'))
+            ->tap(function ($activity) use ($user, $assetRequest, $poNumber, $rrNumber) {
                 $firstAssetRequest = $assetRequest;
                 if ($firstAssetRequest) {
                     $activity->subject_id = $firstAssetRequest->transaction_number;
                 }
             })
-            ->log($removeRemaining === true ? 'Remaining item to items was removed by ' . $user->employee_id . '.' : ($remove === true ?
-                'Item was removed by ' . $user->employee_id . '.' : 'PO Number: ' . $poNumber . ' has been added by ' . $user->employee_id . '.'));
+            ->log($removeRemaining === true ? 'Remaining item to items was cancelled by ' . $user->employee_id . '.' : ($remove === true ?
+                'Item was cancelled by ' . $user->employee_id . '.' : 'PO Number: ' . $poNumber . ' has been added by ' . $user->employee_id . '.'));
     }
 
-    private function composeLogPropertiesPo($assetRequest, $poNumber = null, $rrnumber = null, $removedCount = 0, $removeRemaining = false, $remove = false): array
+    private function composeLogPropertiesPo($assetRequest, $poNumber = null, $rrNumber = null, $removedCount = 0, $removeRemaining = false, $remove = false): array
     {
         $requestor = $assetRequest->requestor;
         $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number, true);
@@ -94,7 +97,7 @@ trait AddingPoHandler
             'remaining_to_po' => ($remaining == 0) ? 0 : (($removeRemaining == true) ? ($remaining - $removedCount) : $remaining),
             'quantity_removed' => ($removeRemaining == true) ? $removedCount : (($remove == true) ? $assetRequest->quantity : null),
             'po_number' => $poNumber ?? null,
-            'rr_number' => $rrnumber ?? null,
+            'rr_number' => $rrNumber ?? null,
             'remarks' => null,
         ];
     }
@@ -193,6 +196,8 @@ trait AddingPoHandler
                 'depreciation_method' => $asset->depreciation_method,
                 'acquisition_date' => $asset->acquisition_date,
                 'acquisition_cost' => $asset->acquisition_cost,
+                'scrap_value' => 0,
+                'months_depreciated' => 0,
             ]);
             $warehouseNumber = new WarehouseNumber();
             $warehouseNumber->save();
@@ -244,6 +249,8 @@ trait AddingPoHandler
                 'depreciation_method' => $asset->depreciation_method,
                 'acquisition_date' => $asset->acquisition_date,
                 'acquisition_cost' => $asset->acquisition_cost,
+                'scrap_value' => 0,
+                'months_depreciated' => 0,
             ]);
             $warehouseNumber = new WarehouseNumber();
             $warehouseNumber->save(); // Save the WarehouseNumber instance to the database to generate an id
@@ -322,7 +329,7 @@ trait AddingPoHandler
             $duplicateAssetRequest->quantity = $remainingQuantity;
             $duplicateAssetRequest->quantity_delivered = 0;
             $duplicateAssetRequest->deleter_id = auth('sanctum')->user()->id;
-            $duplicateAssetRequest->reference_number = $duplicateAssetRequest->generateReferenceNumber();
+//            $duplicateAssetRequest->reference_number = $duplicateAssetRequest->generateReferenceNumber();
 
             // Save the duplicate asset request
             $duplicateAssetRequest->save();

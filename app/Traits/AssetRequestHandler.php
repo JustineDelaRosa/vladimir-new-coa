@@ -51,6 +51,7 @@ trait AssetRequestHandler
         }
     }
 
+
     public function updateAssetRequest($assetRequest, $request, $save = true)
     {
         // Make changes to the $assetRequest object but don't save them
@@ -71,6 +72,7 @@ trait AssetRequestHandler
             'acquisition_details' => $request->acquisition_details ?? null,
             'date_needed' => $request->date_needed ?? null,
             'fixed_asset_id' => $request->fixed_asset_id ?? null,
+            'account_title_id' =>  $request->account_title_id ?? null,
         ]);
 
         $this->updateOtherRequestChargingDetails($assetRequest, $request, $save);
@@ -93,6 +95,7 @@ trait AssetRequestHandler
                 'location_id' => $request->location_id,
                 'acquisition_details' => $request->acquisition_details ?? null,
                 'fixed_asset_id' => $request->fixed_asset_id ?? null,
+//                'account_title_id' =>  $request->account_title_id ?? null,
             ]);
         }
         return $ar;
@@ -237,6 +240,8 @@ trait AssetRequestHandler
                 'causer' => $activityLog->causer,
                 'created_at' => $activityLog->created_at,
                 'remarks' => $activityLog->properties['remarks'] ?? null,
+                'received_by' => $activityLog->properties['received_by'] ?? null,
+                'description' => $activityLog->properties['description'] ?? null,
             ];
         });
     }
@@ -289,8 +294,7 @@ trait AssetRequestHandler
                     'lastname' => '',
                 ];
             }
-        }
-        else{
+        } else {
             return [
                 'firstname' => $this->deletedItemCheck($assetRequest),
                 'lastname' => '',
@@ -376,14 +380,14 @@ trait AssetRequestHandler
             if (($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count >= $assetRequest->quantity && $assetRequest->is_claimed == 0) ||
                 ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->is_claimed == 0 && $assetRequest->is_addcost == 1)) $lastLayer += 4;
             if (($assetRequest->is_claimed == 1 && $assetRequest->print_count = $assetRequest->quantity) || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1)) $lastLayer += 6;
-            if ($assetRequest->deleted_at != null) $lastLayer = -1;
+            if ($this->deletedItemCheck($assetRequest) != null) $lastLayer = -1;
         }
         return $lastLayer;
     }
 
     public function deletedItemCheck($assetRequest)
     {
-        $allItems = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
+        $allItems = AssetRequest::withTrashed()->where('transaction_number', $assetRequest->transaction_number)->get();
 
         $allDeleted = $allItems->every(function ($item) {
             return $item->deleted_at !== null;
@@ -392,7 +396,6 @@ trait AssetRequestHandler
         if ($allDeleted) {
             return 'Cancelled';
         }
-        return;
     }
 
     private function getDateRequested($transactionNumber)
@@ -506,22 +509,49 @@ trait AssetRequestHandler
         ];
     }
 
-    private function activityForRequestorDelete($assetRequest){
+    private function activityForRequestorDelete($assetRequest)
+    {
         $user = auth('sanctum')->user();
         $assetRequests = new AssetRequest();
         activity()
             ->causedBy($user)
             ->performedOn($assetRequests)
-            ->withProperties('delete')
-            ->inLog("removed")
+            ->withProperties($this->composeLogPropertiesRequest($assetRequest))
+            ->inLog("Cancelled")
             ->tap(function ($activity) use ($user, $assetRequest) {
-                $firstAssetRequest = $assetRequest;
+                // If $aRequest is not a collection, make it a collection
+                if (!($assetRequest instanceof \Illuminate\Support\Collection)) {
+                    $assetRequest = collect([$assetRequest]);
+                }
+
+                $firstAssetRequest = $assetRequest->first();
                 if ($firstAssetRequest) {
                     $activity->subject_id = $firstAssetRequest->transaction_number;
                 }
             })
-            ->log('removed');
+            ->log('Cancelled');
 
+    }
+
+    private function composeLogPropertiesRequest($assetRequest): array
+    {
+        // If $assetRequest is not a collection, make it a collection
+        if (!($assetRequest instanceof \Illuminate\Support\Collection)) {
+            $assetRequest = collect([$assetRequest]);
+        }
+
+        // Map over the collection to get all descriptions
+        $descriptions = $assetRequest->map(function ($item) {
+            return $item->asset_description;
+        });
+
+        // Join all descriptions into a single string
+        $descriptionString = $descriptions->join(', ');
+
+        return [
+            'description' => $descriptionString,
+            'remarks' => null,
+        ];
     }
 
     public function deleteRequestItem($referenceNumber, $transactionNumber): JsonResponse
@@ -543,8 +573,10 @@ trait AssetRequestHandler
         if ($this->requestCount($transactionNumber) == 1) {
             return $this->responseUnprocessable('You cannot delete the last item.');
         }
+        $this->activityForRequestorDelete($assetRequest);
 //        $this->removeMediaAttachments($assetRequest);
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
         $assetRequest->update([
             'deleter_id' => auth('sanctum')->user()->id,
         ]);
@@ -574,7 +606,9 @@ trait AssetRequestHandler
 //        return $assetRequest;
 //
 //        // return $this->deleteApprovals($assetRequest->transaction_number, 'Void') . 'asdfasdf';
+
         $this->deleteApprovals($transactionNumber);
+        $this->activityForRequestorDelete($assetRequest);
         // $assetRequest->activityLog()->delete();
         foreach ($assetRequest as $ar) {
 //            $this->removeMediaAttachments($ar);
