@@ -157,7 +157,7 @@ class FixedAssetRepository
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
             'voucher_date' => $request['voucher_date'] ?? null,
-            'receipt' => $request['rr_number'] ?? '-',
+            'receipt' => $request['receipt'] ?? '-',
             'quantity' => $request['quantity'],
             'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
                 ? strtoupper($request['depreciation_method'])
@@ -423,6 +423,7 @@ class FixedAssetRepository
 
     public function transformSingleFixedAsset($fixed_asset): array
     {
+
 
         $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? $fixed_asset->additionalCost->count() : 0;
         return [

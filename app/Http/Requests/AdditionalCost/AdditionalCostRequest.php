@@ -38,7 +38,7 @@ class AdditionalCostRequest extends FormRequest
             return [
 //                'fixed_asset_id' => 'required|exists:fixed_assets,id',
                 'po_number' => 'required',
-                'rr_number' => 'required',
+//                'rr_number' => 'required',
                 'asset_description' => 'required',
                 'type_of_request_id' => 'required',
                 'asset_specification' => 'required',
@@ -54,9 +54,9 @@ class AdditionalCostRequest extends FormRequest
                         }
 
                         // Check if necessary keys exist to avoid undefined index
-                        if (isset($accountable['general_info']['full_id_number'])) {
-                            $full_id_number = $accountable['general_info']['full_id_number'];
-                            request()->merge(['accountable' => $full_id_number]);
+                        if (isset($accountable['general_info']['full_id_number_full_name'])) {
+                            $full_id_number_full_name = $accountable['general_info']['full_id_number_full_name'];
+                            request()->merge(['accountable' => $full_id_number_full_name]);
                         } else {
                             // Fail validation if keys don't exist
                             $fail('The accountable person is required.');
@@ -64,7 +64,7 @@ class AdditionalCostRequest extends FormRequest
                         }
 
                         // Validate full name
-                        if ($full_id_number === '') {
+                        if ($full_id_number_full_name === '') {
                             $fail('The accountable person cannot be empty.');
                         }
                     },
@@ -307,9 +307,9 @@ class AdditionalCostRequest extends FormRequest
                     }
 
                     // Check if necessary keys exist to avoid undefined index
-                    if (isset($accountable['general_info']['full_id_number'])) {
-                        $full_id_number = $accountable['general_info']['full_id_number'];
-                        request()->merge(['accountable' => $full_id_number]);
+                    if (isset($accountable['general_info']['full_id_number_full_name'])) {
+                        $full_id_number_full_name = $accountable['general_info']['full_id_number_full_name'];
+                        request()->merge(['accountable' => $full_id_number_full_name]);
                     } else {
                         // Fail validation if keys don't exist
                         $fail('The accountable person is required.');
@@ -317,7 +317,7 @@ class AdditionalCostRequest extends FormRequest
                     }
 
                     // Validate full name
-                    if ($full_id_number === '') {
+                    if ($full_id_number_full_name === '') {
                         $fail('The accountable person cannot be empty.');
                     }
                 },

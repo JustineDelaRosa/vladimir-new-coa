@@ -24,6 +24,7 @@ use App\Repositories\FixedAssetRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
 use Carbon\Carbon;
 use Essa\APIToolKit\Api\ApiResponse;
+use http\Client\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -132,7 +133,7 @@ class FixedAssetController extends Controller
         ], 201);
     }
 
-    public function show(int $id)
+    public function show(Request $request, int $id)
     {
         $fixed_asset = FixedAsset::withTrashed()->with([
             'formula' => function ($query) {
@@ -460,11 +461,16 @@ class FixedAssetController extends Controller
     {
         //Variable declaration
         $properties = $fixedAsset->formula;
-        $depreciation_method = $fixedAsset->depreciation_method;
-        $est_useful_life = $fixedAsset->majorCategory->est_useful_life;
         $start_depreciation = $fixedAsset->formula->start_depreciation;
         $end_depreciation = $fixedAsset->formula->end_depreciation;
         $custom_end_depreciation = $validator->validated()['date'];
+        //FOR INFORMATION
+        $depreciation_method =  $properties->depreciation_method;
+        $est_useful_life = $fixedAsset->majorCategory->est_useful_life;
+        $acquisition_date = $properties->acquisition_date;
+        $acquisition_cost = $properties->acquisition_cost;
+        $scrap_value = $properties->scrap_value;
+
 
         //calculation variables
         $custom_age = $this->calculationRepository->getMonthDifference($properties->start_depreciation, $custom_end_depreciation);
@@ -484,24 +490,31 @@ class FixedAssetController extends Controller
                 'depreciable_basis' => $properties->depreciable_basis,
                 'start_depreciation' => $properties->start_depreciation,
                 'end_depreciation' => $properties->end_depreciation,
-                'depreciation' => $monthly_depreciation,
-                'depreciation_per_month' => 0,
+                'depreciated' => $monthly_depreciation,
+                'depreciation_per_month' => $monthly_depreciation,
                 'depreciation_per_year' => 0,
                 'accumulated_cost' => 0,
                 'remaining_book_value' => 0,
+                'scrap_value' => $scrap_value,
+                'acquisition_date' => $acquisition_date,
+                'acquisition_cost' => $acquisition_cost,
+                'est_useful_life' => 'One Time',
+                'months_depreciated' => $custom_age,
             ],
             'default' => [
                 'depreciation_method' => $depreciation_method,
                 'depreciable_basis' => $properties->depreciable_basis,
                 'est_useful_life' => $est_useful_life,
                 'months_depreciated' => $custom_age,
-                'scrap_value' => $properties->scrap_value,
+                'scrap_value' => $scrap_value,
                 'start_depreciation' => $properties->start_depreciation,
                 'end_depreciation' => $properties->end_depreciation,
                 'depreciation_per_month' => $monthly_depreciation,
                 'depreciation_per_year' => $yearly_depreciation,
                 'accumulated_cost' => $accumulated_cost,
                 'remaining_book_value' => $remaining_book_value,
+                'acquisition_date' => $acquisition_date,
+                'acquisition_cost' => $acquisition_cost,
             ]
         ];
     }
