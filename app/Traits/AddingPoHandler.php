@@ -160,7 +160,7 @@ trait AddingPoHandler
 
     private function calculatePrintCount($assetRequest, $request)
     {
-        if($assetRequest->is_addcost == 1){
+        if ($assetRequest->is_addcost == 1) {
             $printCount = FixedAsset::where('id', $assetRequest->fixed_asset_id)->first()->print_count;
             return $printCount > 0 ? $request->quantity_delivered : 0;
         }
@@ -303,12 +303,16 @@ trait AddingPoHandler
             $this->activityLogPo($assetRequest->first(), $assetRequest->first()->po_number, $assetRequest->first()->rr_number, 0, false, true);
             DB::statement('SET FOREIGN_KEY_CHECKS=0;');
             $assetRequest->each(function ($request) {
+                $request->deleter_id = auth('sanctum')->user()->id;
+                $request->save();
                 $request->delete();
             });
             DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         } else {
             $this->activityLogPo($assetRequest, $assetRequest->po_number ?? null, $assetRequest->rr_number ?? null, 0, false, true);
             DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            $assetRequest->deleter_id = auth('sanctum')->user()->id;
+            $assetRequest->save();
             $assetRequest->delete();
             DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         }
@@ -345,7 +349,10 @@ trait AddingPoHandler
         if ($remaining == 0) {
             $this->getAllItems($assetRequest->transaction_number, $storedRemovedQuantity);
         }
-        return $this->responseSuccess('Remaining quantity removed successfully!');
+        return $this->responseSuccess([
+            'message' => 'Remaining quantity removed successfully!',
+            'total_remaining' => $remaining ?? 0,
+        ]);
     }
 
 //TODO:FOR SOFT DELETING
@@ -387,6 +394,11 @@ trait AddingPoHandler
     private function handleTransactionNumberCase($transactionNumber): JsonResponse
     {
         $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->get();
+        $remainingCount = 0;
+        //get the remaining quantity to be ordered for the transaction number
+        foreach ($assetRequest as $asset) {
+            $remainingCount += $asset->quantity - $asset->quantity_delivered;
+        }
 
         if ($assetRequest->isEmpty()) {
             return $this->responseNotFound('Asset Request not found!');
@@ -400,12 +412,16 @@ trait AddingPoHandler
 
         $this->deleteAssetRequestPo($assetRequest);
 
-        return $this->responseSuccess('Item removed successfully!');
+        return $this->responseSuccess([
+            'Item removed successfully!',
+            'total_remaining' => $remainingCount,
+        ]);
     }
 
     private function handleIdCase($id)
     {
         $assetRequest = AssetRequest::where('id', $id)->first();
+
 
         if (!$assetRequest) {
             return $this->responseNotFound('Asset Request not found!');
@@ -419,7 +435,14 @@ trait AddingPoHandler
 
         if ($assetRequest->quantity_delivered == null || $assetRequest->quantity_delivered == 0) {
             $this->deleteAssetRequestPo($assetRequest);
-            return $this->responseSuccess('Item removed successfully!');
+
+            $assetRequestRemainingCheck = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
+            $remainingCount = 0;
+            //get the remaining quantity to be ordered for the transaction number
+            foreach ($assetRequestRemainingCheck as $asset) {
+                $remainingCount += $asset->quantity - $asset->quantity_delivered;
+            }
+            return $this->responseSuccess('Item removed successfully!', ['total_remaining' => $remainingCount]);
         }
 
         if ($assetRequest->quantity !== $assetRequest->quantity_delivered) {
