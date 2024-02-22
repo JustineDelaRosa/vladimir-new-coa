@@ -31,7 +31,7 @@ class AssetReleaseController extends Controller
         $isReleased = $request->get('isReleased');
 
         if ($per_page == null) {
-            $fixed_assets = FixedAsset::where('can_release', 1)->where('from_request', 1)
+            $fixed_assets = FixedAsset::where('can_release', 1)->where('from_request', 1)->orderByDesc('created_at')
                 ->get();
             return $this->transformFixedAsset($fixed_assets);
         } else {
@@ -65,7 +65,7 @@ class AssetReleaseController extends Controller
         $signature = $request->get('signature') ?? null;
         $depreciation = DepreciationStatus::where('depreciation_status_name', 'For Depreciation')->first()->id;
         foreach ($warehouseIds as $warehouseId) {
-            $assetToRelease= null;
+
             $fixedAssetQuery = FixedAsset::where('warehouse_number_id', $warehouseId)->where('is_released', 0);
             $fixedAssetCount = (clone $fixedAssetQuery)->count();
 
@@ -75,16 +75,10 @@ class AssetReleaseController extends Controller
             if ($fixedAssetCount == 0 && $additionalCostCount == 0) {
                 return $this->responseNotFound('Asset Not Found');
             }
-            if ($fixedAssetCount > 0) {
-                $assetToRelease = (clone $fixedAssetQuery)->first();
-            }
 
-            if ($additionalCostCount > 0) {
-                $assetToRelease = (clone $additionalCostQuery)->first();
-            }
 
             if ($fixedAssetCount == 1 || $additionalCostCount == 1) {
-                $assetRequest = AssetRequest::where(function ($query) use ($fixedAssetQuery, $additionalCostQuery) {
+                $assetRequest = AssetRequest::withTrashed()->where(function ($query) use ($fixedAssetQuery, $additionalCostQuery) {
                     $fixedAsset = $fixedAssetQuery->first();
                     if ($fixedAsset) {
                         $query->where('transaction_number', $fixedAsset->transaction_number)
@@ -115,6 +109,9 @@ class AssetReleaseController extends Controller
                 ]);
                 $formula = $fixedAsset->formula;
                 $formula->update(['release_date' => now()->format('Y-m-d')]);
+                $fixedAsset->refresh();
+                $this->assetReleaseActivityLog($fixedAsset);
+                $this->assetReleaseActivityLog($fixedAsset, true);
             }
 
             if ($additionalCostCount > 0) {
@@ -129,8 +126,10 @@ class AssetReleaseController extends Controller
                 ]);
                 $formula = $additionalCost->formula;
                 $formula->update(['release_date' => now()->format('Y-m-d')]);
+                $additionalCost->refresh();
+                $this->assetReleaseActivityLog($additionalCost);
+                $this->assetReleaseActivityLog($additionalCost, true);
             }
-            $this->assetReleaseActivityLog($assetToRelease);
         }
         return $this->responseSuccess('Assets Released');
     }
