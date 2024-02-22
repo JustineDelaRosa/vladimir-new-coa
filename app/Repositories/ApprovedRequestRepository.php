@@ -235,7 +235,7 @@ class ApprovedRequestRepository
     private function updateAssetRequestStatus($transactionNumber, string $status, $remarks = null)
     {
         //foreach asset request with the same transaction number update the status
-        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->get();
+        $assetRequest = AssetRequest::withTrashed()->where('transaction_number', $transactionNumber)->get();
 
         //if the status is decline then update include the remarks
         //else don't update the remarks

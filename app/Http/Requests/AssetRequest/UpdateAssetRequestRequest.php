@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\AssetRequest;
 
+use App\Models\SubUnit;
 use App\Rules\FileOrX;
 use App\Models\TypeOfRequest;
 use Illuminate\Validation\Rule;
@@ -37,7 +38,20 @@ class UpdateAssetRequestRequest extends FormRequest
             'fixed_asset_id' => ['required-if:is_addcost,1', Rule::exists('fixed_assets', 'id')],
             'company_id' => ['required', Rule::exists('companies', 'id')],
             'department_id' => ['required', Rule::exists('departments', 'id')],
-            'subunit_id' => ['required', Rule::exists('sub_units', 'id')],
+            'subunit_id' => [
+                'required', Rule::exists('sub_units', 'id'),
+                //check if the subunit already has approvers assigned
+                function ($attribute, $value, $fail) {
+                    $subunit = SubUnit::find($value);
+                    if ($subunit->departmentUnitApprovers->isEmpty()) {
+                        $fail('No approvers assigned to the selected subunit.');
+                    }
+                    //check if this is the sub unit of the selected department
+                    if ($subunit->department_id != request()->department_id) {
+                        $fail('Subunit does not match department.');
+                    }
+                },
+            ],
             'location_id' => ['required', Rule::exists('locations', 'id')],
             'account_title_id' => ['required', Rule::exists('account_titles', 'id')],
             //            'charged_department_id' => ['required', Rule::exists('departments', 'id')],

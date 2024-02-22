@@ -76,11 +76,15 @@ class AssetRequestController extends Controller
             'Released' => ['is_claimed' => 1],
         ];
 
-        $assetRequest = AssetRequest::query()->withTrashed();
+        $assetRequest = AssetRequest::query();
 
         if (!in_array($role, $adminRoles)) {
             $forMonitoring = false;
         }
+        if($status == 'deactivated'){
+            $assetRequest->withTrashed();
+        }
+
 
         if (!$forMonitoring) {
             $assetRequest->where('requester_id', $requesterId);
@@ -116,13 +120,13 @@ class AssetRequestController extends Controller
 //                    return $this->transformIndexAssetRequest($assetRequest);
 //                }
                 // If status is 'deactivated', check if all items in the group are trashed
-                if ($status == 'deactivated' && $assetRequestCollection->every->trashed() && !in_array('Deleted', $filter)) {
+                if ($status == 'deactivated' && $assetRequestCollection->every->trashed()) {
                     $assetRequest = $assetRequestCollection->first();
                     $assetRequest->quantity = $assetRequestCollection->sum('quantity');
                     return $this->transformIndexAssetRequest($assetRequest);
                 }
                 // If status is 'active', check if any item in the group is not trashed id all is trash return null
-                else if ($status == 'active' && !$assetRequestCollection->every->trashed() && !in_array('Deleted', $filter)) {
+                else if ($status == 'active' && !$assetRequestCollection->every->trashed()) {
                     $assetRequest = $assetRequestCollection->first();
                     $assetRequest->quantity = $assetRequestCollection->sum('quantity');
                     return $this->transformIndexAssetRequest($assetRequest);
@@ -214,7 +218,7 @@ class AssetRequestController extends Controller
         $assetRequestQuery = AssetRequest::withTrashed()->where('transaction_number', $transactionNumber);
 
         if (!$adminCheck) {
-            $assetRequestQuery->where('requester_id', $requestorId->id)->where('deleter_id', '!=', $requestorId->id);
+            $assetRequestQuery->where('requester_id', $requestorId->id);
         }
         $assetRequestQuery->orderByRaw('deleted_at IS NULL DESC');
 
