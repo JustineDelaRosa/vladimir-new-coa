@@ -156,6 +156,33 @@ trait AddingPoHandler
             'acquisition_cost' => $request->unit_price,
             'print_count' => $assetRequest->print_count + $printCount,
         ]);
+
+        //TODO: TO BE UNCOMMENTED
+        //$this->updateRequestStatusFilter($assetRequest);
+    }
+
+    private function updateRequestStatusFilter($assetRequest)
+    {
+        //check if all the request from this transaction number have been delivered
+        $allItemsFromFixedAsset = FixedAsset::where('transaction_number', $assetRequest->transaction_number)->get();
+        $allItemsFromAdditionalCost = AdditionalCost::where('transaction_number', $assetRequest->transaction_number)->get();
+        $allItemInRequest = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
+
+        if(($allItemsFromFixedAsset->count() == $allItemInRequest->sum('quantity'))){
+            //update the status of the all items in the request
+            $allItemInRequest->each(function($item){
+                $item->update([
+                    'filter' => 'Received'
+                ]);
+            });
+        }elseif ($allItemsFromAdditionalCost->count() == $allItemInRequest->sum('quantity')){
+            //update the status of the all items in the request
+            $allItemInRequest->each(function($item){
+                $item->update([
+                    'filter' => 'For Pick-Up'
+                ]);
+            });
+        }
     }
 
     private function calculatePrintCount($assetRequest, $request)

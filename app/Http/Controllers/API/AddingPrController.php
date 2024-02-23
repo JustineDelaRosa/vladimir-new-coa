@@ -95,6 +95,7 @@ class AddingPrController extends Controller
             $assetRequest->update([
                 'pr_number' => $prNumber,
                 'business_unit_id' => $businessUnitId,
+//                'filter' => 'To PO'
             ]);
         });
         $this->activityLog($assetRequests, $prNumber);

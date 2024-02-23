@@ -7,6 +7,7 @@ use App\Models\AdditionalCost;
 use App\Models\AssetRequest;
 use App\Models\RoleManagement;
 use App\Models\User;
+use App\Traits\NotificationHandler;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Approvers;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\Crypt;
 
 class AuthController extends Controller
 {
+
+    use NotificationHandler;
     public function Login(Request $request)
     {
         $username = $request->username;
@@ -110,6 +113,85 @@ class AuthController extends Controller
 //        return $query->count();
 //    }
 
+//    public function notificationCount()
+//    {
+//        $user = auth('sanctum')->user();
+//        $roleList = [
+//            'Admin', 'Super Admin',
+//            'Fixed Asset Associate', 'Po-receiving',
+//            'Purchase Request', 'Approver',
+//            'Warehouse', 'Fixed Assets',
+//            'ERP'
+//        ];
+//
+//        if (strtolower(!in_array($user->role->role_name, $roleList))) {
+//            return response()->json([
+//                'toApproveCount' => 0,
+//                'toPR' => 0,
+//                'toReceive' => 0,
+//                'toTagCount' => 0,
+//                'toRelease' => 0,
+//            ]);
+//        }
+//        $adminRole = $this->getRoleIdByName('admin');
+//
+//        $toApproveCount = $this->getToApproveCount($user->id);
+//        $toTagCount = $this->getToTagCount($user, $adminRole);
+//        $toRelease = $this->getToRelease($user, $adminRole);
+//        $toPurchaseRequest = $this->getToPurchaseRequest($user, $adminRole);
+//        $toReceive = $this->getToReceive($user, $adminRole);
+//
+//        return response()->json([
+//            'toApproveCount' => $toApproveCount,
+//            'toPR' => $toPurchaseRequest,
+//            'toReceive' => $toReceive,
+//            'toTagCount' => $toTagCount,
+//            'toRelease' => $toRelease,
+//        ]);
+//    }
+//
+//    private function getRoleIdByName($roleName)
+//    {
+//        return RoleManagement::whereRaw('LOWER(role_name) = ?', strtolower($roleName))->first()->id;
+//    }
+//
+//    private function getToApproveCount($userId)
+//    {
+//        $approverId = Approvers::where('approver_id', $userId)->value('id');
+//        return AssetApproval::where('approver_id', $approverId)->where('status', 'For Approval')->count();
+//    }
+//
+//    private function getToTagCount($user, $adminRole)
+//    {
+//        $faAssociateRole = $this->getRoleIdByName('Fixed Assets');
+//        $isFaAssociate = ($user->role_id == $faAssociateRole) || ($user->role_id == $adminRole);
+//        return $isFaAssociate ? FixedAsset::where('from_request', 1)->where('print_count', 0)->count() : 0;
+//    }
+//
+//    private function getToRelease($user, $adminRole)
+//    {
+//        $wareHouseRole = $this->getRoleIdByName('Po-receiving');
+//        $isWarehouse = ($user->role_id == $wareHouseRole) || ($user->role_id == $adminRole);
+//        $fixeAssetCount = $isWarehouse ? FixedAsset::where('from_request', 1)->where('print_count', 1)->where('can_release', 1)->where('is_released', 0)->count() : 0;
+//        $additionalCostCount = $isWarehouse ? AdditionalCost::where('from_request', 1)->where('can_release', 1)->where('is_released', 0)->count() : 0;
+//        return $fixeAssetCount + $additionalCostCount;
+//    }
+//
+//    private function getToPurchaseRequest($user, $adminRole)
+//    {
+//        $purchaseRequestRole = $this->getRoleIdByName('Purchase request');
+//        $isPurchaseRequest = ($user->role_id == $purchaseRequestRole) || ($user->role_id == $adminRole);
+//        return $isPurchaseRequest ? AssetRequest::where('status', 'Approved')->where('pr_number', null)->distinct('transaction_number')->count() : 0;
+//    }
+//
+//    private function getToReceive($user, $adminRole)
+//    {
+//        $wareHouseRole = $this->getRoleIdByName('Po-receiving');
+//        $isWarehouse = ($user->role_id == $wareHouseRole) || ($user->role_id == $adminRole);
+//        return $isWarehouse ? AssetRequest::where('status', 'Approved')->where('pr_number', '!=', null)
+//            ->whereRaw('quantity != quantity_delivered')->distinct('transaction_number')->count() : 0;
+//    }
+
     public function notificationCount()
     {
         $user = auth('sanctum')->user();
@@ -120,8 +202,15 @@ class AuthController extends Controller
             'Warehouse', 'Fixed Assets',
             'ERP'
         ];
+        $response = [
+            'toApproveCount' => 0,
+            'toPR' => 0,
+            'toReceive' => 0,
+            'toTagCount' => 0,
+            'toRelease' => 0,
+        ];
 
-        if (strtolower(!in_array($user->role->role_name, $roleList))) {
+        if (!in_array($user->role->role_name, $roleList)) {
             return response()->json([
                 'toApproveCount' => 0,
                 'toPR' => 0,
@@ -130,62 +219,32 @@ class AuthController extends Controller
                 'toRelease' => 0,
             ]);
         }
-        $adminRole = $this->getRoleIdByName('admin');
 
-        $toApproveCount = $this->getToApproveCount($user->id);
-        $toTagCount = $this->getToTagCount($user, $adminRole);
-        $toRelease = $this->getToRelease($user, $adminRole);
-        $toPurchaseRequest = $this->getToPurchaseRequest($user, $adminRole);
-        $toReceive = $this->getToReceive($user, $adminRole);
+        $roleFunctionMapping = [
+            'Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
+            'Super Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
+            'Fixed Asset Associate' => ['getToApproveCount','getToTagCount'],
+            'Po-receiving' => ['getToRelease', 'getToReceive'],
+            'Purchase Request' => 'getToPurchaseRequest',
+            'Approver' => 'getToApproveCount',
+            'Warehouse' => ['getToRelease', 'getToReceive'],
+            'Fixed Assets' => ['getToApproveCount','getToTagCount'],
+            'ERP' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
+            'Requester-Approver' =>['getToApproveCount'],
+        ];
 
-        return response()->json([
-            'toApproveCount' => $toApproveCount,
-            'toPR' => $toPurchaseRequest,
-            'toReceive' => $toReceive,
-            'toTagCount' => $toTagCount,
-            'toRelease' => $toRelease,
-        ]);
-    }
+        foreach ($roleFunctionMapping as $role => $functions) {
+            if ($role === $user->role->role_name) {
+                if (is_array($functions)) {
+                    foreach ($functions as $function) {
+                        $response = $this->executeFunction($function, $user, $response);
+                    }
+                } else {
+                    $response = $this->executeFunction($functions, $user, $response);
+                }
+            }
+        }
 
-    private function getRoleIdByName($roleName)
-    {
-        return RoleManagement::whereRaw('LOWER(role_name) = ?', strtolower($roleName))->first()->id;
-    }
-
-    private function getToApproveCount($userId)
-    {
-        $approverId = Approvers::where('approver_id', $userId)->value('id');
-        return AssetApproval::where('approver_id', $approverId)->where('status', 'For Approval')->count();
-    }
-
-    private function getToTagCount($user, $adminRole)
-    {
-        $faAssociateRole = $this->getRoleIdByName('Fixed Assets');
-        $isFaAssociate = ($user->role_id == $faAssociateRole) || ($user->role_id == $adminRole);
-        return $isFaAssociate ? FixedAsset::where('from_request', 1)->where('print_count', 0)->count() : 0;
-    }
-
-    private function getToRelease($user, $adminRole)
-    {
-        $wareHouseRole = $this->getRoleIdByName('Po-receiving');
-        $isWarehouse = ($user->role_id == $wareHouseRole) || ($user->role_id == $adminRole);
-        $fixeAssetCount = $isWarehouse ? FixedAsset::where('from_request', 1)->where('print_count', 1)->where('can_release', 1)->where('is_released', 0)->count() : 0;
-        $additionalCostCount = $isWarehouse ? AdditionalCost::where('from_request', 1)->where('can_release', 1)->where('is_released', 0)->count() : 0;
-        return $fixeAssetCount + $additionalCostCount;
-    }
-
-    private function getToPurchaseRequest($user, $adminRole)
-    {
-        $purchaseRequestRole = $this->getRoleIdByName('Purchase request');
-        $isPurchaseRequest = ($user->role_id == $purchaseRequestRole) || ($user->role_id == $adminRole);
-        return $isPurchaseRequest ? AssetRequest::where('status', 'Approved')->where('pr_number', null)->distinct('transaction_number')->count() : 0;
-    }
-
-    private function getToReceive($user, $adminRole)
-    {
-        $wareHouseRole = $this->getRoleIdByName('Po-receiving');
-        $isWarehouse = ($user->role_id == $wareHouseRole) || ($user->role_id == $adminRole);
-        return $isWarehouse ? AssetRequest::where('status', 'Approved')->where('pr_number', '!=', null)
-            ->whereRaw('quantity != quantity_delivered')->distinct('transaction_number')->count() : 0;
+        return response()->json($response);
     }
 }

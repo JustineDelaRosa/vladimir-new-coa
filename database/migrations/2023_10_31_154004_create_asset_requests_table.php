@@ -49,6 +49,7 @@ class CreateAssetRequestsTable extends Migration
             $table->integer('quantity')->nullable();
             $table->integer('quantity_delivered')->nullable()->default(0);
             $table->date('date_needed')->nullable();
+            $table->string('filter')->nullable();
 
             //ATTACHMENT TYPE
             $table->enum('attachment_type', ['Budgeted', 'Unbudgeted']);

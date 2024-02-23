@@ -78,25 +78,12 @@ class AssetReleaseController extends Controller
 
 
             if ($fixedAssetCount == 1 || $additionalCostCount == 1) {
-                $assetRequest = AssetRequest::withTrashed()->where(function ($query) use ($fixedAssetQuery, $additionalCostQuery) {
-                    $fixedAsset = $fixedAssetQuery->first();
-                    if ($fixedAsset) {
-                        $query->where('transaction_number', $fixedAsset->transaction_number)
-                            ->whereRaw('quantity = quantity_delivered')
-                            ->whereRaw('print_count = quantity');
-                    }
-                })->orWhere(function ($query) use ($additionalCostQuery) {
-                    $additionalCost = $additionalCostQuery->first();
-                    if ($additionalCost) {
-                        $query->where('transaction_number', $additionalCost->transaction_number)
-                            ->whereRaw('quantity = quantity_delivered');
-                    }
-                });
-
-                if ($assetRequest->exists()) {
-                    $assetRequest->update(['is_claimed' => 1]);
+                $assetRequest = $this->getAssetRequest($fixedAssetQuery, $additionalCostQuery);
+                if ($this->hasUnreleasedAssets($assetRequest) == 0) {
+                    $this->updateIsClaimed($assetRequest);
                 }
             }
+
             if ($fixedAssetCount > 0) {
                 $fixedAsset = (clone $fixedAssetQuery)->first();
                 $fixedAsset->storeBase64Image($signature, $receivedBy);
@@ -132,5 +119,46 @@ class AssetReleaseController extends Controller
             }
         }
         return $this->responseSuccess('Assets Released');
+    }
+
+    private function getAssetRequest($fixedAssetQuery, $additionalCostQuery)
+    {
+        return AssetRequest::withTrashed()->where(function ($query) use ($fixedAssetQuery, $additionalCostQuery) {
+            $fixedAsset = $fixedAssetQuery->first();
+            if ($fixedAsset) {
+                $query->where('transaction_number', $fixedAsset->transaction_number)
+                    ->whereRaw('quantity = quantity_delivered')
+                    ->whereRaw('print_count = quantity');
+            }
+        })->orWhere(function ($query) use ($additionalCostQuery) {
+            $additionalCost = $additionalCostQuery->first();
+            if ($additionalCost) {
+                $query->where('transaction_number', $additionalCost->transaction_number)
+                    ->whereRaw('quantity = quantity_delivered');
+            }
+        });
+    }
+
+    private function hasUnreleasedAssets($assetRequest)
+    {
+        $transactionNumber = $assetRequest->value('transaction_number');
+        $unreleasedFixedAssets = FixedAsset::where('transaction_number', $transactionNumber)
+            ->where('is_released', 0)
+            ->count();
+        $unreleasedAdditionalCosts = AdditionalCost::where('transaction_number', $transactionNumber)
+            ->where('is_released', 0)
+            ->count();
+
+        return $unreleasedFixedAssets > 0 || $unreleasedAdditionalCosts > 0;
+    }
+
+    private function updateIsClaimed($assetRequest)
+    {
+        if ($assetRequest->exists()) {
+            $assetRequest->update([
+                'is_claimed' => 1,
+                'filter'=> 'Claimed'
+            ]);
+        }
     }
 }

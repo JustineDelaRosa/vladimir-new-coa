@@ -109,6 +109,20 @@ class PrintBarCodeController extends Controller
                             $assetRequest->update(['last_printed' => Carbon::now()]);
                         }
 
+                        //TODO TO BE UNCOMMENTED
+
+//                        //get all the fixed asset with the same transaction number
+//                        $fixedAssets = FixedAsset::where('transaction_number', $fixedAsset->transaction_number)->get();
+//                        //get also all the asset request with the same asset request
+//                        $assetRequests = AssetRequest::where('transaction_number', $fixedAsset->transaction_number)->get();
+//                        //if the count of the fixed asset is equal to total count of the quantity of the asset request then update the filter column in all asset request to "Ready to Pickup"
+//                        if ($fixedAssets->count() == $assetRequests->sum('quantity')) {
+//                            $assetRequests->each(function ($assetRequest) {
+//                                $assetRequest->update(['filter' => 'Ready to Pickup']);
+//                            });
+//                        }
+
+
                         $assetRequest = new AssetRequest();
                         if ($fixedAsset->from_request == 1) {
                             $fixedAsset->update(['can_release' => 1]);
