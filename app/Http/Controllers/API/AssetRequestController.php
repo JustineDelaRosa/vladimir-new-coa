@@ -70,9 +70,9 @@ class AssetRequestController extends Controller
             'Returned' => ['status' => 'Returned'],
             'For Approval' => ['status' => ['like', 'For Approval%']],
             'For PR' => ['status' => 'Approved', 'pr_number' => null],
-            'For PO' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'quantity' => ['!=', DB::raw('quantity_delivered')]],
-            'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'is_claimed' => 0, 'print_count' => ['!=', DB::raw('quantity')], 'is_addcost' => 0, 'quantity' => ['=', DB::raw('quantity_delivered')]],
-            'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'is_claimed' => 0, 'quantity' => ['=', DB::raw('quantity_delivered')], 'print_count' => ['=', DB::raw('quantity')]],
+            'For PO' => ['status' => 'Approved', 'filter' => 'To PO'],
+            'For Tagging' => ['status' => 'Approved', 'filter' => 'Received'], //'filter' => 'Ready to Pickup'
+            'For Pickup' => ['status' => 'Approved', 'filter' => 'Ready to Pickup'],
             'Released' => ['is_claimed' => 1],
         ];
 

@@ -72,7 +72,7 @@ trait AssetRequestHandler
             'acquisition_details' => $request->acquisition_details ?? null,
             'date_needed' => $request->date_needed ?? null,
             'fixed_asset_id' => $request->fixed_asset_id ?? null,
-            'account_title_id' =>  $request->account_title_id ?? null,
+            'account_title_id' => $request->account_title_id ?? null,
         ]);
 
         $this->updateOtherRequestChargingDetails($assetRequest, $request, $save);
@@ -269,20 +269,19 @@ trait AssetRequestHandler
                 ];
             }
 
-            if ($assetRequest->is_addcost != 1 && $assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count != $assetRequest->quantity) {
+            if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Received") {
                 return [
                     'firstname' => 'Asset Tagging',
                     'lastname' => '',
                 ];
             }
-            if (($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count >= $assetRequest->quantity && $assetRequest->is_claimed == 0) ||
-                ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->is_claimed == 0 && $assetRequest->is_addcost == 1)) {
+            if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) {
                 return [
                     'firstname' => 'Ready to Pickup',
                     'lastname' => '',
                 ];
             }
-            if ($assetRequest->is_claimed = 1) {
+            if (($assetRequest->is_claimed == 1 && $assetRequest->filter == "Claimed") || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) {
                 return [
                     'firstname' => 'Claimed',
                     'lastname' => '',
@@ -320,15 +319,17 @@ trait AssetRequestHandler
             ) {
                 return 'Inputting of PO No. and RR No.';
             }
-
-            if ($assetRequest->is_addcost != 1 && $assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count != $assetRequest->quantity) {
+            //$assetRequest->is_addcost != 1 && $assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count != $assetRequest->quantity
+            if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Received") {
                 return 'Asset Tagging';
             }
-            if (($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count >= $assetRequest->quantity && $assetRequest->is_claimed == 0) ||
-                ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->is_claimed == 0 && $assetRequest->is_addcost == 1)) {
+
+            //($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count >= $assetRequest->quantity && $assetRequest->is_claimed == 0) ||
+            //                ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->is_claimed == 0 && $assetRequest->is_addcost == 1)
+            if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) {
                 return 'Ready to Pickup';
             }
-            if (($assetRequest->is_claimed == 1 && $assetRequest->print_count = $assetRequest->quantity) || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1)) {
+            if (($assetRequest->is_claimed == 1 && $assetRequest->filter == "Claimed") || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) {
                 return 'Claimed';
             }
         }
@@ -376,10 +377,9 @@ trait AssetRequestHandler
             if (($assetRequest->po_number == null && $assetRequest->pr_number != null) ||
                 ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
             ) $lastLayer += 2;
-            if ($assetRequest->is_addcost != 1 && $assetRequest->po_number != null && $assetRequest->pr_number != null && $remaining == 0 && $assetRequest->print_count != $assetRequest->quantity) $lastLayer += 3;
-            if (($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count >= $assetRequest->quantity && $assetRequest->is_claimed == 0) ||
-                ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->is_claimed == 0 && $assetRequest->is_addcost == 1)) $lastLayer += 4;
-            if (($assetRequest->is_claimed == 1 && $assetRequest->print_count = $assetRequest->quantity) || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1)) $lastLayer += 6;
+            if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Received") $lastLayer += 3;
+            if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) $lastLayer += 4;
+            if (($assetRequest->is_claimed == 1 && $assetRequest->filter == "Claimed") || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) $lastLayer += 6;
             if ($this->deletedItemCheck($assetRequest) != null) $lastLayer = -1;
         }
         return $lastLayer;
@@ -579,6 +579,7 @@ trait AssetRequestHandler
 
         $assetRequest->update([
             'deleter_id' => auth('sanctum')->user()->id,
+            'filter' => null,
         ]);
         // Perform the delete operation
         $assetRequest->delete();
@@ -615,6 +616,7 @@ trait AssetRequestHandler
 //            $ar->activityLog()->delete();
             $ar->update([
                 'deleter_id' => auth('sanctum')->user()->id,
+                'filter' => null,
             ]);
             $ar->delete();
         }
