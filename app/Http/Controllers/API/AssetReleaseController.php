@@ -77,13 +77,6 @@ class AssetReleaseController extends Controller
             }
 
 
-            if ($fixedAssetCount == 1 || $additionalCostCount == 1) {
-                $assetRequest = $this->getAssetRequest($fixedAssetQuery, $additionalCostQuery);
-                if ($this->hasUnreleasedAssets($assetRequest) == 0) {
-                    $this->updateIsClaimed($assetRequest);
-                }
-            }
-
             if ($fixedAssetCount > 0) {
                 $fixedAsset = (clone $fixedAssetQuery)->first();
                 $fixedAsset->storeBase64Image($signature, $receivedBy);
@@ -117,12 +110,34 @@ class AssetReleaseController extends Controller
                 $this->assetReleaseActivityLog($additionalCost);
                 $this->assetReleaseActivityLog($additionalCost, true);
             }
+
+            $transactionNumber = $fixedAsset->transaction_number ?? $additionalCost->transaction_number;
+            $unreleasedFixedAssets = FixedAsset::where('transaction_number', $transactionNumber)->where('is_released', 0)->count();
+            $unreleasedAdditionalCosts = AdditionalCost::where('transaction_number', $transactionNumber)->where('is_released', 0)->count();
+
+            // If all assets are released, update the asset request
+            if ($unreleasedFixedAssets == 0 && $unreleasedAdditionalCosts == 0) {
+                AssetRequest::where('transaction_number', $transactionNumber)->update([
+                    'is_claimed' => 1,
+                    'filter' => 'Claimed'
+                ]);
+            }
         }
         return $this->responseSuccess('Assets Released');
     }
 
+
+
     private function getAssetRequest($fixedAssetQuery, $additionalCostQuery)
     {
+//        if ($fixedAssetCount == 1 || $additionalCostCount == 1) {
+//                $assetRequest = $this->getAssetRequest($fixedAssetQuery, $additionalCostQuery);
+//                if ($this->hasUnreleasedAssets($assetRequest) == 0) {
+//                    $this->updateIsClaimed($assetRequest);
+//                }
+//            }
+//
+
         return AssetRequest::withTrashed()->where(function ($query) use ($fixedAssetQuery, $additionalCostQuery) {
             $fixedAsset = $fixedAssetQuery->first();
             if ($fixedAsset) {
@@ -152,9 +167,10 @@ class AssetReleaseController extends Controller
         return $unreleasedFixedAssets > 0 || $unreleasedAdditionalCosts > 0;
     }
 
-    private function updateIsClaimed($assetRequest)
+    private function updateIsClaimed($assetRequestQuery)
     {
-        if ($assetRequest->exists()) {
+        $assetRequest = $assetRequestQuery->first();
+        if ($assetRequest) {
             $assetRequest->update([
                 'is_claimed' => 1,
                 'filter'=> 'Claimed'
