@@ -72,6 +72,7 @@ class AddingPoController extends Controller
         $this->updatePoAssetRequest($assetRequest, $request);
         $this->activityLogPo($assetRequest, $request->po_number, $request->rr_number, 0, false, false);
         $this->getAllitems($id, $request->quantity_delivered);
+        $this->updateRequestStatusFilter($assetRequest);
 
         return $this->responseSuccess('PO number and RR number added successfully!');
     }

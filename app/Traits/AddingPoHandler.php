@@ -158,31 +158,36 @@ trait AddingPoHandler
         ]);
 
         //TODO: TO BE UNCOMMENTED
-        //$this->updateRequestStatusFilter($assetRequest);
+//        $this->updateRequestStatusFilter($assetRequest);
     }
 
     private function updateRequestStatusFilter($assetRequest)
     {
-        //check if all the request from this transaction number have been delivered
-        $allItemsFromFixedAsset = FixedAsset::where('transaction_number', $assetRequest->transaction_number)->get();
-        $allItemsFromAdditionalCost = AdditionalCost::where('transaction_number', $assetRequest->transaction_number)->get();
+        // Get all items in the request for this transaction number
         $allItemInRequest = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
 
-        if(($allItemsFromFixedAsset->count() == $allItemInRequest->sum('quantity'))){
-            //update the status of the all items in the request
-            $allItemInRequest->each(function($item){
-                $item->update([
-                    'filter' => 'Received'
-                ]);
-            });
-        }elseif ($allItemsFromAdditionalCost->count() == $allItemInRequest->sum('quantity')){
-            //update the status of the all items in the request
-            $allItemInRequest->each(function($item){
-                $item->update([
-                    'filter' => 'For Pick-Up'
-                ]);
+        // Get the count of all items from FixedAsset and AdditionalCost for this transaction number
+        $fixedAssetCount = FixedAsset::where('transaction_number', $assetRequest->transaction_number)->count();
+        $additionalCostCount = AdditionalCost::where('transaction_number', $assetRequest->transaction_number)->count();
+
+        // Get the total quantity of all items in the request
+        $totalQuantity = $allItemInRequest->sum('quantity');
+
+        // Determine the filter status based on the counts
+        $filterStatus = null;
+        if ($fixedAssetCount == $totalQuantity) {
+            $filterStatus = 'Received';
+        } elseif ($additionalCostCount == $totalQuantity) {
+            $filterStatus = 'Ready to Pickup';
+        }
+
+        // If a filter status was determined, update all items in the request
+        if ($filterStatus) {
+            $allItemInRequest->each(function($item) use ($filterStatus) {
+                $item->update(['filter' => $filterStatus]);
             });
         }
+//        dd("$filterStatus - $totalQuantity - $fixedAssetCount - $additionalCostCount");
     }
 
     private function calculatePrintCount($assetRequest, $request)
@@ -195,7 +200,7 @@ trait AddingPoHandler
         return 0;
     }
 
-    private function getAllItems($assetId, $quantityDelivered)
+    public function getAllItems($assetId, $quantityDelivered)
     {
         $assetRequest = AssetRequest::find($assetId);
 
@@ -375,11 +380,13 @@ trait AddingPoHandler
         $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number, false);
         if ($remaining == 0) {
             $this->getAllItems($assetRequest->transaction_number, $storedRemovedQuantity);
+            $this->updateFilterStatus($assetRequest->transaction_number);
         }
-        return $this->responseSuccess([
-            'message' => 'Remaining quantity removed successfully!',
-            'total_remaining' => $remaining ?? 0,
-        ]);
+
+        return $this->responseSuccess(
+             'Remaining quantity removed successfully!',
+            ['total_remaining' => $remaining ?? 0]
+        );
     }
 
 //TODO:FOR SOFT DELETING
@@ -439,36 +446,27 @@ trait AddingPoHandler
 
         $this->deleteAssetRequestPo($assetRequest);
 
-        return $this->responseSuccess([
+        return $this->responseSuccess(
             'Item removed successfully!',
-            'total_remaining' => $remainingCount,
-        ]);
+            ['total_remaining' => $remainingCount]
+        );
     }
 
     private function handleIdCase($id)
     {
-        $assetRequest = AssetRequest::where('id', $id)->first();
-
-
+        $assetRequest = AssetRequest::find($id);
         if (!$assetRequest) {
             return $this->responseNotFound('Asset Request not found!');
         }
 
-//        $assetRequestCheck = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
-
-//        if ($assetRequestCheck->count() == 1) {
-        //            return $this->responseUnprocessable('Cannot remove final item');
-        //        }
-
         if ($assetRequest->quantity_delivered == null || $assetRequest->quantity_delivered == 0) {
             $this->deleteAssetRequestPo($assetRequest);
+            $remainingCount = $this->calculateRemainingQuantity($assetRequest->transaction_number);
 
-            $assetRequestRemainingCheck = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
-            $remainingCount = 0;
-            //get the remaining quantity to be ordered for the transaction number
-            foreach ($assetRequestRemainingCheck as $asset) {
-                $remainingCount += $asset->quantity - $asset->quantity_delivered;
+            if($remainingCount == 0){
+                $this->updateFilterStatus($assetRequest->transaction_number);
             }
+
             return $this->responseSuccess('Item removed successfully!', ['total_remaining' => $remainingCount]);
         }
 
@@ -478,4 +476,18 @@ trait AddingPoHandler
 
         return $this->responseUnprocessable('Item cannot be removed!');
     }
+
+
+    private function updateFilterStatus($transactionNumber)
+    {
+        //Add the withTrashed if needed
+        $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)->get();
+        $isAddCost = $assetRequests->first()->is_addcost;
+        $filterStatus = $isAddCost == 1 ? 'Ready to Pickup' : 'Received';
+
+        foreach ($assetRequests as $assetRequest) {
+            $assetRequest->update(['filter' => $filterStatus]);
+        }
+    }
+
 }
