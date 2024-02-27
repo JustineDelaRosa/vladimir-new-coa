@@ -63,6 +63,7 @@ class CreateFixedAssetsTable extends Migration
             $table->unsignedInteger('company_id');
             $table->unsignedInteger('business_unit_id');
             $table->unsignedInteger('department_id');
+            $table->unsignedInteger('subunit_id')->nullable();
             $table->unsignedInteger('location_id');
             $table->unsignedInteger('account_id');
             $table->string('remarks')->nullable();
@@ -71,6 +72,10 @@ class CreateFixedAssetsTable extends Migration
             $table->unsignedInteger('formula_id');
             $table->softDeletes();
             $table->timestamps();
+            $table->foreign('subunit_id')
+                ->references('id')
+                ->on('sub_units')
+                ->onDelete('cascade');
             $table->foreign('warehouse_number')
                 ->references('id')
                 ->on('warehouse_numbers')
