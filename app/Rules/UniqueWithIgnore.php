@@ -51,6 +51,10 @@ class UniqueWithIgnore implements Rule
         }
 
         if ($transaction->po_number == $value) {
+            if ($this->supplier_id === null) {
+                return true;
+            }
+
             $supplier = DB::table('suppliers')
                 ->where('id', $transaction->supplier_id)
                 ->first();
