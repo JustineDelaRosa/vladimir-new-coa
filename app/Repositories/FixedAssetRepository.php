@@ -269,6 +269,7 @@ class FixedAssetRepository
             'care_of',
             'company_id',
             'business_unit_id',
+            'subunit_id',
             'department_id',
             'charged_department',
             'location_id',
@@ -320,6 +321,7 @@ class FixedAssetRepository
             'additional_costs.care_of',
             'additional_costs.company_id',
             'additional_costs.business_unit_id',
+            'additional_costs.subunit_id',
             'additional_costs.department_id',
             'fixed_assets.charged_department as charged_department',
             'additional_costs.location_id',
@@ -536,6 +538,11 @@ class FixedAssetRepository
                 'business_unit_code' => $fixed_asset->department->businessUnit->business_unit_code ?? '-',
                 'business_unit_name' => $fixed_asset->department->businessUnit->business_unit_name ?? '-',
             ],
+            'subunit' => [
+                'id' => $fixed_asset->subunit->id ?? '-',
+                'subunit_code' => $fixed_asset->subunit->sub_unit_code ?? '-',
+                'subunit_name' => $fixed_asset->subunit->sub_unit_name ?? '-',
+            ],
             'department' => [
                 'id' => $fixed_asset->department->id ?? '-',
                 'department_code' => $fixed_asset->department->department_code ?? '-',
@@ -652,9 +659,14 @@ class FixedAssetRepository
                         'company_name' => $additional_cost->department->company->company_name ?? '-',
                     ],
                     'business_unit' => [
-                        'id' => $fixed_asset->department->businessUnit->id ?? '-',
-                        'business_unit_code' => $fixed_asset->department->businessUnit->business_unit_code ?? '-',
-                        'business_unit_name' => $fixed_asset->department->businessUnit->business_unit_name ?? '-',
+                        'id' => $additional_cost->department->businessUnit->id ?? '-',
+                        'business_unit_code' => $additional_cost->department->businessUnit->business_unit_code ?? '-',
+                        'business_unit_name' => $additional_cost->department->businessUnit->business_unit_name ?? '-',
+                    ],
+                    'subunit' => [
+                        'id' => $additional_cost->subunit->id ?? '-',
+                        'subunit_code' => $additional_cost->subunit->sub_unit_code ?? '-',
+                        'subunit_name' => $additional_cost->subunit->sub_unit_name ?? '-',
                     ],
                     'department' => [
                         'id' => $additional_cost->department->id ?? '-',
@@ -783,15 +795,20 @@ class FixedAssetRepository
                 'business_unit_code' => $fixed_asset->department->businessUnit->business_unit_code ?? '-',
                 'business_unit_name' => $fixed_asset->department->businessUnit->business_unit_name ?? '-',
             ],
+            'subunit' => [
+                'id' => $fixed_asset->subunit->id ?? '-',
+                'subunit_code' => $fixed_asset->subunit->sub_unit_code ?? '-',
+                'subunit_name' => $fixed_asset->subunit->sub_unit_name ?? '-',
+            ],
             'department' => [
                 'id' => $fixed_asset->department->id ?? '-',
                 'department_code' => $fixed_asset->department->department_code ?? '-',
                 'department_name' => $fixed_asset->department->department_name ?? '-',
             ],
             'charged_department' => [
-                'id' => $additional_cost->department->id ?? '-',
-                'charged_department_code' => $additional_cost->department->department_code ?? '-',
-                'charged_department_name' => $additional_cost->department->department_name ?? '-',
+                'id' => $fixed_asset->department->id ?? '-',
+                'charged_department_code' => $fixed_asset->department->department_code ?? '-',
+                'charged_department_name' => $fixed_asset->department->department_name ?? '-',
             ],
             'location' => [
                 'id' => $fixed_asset->location->id ?? '-',

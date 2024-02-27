@@ -156,12 +156,9 @@ trait AddingPoHandler
             'acquisition_cost' => $request->unit_price,
             'print_count' => $assetRequest->print_count + $printCount,
         ]);
-
-        //TODO: TO BE UNCOMMENTED
-//        $this->updateRequestStatusFilter($assetRequest);
     }
 
-    private function updateRequestStatusFilter($assetRequest)
+    public function updateRequestStatusFilter($assetRequest)
     {
         // Get all items in the request for this transaction number
         $allItemInRequest = AssetRequest::where('transaction_number', $assetRequest->transaction_number)->get();
@@ -379,7 +376,7 @@ trait AddingPoHandler
         $this->activityLogPo($assetRequest, $assetRequest->po_number, $assetRequest->rr_number, $storedRemovedQuantity, true, false);
         $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number, false);
         if ($remaining == 0) {
-            $this->getAllItems($assetRequest->transaction_number, $storedRemovedQuantity);
+//            $this->getAllItems($assetRequest->transaction_number, $storedRemovedQuantity);
             $this->updateFilterStatus($assetRequest->transaction_number);
         }
 
