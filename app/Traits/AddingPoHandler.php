@@ -236,6 +236,7 @@ trait AddingPoHandler
             ]);
             $formula->additionalCost()->create([
                 'requester_id' => $asset->requester_id,
+                'reference_number' => $asset->reference_number,
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
                 'receipt' => $asset->rr_number,
@@ -289,6 +290,7 @@ trait AddingPoHandler
             ]);
             $fixedAsset = $formula->fixedAsset()->create([
                 'requester_id' => $asset->requester_id,
+                'reference_number' => $asset->reference_number,
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
                 'rr_number' => $asset->rr_number,
