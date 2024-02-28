@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\API;
 
 use App\Events\AssetRequestUpdatedCheck;
+use App\Models\AdditionalCost;
+use App\Models\FixedAsset;
 use App\Models\User;
 use App\Models\Company;
 use App\Models\SubUnit;
@@ -10,6 +12,7 @@ use App\Models\SubCapex;
 use App\Models\Approvers;
 use App\Models\Department;
 use App\Models\AssetRequest;
+use App\Traits\ItemDetailsHandler;
 use App\Traits\RequestShowDataHandler;
 use Illuminate\Http\Request;
 use App\Models\ApproverLayer;
@@ -34,7 +37,7 @@ use App\Http\Requests\AssetRequest\UpdateAssetRequestRequest;
 
 class AssetRequestController extends Controller
 {
-    use ApiResponse, AssetRequestHandler, RequestShowDataHandler;
+    use ApiResponse, AssetRequestHandler, RequestShowDataHandler, ItemDetailsHandler;
 
     private $approveRequestRepository;
     protected $isDataUpdated = 'false';
@@ -215,11 +218,24 @@ class AssetRequestController extends Controller
         $roleName = $requestorId->role->role_name;
         $adminCheck = ($roleName == 'Admin' || $roleName == 'Super Admin');
 
+        // Get the transaction numbers of the non-soft-deleted records
+        $nonSoftDeletedTransactionNumbers = AssetRequest::whereNull('deleted_at')->pluck('reference_number');
+
         $assetRequestQuery = AssetRequest::withTrashed()->where('transaction_number', $transactionNumber);
 
         if (!$adminCheck) {
             $assetRequestQuery->where('requester_id', $requestorId->id);
         }
+
+        // Exclude the soft-deleted records that have the same transaction number as the non-soft-deleted records
+        $assetRequestQuery->where(function ($query) use ($nonSoftDeletedTransactionNumbers) {
+            $query->whereNull('deleted_at')
+                ->orWhere(function ($query) use ($nonSoftDeletedTransactionNumbers) {
+                    $query->whereNotNull('deleted_at')
+                        ->whereNotIn('reference_number', $nonSoftDeletedTransactionNumbers);
+                });
+        });
+
         $assetRequestQuery->orderByRaw('deleted_at IS NULL DESC');
 
         $assetRequest = $this->responseData($assetRequestQuery->dynamicPaginate());
@@ -411,5 +427,47 @@ class AssetRequestController extends Controller
         }
 
         return response()->download($media->first()->getPath());
+    }
+
+    public function getItemDetails($referenceNumber){
+        //get all item from fixed asset and the deleted item in the asset request
+        $user = auth('sanctum')->user();
+        $allowedRole = ['Super Admin', 'Admin', 'ERP'];
+        $fixedAsset = FixedAsset::where('reference_number', $referenceNumber)->dynamicPaginate();
+        $additionalCost = AdditionalCost::where('reference_number', $referenceNumber)->dynamicPaginate();
+        $assetRequest = AssetRequest::onlyTrashed()->where('reference_number', $referenceNumber)->dynamicPaginate();
+
+        //if the role the user is one of the allowed role then allow it, if not then check if the user is the requester
+        if(!in_array($user->role->role_name, $allowedRole)){
+            $additionalCost = $additionalCost->where('requester_id', $user->id);
+            $fixedAsset = $fixedAsset->where('requester_id', $user->id);
+            $assetRequest = $assetRequest->where('requester_id', $user->id);
+        }
+
+        if ($additionalCost->isEmpty()){
+            $additionalCost = null;
+        }
+
+        if($fixedAsset->isEmpty()){
+            $fixedAsset = null;
+        }
+
+        if($assetRequest->isEmpty()){
+            $assetRequest = null;
+        }
+
+        if(($fixedAsset === null || $fixedAsset->isEmpty()) && ($additionalCost === null || $additionalCost->isEmpty()) && ($assetRequest === null || $assetRequest->isEmpty())){
+            return $this->responseUnprocessable('No item found');
+        }
+
+        $transformedAdditionalCost = $this->responseForAdditionalCost($additionalCost);
+        $transformedFixedAsset = $this->responseForFixedAsset($fixedAsset);
+        $transformedAssetRequest = $this->responseForAssetRequest($assetRequest);
+        $details = [
+            'served' => $transformedFixedAsset ?: $transformedAdditionalCost,
+            'cancelled' => $transformedAssetRequest
+        ];
+
+        return $details;
     }
 }

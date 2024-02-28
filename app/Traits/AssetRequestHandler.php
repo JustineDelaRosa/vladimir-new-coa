@@ -159,10 +159,11 @@ trait AssetRequestHandler
 
     public function transformIndexAssetRequest($assetRequest): array
     {
+        $deletedQuantity = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
         return [
             'id' => $assetRequest->transaction_number,
             'transaction_number' => $assetRequest->transaction_number,
-            'item_count' => $assetRequest->quantity ?? 0,
+            'item_count' => $assetRequest->quantity + $deletedQuantity ?? 0,
             'date_requested' => $this->getDateRequested($assetRequest->transaction_number),
             'remarks' => $assetRequest->remarks ?? '',
             'status' => $this->getStatus($assetRequest),
