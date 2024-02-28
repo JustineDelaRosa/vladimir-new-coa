@@ -63,6 +63,8 @@ trait RequestShowDataHandler
         $totalOrdered = AssetRequest::where('transaction_number', $ar->transaction_number)->sum('quantity');
         $isEqual = $totalDelivered == $totalOrdered;
 
+        $deletedQuantity = AssetRequest::onlyTrashed()->where('transaction_number', $ar->transaction_number)->where('reference_number', $ar->reference_number)->sum('quantity');
+
         $userId = auth()->user()->id;
         $approversId = Approvers::where('approver_id', $userId)->first();
         $approverId = $approversId ? $approversId->id : 0;
@@ -104,16 +106,17 @@ trait RequestShowDataHandler
             'cellphone_number' => $ar->cellphone_number ?? '-',
             'brand' => $ar->brand ?? '-',
             'date_needed' => $ar->date_needed ?? '-',
-            'quantity' => $ar->quantity,
-            'ordered' => $ar->quantity,
+            'quantity' => $ar->quantity + $deletedQuantity ?? '-',
+            'ordered' => $ar->quantity + $deletedQuantity ?? '-',
             'delivered' => $ar->quantity_delivered ?? '-',
             'remaining' => $ar->quantity - $ar->quantity_delivered ?? '-',
+            'cancelled' => AssetRequest::onlyTrashed()->where('transaction_number', $ar->transaction_number)->where('reference_number', $ar->reference_number)->sum('quantity') ?? '-',
             'is_equal' => $isEqual,
 //            'fixed_asset' => [
 //                'id' => $ar->fixedAsset->id ?? '-',
 //                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
 //            ],
-            'fixed_asset' => $ar->fixedAsset ? $this->transformSingleFixedAsset($ar->fixedAsset) : '-',
+            'fixed_asset' => $ar->fixedAsset ? $this->transformSingleFixedAssetShowData($ar->fixedAsset) : '-',
             'requestor' => [
                 'id' => $ar->requestor->id,
                 'username' => $ar->requestor->username,
@@ -211,7 +214,7 @@ trait RequestShowDataHandler
 
     }
 
-    private function transformSingleFixedAsset($fixed_asset): array
+    private function transformSingleFixedAssetShowData($fixed_asset): array
     {
 
         $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? $fixed_asset->additionalCost->count() : 0;
