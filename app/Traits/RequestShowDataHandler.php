@@ -63,7 +63,12 @@ trait RequestShowDataHandler
         $totalOrdered = AssetRequest::where('transaction_number', $ar->transaction_number)->sum('quantity');
         $isEqual = $totalDelivered == $totalOrdered;
 
-        $deletedQuantity = AssetRequest::onlyTrashed()->where('transaction_number', $ar->transaction_number)->where('reference_number', $ar->reference_number)->sum('quantity');
+        $deletedItem = AssetRequest::onlyTrashed()
+            ->where('transaction_number', $ar->transaction_number)
+            ->where('reference_number', $ar->reference_number)
+            ->first();
+
+        $deletedQuantity = ($deletedItem && $deletedItem->id == $ar->id) ? 0 : $deletedItem->quantity;
 
         $userId = auth()->user()->id;
         $approversId = Approvers::where('approver_id', $userId)->first();
@@ -109,7 +114,7 @@ trait RequestShowDataHandler
             'quantity' => $ar->quantity + $deletedQuantity ?? '-',
             'ordered' => $ar->quantity + $deletedQuantity ?? '-',
             'delivered' => $ar->quantity_delivered ?? '-',
-            'remaining' => $ar->quantity - $ar->quantity_delivered ?? '-',
+            'remaining' => $ar->whereNotNull('deleted_at') ? 0 : $ar->quantity - $ar->quantity_delivered ?? '-',
             'cancelled' => AssetRequest::onlyTrashed()->where('transaction_number', $ar->transaction_number)->where('reference_number', $ar->reference_number)->sum('quantity') ?? '-',
             'is_equal' => $isEqual,
 //            'fixed_asset' => [
