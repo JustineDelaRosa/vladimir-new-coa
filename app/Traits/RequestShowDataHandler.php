@@ -68,7 +68,8 @@ trait RequestShowDataHandler
             ->where('reference_number', $ar->reference_number)
             ->first();
 
-        $deletedQuantity = ($deletedItem && $deletedItem->id == $ar->id) ? 0 : $deletedItem->quantity;
+//        $deletedQuantity = ($deletedItem && $deletedItem->id == $ar->id) ? 0 : $deletedItem->quantity;
+        $deletedQuantity = ($deletedItem && $deletedItem->id == $ar->id) ? 0 : ($deletedItem ? $deletedItem->quantity : 0);
 
         $userId = auth()->user()->id;
         $approversId = Approvers::where('approver_id', $userId)->first();
