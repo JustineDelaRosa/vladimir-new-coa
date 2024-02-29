@@ -464,8 +464,8 @@ class AssetRequestController extends Controller
         $transformedFixedAsset = $this->responseForFixedAsset($fixedAsset);
         $transformedAssetRequest = $this->responseForAssetRequest($assetRequest);
         $details = [
-            'served' => $transformedFixedAsset ?: $transformedAdditionalCost,
-            'cancelled' => $transformedAssetRequest
+            'served' => $transformedFixedAsset ?: ($transformedAdditionalCost ?: 'No item found'),
+            'cancelled' => $transformedAssetRequest ?: 'No item found'
         ];
 
         return $details;
