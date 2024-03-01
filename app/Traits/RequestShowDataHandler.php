@@ -115,7 +115,7 @@ trait RequestShowDataHandler
             'quantity' => $ar->quantity + $deletedQuantity ?? '-',
             'ordered' => $ar->quantity + $deletedQuantity ?? '-',
             'delivered' => $ar->quantity_delivered ?? '-',
-            'remaining' => $ar->whereNotNull('deleted_at') ? 0 : $ar->quantity - $ar->quantity_delivered ?? '-',
+            'remaining' => $ar->trashed() ? 0 : ($ar->quantity - $ar->quantity_delivered ?? '-'),
             'cancelled' => AssetRequest::onlyTrashed()->where('transaction_number', $ar->transaction_number)->where('reference_number', $ar->reference_number)->sum('quantity') ?? '-',
             'is_equal' => $isEqual,
 //            'fixed_asset' => [
@@ -214,10 +214,7 @@ trait RequestShowDataHandler
                     'file_url' => $otherAttachmentsMedia->getUrl(),
                 ] : null,
             ]
-
         ];
-
-
     }
 
     private function transformSingleFixedAssetShowData($fixed_asset): array

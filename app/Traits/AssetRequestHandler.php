@@ -164,6 +164,7 @@ trait AssetRequestHandler
             'id' => $assetRequest->transaction_number,
             'transaction_number' => $assetRequest->transaction_number,
             'item_count' => $assetRequest->quantity + $deletedQuantity ?? 0,
+            'cancel_count' => $deletedQuantity ?? 0,
             'date_requested' => $this->getDateRequested($assetRequest->transaction_number),
             'remarks' => $assetRequest->remarks ?? '',
             'status' => $this->getStatus($assetRequest),
