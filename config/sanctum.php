@@ -44,7 +44,7 @@ return [
     |
     */
     //add time when token is in use
-    'expiration' => 60,
+    'expiration' => null,
 
     /*
     |--------------------------------------------------------------------------
