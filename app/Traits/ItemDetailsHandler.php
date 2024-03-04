@@ -7,6 +7,7 @@ use App\Models\AssetApproval;
 use App\Models\AssetRequest;
 use App\Models\DepartmentUnitApprovers;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 trait ItemDetailsHandler
@@ -15,6 +16,11 @@ trait ItemDetailsHandler
     {
         if ($data instanceof LengthAwarePaginator) {
             $data->getCollection()->transform(function ($item) {
+                return $this->transformAssetRequest($item);
+            });
+            return $data;
+        } else if ($data instanceof Collection) {
+            $data->transform(function ($item) {
                 return $this->transformAssetRequest($item);
             });
             return $data;
@@ -78,7 +84,7 @@ trait ItemDetailsHandler
             'cellphone_number' => $item->cellphone_number ?? '-',
             'brand' => $item->brand ?? '-',
             'date_needed' => $item->date_needed ?? '-',
-            'quantity' => $item->quantity + $deletedQuantity ?? '-',
+            'quantity' => $item->quantity ?? '-',
             'ordered' => $item->quantity + $deletedQuantity ?? '-',
             'delivered' => $item->quantity_delivered ?? '-',
             'remaining' => $item->quantity - $item->quantity_delivered ?? '-',
@@ -183,9 +189,15 @@ trait ItemDetailsHandler
         ];
     }
 
-    public function responseForFixedAsset($data){
+    public function responseForFixedAsset($data)
+    {
         if ($data instanceof LengthAwarePaginator) {
             $data->getCollection()->transform(function ($item) {
+                return $this->transformFixedAsset($item);
+            });
+            return $data;
+        } else if ($data instanceof Collection) {
+            $data->transform(function ($item) {
                 return $this->transformFixedAsset($item);
             });
             return $data;
@@ -194,7 +206,8 @@ trait ItemDetailsHandler
         }
     }
 
-    private function transformFixedAsset($item) {
+    private function transformFixedAsset($item)
+    {
         $item->additional_cost_count = $item->additionalCost ? $item->additionalCost->count() : 0;
         return [
             'additional_cost_count' => $item->additional_cost_count,
@@ -450,9 +463,15 @@ trait ItemDetailsHandler
         ];
     }
 
-    public function responseForAdditionalCost($data){
+    public function responseForAdditionalCost($data)
+    {
         if ($data instanceof LengthAwarePaginator) {
             $data->getCollection()->transform(function ($item) {
+                return $this->transformAdditionalCost($item);
+            });
+            return $data;
+        } else if ($data instanceof Collection) {
+            $data->transform(function ($item) {
                 return $this->transformAdditionalCost($item);
             });
             return $data;
@@ -461,7 +480,8 @@ trait ItemDetailsHandler
         }
     }
 
-    private function transformAdditionalCost($item) {
+    private function transformAdditionalCost($item)
+    {
         $signature = $item->getMedia(Str::slug($item->received_by) . '-signature')->first();
         return [
             //            'total_adcost' => $this->calculationRepository->getTotalCost($item->fixedAsset->additionalCosts),

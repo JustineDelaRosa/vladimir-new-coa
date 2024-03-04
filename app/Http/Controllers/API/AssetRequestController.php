@@ -12,6 +12,7 @@ use App\Models\SubCapex;
 use App\Models\Approvers;
 use App\Models\Department;
 use App\Models\AssetRequest;
+use App\Traits\AssetReleaseHandler;
 use App\Traits\ItemDetailsHandler;
 use App\Traits\RequestShowDataHandler;
 use Illuminate\Http\Request;
@@ -29,6 +30,7 @@ use App\Models\DepartmentUnitApprovers;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 use App\Repositories\ApprovedRequestRepository;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -84,7 +86,7 @@ class AssetRequestController extends Controller
         if (!in_array($role, $adminRoles)) {
             $forMonitoring = false;
         }
-        if($status == 'deactivated'){
+        if ($status == 'deactivated') {
             $assetRequest->withTrashed();
         }
 
@@ -127,8 +129,7 @@ class AssetRequestController extends Controller
                     $assetRequest = $assetRequestCollection->first();
                     $assetRequest->quantity = $assetRequestCollection->sum('quantity');
                     return $this->transformIndexAssetRequest($assetRequest);
-                }
-                // If status is 'active', check if any item in the group is not trashed id all is trash return null
+                } // If status is 'active', check if any item in the group is not trashed id all is trash return null
                 else if ($status == 'active' && !$assetRequestCollection->every->trashed()) {
                     $assetRequest = $assetRequestCollection->first();
                     $assetRequest->quantity = $assetRequestCollection->sum('quantity');
@@ -377,7 +378,7 @@ class AssetRequestController extends Controller
             }
 
             // Delete the item from RequestContainer
-            $item->delete();
+            $item->forceDelete();
         }
 
         $this->createAssetApprovals($items, $requesterId, $assetRequest);
@@ -429,45 +430,259 @@ class AssetRequestController extends Controller
         return response()->download($media->first()->getPath());
     }
 
-    public function getItemDetails($referenceNumber){
-        //get all item from fixed asset and the deleted item in the asset request
+    public function getItemDetails($referenceNumber, Request $request)
+    {
+        $perPage = $request->input('per_page', null);
+//        $search = $request->input('search', null);
         $user = auth('sanctum')->user();
         $allowedRole = ['Super Admin', 'Admin', 'ERP'];
-        $fixedAsset = FixedAsset::where('reference_number', $referenceNumber)->dynamicPaginate();
-        $additionalCost = AdditionalCost::where('reference_number', $referenceNumber)->dynamicPaginate();
-        $assetRequest = AssetRequest::onlyTrashed()->where('reference_number', $referenceNumber)->dynamicPaginate();
 
-        //if the role the user is one of the allowed role then allow it, if not then check if the user is the requester
-        if(!in_array($user->role->role_name, $allowedRole)){
-            $additionalCost = $additionalCost->where('requester_id', $user->id);
-            $fixedAsset = $fixedAsset->where('requester_id', $user->id);
-            $assetRequest = $assetRequest->where('requester_id', $user->id);
+        $fixedAsset = FixedAsset::join('users', 'fixed_assets.requester_id', '=', 'users.id')
+            ->join('type_of_requests', 'fixed_assets.type_of_request_id', '=', 'type_of_requests.id')
+            ->join('suppliers', 'fixed_assets.supplier_id', '=', 'suppliers.id')
+            ->join('companies', 'fixed_assets.company_id', '=', 'companies.id')
+            ->join('business_units', 'fixed_assets.business_unit_id', '=', 'business_units.id')
+            ->join('sub_units', 'fixed_assets.subunit_id', '=', 'sub_units.id')
+            ->join('departments', 'fixed_assets.department_id', '=', 'departments.id')
+            ->join('locations', 'fixed_assets.location_id', '=', 'locations.id')
+            ->join('account_titles', 'fixed_assets.account_id', '=', 'account_titles.id')
+            ->select(
+                'fixed_assets.id',
+                'users.username as requester',
+                'transaction_number',
+                'reference_number',
+                'pr_number',
+                'po_number',
+                'vladimir_tag_number',
+                'asset_description',
+                'asset_specification',
+                'type_of_requests.type_of_request_name as type_of_request',
+                'suppliers.supplier_name as supplier',
+                'accountability',
+                'accountable',
+                'received_by',
+                'cellphone_number',
+                'brand',
+                'receipt',
+                'quantity',
+                'acquisition_date',
+                'acquisition_cost',
+                DB::raw("'Served' as status"),
+                DB::raw('CONCAT(companies.company_code, " - ", companies.company_name) as company'),
+                DB::raw('CONCAT(business_units.business_unit_code, " - ", business_units.business_unit_name) as business_unit'),
+                DB::raw('CONCAT(sub_units.sub_unit_code, " - ", sub_units.sub_unit_name) as sub_unit'),
+                DB::raw('CONCAT(departments.department_code, " - ", departments.department_name) as department'),
+                DB::raw('CONCAT(locations.location_code, " - ", locations.location_name) as location'),
+                DB::raw('CONCAT(account_titles.account_title_code, " - ", account_titles.account_title_name) as account_title'),
+                DB::raw('NULL as add_cost_sequence'),
+            )
+            ->where('reference_number', $referenceNumber)
+            ->get()
+            ->map(function ($item) {
+                $collectionName = Str::slug($item->received_by) . '-signature';
+                $signature = $item->getFirstMedia($collectionName);
+                $item->attachments = [
+                    'signature' => $signature ? [
+                        'id' => $signature->id,
+                        'file_name' => $signature->file_name,
+                        'file_path' => $signature->getPath(),
+                        'file_url' => $signature->getUrl(),
+                        'collection_name' => $signature->collection_name,
+//                        'viewing' => $this->convertImageToBase64($signature->getPath()),
+                    ] : null,
+                ];
+                unset($item->media); // Remove the 'media' property from the response
+                return $item;
+            });
+
+
+        $additionalCost = AdditionalCost::join('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
+            ->join('users', 'additional_costs.requester_id', '=', 'users.id')
+            ->join('type_of_requests', 'additional_costs.type_of_request_id', '=', 'type_of_requests.id')
+            ->join('suppliers', 'additional_costs.supplier_id', '=', 'suppliers.id')
+            ->join('companies', 'additional_costs.company_id', '=', 'companies.id')
+            ->join('business_units', 'additional_costs.business_unit_id', '=', 'business_units.id')
+            ->join('sub_units', 'additional_costs.subunit_id', '=', 'sub_units.id')
+            ->join('departments', 'additional_costs.department_id', '=', 'departments.id')
+            ->join('locations', 'additional_costs.location_id', '=', 'locations.id')
+            ->join('account_titles', 'additional_costs.account_id', '=', 'account_titles.id')
+            ->select(
+                'additional_costs.id',
+                'users.username as requester',
+                'additional_costs.transaction_number',
+                'additional_costs.reference_number',
+                'additional_costs.pr_number',
+                'additional_costs.po_number',
+                'fixed_assets.vladimir_tag_number as vladimir_tag_number',
+                'additional_costs.asset_description',
+                'additional_costs.asset_specification',
+                'type_of_requests.type_of_request_name as type_of_request',
+                'suppliers.supplier_name',
+                'additional_costs.accountability',
+                'additional_costs.accountable',
+                'additional_costs.received_by',
+                'additional_costs.cellphone_number',
+                'additional_costs.brand',
+                'additional_costs.receipt',
+                'additional_costs.quantity',
+                'additional_costs.acquisition_date',
+                'additional_costs.acquisition_cost',
+                DB::raw("'Served' as status"),
+                DB::raw('CONCAT(companies.company_code, " - ", companies.company_name) as company'),
+                DB::raw('CONCAT(business_units.business_unit_code, " - ", business_units.business_unit_name) as business_unit'),
+                DB::raw('CONCAT(sub_units.sub_unit_code, " - ", sub_units.sub_unit_name) as sub_unit'),
+                DB::raw('CONCAT(departments.department_code, " - ", departments.department_name) as department'),
+                DB::raw('CONCAT(locations.location_code, " - ", locations.location_name) as location'),
+                DB::raw('CONCAT(account_titles.account_title_code, " - ", account_titles.account_title_name) as account_title'),
+                'additional_costs.add_cost_sequence'
+
+            )
+            ->where('additional_costs.reference_number', $referenceNumber)
+            ->get()
+            ->map(function ($item) {
+                $collectionName = Str::slug($item->received_by) . '-signature';
+                $signature = $item->getFirstMedia($collectionName);
+                $item->attachments = [
+                    'signature' => $signature ? [
+                        'id' => $signature->id,
+                        'file_name' => $signature->file_name,
+                        'file_path' => $signature->getPath(),
+                        'file_url' => $signature->getUrl(),
+                        'collection_name' => $signature->collection_name,
+//                        'viewing' => $this->convertImageToBase64($signature->getPath()),
+                    ] : null,
+                ];
+                unset($item->media); // Remove the 'media' property from the response
+                return $item;
+            });
+
+        $assetRequest = AssetRequest::withTrashed()
+            ->join('users', 'asset_requests.requester_id', '=', 'users.id')
+            ->join('type_of_requests', 'asset_requests.type_of_request_id', '=', 'type_of_requests.id')
+            ->join('suppliers', 'asset_requests.supplier_id', '=', 'suppliers.id')
+            ->join('companies', 'asset_requests.company_id', '=', 'companies.id')
+            ->join('business_units', 'asset_requests.business_unit_id', '=', 'business_units.id')
+            ->join('sub_units', 'asset_requests.subunit_id', '=', 'sub_units.id')
+            ->join('departments', 'asset_requests.department_id', '=', 'departments.id')
+            ->join('locations', 'asset_requests.location_id', '=', 'locations.id')
+            ->join('account_titles', 'asset_requests.account_title_id', '=', 'account_titles.id')
+            ->select(
+                'asset_requests.id',
+                'users.username as requester',
+                'asset_requests.transaction_number',
+                'asset_requests.reference_number',
+                'asset_requests.pr_number',
+                DB::raw("'-' as po_number"),
+                DB::raw("'-' as vladimir_tag_number"),
+                'asset_requests.asset_description',
+                'asset_requests.asset_specification',
+                'type_of_requests.type_of_request_name as type_of_request',
+                'suppliers.supplier_name as supplier',
+                'asset_requests.accountability',
+                'asset_requests.accountable',
+                'asset_requests.received_by',
+                'asset_requests.cellphone_number',
+                'asset_requests.brand',
+                DB::raw("'-' as receipt"),
+                'asset_requests.quantity',
+                'asset_requests.acquisition_date',
+                'asset_requests.acquisition_cost',
+                DB::raw("'Cancelled' as status"),
+                DB::raw('CONCAT(companies.company_code, " - ", companies.company_name) as company'),
+                DB::raw('CONCAT(business_units.business_unit_code, " - ", business_units.business_unit_name) as business_unit'),
+                DB::raw('CONCAT(sub_units.sub_unit_code, " - ", sub_units.sub_unit_name) as sub_unit'),
+                DB::raw('CONCAT(departments.department_code, " - ", departments.department_name) as department'),
+                DB::raw('CONCAT(locations.location_code, " - ", locations.location_name) as location'),
+                DB::raw('CONCAT(account_titles.account_title_code, " - ", account_titles.account_title_name) as account_title'),
+                DB::raw('NULL as add_cost_sequence')
+            )
+            ->where('asset_requests.reference_number', $referenceNumber)
+            ->where('asset_requests.deleted_at', '!=', null)
+            ->get()
+            ->map(function ($item) {
+
+                $letterOfRequestMedia = $item->getMedia('letter_of_request')->first();
+                $quotationMedia = $item->getMedia('quotation')->first();
+                $specificationFormMedia = $item->getMedia('specification_form')->first();
+                $toolOfTradeMedia = $item->getMedia('tool_of_trade')->first();
+                $otherAttachmentsMedia = $item->getMedia('other_attachments')->first();
+
+                $item->attachments = [
+                    'letter_of_request' => $letterOfRequestMedia ? [
+                        'id' => $letterOfRequestMedia->id,
+                        'file_name' => $letterOfRequestMedia->file_name,
+                        'file_path' => $letterOfRequestMedia->getPath(),
+                        'file_url' => $letterOfRequestMedia->getUrl(),
+                    ] : null,
+                    'quotation' => $quotationMedia ? [
+                        'id' => $quotationMedia->id,
+                        'file_name' => $quotationMedia->file_name,
+                        'file_path' => $quotationMedia->getPath(),
+                        'file_url' => $quotationMedia->getUrl(),
+                    ] : null,
+                    'specification_form' => $specificationFormMedia ? [
+                        'id' => $specificationFormMedia->id,
+                        'file_name' => $specificationFormMedia->file_name,
+                        'file_path' => $specificationFormMedia->getPath(),
+                        'file_url' => $specificationFormMedia->getUrl(),
+                    ] : null,
+                    'tool_of_trade' => $toolOfTradeMedia ? [
+                        'id' => $toolOfTradeMedia->id,
+                        'file_name' => $toolOfTradeMedia->file_name,
+                        'file_path' => $toolOfTradeMedia->getPath(),
+                        'file_url' => $toolOfTradeMedia->getUrl(),
+                    ] : null,
+                    'other_attachments' => $otherAttachmentsMedia ? [
+                        'id' => $otherAttachmentsMedia->id,
+                        'file_name' => $otherAttachmentsMedia->file_name,
+                        'file_path' => $otherAttachmentsMedia->getPath(),
+                        'file_url' => $otherAttachmentsMedia->getUrl(),
+                    ] : null,
+                ];
+                unset($item->media); // Remove the 'media' property from the response
+                return $item;
+            });
+
+
+
+//        if ($search !== null) {
+//            $fixedAsset = $fixedAsset->where('fixed_assets.asset_description', 'like', '%' . $search . '%')
+//                ->orWhere('vladimir_tag_number', 'like', '%' . $search . '%')
+//                ->where('reference_number', $referenceNumber);
+//            $additionalCost = $additionalCost->where('additional_costs.asset_description', 'like', '%' . $search . '%')
+//                ->orWhere('fixed_assets.vladimir_tag_number', 'like', '%' . $search . '%')
+//                ->where('additional_costs.reference_number', $referenceNumber);
+//            $assetRequest = $assetRequest->where('asset_requests.asset_description', 'like', '%' . $search . '%')
+//                ->where('asset_requests.reference_number', $referenceNumber);
+//        }
+
+//        $unionQuery = DB::query()->fromSub(function ($query) use ($fixedAsset, $additionalCost, $assetRequest) {
+//            $query->fromSub($fixedAsset->unionAll($additionalCost)->unionAll($assetRequest), 'union_sub');
+//        }, 'union_query');
+        $unionQuery = $fixedAsset->concat($additionalCost)->concat($assetRequest);
+        if (!in_array($user->role->role_name, $allowedRole)) {
+            $unionQuery = $unionQuery->where('requester', $user->username);
         }
 
-        if ($additionalCost->isEmpty()){
-            $additionalCost = null;
+        if ($perPage !== null) {
+            $page = request()->get('page', 1); // Get the current page or default to 1
+            $offset = ($page * $perPage) - $perPage;
+
+            $result = new LengthAwarePaginator(
+                $unionQuery->slice($offset, $perPage)->values(),
+                $unionQuery->count(),
+                $perPage,
+                $page,
+                ['path' => request()->url(), 'query' => request()->query()]
+            );
+        } else {
+            $result = $unionQuery->all();
         }
 
-        if($fixedAsset->isEmpty()){
-            $fixedAsset = null;
+        if (empty($result)) {
+            return $result = [];
         }
 
-        if($assetRequest->isEmpty()){
-            $assetRequest = null;
-        }
-
-        if(($fixedAsset === null || $fixedAsset->isEmpty()) && ($additionalCost === null || $additionalCost->isEmpty()) && ($assetRequest === null || $assetRequest->isEmpty())){
-            return $this->responseUnprocessable('No item found');
-        }
-
-        $transformedAdditionalCost = $this->responseForAdditionalCost($additionalCost);
-        $transformedFixedAsset = $this->responseForFixedAsset($fixedAsset);
-        $transformedAssetRequest = $this->responseForAssetRequest($assetRequest);
-        $details = [
-            'served' => $transformedFixedAsset ?: ($transformedAdditionalCost ?: 'No item found'),
-            'cancelled' => $transformedAssetRequest ?: 'No item found'
-        ];
-
-        return $details;
+        return $result;
     }
 }
