@@ -104,12 +104,10 @@ class PrintBarCodeController extends Controller
                     if ($fixedAsset) {
                         $fixedAsset->increment('print_count', 1);
                         $fixedAsset->update(['last_printed' => Carbon::now()]);
-                        if($assetRequest) {
+                        if ($assetRequest) {
                             $assetRequest->increment('print_count', 1);
                             $assetRequest->update(['last_printed' => Carbon::now()]);
                         }
-
-                        //TODO TO BE UNCOMMENTED
 
                         //get all the fixed asset with the same transaction number
                         $fixedAssets = FixedAsset::where('transaction_number', $fixedAsset->transaction_number)->get();
@@ -121,8 +119,6 @@ class PrintBarCodeController extends Controller
                                 $assetRequest->update(['filter' => 'Ready to Pickup']);
                             });
                         }
-
-
                         $assetRequest = new AssetRequest();
                         if ($fixedAsset->from_request == 1) {
                             $fixedAsset->update(['can_release' => 1]);
@@ -130,7 +126,10 @@ class PrintBarCodeController extends Controller
                                 ->causedBy(auth('sanctum')->user()) // the user who caused the activity
                                 ->performedOn($assetRequest) // the object the activity is performed on
                                 ->inLog('Printed') // the log name (should same as in config)
-                                ->withProperties(['description' => $fixedAsset->asset_description]) // any properties relevant to the activity
+                                ->withProperties([
+                                    'description' => $fixedAsset->asset_description,
+                                    'vladimir_tag_number' => $fixedAsset->vladimir_tag_number,
+                                ]) // any properties relevant to the activity
                                 ->tap(function ($activity) use ($fixedAsset) {
                                     $activity->subject_id = $fixedAsset->transaction_number;
                                 })
