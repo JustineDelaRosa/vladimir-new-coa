@@ -942,7 +942,7 @@ trait AssetReleaseHandler
         ];
     }
 
-    private function convertImageToBase64($filePath): ?string
+    public function convertImageToBase64($filePath): ?string
     {
         // Check if the file exists
         if (!file_exists($filePath)) {
