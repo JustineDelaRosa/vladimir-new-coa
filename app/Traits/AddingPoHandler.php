@@ -362,6 +362,8 @@ trait AddingPoHandler
             // Create a duplicate asset request with the remaining quantity
             $duplicateAssetRequest = $assetRequest->replicate();
             $duplicateAssetRequest->quantity = $remainingQuantity;
+            $duplicateAssetRequest->po_number = null;
+            $duplicateAssetRequest->rr_number = null;
             $duplicateAssetRequest->quantity_delivered = 0;
             $duplicateAssetRequest->deleter_id = auth('sanctum')->user()->id;
 //            $duplicateAssetRequest->reference_number = $duplicateAssetRequest->generateReferenceNumber();
