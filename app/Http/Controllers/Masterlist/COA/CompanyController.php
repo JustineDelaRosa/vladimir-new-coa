@@ -32,8 +32,8 @@ class CompanyController extends Controller
 
     public function store(Request $request)
     {
-        $companyData = $request->input('result.companies');
-        if (empty($request->all()) || empty($request->input('result.companies'))) {
+        $companyData = $request->input('result');
+        if (empty($request->all()) || empty($request->input('result'))) {
             //            return response()->json(['message' => 'Data not Ready']);
             return $this->responseUnprocessable('Data not Ready');
         }
@@ -42,16 +42,16 @@ class CompanyController extends Controller
             $sync_id = $companies['id'];
             $code = $companies['code'];
             $name = $companies['name'];
-            $is_active = $companies['status'];
+            $is_active = $companies['deleted_at'];
 
-            $sync = Company::updateOrCreate(
+            Company::updateOrCreate(
                 [
                     'sync_id' => $sync_id,
                 ],
                 [
                     'company_code' => $code,
                     'company_name' => $name,
-                    'is_active' => $is_active
+                    'is_active' => $is_active == NULL ? 1 : 0,
                 ],
             );
         }

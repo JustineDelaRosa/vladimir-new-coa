@@ -33,17 +33,23 @@ class BusinessUnitController extends Controller
             return $this->responseUnprocessable('Company Data not Ready');
         }
 
-        $businessUnitData = $request->input('result.business_units');
-        if(empty($request->all())|| empty($request->input('result.business_units'))){
+        $businessUnitData = $request->input('result');
+        if(empty($request->all())|| empty($request->input('result'))){
             return $this->responseUnprocessable('Data not Ready');
         }
 
         foreach($businessUnitData as $businessUnits){
             $sync_id = $businessUnits['id'];
-            $company_sync_id = $businessUnits['company']['id'];
+            $company_sync_id = $businessUnits['company_id'];
             $code = $businessUnits['code'];
             $name = $businessUnits['name'];
-            $is_active = $businessUnits['status'];
+            $is_active = $businessUnits['deleted_at'];
+
+//            // Check if the company exists
+//            $company = Company::find($company_sync_id);
+//            if (!$company) {
+//                return $this->responseUnprocessable('Company with sync_id ' . $company_sync_id . ' does not exist');
+//            }
 
             $sync = BusinessUnit::updateOrCreate(
                 [
@@ -53,7 +59,7 @@ class BusinessUnitController extends Controller
                     'company_sync_id' => $company_sync_id,
                     'business_unit_code' => $code,
                     'business_unit_name' => $name,
-                    'is_active' => $is_active
+                    'is_active' => $is_active == NULL ? 1 : 0,
                 ],
             );
         }
