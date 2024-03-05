@@ -328,13 +328,14 @@ trait AddingPoHandler
         }
     }
 
-    public function deleteAssetRequestPo($assetRequest)
+    public function deleteAssetRequestPo($assetRequest, $remarks)
     {
         if ($assetRequest instanceof \Illuminate\Database\Eloquent\Collection) {
             $this->activityLogPo($assetRequest->first(), $assetRequest->first()->po_number, $assetRequest->first()->rr_number, 0, false, true);
             DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-            $assetRequest->each(function ($request) {
+            $assetRequest->each(function ($request) use ($remarks) {
                 $request->deleter_id = auth('sanctum')->user()->id;
+                $request->remarks = $remarks;
                 $request->save();
                 $request->delete();
             });
@@ -343,13 +344,14 @@ trait AddingPoHandler
             $this->activityLogPo($assetRequest, $assetRequest->po_number ?? null, $assetRequest->rr_number ?? null, 0, false, true);
             DB::statement('SET FOREIGN_KEY_CHECKS=0;');
             $assetRequest->deleter_id = auth('sanctum')->user()->id;
+            $assetRequest->remarks = $remarks;
             $assetRequest->save();
             $assetRequest->delete();
             DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         }
     }
 
-    public function handleQuantityMismatch($assetRequest)
+    public function handleQuantityMismatch($assetRequest, $remarks)
     {
         $removedQuantity = $this->quantityRemovedHolder($assetRequest);
         $storedRemovedQuantity = $removedQuantity;
@@ -365,6 +367,7 @@ trait AddingPoHandler
             $duplicateAssetRequest->po_number = null;
             $duplicateAssetRequest->rr_number = null;
             $duplicateAssetRequest->quantity_delivered = 0;
+            $duplicateAssetRequest->remarks = $remarks;
             $duplicateAssetRequest->deleter_id = auth('sanctum')->user()->id;
 //            $duplicateAssetRequest->reference_number = $duplicateAssetRequest->generateReferenceNumber();
 
@@ -453,7 +456,7 @@ trait AddingPoHandler
         );
     }
 
-    private function handleIdCase($id)
+    private function handleIdCase($id, $remarks)
     {
         $assetRequest = AssetRequest::find($id);
         if (!$assetRequest) {
@@ -461,7 +464,9 @@ trait AddingPoHandler
         }
 
         if ($assetRequest->quantity_delivered == null || $assetRequest->quantity_delivered == 0) {
-            $this->deleteAssetRequestPo($assetRequest);
+            $assetRequest->remarks = $remarks;
+            $assetRequest->save();
+            $this->deleteAssetRequestPo($assetRequest, $remarks);
             $remainingCount = $this->calculateRemainingQuantity($assetRequest->transaction_number);
 
             if($remainingCount == 0){
@@ -472,7 +477,7 @@ trait AddingPoHandler
         }
 
         if ($assetRequest->quantity !== $assetRequest->quantity_delivered) {
-            return $this->handleQuantityMismatch($assetRequest);
+            return $this->handleQuantityMismatch($assetRequest, $remarks);
         }
 
         return $this->responseUnprocessable('Item cannot be removed!');

@@ -85,7 +85,7 @@ class AddingPoController extends Controller
         if ($transactionNumber) {
             return $this->handleTransactionNumberCase($transactionNumber);
         } else {
-            return $this->handleIdCase($id);
+            return $this->handleIdCase($id, $remarks);
         }
     }
 }
