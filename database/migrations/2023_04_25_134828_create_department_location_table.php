@@ -13,14 +13,14 @@ class CreateDepartmentLocationTable extends Migration
      */
     public function up()
     {
-        Schema::create('department_location', function (Blueprint $table) {
+        Schema::create('subunit_location', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('department_sync_id');
+            $table->unsignedInteger('subunit_sync_id');
             $table->unsignedInteger('location_sync_id');
 
-            $table->foreign('department_sync_id')
+            $table->foreign('subunit_sync_id')
                 ->references('sync_id')
-                ->on('departments')
+                ->on('sub_units')
                 ->onDelete('cascade');
             $table->foreign('location_sync_id')
                 ->references('sync_id')

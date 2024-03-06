@@ -12,7 +12,7 @@ class Department extends Model
     use HasFactory, Filterable;
     protected $fillable = [
         'sync_id',
-        'company_sync_id',
+        'business_unit_sync_id',
         'department_code',
         'division_id',
         'is_active',
@@ -32,6 +32,10 @@ class Department extends Model
     public function departmentUnitApprovers(){
         return $this->hasMany(DepartmentUnitApprovers::class, 'department_id', 'id');
     }
+    public function businessUnit()
+    {
+        return $this->belongsTo(BusinessUnit::class, 'business_unit_sync_id', 'sync_id');
+    }
 
     public function subUnit(){
         return $this->hasMany(SubUnit::class,'department_id','id');
@@ -45,6 +49,10 @@ class Department extends Model
     public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Company::class, 'company_sync_id', 'sync_id');
+    }
+
+    public function unit(){
+        return $this->hasMany(Unit::class, 'department_sync_id', 'sync_id');
     }
 
 

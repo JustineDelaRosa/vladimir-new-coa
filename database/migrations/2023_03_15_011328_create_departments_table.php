@@ -16,16 +16,8 @@ class CreateDepartmentsTable extends Migration
         Schema::create('departments', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('sync_id')->unique()->index();
-            $table->unsignedInteger('company_sync_id');
-            $table->foreign('company_sync_id')
-                ->references('sync_id')
-                ->on('companies')
-                ->onDelete('cascade');
+            $table->unsignedInteger('business_unit_sync_id');
             $table->unsignedInteger('division_id')->nullable();
-            $table->foreign('division_id')
-                ->references('id')
-                ->on('divisions')
-                ->onDelete('cascade');
 //            $table->unsignedInteger('location_sync_id')->nullable();
 //            $table->foreign('location_sync_id')
 //                ->references('sync_id')
@@ -36,6 +28,14 @@ class CreateDepartmentsTable extends Migration
             $table->boolean('is_active');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
+            $table->foreign('business_unit_sync_id')
+                ->references('sync_id')
+                ->on('business_units')
+                ->onDelete('cascade');
+            $table->foreign('division_id')
+                ->references('id')
+                ->on('divisions')
+                ->onDelete('cascade');
 
         });
     }

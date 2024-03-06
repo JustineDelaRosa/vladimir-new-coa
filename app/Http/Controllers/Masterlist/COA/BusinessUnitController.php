@@ -3,14 +3,16 @@
 namespace App\Http\Controllers\Masterlist\COA;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\COA\BusinessUnitResource;
 use App\Models\BusinessUnit;
 use App\Models\Company;
+use App\Traits\COA\BusinessUnitHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 
 class BusinessUnitController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, BusinessUnitHandler;
 
     public function index(Request $request)
     {
@@ -21,8 +23,7 @@ class BusinessUnitController extends Controller
             ->orderBy('created_at', 'DESC')
             ->useFilters()
             ->dynamicPaginate();
-
-        return $businessUnit;
+        return $this->transformBusinessUnit($businessUnit);
     }
 
     public function store(Request $request)
@@ -45,11 +46,11 @@ class BusinessUnitController extends Controller
             $name = $businessUnits['name'];
             $is_active = $businessUnits['deleted_at'];
 
-//            // Check if the company exists
-//            $company = Company::find($company_sync_id);
-//            if (!$company) {
-//                return $this->responseUnprocessable('Company with sync_id ' . $company_sync_id . ' does not exist');
-//            }
+            // Check if the company exists
+            $company = Company::where('sync_id', $company_sync_id)->first();
+            if (!$company) {
+                return $this->responseUnprocessable("Missing Company Data: $company_sync_id");
+            }
 
             $sync = BusinessUnit::updateOrCreate(
                 [

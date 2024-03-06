@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\AssetReleaseController;
 use App\Http\Controllers\Masterlist\COA\BusinessUnitController;
+use App\Http\Controllers\Masterlist\COA\UnitController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Auth\AuthController;
@@ -98,6 +99,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //DEPARTMENT//
     Route::resource('department', DepartmentController::class);
     Route::get('departments/search', [DepartmentController::class, 'search']);
+
+    //UNIT//
+    Route::resource('unit', UnitController::class);
 
     //SUB UNIT//
     Route::resource('sub-unit', SubUnitController::class);

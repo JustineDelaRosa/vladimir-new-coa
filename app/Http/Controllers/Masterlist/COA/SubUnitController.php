@@ -7,7 +7,9 @@ use App\Http\Requests\SubUnit\CreateSubUnitRequest;
 use App\Http\Requests\SubUnit\UpdateSubUnitRequest;
 use App\Models\DepartmentUnitApprovers;
 use App\Models\SubUnit;
+use App\Models\Unit;
 use App\Models\User;
+use App\Traits\COA\SubUnitHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,7 +17,7 @@ use Illuminate\Http\Request;
 class SubUnitController extends Controller
 {
 
-    use ApiResponse;
+    use ApiResponse, SubUnitHandler;
 
     public function index(Request $request)
     {
@@ -27,39 +29,41 @@ class SubUnitController extends Controller
             ->useFilters()
             ->dynamicPaginate();
 
-        $subUnits->transform(function ($subUnit) {
-            return [
-                'id' => $subUnit->id,
-                'subunit_code' => $subUnit->sub_unit_code ?? '-',
-                'subunit_name' => $subUnit->sub_unit_name,
-                'is_active' => $subUnit->is_active,
-                'department' => [
-                    'id' => $subUnit->department->id,
-                    'department_code' => $subUnit->department->department_code,
-                    'department_name' => $subUnit->department->department_name,
-                ],
-                'tagged' => $subUnit->departmentUnitApprovers()->exists(),
-            ];
-        });
-
-        return $subUnits;
+        return $this->transformSubunit($subUnits);
     }
 
-    public function store(CreateSubUnitRequest $request)
+    public function store(Request $request)
     {
-        $request->validated();
-        $departmentId = $request->department_id;
-        $subUnitName = $request->subunit_name;
-//      return  SubUnit::latest()->lockForUpdate()->first();
-//        return SubUnit::generateCode();
+        $unit = Unit::all()->isEmpty();
+        if ($unit) {
+            return $this->responseUnprocessable('Unit Data not Ready');
+        }
 
-        $subUnit = SubUnit::create([
-            'sub_unit_code' => SubUnit::generateCode(),
-            'department_id' => $departmentId,
-            'sub_unit_name' => $subUnitName,
-        ]);
+        $subUnit = $request->input('result');
+        if (empty($request->all()) || empty($request->input('result'))) {
+            return $this->responseUnprocessable('Data not Ready');
+        }
 
-        return $this->responseCreated('Subunit created successfully', $subUnit);
+        foreach($subUnit as $subUnits) {
+            $sync_id = $subUnits['id'];
+            $code = $subUnits['code'];
+            $unit_sync_id = $subUnits['department_unit']['id'];
+            $name = $subUnits['name'];
+            $is_active = $subUnits['deleted_at'];
+
+            $sync = SubUnit::updateOrCreate(
+                [
+                    'sync_id' => $sync_id,
+                ],
+                [
+                    'sub_unit_code' => $code,
+                    'sub_unit_name' => $name,
+                    'unit_sync_id' => $unit_sync_id,
+                    'is_active' => $is_active == NULL ? 1 : 0,
+                ]
+            );
+        }
+        return $this->responseSuccess('Successfully Synced!');
     }
 
     public function show(SubUnit $subUnit): JsonResponse
@@ -67,7 +71,7 @@ class SubUnitController extends Controller
         return $this->responseSuccess('Subunit retrieved successfully', $subUnit);
     }
 
-    public function update(UpdateSubUnitRequest $request, $id): JsonResponse
+    public function update(Request $request, $id): JsonResponse
     {
         $subUnit = SubUnit::find($id);
 

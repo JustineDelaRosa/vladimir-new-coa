@@ -5,13 +5,15 @@ namespace App\Http\Controllers\Masterlist\COA;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Location;
+use App\Models\SubUnit;
+use App\Traits\COA\LocationHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 
 class LocationController extends Controller
 {
 
-    use ApiResponse;
+    use ApiResponse, locationHandler;
     /**
      * Display a listing of the resource.
      *
@@ -33,29 +35,8 @@ class LocationController extends Controller
             ->useFilters()
             ->dynamicPaginate();
 
-        $location->transform(function ($location) {
-            return  [
-                'id' => $location->id,
-                'sync_id' => $location->sync_id,
-                'location_code' => $location->location_code,
-                'location_name' => $location->location_name,
-                'departments' => $location->departments->map(function ($departments) {
-                    return [
-                        'id' => $departments->id ?? '-',
-                        'sync_id' => $departments->sync_id ?? '-',
-                        'department_code' => $departments->department_code ?? '-',
-                        'department_name' => $departments->department_name ?? '-',
-                        'department_status' => $departments->is_active ?? '-',
-                    ];
-                }),
-                'is_active' => $location->is_active,
-                'created_at' => $location->created_at,
-                'updated_at' => $location->updated_at,
-            ];
-        });
 
-
-        return $location;
+        return $this->transformLocation($location);
     }
 
     /**
@@ -67,13 +48,13 @@ class LocationController extends Controller
 
     public function store(Request $request)
     {
-        if (Department::all()->isEmpty()) {
+        if (SubUnit::all()->isEmpty()) {
             //            return response()->json(['message' => 'Department data not ready'], 422);
             return $this->responseUnprocessable('Department data not ready');
         }
 
-        $locationData = $request->input('result.locations');
-        if (empty($request->all()) || empty($request->input('result.locations'))) {
+        $locationData = $request->input('result');
+        if (empty($request->all()) || empty($request->input('result'))) {
             //            return response()->json(['message' => 'Data not Ready']);
             return $this->responseUnprocessable('Data not Ready');
         }
@@ -84,12 +65,12 @@ class LocationController extends Controller
                 [
                     'location_code' => $location['code'],
                     'location_name' => $location['name'],
-                    'is_active' => $location['status']
+                    'is_active' => $location['deleted_at'] == null ? 1 : 0
                 ]
             );
 
-            $department_ids = array_column($location['departments'], 'id');
-            $locationInDB->departments()->sync($department_ids);
+            $department_ids = array_column($location['sub_units'], 'id');
+            $locationInDB->subunit()->sync($department_ids);
 
             //            //if the status is false, detach the department in the pivot table
             //            if ($location['status'] == false) {

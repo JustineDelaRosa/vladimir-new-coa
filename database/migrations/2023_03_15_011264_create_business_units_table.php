@@ -16,7 +16,7 @@ class CreateBusinessUnitsTable extends Migration
         Schema::create('business_units', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('company_sync_id');
-            $table->unsignedInteger('sync_id');
+            $table->unsignedInteger('sync_id')->unique()->index();
             $table->string('business_unit_code');
             $table->string('business_unit_name');
             $table->boolean('is_active');

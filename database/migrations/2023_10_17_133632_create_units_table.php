@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateSubUnitsTable extends Migration
+class CreateUnitsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,19 +13,17 @@ class CreateSubUnitsTable extends Migration
      */
     public function up()
     {
-        Schema::create('sub_units', function (Blueprint $table) {
+        Schema::create('units', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('sync_id')->unique()->index();
-            $table->unsignedInteger('unit_sync_id')->nullable();
-            $table->string('sub_unit_code')->nullable();
-            $table->string('sub_unit_name');
-            $table->boolean('is_active')->default(true);
-            $table->softDeletes();
+            $table->string('unit_code');
+            $table->string('unit_name');
+            $table->boolean('is_active');
+            $table->unsignedInteger('department_sync_id');
             $table->timestamps();
-
-            $table->foreign('unit_sync_id')
+            $table->foreign('department_sync_id')
                 ->references('sync_id')
-                ->on('units')
+                ->on('departments')
                 ->onDelete('cascade');
         });
     }
@@ -37,6 +35,6 @@ class CreateSubUnitsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('sub_units');
+        Schema::dropIfExists('units');
     }
 }
