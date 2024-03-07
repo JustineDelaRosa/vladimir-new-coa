@@ -487,8 +487,8 @@ trait AddingPoHandler
     private function updateFilterStatus($transactionNumber)
     {
         //Add the withTrashed if needed
-        $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)->get();
-        $isAddCost = $assetRequests->first()->is_addcost;
+        $assetRequests = AssetRequest::withTrashed()->where('transaction_number', $transactionNumber)->get();
+        $isAddCost = $assetRequests->first()->is_addcost ?? 0;
         $filterStatus = $isAddCost == 1 ? 'Ready to Pickup' : 'Received';
 
         foreach ($assetRequests as $assetRequest) {

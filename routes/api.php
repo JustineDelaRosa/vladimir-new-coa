@@ -262,6 +262,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //NOTIFICATION COUNT//
     Route::get('notification-count', [AuthController::class, 'notificationCount']);
 
-    Route::get('Item-Detail/{referenceNumber?}', [AssetRequestController::class, 'getItemDetails']);
+    Route::get('item-detail/{referenceNumber?}', [AssetRequestController::class, 'getItemDetails']);
 });
 
