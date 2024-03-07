@@ -8,8 +8,8 @@ trait BusinessUnitHandler
             return [
                 'id' => $businessUnit->id,
                 'sync_id' => $businessUnit->sync_id,
-                'code' => $businessUnit->business_unit_code,
-                'name' => $businessUnit->business_unit_name,
+                'business_unit_code' => $businessUnit->business_unit_code,
+                'business_unit_name' => $businessUnit->business_unit_name,
                 'is_active' => $businessUnit->is_active,
                 'company' => $businessUnit->company_sync_id,
             ];
