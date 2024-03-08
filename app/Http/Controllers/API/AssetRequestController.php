@@ -297,6 +297,7 @@ class AssetRequestController extends Controller
 
         $this->handleMediaAttachments($assetRequest, $request);
 
+        //TODO: Make this last for only 20 mins if there is bug
         Cache::put('isDataUpdated', $isDataUpdated, 60);
         $this->approveRequestRepository->isApproverChange($transactionNumber);
         return $this->responseSuccess('AssetRequest updated Successfully');
@@ -645,7 +646,6 @@ class AssetRequestController extends Controller
                 unset($item->media); // Remove the 'media' property from the response
                 return $item;
             });
-
 
 
 //        if ($search !== null) {
