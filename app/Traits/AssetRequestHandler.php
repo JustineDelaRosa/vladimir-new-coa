@@ -137,8 +137,9 @@ trait AssetRequestHandler
             $totalAfterCount += $afterCount;
 
         }
+        //TODO: Make this last for only 20 mins if there is bug
         if ($totalAfterCount !== $totalBeforeCount) {
-            Cache::put('isFileDataUpdated', true);
+            Cache::put('isFileDataUpdated', true, 60);
         }
     }
 
