@@ -32,9 +32,13 @@ class AppServiceProvider extends ServiceProvider
             $otherArrayData = $validator->getData()[$parameters[0]] ?? [];
             return (empty($value) && !empty($otherArrayData)) || (!empty($value) && empty($otherArrayData));
         });
-        Sanctum::$accessTokenAuthenticationCallback = function ($accessToken, $isValid){
-            return !$accessToken->last_used_at || $accessToken->last_used_at->gte(now()->subMinutes(60));
-        };
+
+        //TODO: Uncomment this line to enable token expiration
+//        Sanctum::$accessTokenAuthenticationCallback = function ($accessToken, $isValid){
+//            return !$accessToken->last_used_at || $accessToken->last_used_at->gte(now()->subMinutes(60));
+//        };
+
+
 //        Validator::extend('validateAccountable', function ($attribute, $value, $parameters, $validator) {
 //            $accountable = request()->input('accountable');
 //
