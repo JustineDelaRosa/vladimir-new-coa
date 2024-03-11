@@ -8,6 +8,7 @@ use App\Http\Requests\FixedAsset\FixedAssetUpdateRequest;
 use App\Imports\MasterlistImport;
 use App\Models\AccountTitle;
 use App\Models\AdditionalCost;
+use App\Models\BusinessUnit;
 use App\Models\Capex;
 use App\Models\Company;
 use App\Models\Department;
@@ -114,7 +115,8 @@ class FixedAssetController extends Controller
         }
 
         $departmentQuery = Department::with('location')->where('id', $request->department_id)->first();
-        $fixedAsset = $this->fixedAssetRepository->storeFixedAsset($request->all(), $vladimirTagNumber, $departmentQuery);
+        $businessUnitQuery = BusinessUnit::where('id', $request->business_unit_id)->first();
+        $fixedAsset = $this->fixedAssetRepository->storeFixedAsset($request->all(), $vladimirTagNumber, $businessUnitQuery);
         if ($fixedAsset == "Not yet fully depreciated") {
             return response()->json([
                 'message' => 'The given data was invalid.',
@@ -188,9 +190,10 @@ class FixedAssetController extends Controller
 //            ], 200);
 //        }
         $departmentQuery = Department::where('id', $request->department_id)->first();
+        $businessUnitQuery = BusinessUnit::where('id', $request->business_unit_id)->first();
         $fixedAsset = FixedAsset::where('id', $id)->first();
         if ($fixedAsset) {
-            $fixed_asset = $this->fixedAssetRepository->updateFixedAsset($request->all(), $departmentQuery, $id);
+            $fixed_asset = $this->fixedAssetRepository->updateFixedAsset($request->all(), $businessUnitQuery, $id);
             if ($fixed_asset == "Not yet fully depreciated") {
                 return response()->json([
                     'message' => 'The given data was invalid.',

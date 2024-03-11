@@ -28,33 +28,25 @@ class FixedAssetRepository
         $this->calculationRepository = new CalculationRepository();
     }
 
-    public function storeFixedAsset($request, $vladimirTagNumber, $departmentQuery)
+    public function storeFixedAsset($request, $vladimirTagNumber, $businessUnitQuery)
     {
-        $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
+        $majorCategory = $this->getMajorCategory($request['major_category_id']);
+        $this->checkDepreciationStatus($request, $majorCategory);
+
+        $formulaData = $this->prepareFormulaDataForStore($request, $majorCategory);
+        $formula = Formula::create($formulaData);
+
+        $fixedAssetData = $this->prepareFixedAssetDataForStore($request, $vladimirTagNumber, $businessUnitQuery);
+        $formula->fixedAsset()->create($fixedAssetData);
+
+        return $formula->fixedAsset->with('formula')->first();
+    }
+
+    private function prepareFormulaDataForStore($request, $majorCategory): array
+    {
         $depreciationMethod = strtoupper($request['depreciation_method']);
-        if ($depreciationMethod !== 'DONATION') {
-            $depstatus = DepreciationStatus::where('id', $request['depreciation_status_id'])->first();
-            //if the depreciation status name id Fully depreciated, run end depreciation to check the validity
-            if ($depstatus->depreciation_status_name == 'Fully Depreciated') {
-                //check if release date is not null
-                if (isset($request['release_date'])) {
-                    $end_depreciation = $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])));
-                    //                    dd($end_depreciation);
-                    //check if it really fully depreciated and passed the date today
-                    if ($end_depreciation >= Carbon::now()) {
-                        return 'Not yet fully depreciated';
-                    }
-                }
-            }
-        }
-
-        //        return $request['release_date'] ?? Null;
-        //        return $departmentQuery;
-
-        $formula = Formula::create([
-            'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
-                ? strtoupper($request['depreciation_method'])
-                : ucwords(strtolower($request['depreciation_method'])),
+        return [
+            'depreciation_method' => $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod)),
             'acquisition_date' => $request['acquisition_date'],
             'acquisition_cost' => $request['acquisition_cost'] ?? 0,
             'scrap_value' => $request['scrap_value'] ?? 0,
@@ -66,9 +58,7 @@ class FixedAssetRepository
                 ? $this->calculationRepository->getEndDepreciation(
                     $this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
-                    strtoupper($request['depreciation_method']) == 'STL'
-                        ? strtoupper($request['depreciation_method'])
-                        : ucwords(strtolower($request['depreciation_method']))
+                    $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
                 )
                 : null,
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
@@ -77,8 +67,12 @@ class FixedAssetRepository
             'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getStartDepreciation($request['release_date'])
                 : null
-        ]);
-        $formula->fixedAsset()->create([
+        ];
+    }
+
+    private function prepareFixedAssetDataForStore($request, $vladimirTagNumber, $businessUnitQuery): array
+    {
+        return [
             'capex_id' => isset($request['sub_capex_id']) ? SubCapex::find($request['sub_capex_id'])->capex_id : null,
             'sub_capex_id' => $request['sub_capex_id'] ?? null,
             'vladimir_tag_number' => $vladimirTagNumber,
@@ -109,38 +103,36 @@ class FixedAssetRepository
             'movement_status_id' => $request['movement_status_id'],
             'is_old_asset' => $request['is_old_asset'] ?? 0,
             'care_of' => ucwords(strtolower($request['care_of'] ?? '-')),
-            'company_id' => Company::where('sync_id', $departmentQuery->company_sync_id)->first()->id ?? null,
+            'company_id' => Company::where('sync_id', $businessUnitQuery->company_sync_id)->first()->id ?? null,
+            'business_unit_id' => $request['business_unit_id'],
             'department_id' => $request['department_id'],
+            'unit_id' => $request['unit_id'],
+            'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
-        ]);
-        return $formula->fixedAsset->with('formula')->first();
+        ];
     }
 
-    public function updateFixedAsset($request, $departmentQuery, $id)
+    //UPDATING FIXED ASSET
+    public function updateFixedAsset($request, $businessUnitQuery, $id)
     {
-        $majorCategory = MajorCategory::withTrashed()->where('id', $request['major_category_id'])->first();
-        $depreciationMethod = strtoupper($request['depreciation_method']);
-        if ($depreciationMethod !== 'DONATION') {
-            $depstatus = DepreciationStatus::where('id', $request['depreciation_status_id'])->first();
-            //if the depreciation status name id Fully depreciated, run end depreciation to check the validity
-            if ($depstatus->depreciation_status_name == 'Fully Depreciated') {
-                //check if release date is not null
-                if (isset($request['release_date'])) {
-                    $end_depreciation = $this->calculationRepository->getEndDepreciation($this->calculationRepository->getStartDepreciation($request['release_date']), $majorCategory->est_useful_life, strtoupper($request['depreciation_method']) == 'STL' ? strtoupper($request['depreciation_method']) : ucwords(strtolower($request['depreciation_method'])));
-                    //                    dd($end_depreciation);
-                    //check if it really fully depreciated and passed the date today
-                    if ($end_depreciation >= Carbon::now()) {
-                        return 'Not yet fully depreciated';
-                    }
-                }
-            }
-        }
+        $majorCategory = $this->getMajorCategory($request['major_category_id']);
+        $this->checkDepreciationStatus($request, $majorCategory);
 
         $fixedAsset = FixedAsset::find($id);
-        $fixedAsset->update([
+        $fixedAssetData = $this->prepareFixedAssetDataForUpdate($request, $businessUnitQuery);
+        $fixedAsset->update($fixedAssetData);
+
+        $formulaData = $this->prepareFormulaDataForUpdate($request, $majorCategory);
+        $fixedAsset->formula()->update($formulaData);
+
+        return $fixedAsset;
+    }
+
+    private function prepareFixedAssetDataForUpdate($request, $businessUnitQuery): array
+    {
+        return [
             'po_number' => $request['po_number'],
-//            'rr_number' => $request['rr_number'],
             'capex_id' => isset($request['sub_capex_id']) ? SubCapex::find($request['sub_capex_id'])->capex_id : null,
             'sub_capex_id' => $request['sub_capex_id'] ?? null,
             'tag_number' => $request['tag_number'] ?? '-',
@@ -170,18 +162,21 @@ class FixedAssetRepository
             'movement_status_id' => $request['movement_status_id'],
             'is_old_asset' => $request['is_old_asset'] ?? 0,
             'care_of' => ucwords(strtolower($request['care_of'] ?? '-')),
-            'company_id' => Company::where('sync_id', $departmentQuery->company_sync_id)->first()->id ?? null,
+            'company_id' => Company::where('sync_id', $businessUnitQuery->company_sync_id)->first()->id ?? null,
+            'business_unit_id' => $request['business_unit_id'],
             'department_id' => $request['department_id'],
+            'unit_id' => $request['unit_id'],
+            'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
-            //            'print_count' => $request['print_count'] ?? $fixedAsset->print_count,
-            //            'last_printed' => $request['print_count'] == $fixedAsset->print_count ? $fixedAsset->last_printed : Carbon::now(),
-        ]);
+        ];
+    }
 
-        $fixedAsset->formula()->update([
-            'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
-                ? strtoupper($request['depreciation_method'])
-                : ucwords(strtolower($request['depreciation_method'])),
+    private function prepareFormulaDataForUpdate($request, $majorCategory): array
+    {
+        $depreciationMethod = strtoupper($request['depreciation_method']);
+        return [
+            'depreciation_method' => $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod)),
             'acquisition_date' => $request['acquisition_date'],
             'acquisition_cost' => $request['acquisition_cost'] ?? 0,
             'scrap_value' => $request['scrap_value'] ?? 0,
@@ -193,9 +188,7 @@ class FixedAssetRepository
                 ? $this->calculationRepository->getEndDepreciation(
                     $this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
-                    strtoupper($request['depreciation_method']) == 'STL'
-                        ? strtoupper($request['depreciation_method'])
-                        : ucwords(strtolower($request['depreciation_method']))
+                    $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
                 )
                 : null,
             'depreciation_per_year' => $request['depreciation_per_year'] ?? 0,
@@ -204,8 +197,30 @@ class FixedAssetRepository
             'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getStartDepreciation($request['release_date'])
                 : null
-        ]);
-        return $fixedAsset;
+        ];
+    }
+
+    private function getMajorCategory($id)
+    {
+        return MajorCategory::withTrashed()->where('id', $id)->first();
+    }
+
+    private function checkDepreciationStatus($request, $majorCategory)
+    {
+        $depreciationMethod = strtoupper($request['depreciation_method']);
+        if ($depreciationMethod !== 'DONATION') {
+            $depstatus = DepreciationStatus::where('id', $request['depreciation_status_id'])->first();
+            if ($depstatus->depreciation_status_name == 'Fully Depreciated' && isset($request['release_date'])) {
+                $end_depreciation = $this->calculationRepository->getEndDepreciation(
+                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+                    $majorCategory->est_useful_life,
+                    $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
+                );
+                if ($end_depreciation >= Carbon::now()) {
+                    return 'Not yet fully depreciated';
+                }
+            }
+        }
     }
 
     public function paginateResults($items, $page = null, $perPage = 15, $options = [])

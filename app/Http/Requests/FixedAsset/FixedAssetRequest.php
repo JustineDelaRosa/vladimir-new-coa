@@ -3,6 +3,7 @@
 namespace App\Http\Requests\FixedAsset;
 
 use App\Models\AdditionalCost;
+use App\Models\BusinessUnit;
 use App\Models\Capex;
 use App\Models\Department;
 use App\Models\FixedAsset;
@@ -10,7 +11,9 @@ use App\Models\Location;
 use App\Models\MajorCategory;
 use App\Models\Status\DepreciationStatus;
 use App\Models\SubCapex;
+use App\Models\SubUnit;
 use App\Models\TypeOfRequest;
+use App\Models\Unit;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -253,7 +256,56 @@ class FixedAssetRequest extends FormRequest
                 }],
                 'release_date' => ['nullable', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
-                'department_id' => 'required|exists:departments,id',
+                'business_unit_id' => 'required|exists:business_units,id',
+                'department_id' => ['required', 'exists:departments,id',
+                    function ($attribute, $value, $fail) {
+                        $department = Department::query()->find($value);
+                        if (!$department || !$department->is_active) {
+                            $fail('Department is not active or does not exist.');
+                        }
+
+                        //check if the combination of business unit and department is valid
+                        $businessUnitId = BusinessUnit::query()->with('departments')->where('id', request()->business_unit_id)->first();
+                        $department = Department::query()->where('id', $value)->first();
+                        if (!$businessUnitId->departments->contains($department)) {
+                            $fail('Invalid department for the business unit');
+                        }
+                    }
+                ],
+                'unit_id' => [
+                  'required',
+                    'exists:units,id',
+                    function ($attribute, $value, $fail) {
+                        $unit = Unit::query()->find($value);
+                        if(!$unit || !$unit->is_active){
+                            $fail('Unit is not active or does not exist.');
+                        }
+
+                        //check if the combination of department and unit is valid
+                        $department = Department::query()->with('unit')->where('id', request()->department_id)->first();
+                        $unit = Unit::query()->where('id', $value)->first();
+                        if (!$department->unit->contains($unit)) {
+                            $fail('Invalid unit for the department');
+                        }
+                    }
+                ],
+                'subunit_id' => [
+                    'required',
+                    'exists:sub_units,id',
+                    function ($attribute, $value, $fail) {
+                        $subUnit = SubUnit::query()->find($value);
+                        if(!$subUnit || !$subUnit->is_active){
+                            $fail('Sub unit is not active or does not exist.');
+                        }
+
+                        //check if the combination of unit and sub unit is valid
+                        $unit = Unit::query()->with('subunits')->where('id', request()->unit_id)->first();
+                        $subUnit = SubUnit::query()->where('id', $value)->first();
+                        if (!$unit->subunits->contains($subUnit)) {
+                            $fail('Invalid sub unit for the unit');
+                        }
+                    }
+                ],
                 'location_id' => [
                     'required',
                     'exists:locations,id',
@@ -267,15 +319,11 @@ class FixedAssetRequest extends FormRequest
                             return; // No point in proceeding if the location is not active
                         }
 
-                        // Get the sync_id of the department
-                        $department_sync_id = Department::query()->where('id', request()->department_id)->value('sync_id');
-
-                        // Get sync_id's of all locations associated with the department
-                        $associated_location_sync_ids = $location->departments->pluck('sync_id');
-//                        dd($associated_location_sync_ids);
-                        // Check if department's sync_id exists in associated_location_sync_ids
-                        if (!$associated_location_sync_ids->contains($department_sync_id)) {
-                            $fail('Invalid location for the department');
+                        //check if the combination of sub unit and location is valid
+                        $subUnit = SubUnit::query()->with('location')->where('id', request()->subunit_id)->first();
+                        $location = Location::query()->where('id', $value)->first();
+                        if (!$subUnit->location->contains($location)) {
+                            $fail('Invalid location for the sub unit');
                         }
                     }
                 ],

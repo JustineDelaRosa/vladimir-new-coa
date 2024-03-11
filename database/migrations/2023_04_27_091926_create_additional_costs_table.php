@@ -58,6 +58,7 @@ class CreateAdditionalCostsTable extends Migration
             $table->string('care_of')->nullable();
             $table->unsignedInteger('company_id');
             $table->unsignedInteger('business_unit_id');
+            $table->unsignedInteger('unit_id')->nullable();
             $table->unsignedInteger('subunit_id')->nullable();
             $table->unsignedInteger('department_id');
             $table->unsignedInteger('location_id');
@@ -66,6 +67,10 @@ class CreateAdditionalCostsTable extends Migration
             $table->unsignedInteger('formula_id');
             $table->softDeletes();
             $table->timestamps();
+            $table->foreign('unit_id')
+                ->references('id')
+                ->on('units')
+                ->onDelete('cascade');
             $table->foreign('subunit_id')
                 ->references('id')
                 ->on('sub_units')
