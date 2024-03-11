@@ -3,6 +3,7 @@
 /public/storage
 /storage/*.key
 /vendor
+/vendor/essa/api-tool-kit
 .env
 .env.backup
 .phpunit.result.cache
