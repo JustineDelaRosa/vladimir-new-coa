@@ -19,4 +19,9 @@ class Unit extends Model
     {
         return $this->belongsTo(Department::class, 'department_sync_id', 'sync_id');
     }
+
+    public function subunits()
+    {
+        return $this->hasMany(SubUnit::class, 'unit_sync_id', 'sync_id');
+    }
 }
