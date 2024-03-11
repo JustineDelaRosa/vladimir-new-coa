@@ -11,6 +11,6 @@ class LocationFilters extends QueryFilters
     protected array $columnSearch = ['location_code', 'location_name'];
 
     protected array $relationSearch = [
-        'departments' => ['department_name']
+        'subunit' => ['sub_unit_name', 'sub_unit_code']
     ];
 }

@@ -43,6 +43,17 @@ class SubUnit extends Model
         return $this->belongsTo(Unit::class, 'unit_sync_id', 'sync_id');
     }
 
+    public function location()
+    {
+        return $this->belongsToMany(
+            Location::class,
+            'subunit_location',
+            'subunit_sync_id',
+            'location_sync_id',
+            'sync_id',
+            'sync_id');
+    }
+
 
     public function archive($id)
     {
@@ -51,6 +62,7 @@ class SubUnit extends Model
         $subUnit->delete();
         return $subUnit;
     }
+
     public function restoreSubUnit($id)
     {
         $subUnit = self::withTrashed()->find($id);
