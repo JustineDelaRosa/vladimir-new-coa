@@ -7,6 +7,7 @@ use App\Http\Requests\AdditionalCost\AdditionalCostRequest;
 use App\Imports\AdditionalCostImport;
 use App\Imports\MasterlistImport;
 use App\Models\AdditionalCost;
+use App\Models\BusinessUnit;
 use App\Models\Department;
 use App\Models\FixedAsset;
 use App\Models\Formula;
@@ -43,16 +44,13 @@ class AdditionalCostController extends Controller
         ], 200);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
+
     public function store(AdditionalCostRequest $request)
     {
-        $departmentQuery = Department::where('id', $request->department_id)->first();
-        $additionalCost = $this->additionalCostRepository->storeAdditionalCost($request->all(), $departmentQuery);
+//        return $request->all();
+//        $departmentQuery = Department::where('id', $request->department_id)->first();
+        $businessUnitQuery = BusinessUnit::where('id', $request->business_unit_id)->first();
+        $additionalCost = $this->additionalCostRepository->storeAdditionalCost($request->all(), $businessUnitQuery);
 
         return response()->json([
             'message' => 'Additional Cost successfully created!',
@@ -99,10 +97,11 @@ class AdditionalCostController extends Controller
     public function update(AdditionalCostRequest $request, $id)
     {
         $request->validated();
-        $departmentQuery = Department::where('id', $request->department_id)->first();
+//        $departmentQuery = Department::where('id', $request->department_id)->first();
         $additionalCost = AdditionalCost::where('id', $id)->first();
+        $businessUnitQuery = BusinessUnit::where('id', $request->business_unit_id)->first();
         if ($additionalCost) {
-            $additionalCost = $this->additionalCostRepository->updateAdditionalCost($request->all(), $departmentQuery, $id);
+            $additionalCost = $this->additionalCostRepository->updateAdditionalCost($request->all(), $businessUnitQuery, $id);
             return response()->json([
                 'message' => 'Additional Cost successfully updated!',
                 'data' => $additionalCost->load('formula'),

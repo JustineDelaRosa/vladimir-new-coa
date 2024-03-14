@@ -77,6 +77,9 @@ class FixedAssetRepository
             'sub_capex_id' => $request['sub_capex_id'] ?? null,
             'vladimir_tag_number' => $vladimirTagNumber,
             'tag_number' => $request['tag_number'] ?? '-',
+//            'requester_id' => $request['requester_id'],
+//            'supplier_id' => $request['supplier_id'],
+//            'po_number' => $request['po_number'],
             'tag_number_old' => $request['tag_number_old'] ?? '-',
             'asset_description' => $request['asset_description'],
             'type_of_request_id' => $request['type_of_request_id'],
@@ -544,14 +547,14 @@ class FixedAssetRepository
             'release_date' => $fixed_asset->formula->release_date ?? '-',
             'start_depreciation' => $fixed_asset->formula->start_depreciation ?? '-',
             'company' => [
-                'id' => $fixed_asset->department->company->id ?? '-',
-                'company_code' => $fixed_asset->department->company->company_code ?? '-',
-                'company_name' => $fixed_asset->department->company->company_name ?? '-',
+                'id' => $fixed_asset->company->id ?? '-',
+                'company_code' => $fixed_asset->company->company_code ?? '-',
+                'company_name' => $fixed_asset->company->company_name ?? '-',
             ],
             'business_unit' => [
-                'id' => $fixed_asset->department->businessUnit->id ?? '-',
-                'business_unit_code' => $fixed_asset->department->businessUnit->business_unit_code ?? '-',
-                'business_unit_name' => $fixed_asset->department->businessUnit->business_unit_name ?? '-',
+                'id' => $fixed_asset->businessUnit->id ?? '-',
+                'business_unit_code' => $fixed_asset->businessUnit->business_unit_code ?? '-',
+                'business_unit_name' => $fixed_asset->businessUnit->business_unit_name ?? '-',
             ],
             'subunit' => [
                 'id' => $fixed_asset->subunit->id ?? '-',
@@ -564,9 +567,9 @@ class FixedAssetRepository
                 'department_name' => $fixed_asset->department->department_name ?? '-',
             ],
             'charged_department' => [
-                'id' => $additional_cost->department->id ?? '-',
-                'charged_department_code' => $additional_cost->department->department_code ?? '-',
-                'charged_department_name' => $additional_cost->department->department_name ?? '-',
+                'id' => $fixed_asset->department->id ?? '-',
+                'department_code' => $fixed_asset->department->department_code ?? '-',
+                'department_name' => $fixed_asset->department->department_name ?? '-',
             ],
             'location' => [
                 'id' => $fixed_asset->location->id ?? '-',
@@ -614,9 +617,9 @@ class FixedAssetRepository
                     'cellphone_number' => $additional_cost->cellphone_number ?? '-',
                     'brand' => $additional_cost->brand ?? '-',
                     'supplier' => [
-                        'id' => $fixed_asset->supplier->id ?? '-',
-                        'supplier_code' => $fixed_asset->supplier->supplier_code ?? '-',
-                        'supplier_name' => $fixed_asset->supplier->supplier_name ?? '-',
+                        'id' => $additional_cost->supplier->id ?? '-',
+                        'supplier_code' => $additional_cost->supplier->supplier_code ?? '-',
+                        'supplier_name' => $additional_cost->supplier->supplier_name ?? '-',
                     ],
                     'division' => [
                         'id' => $additional_cost->department->division->id ?? '-',
@@ -669,14 +672,14 @@ class FixedAssetRepository
                     'release_date' => $additional_cost->formula->release_date ?? '-',
                     'start_depreciation' => $additional_cost->formula->start_depreciation ?? '-',
                     'company' => [
-                        'id' => $additional_cost->department->company->id ?? '-',
-                        'company_code' => $additional_cost->department->company->company_code ?? '-',
-                        'company_name' => $additional_cost->department->company->company_name ?? '-',
+                        'id' => $additional_cost->company->id ?? '-',
+                        'company_code' => $additional_cost->company->company_code ?? '-',
+                        'company_name' => $additional_cost->company->company_name ?? '-',
                     ],
                     'business_unit' => [
-                        'id' => $additional_cost->department->businessUnit->id ?? '-',
-                        'business_unit_code' => $additional_cost->department->businessUnit->business_unit_code ?? '-',
-                        'business_unit_name' => $additional_cost->department->businessUnit->business_unit_name ?? '-',
+                        'id' => $additional_cost->businessUnit->id ?? '-',
+                        'business_unit_code' => $additional_cost->businessUnit->business_unit_code ?? '-',
+                        'business_unit_name' => $additional_cost->businessUnit->business_unit_name ?? '-',
                     ],
                     'subunit' => [
                         'id' => $additional_cost->subunit->id ?? '-',
@@ -690,8 +693,8 @@ class FixedAssetRepository
                     ],
                     'charged_department' => [
                         'id' => $additional_cost->department->id ?? '-',
-                        'charged_department_code' => $additional_cost->department->department_code ?? '-',
-                        'charged_department_name' => $additional_cost->department->department_name ?? '-',
+                        'department_code' => $additional_cost->department->department_code ?? '-',
+                        'department_name' => $additional_cost->department->department_name ?? '-',
                     ],
                     'location' => [
                         'id' => $additional_cost->location->id ?? '-',
@@ -801,14 +804,14 @@ class FixedAssetRepository
             ],
             'care_of' => $fixed_asset->care_of ?? '-',
             'company' => [
-                'id' => $fixed_asset->department->company->id ?? '-',
-                'company_code' => $fixed_asset->department->company->company_code ?? '-',
-                'company_name' => $fixed_asset->department->company->company_name ?? '-',
+                'id' => $fixed_asset->company->id ?? '-',
+                'company_code' => $fixed_asset->company->company_code ?? '-',
+                'company_name' => $fixed_asset->company->company_name ?? '-',
             ],
             'business_unit' => [
-                'id' => $fixed_asset->department->businessUnit->id ?? '-',
-                'business_unit_code' => $fixed_asset->department->businessUnit->business_unit_code ?? '-',
-                'business_unit_name' => $fixed_asset->department->businessUnit->business_unit_name ?? '-',
+                'id' => $fixed_asset->businessUnit->id ?? '-',
+                'business_unit_code' => $fixed_asset->businessUnit->business_unit_code ?? '-',
+                'business_unit_name' => $fixed_asset->businessUnit->business_unit_name ?? '-',
             ],
             'subunit' => [
                 'id' => $fixed_asset->subunit->id ?? '-',
@@ -822,8 +825,8 @@ class FixedAssetRepository
             ],
             'charged_department' => [
                 'id' => $fixed_asset->department->id ?? '-',
-                'charged_department_code' => $fixed_asset->department->department_code ?? '-',
-                'charged_department_name' => $fixed_asset->department->department_name ?? '-',
+                'department_code' => $fixed_asset->department->department_code ?? '-',
+                'department_name' => $fixed_asset->department->department_name ?? '-',
             ],
             'location' => [
                 'id' => $fixed_asset->location->id ?? '-',

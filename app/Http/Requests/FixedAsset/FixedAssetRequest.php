@@ -62,6 +62,8 @@ class FixedAssetRequest extends FormRequest
                         $fail('Tag number old already exists');
                     }
                 }],
+//                'supplier_id' => 'nullable|exists:suppliers,id',
+//                'requester_id' => 'nullable|exists:users,id',
                 'asset_description' => 'required',
                 'type_of_request_id' => 'required',
 //                'charged_department' => 'required',

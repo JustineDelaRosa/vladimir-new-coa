@@ -33,7 +33,7 @@ class UpdateAssetRequestRequest extends FormRequest
                 'required',
                 Rule::exists('type_of_requests', 'id')
             ],
-            'date_needed' => 'nullable|date-format:Y-m-d',
+            'date_needed' => 'required|date|after_or_equal:today',
             'is_addcost' => 'nullable|in:0,1',
             'fixed_asset_id' => ['required-if:is_addcost,1', Rule::exists('fixed_assets', 'id')],
             'company_id' => ['required', Rule::exists('companies', 'id')],
@@ -116,6 +116,9 @@ class UpdateAssetRequestRequest extends FormRequest
             'other_attachments.file' => 'The other attachments must be a file',
             'other_attachments.mimes' => 'The other attachments must be a file of type: pdf, doc, docx',
             'other_attachments.max' => 'The other attachments may not be greater than 10 megabytes',
+            'date_needed.required' => 'The date needed is required.',
+            'date_needed.date' => 'The date needed must be a date.',
+            'date_needed.after_or_equal' => 'Please select a valid date needed.',
         ];
     }
 }

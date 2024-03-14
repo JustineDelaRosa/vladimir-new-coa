@@ -73,6 +73,10 @@ class CreateFixedAssetsTable extends Migration
             $table->unsignedInteger('formula_id');
             $table->softDeletes();
             $table->timestamps();
+            $table->foreign('business_unit_id')
+                ->references('id')
+                ->on('business_units')
+                ->onDelete('cascade');
             $table->foreign('unit_id')
                 ->references('id')
                 ->on('units')

@@ -58,9 +58,9 @@ class CreateAdditionalCostsTable extends Migration
             $table->string('care_of')->nullable();
             $table->unsignedInteger('company_id');
             $table->unsignedInteger('business_unit_id');
+            $table->unsignedInteger('department_id');
             $table->unsignedInteger('unit_id')->nullable();
             $table->unsignedInteger('subunit_id')->nullable();
-            $table->unsignedInteger('department_id');
             $table->unsignedInteger('location_id');
             $table->unsignedInteger('account_id');
             $table->string('remarks')->nullable();

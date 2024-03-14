@@ -149,4 +149,8 @@ class AdditionalCost extends Model implements HasMedia
     {
         return $this->belongsTo(Subunit::class, 'subunit_id', 'id');
     }
+    public function businessUnit()
+    {
+        return $this->belongsTo(BusinessUnit::class, 'business_unit_id', 'id');
+    }
 }

@@ -41,14 +41,14 @@ class FixedAsset extends Model implements HasMedia
 
         // Create a temporary image file
         $receiver = Str::slug($receiver);
-        $fileName = $receiver.'-signature.png';
-        $filePath = sys_get_temp_dir().'/'.$fileName;
+        $fileName = $receiver . '-signature.png';
+        $filePath = sys_get_temp_dir() . '/' . $fileName;
         file_put_contents($filePath, $imageData);
 
         // Store the image file to the Spatie Media Library
         $this->addMedia($filePath)
 //        }
-            ->toMediaCollection($receiver.'-signature');
+            ->toMediaCollection($receiver . '-signature');
 
         // Delete the temporary image file
         if (file_exists($filePath)) {
@@ -147,9 +147,15 @@ class FixedAsset extends Model implements HasMedia
     {
         return $this->belongsTo(WarehouseNumber::class, 'warehouse_number_id', 'id');
     }
+
     public function subunit()
     {
         return $this->belongsTo(Subunit::class, 'subunit_id', 'id');
+    }
+
+    public function businessUnit()
+    {
+        return $this->belongsTo(BusinessUnit::class, 'business_unit_id', 'id');
     }
 
 }

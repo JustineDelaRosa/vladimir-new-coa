@@ -102,7 +102,7 @@ class CreateRequestContainerRequest extends BaseRequest
             'cellphone_number' => 'nullable|numeric',
             'brand' => 'nullable',
             'quantity' => 'required|numeric|min:1',
-            'date_needed' => 'nullable|date',
+            'required|date|after_or_equal:today',
             'letter_of_request' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'quotation' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'specification_form' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
@@ -156,7 +156,9 @@ class CreateRequestContainerRequest extends BaseRequest
             'other_attachments.file' => 'The other attachments must be a file.',
             'other_attachments.mimes' => 'The other attachments must be a file of type: pdf, doc, docx.',
             'other_attachments.max' => 'The other attachments may not be greater than 10 megabytes.',
-
+            'date_needed.required' => 'The date needed is required.',
+            'date_needed.date' => 'The date needed must be a date.',
+            'date_needed.after_or_equal' => 'Please select a valid date needed.',
 
         ];
     }
