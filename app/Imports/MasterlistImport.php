@@ -4,6 +4,7 @@ namespace App\Imports;
 
 use App\Http\Controllers\Masterlist\FixedAssetController;
 use App\Models\AccountTitle;
+use App\Models\BusinessUnit;
 use App\Models\Capex;
 use App\Models\Company;
 use App\Models\FixedAsset;
@@ -17,9 +18,18 @@ use App\Models\Status\CycleCountStatus;
 use App\Models\Status\DepreciationStatus;
 use App\Models\Status\MovementStatus;
 use App\Models\SubCapex;
+use App\Models\SubUnit;
 use App\Models\TypeOfRequest;
+use App\Models\Unit;
 use App\Repositories\CalculationRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
+use App\Rules\ValidAccountCode;
+use App\Rules\ValidBusinessUnitCode;
+use App\Rules\ValidCompanyCode;
+use App\Rules\ValidDepartmentCode;
+use App\Rules\ValidLocationCode;
+use App\Rules\ValidSubunitCode;
+use App\Rules\ValidUnitCode;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
@@ -177,8 +187,8 @@ class MasterlistImport extends DefaultValueBinder implements
             'months_depreciated' => $this->calculationRepository->getMonthDifference(substr_replace($collection['start_depreciation'], '-', 4, 0), Carbon::now()),
 //            'end_depreciation' => Carbon::parse(substr_replace($collection['start_depreciation'], '-', 4, 0))->addYears(floor($est_useful_life))->addMonths(floor(($est_useful_life - floor($est_useful_life)) * 12) - 1)->format('Y-m'),
             'end_depreciation' => substr_replace($collection['end_depreciation'], '-', 4, 0),
-                //TODO: The validation is temporarily disabled requested by th proponent.
-                //$this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life, $collection['depreciation_method']),
+            //TODO: The validation is temporarily disabled requested by th proponent.
+            //$this->calculationRepository->getEndDepreciation(substr_replace($collection['start_depreciation'], '-', 4, 0), $est_useful_life, $collection['depreciation_method']),
             'depreciation_per_year' => $collection['depreciation_per_year'],
             'depreciation_per_month' => $collection['depreciation_per_month'],
             'remaining_book_value' => $collection['remaining_book_value'],
@@ -229,7 +239,10 @@ class MasterlistImport extends DefaultValueBinder implements
             'is_old_asset' => $collection['tag_number'] != '-' || $collection['tag_number_old'] != '-',
             'care_of' => ucwords(strtolower($collection['care_of'])),
             'company_id' => Company::where('company_code', $collection['company_code'])->first()->id,
+            'business_unit_id' => BusinessUnit::where('business_unit_code', $collection['business_unit_code'])->first()->id,
             'department_id' => Department::where('department_code', $collection['department_code'])->first()->id,
+            'unit_id' => Unit::where('unit_code', $collection['unit_code'])->first()->id,
+            'subunit_id' => SubUnit::where('sub_unit_code', $collection['subunit_code'])->first()->id,
             'location_id' => Location::where('location_code', $collection['location_code'])->first()->id,
             'account_id' => AccountTitle::where('account_title_code', $collection['account_code'])->first()->id,
         ]);
@@ -241,6 +254,7 @@ class MasterlistImport extends DefaultValueBinder implements
     function rules($collection): array
     {
         $collections = collect($collection);
+        $index = array_search('capex', array_keys($collections->toArray()));
         return [
             '*.capex' => ['nullable', function ($attribute, $value, $fail) use ($collections) {
                 if ($value == null || $value == '-') {
@@ -502,92 +516,13 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.start_depreciation' => ['required', function ($attribute, $value, $fail) {
                 $this->calculationRepository->validationForDate($attribute, $value, $fail);
             }],
-            '*.company_code' => ['required', 'exists:companies,company_code', function ($attribute, $value, $fail) use ($collections) {
-                $index = array_search($attribute, array_keys($collections->toArray()));
-                $company_name = $collections[$index]['company'];
-                $inactive = Company::where('company_code', $value)->where('is_active', 0)->first();
-                if ($inactive) {
-                    $fail('Company is inactive');
-                    return;
-                }
-
-                $company = Company::query()
-                    ->where('company_code', $value)
-                    ->where('company_name', $company_name)
-                    ->where('is_active', '!=', 0)
-                    ->first();
-                if (!$company) {
-                    $fail('Invalid company');
-                }
-            }],
-            '*.department_code' => ['required', 'exists:departments,department_code', function ($attribute, $value, $fail) use ($collections) {
-                $index = array_search($attribute, array_keys($collections->toArray()));
-                $department_name = $collections[$index]['department'];
-                //check if department is inactive
-                $inactive = Department::where('department_code', $value)->where('is_active', 0)->first();
-                if ($inactive) {
-                    $fail('Department is inactive');
-                    return;
-                }
-                $department = Department::query()
-                    ->where('department_code', $value)
-                    ->where('department_name', $department_name)
-                    ->where('is_active', '!=', 0)
-                    ->first();
-                if (!$department) {
-                    $fail('Invalid department');
-                }
-                $company_code = $collections[$index]['company_code'];
-                $company_sync_id = Company::where('company_code', $company_code)->first()->sync_id ?? 0;
-                $departmentCompCheck = Department::where('department_code', $value)
-                    ->where('company_sync_id', $company_sync_id)
-                    ->first();
-                if (!$departmentCompCheck) {
-                    $fail('Invalid department and company combination');
-                }
-            }],
-            '*.location_code' => ['required', 'exists:locations,location_code', function ($attribute, $value, $fail) use ($collections) {
-                $index = array_search($attribute, array_keys($collections->toArray()));
-                //check if the code is correct on the database
-                $inactive = Location::where('location_code', $value)->where('is_active', 0)->first();
-                if ($inactive) {
-                    $fail('Location is inactive');
-                    return;
-                }
-                $location_name = $collections[$index]['location'];
-                $location = Location::query()
-                    ->where('location_code', $value)
-                    ->where('location_name', $location_name)
-                    ->where('is_active', '!=', 0)
-                    ->first();
-                if (!$location) {
-                    $fail('Invalid location');
-                    return;
-                }
-                $department_code = $collections[$index]['department_code'];
-                $department_sync_id = Department::where('department_code', $department_code)->first()->sync_id ?? 0;
-                $associated_location_sync_id = $location->departments->pluck('sync_id')->toArray();
-                if (!in_array($department_sync_id, $associated_location_sync_id)) {
-                    $fail('Invalid location and department combination');
-                }
-            }],
-            '*.account_code' => ['required', 'exists:account_titles,account_title_code', function ($attribute, $value, $fail) use ($collections) {
-                $index = array_search($attribute, array_keys($collections->toArray()));
-                $account_title_name = $collections[$index]['account_title'];
-                $inactive = AccountTitle::where('account_title_code', $value)->where('is_active', 0)->first();
-                if ($inactive) {
-                    $fail('Account title is inactive');
-                    return;
-                }
-                $account_title = AccountTitle::query()
-                    ->where('account_title_code', $value)
-                    ->where('account_title_name', $account_title_name)
-                    ->where('is_active', '!=', 0)
-                    ->first();
-                if (!$account_title) {
-                    $fail('Invalid account title');
-                }
-            }],
+            '*.company_code' => ['required', new ValidCompanyCode($collections[$index]['company'])],
+            '*.business_unit_code' => ['required', new ValidBusinessUnitCode($collections[$index]['company_code'], $collections[$index]['business_unit'])],
+            '*.department_code' => ['required', new ValidDepartmentCode($collections[$index]['business_unit_code'], $collections[$index]['department'])],
+            '*.unit_code' => ['required', new ValidUnitCode($collections[$index]['department_code'], $collections[$index]['unit'])],
+            '*.subunit_code' => ['required', new ValidSubunitCode($collections[$index]['unit_code'], $collections[$index]['subunit'])],
+            '*.location_code' => ['required', new ValidLocationCode($collections[$index]['subunit_code'], $collections[$index]['location'])],
+            '*.account_code' => ['required', new ValidAccountCode($collections[$index]['account_title'])],
         ];
     }
 
