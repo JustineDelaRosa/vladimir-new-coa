@@ -8,6 +8,7 @@ use App\Models\FixedAsset;
 use App\Repositories\FixedAssetExportRepository;
 use App\Repositories\FixedAssetRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 
 class FixedAssetExportController extends Controller
@@ -21,9 +22,11 @@ class FixedAssetExportController extends Controller
 
     public function export(Request $request)
     {
-        $search = $request->get('search');
-        $startDate = $request->get('startDate');
-        $endDate = $request->get('endDate');
+
+        $search = $request->get('search', null);
+        $startDate = $request->get('startDate', null);
+        $endDate = $request->get('endDate', null);
+        return $this->fixedAssetRepository->export($search, $startDate, $endDate);
         return $this->fixedAssetRepository->FixedAssetExport($search, $startDate, $endDate);
 
 //        // Define the common query for fixed assets

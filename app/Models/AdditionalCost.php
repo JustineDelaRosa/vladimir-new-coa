@@ -7,6 +7,8 @@ use App\Models\Supplier;
 use App\Models\Status\AssetStatus;
 use App\Models\Status\MovementStatus;
 use App\Models\Status\CycleCountStatus;
+use App\Repositories\CalculationRepository;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Status\DepreciationStatus;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -23,6 +25,12 @@ class AdditionalCost extends Model implements HasMedia
 
     protected $guarded = [];
 
+    protected $calculations;
+
+    public function __construct()
+    {
+        $this->calculations = new CalculationRepository();
+    }
 
     /**
      * @throws FileDoesNotExist
@@ -59,88 +67,70 @@ class AdditionalCost extends Model implements HasMedia
     {
         return $this->belongsTo(FixedAsset::class, 'fixed_asset_id', 'id');
     }
-
     public function capex()
     {
         return $this->belongsTo(Capex::class, 'capex_id', 'id');
     }
-
     public function subCapex()
     {
         return $this->belongsTo(SubCapex::class, 'sub_capex_id', 'id');
     }
-
     public function formula()
     {
         return $this->belongsTo(Formula::class, 'formula_id', 'id');
     }
-
     public function typeOfRequest()
     {
         return $this->belongsTo(TypeOfRequest::class, 'type_of_request_id', 'id');
     }
-
     public function majorCategory()
     {
         return $this->belongsTo(MajorCategory::class, 'major_category_id', 'id');
     }
-
     public function minorCategory()
     {
         return $this->belongsTo(MinorCategory::class, 'minor_category_id', 'id');
     }
-
-
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id', 'id');
     }
-
     public function department()
     {
         return $this->belongsTo(Department::class, 'department_id', 'id');
     }
-
     public function location()
     {
         return $this->belongsTo(Location::class, 'location_id', 'id');
     }
-
     public function accountTitle()
     {
         return $this->belongsTo(AccountTitle::class, 'account_id', 'id');
     }
-
     public function assetStatus()
     {
         return $this->belongsTo(AssetStatus::class, 'asset_status_id', 'id');
     }
-
     public function cycleCountStatus()
     {
         return $this->belongsTo(CycleCountStatus::class, 'cycle_count_status_id', 'id');
     }
-
     public function depreciationStatus()
     {
         return $this->belongsTo(DepreciationStatus::class, 'depreciation_status_id', 'id');
     }
-
     public function movementStatus()
     {
         return $this->belongsTo(MovementStatus::class, 'movement_status_id', 'id');
     }
-
     public function supplier()
     {
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
-
     public function requestor()
     {
         return $this->belongsTo(User::class, 'requester_id', 'id');
     }
-
     public function warehouseNumber()
     {
         return $this->belongsTo(WarehouseNumber::class, 'warehouse_number_id', 'id');
@@ -153,4 +143,62 @@ class AdditionalCost extends Model implements HasMedia
     {
         return $this->belongsTo(BusinessUnit::class, 'business_unit_id', 'id');
     }
+
+//    public function getAccountableAttribute($value)
+//    {
+//        return $value ? json_decode($value) : null;
+//    }
+
+
+   public function getChargedDepartmentAttribute($value){
+        return $value ? Department::where('id', $value)->first()->department_name : '-';
+   }
+   public function getStartDepreciationAttriute($value){
+        return $value ? date('Y-m-d', strtotime($value)) : '-';
+   }
+   public function getEndDepreciationAttriute($value){
+        return $value ? date('Y-m-d', strtotime($value)) : '-';
+   }
+
+    public function getDepreciationPerYearAttribute($value)
+    {
+        $estUsefulLife =  $this->est_useful_life;
+        $scarpValue = $this->scap_value;
+        $acquisitionCost = $this->acquisition_cost;
+        return $this->calculations->getYearlyDepreciation($acquisitionCost, $scarpValue, $estUsefulLife);
+    }
+
+    public function getDepreciationPerMonthAttribute($value): float
+    {
+        $estUsefulLife = $this->est_useful_life;
+        $scarpValue = $this->scap_value;
+        $acquisitionCost = $this->acquisition_cost;
+        return $this->calculations->getMonthlyDepreciation($acquisitionCost, $scarpValue, $estUsefulLife);
+    }
+    public function getMonthsDepreciatedAttribute($value){
+        return $this->start_depreciation ? Carbon::parse($this->start_depreciation)->diffInMonths(Carbon::now()) : 0;
+    }
+
+    public function getAccumulatedCostAttribute($value)
+    {
+        $estUsefulLife = $this->est_useful_life;
+        $scarpValue = $this->scap_value;
+        $acquisitionCost = $this->acquisition_cost;
+        $monthly = $this->depreciation_per_month;
+        $customAge = $this->months_depreciated;
+        $depreciationBasis = $this->depreciable_basis;
+
+        return $this->calculations->getAccumulatedCost($monthly, $customAge, $depreciationBasis);
+    }
+
+    public function getRemainingBookValueAttribute($value){
+        $acquisitionCost = $this->acquisition_cost;
+        $accumulatedCost = $this->accumulated_cost;
+        return $this->calculations->getRemainingBookValue($acquisitionCost, $accumulatedCost);
+    }
+
+    public function getCreatedAtAttribute($value){
+        return date('Y-m-d', strtotime($value));
+    }
+
 }

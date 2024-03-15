@@ -8,6 +8,7 @@ use App\Models\Formula;
 use Carbon\Carbon;
 use DateTime;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class FixedAssetExportRepository
 {
@@ -18,227 +19,210 @@ class FixedAssetExportRepository
         $this->calculationRepository = new CalculationRepository();
     }
 
-    public function FixedAssetExport($search, $startDate, $endDate)
+    public function export($search = null, $startDate = null, $endDate = null)
     {
-        $firstQuery = FixedAsset::select([
-            'id',
-            'capex_id',
-            'sub_capex_id',
-            'vladimir_tag_number',
-            'tag_number',
-            'tag_number_old',
-            'asset_description',
-            'type_of_request_id',
-            'asset_specification',
-            'accountability',
-            'accountable',
-            'capitalized',
-            'cellphone_number',
-            'brand',
-            'major_category_id',
-            'minor_category_id',
-            'voucher',
-            'voucher_date',
-            'receipt',
-            'quantity',
-            'depreciation_method',
-            'acquisition_cost',
-            'asset_status_id',
-            'cycle_count_status_id',
-            'depreciation_status_id',
-            'movement_status_id',
-            'is_old_asset',
-            'is_additional_cost',
-            'care_of',
-            'company_id',
-            'department_id',
-            'charged_department',
-            'location_id',
-            'account_id',
-            'formula_id',
-            'created_at',
-            DB::raw("NULL as add_cost_sequence"),
-        ])->where('is_active', 1);
+        $fixedAsset = FixedAsset::leftJoin('users', 'fixed_assets.requester_id', '=', 'users.id')
+            ->leftJoin('type_of_requests', 'fixed_assets.type_of_request_id', '=', 'type_of_requests.id')
+            ->leftJoin('suppliers', 'fixed_assets.supplier_id', '=', 'suppliers.id')
+            ->leftJoin('companies', 'fixed_assets.company_id', '=', 'companies.id')
+            ->leftJoin('business_units', 'fixed_assets.business_unit_id', '=', 'business_units.id')
+            ->leftJoin('departments', 'fixed_assets.department_id', '=', 'departments.id')
+            ->leftJoin('units', 'fixed_assets.unit_id', '=', 'units.id')
+            ->leftJoin('sub_units', 'fixed_assets.subunit_id', '=', 'sub_units.id')
+            ->leftJoin('locations', 'fixed_assets.location_id', '=', 'locations.id')
+            ->leftJoin('account_titles', 'fixed_assets.account_id', '=', 'account_titles.id')
+            ->leftJoin('formulas', 'fixed_assets.formula_id', '=', 'formulas.id')
+            ->leftjoin('capexes', 'fixed_assets.capex_id', '=', 'capexes.id')
+            ->leftjoin('sub_capexes', 'fixed_assets.sub_capex_id', '=', 'sub_capexes.id')
+            ->leftJoin('major_categories', 'fixed_assets.major_category_id', '=', 'major_categories.id')
+            ->leftJoin('minor_categories', 'fixed_assets.minor_category_id', '=', 'minor_categories.id')
+            ->leftJoin('divisions', 'departments.division_id', '=', 'divisions.id')
+            ->leftJoin('asset_statuses', 'fixed_assets.asset_status_id', '=', 'asset_statuses.id')
+            ->leftJoin('cycle_count_statuses', 'fixed_assets.cycle_count_status_id', '=', 'cycle_count_statuses.id')
+            ->leftJoin('depreciation_statuses', 'fixed_assets.depreciation_status_id', '=', 'depreciation_statuses.id')
+            ->leftJoin('movement_statuses', 'fixed_assets.movement_status_id', '=', 'movement_statuses.id');
 
-        $secondQuery = AdditionalCost::select([
+
+        if ($search) {
+            // ... search logic ...
+        }
+
+        if ($startDate && $endDate) {
+            $fixedAsset->whereBetween('fixed_assets.created_at', [$startDate, $endDate]);
+        }
+
+        $fixedAsset = $fixedAsset->select(
+                'fixed_assets.id',
+                'users.username as requester',
+                'capexes.capex as capex',
+                'capexes.project_name as project_name',
+                'sub_capexes.sub_capex as sub_capex',
+                'sub_capexes.sub_project as sub_project',
+                'transaction_number',
+                'reference_number',
+                'pr_number',
+                'po_number',
+                'vladimir_tag_number',
+                'tag_number',
+                'tag_number_old',
+                'asset_description',
+                'asset_specification',
+                'type_of_requests.type_of_request_name as type_of_request',
+                'suppliers.supplier_name as supplier',
+                'accountability',
+                'accountable',
+                'received_by',
+                'capitalized',
+                'cellphone_number',
+                'brand',
+                'major_categories.major_category_name as major_category',
+                'minor_categories.minor_category_name as minor_category',
+                'divisions.division_name as division',
+                'voucher',
+                'voucher_date',
+                'receipt',
+                'quantity',
+                'fixed_assets.acquisition_date',
+                'fixed_assets.acquisition_cost',
+                'charged_department',
+                'asset_statuses.asset_status_name as asset_status',
+                'cycle_count_statuses.cycle_count_status_name as cycle_count_status',
+                'depreciation_statuses.depreciation_status_name as depreciation_status',
+                'movement_statuses.movement_status_name as movement_status',
+                'care_of',
+                'companies.company_code as company_code',
+                'companies.company_name as company_name',
+                'business_units.business_unit_code as business_unit_code',
+                'business_units.business_unit_name as business_unit_name',
+                'departments.department_code as department_code',
+                'departments.department_name as department_name',
+                'units.unit_code as unit_code',
+                'units.unit_name as unit_name',
+                'sub_units.sub_unit_code as sub_unit_code',
+                'sub_units.sub_unit_name as sub_unit_name',
+                'locations.location_code as location_code',
+                'locations.location_name as location_name',
+                'account_titles.account_title_code as account_title_code',
+                'account_titles.account_title_name as account_title_name',
+                DB::raw('NULL as add_cost_sequence'),
+                'formulas.depreciation_method',
+                'formulas.scrap_value',
+                'major_categories.est_useful_life', // todo: subject to monitor for possible bug
+                'formulas.depreciable_basis',
+                'formulas.months_depreciated',
+                'formulas.end_depreciation',
+                'formulas.depreciation_per_year',
+                'formulas.depreciation_per_month',
+                'formulas.accumulated_cost',
+                'formulas.remaining_book_value',
+                'formulas.release_date',
+                'formulas.start_depreciation',
+//                'fixed_assets.created_at'
+            );
+
+
+        $additionalCost = AdditionalCost::leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
+            ->leftJoin('users', 'additional_costs.requester_id', '=', 'users.id')
+            ->leftJoin('type_of_requests', 'additional_costs.type_of_request_id', '=', 'type_of_requests.id')
+            ->leftJoin('suppliers', 'additional_costs.supplier_id', '=', 'suppliers.id')
+            ->leftJoin('companies', 'additional_costs.company_id', '=', 'companies.id')
+            ->leftJoin('business_units', 'additional_costs.business_unit_id', '=', 'business_units.id')
+            ->leftJoin('departments', 'additional_costs.department_id', '=', 'departments.id')
+            ->leftJoin('units', 'additional_costs.unit_id', '=', 'units.id')
+            ->leftJoin('sub_units', 'additional_costs.subunit_id', '=', 'sub_units.id')
+            ->leftJoin('locations', 'additional_costs.location_id', '=', 'locations.id')
+            ->leftJoin('account_titles', 'additional_costs.account_id', '=', 'account_titles.id')
+            ->leftJoin('formulas', 'additional_costs.formula_id', '=', 'formulas.id')
+            ->leftJoin('capexes', 'fixed_assets.capex_id', '=', 'capexes.id')
+            ->leftJoin('sub_capexes', 'fixed_assets.sub_capex_id', '=', 'sub_capexes.id')
+            ->leftJoin('major_categories', 'fixed_assets.major_category_id', '=', 'major_categories.id')
+            ->leftJoin('minor_categories', 'fixed_assets.minor_category_id', '=', 'minor_categories.id')
+            ->leftJoin('divisions', 'departments.division_id', '=', 'divisions.id')
+            ->leftJoin('asset_statuses', 'fixed_assets.asset_status_id', '=', 'asset_statuses.id')
+            ->leftJoin('cycle_count_statuses', 'fixed_assets.cycle_count_status_id', '=', 'cycle_count_statuses.id')
+            ->leftJoin('depreciation_statuses', 'fixed_assets.depreciation_status_id', '=', 'depreciation_statuses.id')
+            ->leftJoin('movement_statuses', 'fixed_assets.movement_status_id', '=', 'movement_statuses.id');
+
+
+        if ($search) {
+            // ... search logic ...
+        }
+
+        if ($startDate && $endDate) {
+            $additionalCost->whereBetween('fixed_assets.created_at', [$startDate, $endDate]);
+        }
+
+        $additionalCost = $additionalCost->select(
             'additional_costs.id',
-            'fixed_assets.capex_id AS capex_id',
-            'fixed_assets.sub_capex_id AS sub_capex_id',
-            'fixed_assets.vladimir_tag_number AS vladimir_tag_number',
-            'fixed_assets.tag_number AS tag_number',
-            'fixed_assets.tag_number_old AS tag_number_old',
+            'users.username as requester',
+            'capexes.capex as capex',
+            'capexes.project_name as project_name',
+            'sub_capexes.sub_capex as sub_capex',
+            'sub_capexes.sub_project as sub_project',
+            'additional_costs.transaction_number',
+            'additional_costs.reference_number',
+            'additional_costs.pr_number',
+            'additional_costs.po_number',
+            'fixed_assets.vladimir_tag_number as vladimir_tag_number',
+            'fixed_assets.tag_number',
+            'fixed_assets.tag_number_old',
             'additional_costs.asset_description',
-            'additional_costs.type_of_request_id',
             'additional_costs.asset_specification',
+            'type_of_requests.type_of_request_name as type_of_request',
+            'suppliers.supplier_name',
             'additional_costs.accountability',
             'additional_costs.accountable',
+            'additional_costs.received_by',
             'additional_costs.capitalized',
             'additional_costs.cellphone_number',
             'additional_costs.brand',
-            'additional_costs.major_category_id',
-            'additional_costs.minor_category_id',
+            'major_categories.major_category_name as major_category',
+            'minor_categories.minor_category_name as minor_category',
+            'divisions.division_name as division',
             'additional_costs.voucher',
             'additional_costs.voucher_date',
             'additional_costs.receipt',
             'additional_costs.quantity',
-            'additional_costs.depreciation_method',
+            'additional_costs.acquisition_date',
             'additional_costs.acquisition_cost',
-            'additional_costs.asset_status_id',
-            'additional_costs.cycle_count_status_id',
-            'additional_costs.depreciation_status_id',
-            'additional_costs.movement_status_id',
-            'fixed_assets.is_old_asset as is_old_asset',
-            'additional_costs.is_additional_cost',
-            'additional_costs.care_of',
-            'additional_costs.company_id',
-            'additional_costs.department_id',
-            'fixed_assets.charged_department as charge_department',
-            'additional_costs.location_id',
-            'additional_costs.account_id',
-            'additional_costs.formula_id',
-            'fixed_assets.created_at',
+            'fixed_assets.charged_department',
+            'asset_statuses.asset_status_name as asset_status',
+            'cycle_count_statuses.cycle_count_status_name as cycle_count_status',
+            'depreciation_statuses.depreciation_status_name as depreciation_status',
+            'movement_statuses.movement_status_name as movement_status',
+            'fixed_assets.care_of',
+            'companies.company_code as company_code',
+            'companies.company_name as company_name',
+            'business_units.business_unit_code as business_unit_code',
+            'business_units.business_unit_name as business_unit_name',
+            'departments.department_code as department_code',
+            'departments.department_name as department_name',
+            'units.unit_code as unit_code',
+            'units.unit_name as unit_name',
+            'sub_units.sub_unit_code as sub_unit_code',
+            'sub_units.sub_unit_name as sub_unit_name',
+            'locations.location_code as location_code',
+            'locations.location_name as location_name',
+            'account_titles.account_title_code as account_title_code',
+            'account_titles.account_title_name as account_title_name',
             'additional_costs.add_cost_sequence',
-        ])->where('additional_costs.is_active', 1)
-            ->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
-
-        $firstQuery = $this->applyFilters($firstQuery, $search, $startDate, $endDate);
-        $secondQuery = $this->applyFilters(
-            $secondQuery,
-            $search,
-            $startDate,
-            $endDate,
-            'fixed_assets.created_at',
-            'fixedAsset.subCapex',
-            'fixed_assets.accountability',
-            'fixed_assets.accountable',
-            'fixed_assets.brand',
-            'fixed_assets.depreciation_method',
-            'fixed_assets.is_active'
+            'formulas.depreciation_method',
+            'formulas.scrap_value',
+            'major_categories.est_useful_life', // todo: subject to monitor for possible bug
+            'formulas.depreciable_basis',
+            'formulas.months_depreciated',
+            'formulas.end_depreciation',
+            'formulas.depreciation_per_year',
+            'formulas.depreciation_per_month',
+            'formulas.accumulated_cost',
+            'formulas.remaining_book_value',
+            'formulas.release_date',
+            'formulas.start_depreciation',
+//            'fixed_assets.created_at'
         );
 
-        $results = $firstQuery->unionAll($secondQuery)
-            ->whereNotNull('major_category_id')
-            ->orderBy('asset_description', 'ASC')
-            ->get();
-        //if results are empty
-        if ($results->isEmpty()) {
-            return response()->json([
-                'message' => 'No data found',
-                'errors' => [
-                    'search' => [
-                        'No data found'
-                    ]
-                ]
-            ], 422);
-        }
-
-        //        return $results;
-        return $this->refactorExport($results);
+        return $fixedAsset->unionAll($additionalCost)->orderBy('vladimir_tag_number', 'ASC')->get();
     }
-
-    private function refactorExport($fixedAssets): array
-    {
-        $fixed_assets_arr = [];
-        foreach ($fixedAssets as $fixed_asset) {
-            $formula = Formula::where('id', $fixed_asset->formula_id)->first();
-            $depreciation_rate = $this->calculateDepreciationRates($fixed_asset, $formula);
-            $accumulated_cost = $this->calculateAccumulatedCost($fixed_asset, $depreciation_rate);
-
-            $fixed_assets_arr[] = [
-                'add_cost_sequence' => $fixed_asset->add_cost_sequence ?? null,
-                'id' => $fixed_asset->id,
-                'type_of_request' => $fixed_asset->typeOfRequest->type_of_request_name,
-                'capex' => $fixed_asset->capex->capex ?? '-',
-                'project_name' => $fixed_asset->capex->project_name ?? '-',
-                'sub_capex' => $fixed_asset->subCapex->sub_capex ?? '-',
-                'sub_project' => $fixed_asset->subCapex->sub_project ?? '-',
-                'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
-                'tag_number' => $fixed_asset->tag_number,
-                'tag_number_old' => $fixed_asset->tag_number_old,
-                'asset_description' => $fixed_asset->asset_description,
-                'asset_specification' => $fixed_asset->asset_specification,
-                'accountability' => $fixed_asset->accountability,
-                'accountable' => $fixed_asset->accountable,
-                'cellphone_number' => $fixed_asset->cellphone_number,
-                'brand' => $fixed_asset->brand,
-                'major_category' => $fixed_asset->majorCategory->major_category_name,
-                'minor_category' => $fixed_asset->minorCategory->minor_category_name,
-                'division' => $fixed_asset->department->division->division_name ?? '-',
-                'capitalized' => $fixed_asset->capitalized,
-                'voucher' => $fixed_asset->voucher,
-                'voucher_date' => $fixed_asset->voucher_date ?? '-',
-                'receipt' => $fixed_asset->receipt,
-                'quantity' => $fixed_asset->quantity,
-                'depreciation_method' => $fixed_asset->depreciation_method,
-                'est_useful_life' => $fixed_asset->MajorCategory->est_useful_life,
-                'acquisition_date' => $fixed_asset->formula->acquisition_date,
-                'acquisition_cost' => $fixed_asset->formula->acquisition_cost,
-                'scrap_value' => $fixed_asset->formula->scrap_value,
-                'depreciable_basis' => $fixed_asset->formula->depreciable_basis,
-                'accumulated_cost' => $fixed_asset->formula->accumulated_cost, //$accumulated_cost,
-                'asset_status' => $fixed_asset->assetStatus->asset_status_name,
-                'cycle_count_status' => $fixed_asset->cycleCountStatus->cycle_count_status_name,
-                'depreciation_status' => $fixed_asset->depreciationStatus->depreciation_status_name,
-                'movement_status' => $fixed_asset->movementStatus->movement_status_name,
-                'care_of' => $fixed_asset->care_of,
-                'months_depreciated' => $depreciation_rate['monthDepreciated'],
-                'end_depreciation' => $fixed_asset->formula->end_depreciation ? str_replace('-', '', $fixed_asset->formula->end_depreciation) : '-',
-                'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year, //$depreciation_rate['yearly'],
-                'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month, //$depreciation_rate['monthly'],
-                'remaining_book_value' => $fixed_asset->formula->remaining_book_value,  //$this->calculateRemainingBookValue($fixed_asset, $accumulated_cost),
-                'release_date' => $fixed_asset->formula->release_date ?? '-',
-                'start_depreciation' => $fixed_asset->formula->start_depreciation ? str_replace('-', '', $fixed_asset->formula->start_depreciation) : '-',
-                'company_code' => $fixed_asset->company->company_code,
-                'company_name' => $fixed_asset->company->company_name,
-                'department_code' => $fixed_asset->department->department_code,
-                //get the department id of the charged department and get the department name
-                'charged_department' => $fixed_asset->department->where('id', $fixed_asset->charged_department)->first()->department_name ?? '-',
-                'department_name' => $fixed_asset->department->department_name,
-                'location_code' => $fixed_asset->location->location_code,
-                'location_name' => $fixed_asset->location->location_name,
-                'account_title_code' => $fixed_asset->accountTitle->account_title_code,
-                'account_title_name' => $fixed_asset->accountTitle->account_title_name
-            ];
-        }
-        return $fixed_assets_arr;
-    }
-
-    private function calculateDepreciationRates($fixed_asset, $formula): array
-    {
-        return [
-            'monthly' => $this->depreciationPerMonth($formula->acquisition_cost, $formula->scrap_value, $fixed_asset->MajorCategory->est_useful_life),
-            'yearly' => $this->depreciationPerYear($formula->acquisition_cost, $formula->scrap_value, $fixed_asset->MajorCategory->est_useful_life),
-            'monthDepreciated' => $this->monthDepreciated($formula->start_depreciation),
-        ];
-    }
-
-    private function calculateAccumulatedCost($fixed_asset, $depreciation_rate)
-    {
-        return $this->calculationRepository->getAccumulatedCost($depreciation_rate['monthly'], $this->monthDepreciated($fixed_asset->formula->start_depreciation), $fixed_asset->formula->depreciable_basis);
-    }
-
-    private function calculateRemainingBookValue($fixed_asset, $accumulated_cost)
-    {
-        return $this->calculationRepository->getRemainingBookValue($fixed_asset->formula->acquisition_cost, $accumulated_cost);
-    }
-
-    private function depreciationPerMonth($acquisition_cost, $scrap_value, $est_useful_life)
-    {
-        return $this->calculationRepository->getMonthlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life);
-    }
-
-    private function depreciationPerYear($acquisition_cost, $scrap_value, $est_useful_life)
-    {
-        return $this->calculationRepository->getYearlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life);
-    }
-
-    private function monthDepreciated($start_depreciation)
-    {
-        $current_date = Carbon::now();
-
-        return $this->calculationRepository->getMonthDifference($start_depreciation, $current_date);
-    }
-
 
     function applyFilters(
         $query,
@@ -252,7 +236,8 @@ class FixedAssetExportRepository
         $brand = 'brand',
         $depreciation_method = 'depreciation_method',
         $is_active = 'is_active'
-    ) {
+    )
+    {
         $query->where($is_active, 1);
         //        if ($search != null && ($startDate == null && $endDate == null)) {
         //

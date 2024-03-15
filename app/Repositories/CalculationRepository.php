@@ -36,8 +36,9 @@ class CalculationRepository
         return round(($acquisition_cost - $scrap_value) / $est_useful_life, 2);
     }
 
-    public function getAccumulatedCost($monthly_depreciation, float $custom_age, $depreciable_basis): float
+    public function getAccumulatedCost($monthly_depreciation, float $custom_age, $depreciable_basis)
     {
+
         $accumulated_cost = $monthly_depreciation * $custom_age;
         //if the accumulated cost is greater than the depreciable basis, return the depreciable basis
         if ($accumulated_cost > $depreciable_basis) {
