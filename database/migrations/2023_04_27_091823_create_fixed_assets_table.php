@@ -17,6 +17,7 @@ class CreateFixedAssetsTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('requester_id')->nullable();
             $table->string('transaction_number')->nullable();
+            $table->string('reference_number')->nullable();
             $table->string('pr_number')->nullable();
             $table->string('po_number')->nullable();
             $table->string('rr_number')->nullable();
@@ -39,6 +40,7 @@ class CreateFixedAssetsTable extends Migration
             $table->unsignedInteger('supplier_id')->nullable();
             $table->string('accountability');
             $table->string('accountable')->nullable();
+            $table->string('received_by')->nullable();
             $table->string('capitalized')->default('Capitalized');
             $table->string('cellphone_number')->nullable();
             $table->string('brand')->nullable();

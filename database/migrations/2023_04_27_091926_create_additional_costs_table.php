@@ -17,6 +17,8 @@ class CreateAdditionalCostsTable extends Migration
         Schema::create('additional_costs', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('requester_id')->nullable();
+            $table->string('transaction_number')->nullable();
+            $table->string('reference_number')->nullable();
             $table->unsignedInteger('fixed_asset_id');
             $table->unsignedInteger('supplier_id')->nullable();
             $table->foreign('fixed_asset_id')
@@ -39,6 +41,7 @@ class CreateAdditionalCostsTable extends Migration
             $table->string('asset_specification')->nullable();
             $table->string('accountability');
             $table->string('accountable')->nullable();
+            $table->string('received_by')->nullable();
             $table->string('capitalized')->default('Capitalized');
             $table->string('cellphone_number')->nullable();
             $table->string('brand')->nullable();
