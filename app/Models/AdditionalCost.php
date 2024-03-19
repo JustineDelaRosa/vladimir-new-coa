@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Filters\AdditionalCostFilters;
 use App\Models\User;
 use App\Models\Supplier;
 use App\Models\Status\AssetStatus;
@@ -9,6 +10,7 @@ use App\Models\Status\MovementStatus;
 use App\Models\Status\CycleCountStatus;
 use App\Repositories\CalculationRepository;
 use Carbon\Carbon;
+use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Status\DepreciationStatus;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -21,11 +23,13 @@ use Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig;
 
 class AdditionalCost extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes, InteractsWithMedia;
+    use HasFactory, SoftDeletes, InteractsWithMedia, Filterable;
 
     protected $guarded = [];
+    protected string $default_filters = AdditionalCostFilters::class;
 
     protected $calculations;
+
 
     public function __construct()
     {
@@ -138,6 +142,10 @@ class AdditionalCost extends Model implements HasMedia
     public function subunit()
     {
         return $this->belongsTo(Subunit::class, 'subunit_id', 'id');
+    }
+    public function unit()
+    {
+        return $this->belongsTo(Unit::class, 'unit_id', 'id');
     }
     public function businessUnit()
     {

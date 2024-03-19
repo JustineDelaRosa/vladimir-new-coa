@@ -4,32 +4,32 @@ namespace App\Filters;
 
 use Essa\APIToolKit\Filters\QueryFilters;
 
-class FixedAssetFilters extends QueryFilters
+class AdditionalCostFilters extends QueryFilters
 {
     protected array $allowedFilters = [
-        'vladimir_tag_number',
-        'fixed_assets.tag_number',
-        'fixed_assets.tag_number_old',
-        'fixed_assets.asset_description',
-        'fixed_assets.accountability',
-        'fixed_assets.accountable',
-        'fixed_assets.brand',
-        'fixed_assets.depreciation_method'
+//        'vladimir_tag_number',
+//        'tag_number',
+//        'tag_number_old',
+        'additional_costs.asset_description',
+        'additional_costs.accountability',
+        'additional_costs.accountable',
+        'additional_costs.brand',
+        'additional_costs.depreciation_method'
     ];
 
     protected array $columnSearch = [
-        'vladimir_tag_number',
-        'fixed_assets.tag_number',
-        'fixed_assets.tag_number_old',
-        'fixed_assets.asset_description',
-        'fixed_assets.accountability',
-        'fixed_assets.accountable',
-        'fixed_assets.brand',
-        'fixed_assets.depreciation_method'
+//        'vladimir_tag_number',
+//        'tag_number',
+//        'tag_number_old',
+        'additional_costs.asset_description',
+        'additional_costs.accountability',
+        'additional_costs.accountable',
+        'additional_costs.brand',
+        'additional_costs.depreciation_method'
     ];
 
     protected array $relationSearch = [
-        'subCapex' =>['sub_capex', 'sub_project'],
+        'fixedAsset' => ['vladimir_tag_number', 'tag_number', 'tag_number_old'],
         'majorCategory' => ['major_category_name'],
         'minorCategory' => ['minor_category_name'],
         'department.division' => ['division_name'],
@@ -44,5 +44,5 @@ class FixedAssetFilters extends QueryFilters
         'subunit' => ['sub_unit_name'],
         'location' => ['location_name'],
         'accountTitle' => ['account_title_name'],
-    ];
+        ];
 }

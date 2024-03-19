@@ -157,6 +157,10 @@ class FixedAsset extends Model implements HasMedia
     {
         return $this->belongsTo(WarehouseNumber::class, 'warehouse_number_id', 'id');
     }
+    public function unit()
+    {
+        return $this->belongsTo(Unit::class, 'unit_id', 'id');
+    }
 
     public function subunit()
     {
