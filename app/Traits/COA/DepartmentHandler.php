@@ -8,6 +8,13 @@ trait DepartmentHandler
             return [
                 'id' => $department->id,
                 'sync_id' => $department->sync_id,
+                'company' => [
+                    'id' => $department->businessUnit->company->id ?? "-",
+                    'company_sync_id' => $department->businessUnit->company->sync_id ?? "-",
+                    'company_code' => $department->businessUnit->company->company_code ?? "-",
+                    'company_name' => $department->businessUnit->company->company_name ?? "-",
+                    'company_status' => $department->businessUnit->company->is_active ?? '-',
+                ],
                 'business_unit' => [
                     'id' => $department->businessUnit->id ?? "-",
                     'business_unit_sync_id' => $department->businessUnit->sync_id ?? "-",

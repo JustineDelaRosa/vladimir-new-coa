@@ -70,6 +70,11 @@ class LocationController extends Controller
             );
 
             $department_ids = array_column($location['sub_units'], 'id');
+            foreach ($department_ids as $id) {
+                if (!SubUnit::where('sync_id', $id)->exists()) {
+                    return $this->responseUnprocessable('Some of subunit is missing sync the subunit first!');
+                }
+            }
             $locationInDB->subunit()->sync($department_ids);
 
             //            //if the status is false, detach the department in the pivot table
