@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Rules;
+namespace App\Rules\ImportValidation;
 
 use App\Models\SubUnit;
 use App\Models\Unit;

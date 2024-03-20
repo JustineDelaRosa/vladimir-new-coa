@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Rules;
+namespace App\Rules\ImportValidation;
 
-use Illuminate\Contracts\Validation\Rule;
 use App\Models\FixedAsset;
+use Illuminate\Contracts\Validation\Rule;
 
 class ValidTagNumber implements Rule
 {
