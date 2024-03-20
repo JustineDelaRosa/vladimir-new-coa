@@ -13,6 +13,11 @@ use App\Models\SubCapex;
 use App\Models\SubUnit;
 use App\Models\TypeOfRequest;
 use App\Models\Unit;
+use App\Rules\NewCoaValidation\BusinessUnitValidation;
+use App\Rules\NewCoaValidation\DepartmentValidation;
+use App\Rules\NewCoaValidation\LocationValidation;
+use App\Rules\NewCoaValidation\SubunitValidation;
+use App\Rules\NewCoaValidation\UnitValidation;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -313,78 +318,12 @@ class FixedAssetUpdateRequest extends FormRequest
 //            }
             ],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
-            'business_unit_id' => 'required|exists:business_units,id',
-            'department_id' => ['required', 'exists:departments,id',
-                function ($attribute, $value, $fail) {
-                    $department = Department::query()->find($value);
-                    if (!$department || !$department->is_active) {
-                        $fail('Department is not active or does not exist.');
-                    }
-
-                    //check if the combination of business unit and department is valid
-                    $businessUnitId = BusinessUnit::query()->with('departments')->where('id', request()->business_unit_id)->first();
-                    $department = Department::query()->where('id', $value)->first();
-                    if (!$businessUnitId->departments->contains($department)) {
-                        $fail('Invalid department for the business unit');
-                    }
-                }
-            ],
-            'unit_id' => [
-                'required',
-                'exists:units,id',
-                function ($attribute, $value, $fail) {
-                    $unit = Unit::query()->find($value);
-                    if (!$unit || !$unit->is_active) {
-                        $fail('Unit is not active or does not exist.');
-                    }
-
-                    //check if the combination of department and unit is valid
-                    $department = Department::query()->with('unit')->where('id', request()->department_id)->first();
-                    $unit = Unit::query()->where('id', $value)->first();
-                    if (!$department->unit->contains($unit)) {
-                        $fail('Invalid unit for the department');
-                    }
-                }
-            ],
-            'subunit_id' => [
-                'required',
-                'exists:sub_units,id',
-                function ($attribute, $value, $fail) {
-                    $subUnit = SubUnit::query()->find($value);
-                    if (!$subUnit || !$subUnit->is_active) {
-                        $fail('Sub unit is not active or does not exist.');
-                    }
-
-                    //check if the combination of unit and sub unit is valid
-                    $unit = Unit::query()->with('subunits')->where('id', request()->unit_id)->first();
-                    $subUnit = SubUnit::query()->where('id', $value)->first();
-                    if (!$unit->subunits->contains($subUnit)) {
-                        $fail('Invalid sub unit for the unit');
-                    }
-                }
-            ],
-            'location_id' => [
-                'required',
-                'exists:locations,id',
-                function ($attribute, $value, $fail) {
-                    // Fetch the location and associated departments only once
-                    $location = Location::query()->find($value);
-
-                    // Check if the location is active
-                    if (!$location || !$location->is_active) {
-                        $fail('Location is not active or does not exist.');
-                        return; // No point in proceeding if the location is not active
-                    }
-
-                    //check if the combination of sub unit and location is valid
-                    $subUnit = SubUnit::query()->with('location')->where('id', request()->subunit_id)->first();
-                    $location = Location::query()->where('id', $value)->first();
-                    if (!$subUnit->location->contains($location)) {
-                        $fail('Invalid location for the sub unit');
-                    }
-                }
-            ],
-//            'account_title_id' => 'required|exists:account_titles,id',
+            'company_id' => 'required|exists:companies,id',
+            'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+            'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+            'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+            'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id)],
+            'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
 //            'print_count' => 'nullable|numeric',
         ];
     }

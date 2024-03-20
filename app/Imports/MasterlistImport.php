@@ -2,15 +2,14 @@
 
 namespace App\Imports;
 
-use App\Http\Controllers\Masterlist\FixedAssetController;
 use App\Models\AccountTitle;
 use App\Models\BusinessUnit;
 use App\Models\Capex;
 use App\Models\Company;
+use App\Models\Department;
 use App\Models\FixedAsset;
 use App\Models\Formula;
 use App\Models\Location;
-use App\Models\Department;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
 use App\Models\Status\AssetStatus;
@@ -23,32 +22,29 @@ use App\Models\TypeOfRequest;
 use App\Models\Unit;
 use App\Repositories\CalculationRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
-use App\Rules\ValidAccountCode;
-use App\Rules\ValidBusinessUnitCode;
-use App\Rules\ValidCompanyCode;
-use App\Rules\ValidDepartmentCode;
-use App\Rules\ValidLocationCode;
-use App\Rules\ValidSubunitCode;
-use App\Rules\ValidUnitCode;
+use App\Rules\ImportValidation\ValidAccountCode;
+use App\Rules\ImportValidation\ValidBusinessUnitCode;
+use App\Rules\ImportValidation\ValidCompanyCode;
+use App\Rules\ImportValidation\ValidDepartmentCode;
+use App\Rules\ImportValidation\ValidLocationCode;
+use App\Rules\ImportValidation\ValidSubunitCode;
+use App\Rules\ImportValidation\ValidUnitCode;
 use Carbon\Carbon;
-use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\Importable;
+use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithStartRow;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
-use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 use PhpOffice\PhpSpreadsheet\Exception;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\WithStartRow;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
-use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
-use function PHPUnit\Framework\isEmpty;
 
 class MasterlistImport extends DefaultValueBinder implements
     ToCollection,

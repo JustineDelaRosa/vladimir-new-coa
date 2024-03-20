@@ -10,6 +10,11 @@ use App\Models\Location;
 use App\Models\Status\DepreciationStatus;
 use App\Models\SubUnit;
 use App\Models\Unit;
+use App\Rules\NewCoaValidation\BusinessUnitValidation;
+use App\Rules\NewCoaValidation\DepartmentValidation;
+use App\Rules\NewCoaValidation\LocationValidation;
+use App\Rules\NewCoaValidation\SubunitValidation;
+use App\Rules\NewCoaValidation\UnitValidation;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -192,77 +197,12 @@ class AdditionalCostRequest extends FormRequest
                 }],
                 'release_date' => ['nullable', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
-                'business_unit_id' => 'required|exists:business_units,id',
-                'department_id' => ['required', 'exists:departments,id',
-                    function ($attribute, $value, $fail) {
-                        $department = Department::query()->find($value);
-                        if (!$department || !$department->is_active) {
-                            $fail('Department is not active or does not exist.');
-                        }
-
-                        //check if the combination of business unit and department is valid
-                        $businessUnitId = BusinessUnit::query()->with('departments')->where('id', request()->business_unit_id)->first();
-                        $department = Department::query()->where('id', $value)->first();
-                        if (!$businessUnitId->departments->contains($department)) {
-                            $fail('Invalid department for the business unit');
-                        }
-                    }
-                ],
-                'unit_id' => [
-                    'required',
-                    'exists:units,id',
-                    function ($attribute, $value, $fail) {
-                        $unit = Unit::query()->find($value);
-                        if (!$unit || !$unit->is_active) {
-                            $fail('Unit is not active or does not exist.');
-                        }
-
-                        //check if the combination of department and unit is valid
-                        $department = Department::query()->with('unit')->where('id', request()->department_id)->first();
-                        $unit = Unit::query()->where('id', $value)->first();
-                        if (!$department->unit->contains($unit)) {
-                            $fail('Invalid unit for the department');
-                        }
-                    }
-                ],
-                'subunit_id' => [
-                    'required',
-                    'exists:sub_units,id',
-                    function ($attribute, $value, $fail) {
-                        $subUnit = SubUnit::query()->find($value);
-                        if (!$subUnit || !$subUnit->is_active) {
-                            $fail('Sub unit is not active or does not exist.');
-                        }
-
-                        //check if the combination of unit and sub unit is valid
-                        $unit = Unit::query()->with('subunits')->where('id', request()->unit_id)->first();
-                        $subUnit = SubUnit::query()->where('id', $value)->first();
-                        if (!$unit->subunits->contains($subUnit)) {
-                            $fail('Invalid sub unit for the unit');
-                        }
-                    }
-                ],
-                'location_id' => [
-                    'required',
-                    'exists:locations,id',
-                    function ($attribute, $value, $fail) {
-                        // Fetch the location and associated departments only once
-                        $location = Location::query()->find($value);
-
-                        // Check if the location is active
-                        if (!$location || !$location->is_active) {
-                            $fail('Location is not active or does not exist.');
-                            return; // No point in proceeding if the location is not active
-                        }
-
-                        //check if the combination of sub unit and location is valid
-                        $subUnit = SubUnit::query()->with('location')->where('id', request()->subunit_id)->first();
-                        $location = Location::query()->where('id', $value)->first();
-                        if (!$subUnit->location->contains($location)) {
-                            $fail('Invalid location for the sub unit');
-                        }
-                    }
-                ],
+                'company_id' => 'required|exists:companies,id',
+                'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+                'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+                'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+                'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id)],
+                'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
                 'account_title_id' => 'required|exists:account_titles,id',
             ];
         }
@@ -278,8 +218,8 @@ class AdditionalCostRequest extends FormRequest
     function messages()
     {
         return [
-            'fixed_asset_id.required' => 'The fixed asset id is required.',
-            'fixed_asset_id.exists' => 'The fixed asset id must be a valid fixed asset id.',
+            'fixed_asset_id.required' => 'The fixed asset is required.',
+            'fixed_asset_id.exists' => 'Please select a valid fixed asset',
             'asset_description.required' => 'The asset description is required.',
             'type_of_request_id.required' => 'The type of request id is required.',
             'asset_specification.required' => 'The asset specification is required.',
@@ -288,21 +228,21 @@ class AdditionalCostRequest extends FormRequest
             'cellphone_number.numeric' => 'The cellphone number must be a number.',
             'cellphone_number.digits' => 'The cellphone number must be 11 digits.',
             'brand.required' => 'The brand is required.',
-            'major_category_id.required' => 'The major category id is required.',
-            'major_category_id.exists' => 'The major category id must be a valid major category id.',
-            'minor_category_id.required' => 'The minor category id is required.',
-            'minor_category_id.exists' => 'The minor category id must be a valid minor category id.',
+            'major_category_id.required' => 'The major category is required.',
+            'major_category_id.exists' => 'The major category must be a valid major category.',
+            'minor_category_id.required' => 'The minor category is required.',
+            'minor_category_id.exists' => 'The minor category must be a valid minor category.',
             'voucher.required' => 'The voucher is required.',
             'receipt.required' => 'The receipt is required.',
             'quantity.required' => 'The quantity is required.',
-            'asset_status_id.required' => 'The asset status id is required.',
-            'asset_status_id.exists' => 'The asset status id must be a valid asset status id.',
-            'depreciation_status_id.required' => 'The depreciation status id is required.',
-            'depreciation_status_id.exists' => 'The depreciation status id must be a valid depreciation status id.',
-            'cycle_count_status_id.required' => 'The cycle count status id is required.',
-            'cycle_count_status_id.exists' => 'The cycle count status id must be a valid cycle count status id.',
-            'movement_status_id.required' => 'The movement status id is required.',
-            'movement_status_id.exists' => 'The movement status id must be a valid movement status id.',
+            'asset_status_id.required' => 'The asset status is required.',
+            'asset_status_id.exists' => 'The asset status must be a valid asset status.',
+            'depreciation_status_id.required' => 'The depreciation status is required.',
+            'depreciation_status_id.exists' => 'The depreciation status must be a valid depreciation status.',
+            'cycle_count_status_id.required' => 'The cycle count status is required.',
+            'cycle_count_status_id.exists' => 'The cycle count status must be a valid cycle count status.',
+            'movement_status_id.required' => 'The movement status is required.',
+            'movement_status_id.exists' => 'The movement status must be a valid movement status.',
             'depreciation_method.required' => 'The depreciation method is required.',
             'acquisition_date.required' => 'The acquisition date is required.',
             'acquisition_date.date_format' => 'The acquisition date must be a valid date format.',
@@ -322,10 +262,10 @@ class AdditionalCostRequest extends FormRequest
             'remaining_book_value.numeric' => 'The remaining book value must be a number.',
             'release_date.required' => 'The release date is required.',
             'release_date.date_format' => 'The release date must be a valid date format.',
-            'department_id.required' => 'The department id is required.',
-            'department_id.exists' => 'The department id must be a valid department id.',
-            'account_title_id.required' => 'The account title id is required.',
-            'account_title_id.exists' => 'The account title id must be a valid account title id.',
+            'department_id.required' => 'The department is required.',
+            'department_id.exists' => 'The department must be a valid department.',
+            'account_title_id.required' => 'The account title is required.',
+            'account_title_id.exists' => 'The account title must be a valid account title.',
 
             'status.required' => 'The status is required.',
             'status.boolean' => 'The status must be a boolean.',
@@ -489,77 +429,12 @@ class AdditionalCostRequest extends FormRequest
             }],
             'release_date' => ['nullable', 'date_format:Y-m-d'],
 //                'start_depreciation' => ['required', 'date_format:Y-m'],
-            'business_unit_id' => 'required|exists:business_units,id',
-            'department_id' => ['required', 'exists:departments,id',
-                function ($attribute, $value, $fail) {
-                    $department = Department::query()->find($value);
-                    if (!$department || !$department->is_active) {
-                        $fail('Department is not active or does not exist.');
-                    }
-
-                    //check if the combination of business unit and department is valid
-                    $businessUnitId = BusinessUnit::query()->with('departments')->where('id', request()->business_unit_id)->first();
-                    $department = Department::query()->where('id', $value)->first();
-                    if (!$businessUnitId->departments->contains($department)) {
-                        $fail('Invalid department for the business unit');
-                    }
-                }
-            ],
-            'unit_id' => [
-                'required',
-                'exists:units,id',
-                function ($attribute, $value, $fail) {
-                    $unit = Unit::query()->find($value);
-                    if (!$unit || !$unit->is_active) {
-                        $fail('Unit is not active or does not exist.');
-                    }
-
-                    //check if the combination of department and unit is valid
-                    $department = Department::query()->with('unit')->where('id', request()->department_id)->first();
-                    $unit = Unit::query()->where('id', $value)->first();
-                    if (!$department->unit->contains($unit)) {
-                        $fail('Invalid unit for the department');
-                    }
-                }
-            ],
-            'subunit_id' => [
-                'required',
-                'exists:sub_units,id',
-                function ($attribute, $value, $fail) {
-                    $subUnit = SubUnit::query()->find($value);
-                    if (!$subUnit || !$subUnit->is_active) {
-                        $fail('Sub unit is not active or does not exist.');
-                    }
-
-                    //check if the combination of unit and sub unit is valid
-                    $unit = Unit::query()->with('subunits')->where('id', request()->unit_id)->first();
-                    $subUnit = SubUnit::query()->where('id', $value)->first();
-                    if (!$unit->subunits->contains($subUnit)) {
-                        $fail('Invalid sub unit for the unit');
-                    }
-                }
-            ],
-            'location_id' => [
-                'required',
-                'exists:locations,id',
-                function ($attribute, $value, $fail) {
-                    // Fetch the location and associated departments only once
-                    $location = Location::query()->find($value);
-
-                    // Check if the location is active
-                    if (!$location || !$location->is_active) {
-                        $fail('Location is not active or does not exist.');
-                        return; // No point in proceeding if the location is not active
-                    }
-
-                    //check if the combination of sub unit and location is valid
-                    $subUnit = SubUnit::query()->with('location')->where('id', request()->subunit_id)->first();
-                    $location = Location::query()->where('id', $value)->first();
-                    if (!$subUnit->location->contains($location)) {
-                        $fail('Invalid location for the sub unit');
-                    }
-                }
-            ],
+            'company_id' => 'required|exists:companies,id',
+            'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+            'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+            'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+            'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id)],
+            'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
             'account_title_id' => 'required|exists:account_titles,id',
         ];
     }
