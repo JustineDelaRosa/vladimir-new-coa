@@ -30,18 +30,6 @@ class FixedAsset extends Model implements HasMedia
 
     protected string $default_filters = FixedAssetFilters::class;
 
-    protected $calculations;
-
-    public function __construct()
-    {
-        $this->calculations = new CalculationRepository();
-    }
-
-
-    /**
-     * @throws FileIsTooBig
-     * @throws FileDoesNotExist
-     */
     public function storeBase64Image(string $base64Image, string $receiver)
     {
 //        if(empty($base64Image)){
@@ -187,7 +175,12 @@ class FixedAsset extends Model implements HasMedia
         $estUsefulLife =  $this->est_useful_life;
         $scarpValue = $this->scap_value;
         $acquisitionCost = $this->acquisition_cost;
-        return $this->calculations->getYearlyDepreciation($acquisitionCost, $scarpValue, $estUsefulLife);
+
+        if ($acquisitionCost == 0 && $scarpValue == 0) {
+            return 0;
+        }
+        $estUsefulLife = floor($estUsefulLife) + (($estUsefulLife - floor($estUsefulLife)) * 12) / 12;
+        return round(($acquisitionCost - $scarpValue) / $estUsefulLife, 2);
     }
 
     public function getDepreciationPerMonthAttribute($value): float
@@ -195,7 +188,12 @@ class FixedAsset extends Model implements HasMedia
         $estUsefulLife = $this->est_useful_life;
         $scarpValue = $this->scap_value;
         $acquisitionCost = $this->acquisition_cost;
-        return $this->calculations->getMonthlyDepreciation($acquisitionCost, $scarpValue, $estUsefulLife);
+
+        if ($acquisitionCost == 0 && $scarpValue == 0) {
+            return 0;
+        }
+        $estUsefulLife = floor($estUsefulLife) * 12 + (($estUsefulLife - floor($estUsefulLife)) * 12);
+        return round(($acquisitionCost - $scarpValue) / $estUsefulLife, 2);
     }
     public function getMonthsDepreciatedAttribute($value){
         return $this->start_depreciation ? Carbon::parse($this->start_depreciation)->diffInMonths(Carbon::now()) : 0;
@@ -203,20 +201,27 @@ class FixedAsset extends Model implements HasMedia
 
     public function getAccumulatedCostAttribute($value)
     {
-        $estUsefulLife = $this->est_useful_life;
-        $scarpValue = $this->scap_value;
-        $acquisitionCost = $this->acquisition_cost;
-        $monthly = $this->depreciation_per_month;
         $customAge = $this->months_depreciated;
         $depreciationBasis = $this->depreciable_basis;
+        $monthly_depreciation = $this->depreciation_per_month;
 
-        return $this->calculations->getAccumulatedCost($monthly, $customAge, $depreciationBasis);
+        $accumulated_cost = $monthly_depreciation * $customAge;
+        if ($accumulated_cost > $depreciationBasis) {
+            return $depreciationBasis;
+        }
+        return round($accumulated_cost);
     }
 
     public function getRemainingBookValueAttribute($value){
         $acquisitionCost = $this->acquisition_cost;
         $accumulatedCost = $this->accumulated_cost;
-        return $this->calculations->getRemainingBookValue($acquisitionCost, $accumulatedCost);
+
+        $remainingBookValue = $acquisitionCost - $accumulatedCost;
+        //if the remaining book value is less than zero, return zero
+        if ($remainingBookValue < 0) {
+            return 0;
+        }
+        return round($remainingBookValue);
     }
 
     public function getCreatedAtAttribute($value){
