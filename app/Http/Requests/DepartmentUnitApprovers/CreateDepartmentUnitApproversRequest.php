@@ -3,6 +3,7 @@
 namespace App\Http\Requests\DepartmentUnitApprovers;
 
 use App\Models\DepartmentUnitApprovers;
+use App\Models\SubUnit;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateDepartmentUnitApproversRequest extends FormRequest
@@ -25,13 +26,19 @@ class CreateDepartmentUnitApproversRequest extends FormRequest
     public function rules()
     {
         return [
-//            'department_id' => ['required', 'integer', 'exists:departments,id'],
+//            'unit_id' => ['required', 'exists:units,id'],
             'subunit_id' => ['required', 'integer', 'exists:sub_units,id',
                 function ($attribute, $value, $fail) {
                     $DepartmentUnitApprovers = DepartmentUnitApprovers::where('subunit_id', $value)->exists();
                     if ($DepartmentUnitApprovers) {
                         $fail('This Sub Unit is already have approvers');
                     }
+
+                    //check if the subunit is belong to the unit
+//                    $subunit = SubUnit::find($value);
+//                    if ($subunit->unit_id != $this->unit_id) {
+//                        $fail('This Sub Unit is not belong to the unit');
+//                    }
                 }
             ],
             'approver_id' => ['required', 'exists:approvers,id', 'array', 'unique_in_array', 'min:2'],

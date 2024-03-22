@@ -26,7 +26,7 @@ class UpdateAddingPrRequest extends FormRequest
     {
         // . $this->transactionNumber . ',transaction_number'
         return [
-            'business_unit_id' => 'required|exists:companies,id',
+//            'business_unit_id' => 'required|exists:companies,id',
             'pr_number' => [
                 'required',
                 'string',

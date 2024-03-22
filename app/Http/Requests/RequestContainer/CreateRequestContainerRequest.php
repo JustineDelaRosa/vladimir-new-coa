@@ -8,6 +8,11 @@ use App\Models\FixedAsset;
 use App\Models\Location;
 use App\Models\RequestContainer;
 use App\Models\SubUnit;
+use App\Rules\NewCoaValidation\BusinessUnitValidation;
+use App\Rules\NewCoaValidation\DepartmentValidation;
+use App\Rules\NewCoaValidation\LocationValidation;
+use App\Rules\NewCoaValidation\SubunitValidation;
+use App\Rules\NewCoaValidation\UnitValidation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
@@ -38,8 +43,7 @@ class CreateRequestContainerRequest extends BaseRequest
                 'required',
                 Rule::exists('type_of_requests', 'id')
             ],
-            'company_id' => ['required', Rule::exists('companies', 'id')],
-            'department_id' => ['required', Rule::exists('departments', 'id')],
+
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
             'is_addcost' => 'nullable|boolean',
             'fixed_asset_id' => [
@@ -57,32 +61,7 @@ class CreateRequestContainerRequest extends BaseRequest
 //                    }
                 },
             ],
-            'subunit_id' => [
-                'required', Rule::exists('sub_units', 'id'),
-                //check if the subunit already has approvers assigned
-                function ($attribute, $value, $fail) {
-                    $subunit = SubUnit::find($value);
-                    if ($subunit->departmentUnitApprovers->isEmpty()) {
-                        $fail('No approvers assigned to the selected subunit.');
-                    }
-                    //check if this is the sub unit of the selected department
-                    if ($subunit->department_id != request()->department_id) {
-                        $fail('Subunit does not match department.');
-                    }
-                },
-            ],
-            'location_id' => [
-                'required', Rule::exists('locations', 'id'),
-                //check if the location and department combination exists
-                function ($attribute, $value, $fail) {
-                    $location = Location::find($value);
-                    $departments = $location->departments->pluck('id')->toArray();
-                    if (!in_array(request()->department_id, $departments)) {
-                        $fail('Invalid combination of location and department.');
-                    }
-                },
-            ],
-            'account_title_id' => ['required', Rule::exists('account_titles', 'id')],
+
             'accountability' => 'required|in:Personal Issued,Common',
             'accountable' => [
                 'required_if:accountability,Personal Issued',
@@ -102,12 +81,19 @@ class CreateRequestContainerRequest extends BaseRequest
             'cellphone_number' => 'nullable|numeric',
             'brand' => 'nullable',
             'quantity' => 'required|numeric|min:1',
-            'required|date|after_or_equal:today',
+            'date_needed' => 'required|date|after_or_equal:today',
             'letter_of_request' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'quotation' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'specification_form' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'other_attachments' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
+            'company_id' => 'required|exists:companies,id',
+            'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+            'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+            'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+            'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id)],
+            'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
+            'account_title_id' => 'required|exists:account_titles,id',
         ];
     }
 
@@ -163,26 +149,4 @@ class CreateRequestContainerRequest extends BaseRequest
         ];
     }
 
-
-
-    //    /**
-    //     * Handle a failed validation attempt.
-    //     *
-    //     * @param Validator $validator
-    //     * @return JsonResponse
-    //     * @throws HttpResponseException
-    //     */
-    //    protected function failedValidation(Validator $validator)
-    //    {
-    //        throw new HttpResponseException(
-    //            response()->json(
-    //                [
-    //                    'message' => 'Invalid Request',
-    //                    'errors' => [
-    //                        'title' => 'Oops . Something went wrong , try again or contact the support',
-    //                        'detail' => $validator->errors()->first(),
-    //                    ],
-    //                ], 422)
-    //        );
-    //    }
 }
