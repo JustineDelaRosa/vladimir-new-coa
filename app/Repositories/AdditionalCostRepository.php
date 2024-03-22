@@ -287,7 +287,7 @@ class AdditionalCostRepository
                 'minor_category_name' => $additional_cost->minorCategory->minor_category_name ?? '-',
             ],
             'est_useful_life' => $additional_cost->majorCategory->est_useful_life ?? '-',
-            'voucher' => $additional_cost->voucher,
+            'voucher' => $additional_cost->voucher ?? '-',
             'voucher_date' => $additional_cost->voucher_date ?? '-',
             'receipt' => $additional_cost->receipt,
             'quantity' => $additional_cost->quantity,
@@ -332,6 +332,11 @@ class AdditionalCostRepository
                 'id' => $additional_cost->businessUnit->id ?? '-',
                 'business_unit_code' => $additional_cost->businessUnit->business_unit_code ?? '-',
                 'business_unit_name' => $additional_cost->businessUnit->business_unit_name ?? '-',
+            ],
+            'unit' => [
+                'id' => $fixed_asset->unit->id ?? '-',
+                'unit_code' => $fixed_asset->unit->unit_code ?? '-',
+                'unit_name' => $fixed_asset->unit->unit_name ?? '-',
             ],
             'subunit' => [
                 'id' => $additional_cost->subunit->id ?? '-',
@@ -396,7 +401,7 @@ class AdditionalCostRepository
                     'minor_category_name' => $additional_cost->fixedAsset->minorCategory->minor_category_name ?? '-',
                 ],
                 'est_useful_life' => $additional_cost->fixedAsset->majorCategory->est_useful_life ?? '-',
-                'voucher' => $additional_cost->fixedAsset->voucher,
+                'voucher' => $additional_cost->fixedAsset->voucher ?? '-',
                 'voucher_date' => $additional_cost->fixedAsset->voucher_date ?? '-',
                 'receipt' => $additional_cost->fixedAsset->receipt,
                 'quantity' => $additional_cost->fixedAsset->quantity,
@@ -443,6 +448,11 @@ class AdditionalCostRepository
                     'id' => $additional_cost->businessUnit->id ?? '-',
                     'business_unit_code' => $additional_cost->businessUnit->business_unit_code ?? '-',
                     'business_unit_name' => $additional_cost->businessUnit->business_unit_name ?? '-',
+                ],
+                'unit' => [
+                    'id' => $fixed_asset->unit->id ?? '-',
+                    'unit_code' => $fixed_asset->unit->unit_code ?? '-',
+                    'unit_name' => $fixed_asset->unit->unit_name ?? '-',
                 ],
                 'subunit' => [
                     'id' => $additional_cost->subunit->id ?? '-',

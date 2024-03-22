@@ -287,6 +287,7 @@ class FixedAssetRepository
             'care_of',
             'company_id',
             'business_unit_id',
+            'unit_id',
             'subunit_id',
             'department_id',
             'charged_department',
@@ -339,6 +340,7 @@ class FixedAssetRepository
             'additional_costs.care_of',
             'additional_costs.company_id',
             'additional_costs.business_unit_id',
+            'additional_costs.unit_id',
             'additional_costs.subunit_id',
             'additional_costs.department_id',
             'fixed_assets.charged_department as charged_department',
@@ -556,15 +558,20 @@ class FixedAssetRepository
                 'business_unit_code' => $fixed_asset->businessUnit->business_unit_code ?? '-',
                 'business_unit_name' => $fixed_asset->businessUnit->business_unit_name ?? '-',
             ],
-            'subunit' => [
-                'id' => $fixed_asset->subunit->id ?? '-',
-                'subunit_code' => $fixed_asset->subunit->sub_unit_code ?? '-',
-                'subunit_name' => $fixed_asset->subunit->sub_unit_name ?? '-',
-            ],
             'department' => [
                 'id' => $fixed_asset->department->id ?? '-',
                 'department_code' => $fixed_asset->department->department_code ?? '-',
                 'department_name' => $fixed_asset->department->department_name ?? '-',
+            ],
+            'unit' => [
+                'id' => $fixed_asset->unit->id ?? '-',
+                'unit_code' => $fixed_asset->unit->unit_code ?? '-',
+                'unit_name' => $fixed_asset->unit->unit_name ?? '-',
+            ],
+            'subunit' => [
+                'id' => $fixed_asset->subunit->id ?? '-',
+                'subunit_code' => $fixed_asset->subunit->sub_unit_code ?? '-',
+                'subunit_name' => $fixed_asset->subunit->sub_unit_name ?? '-',
             ],
             'charged_department' => [
                 'id' => $fixed_asset->department->id ?? '-',
@@ -681,15 +688,20 @@ class FixedAssetRepository
                         'business_unit_code' => $additional_cost->businessUnit->business_unit_code ?? '-',
                         'business_unit_name' => $additional_cost->businessUnit->business_unit_name ?? '-',
                     ],
-                    'subunit' => [
-                        'id' => $additional_cost->subunit->id ?? '-',
-                        'subunit_code' => $additional_cost->subunit->sub_unit_code ?? '-',
-                        'subunit_name' => $additional_cost->subunit->sub_unit_name ?? '-',
-                    ],
                     'department' => [
                         'id' => $additional_cost->department->id ?? '-',
                         'department_code' => $additional_cost->department->department_code ?? '-',
                         'department_name' => $additional_cost->department->department_name ?? '-',
+                    ],
+                    'unit' => [
+                        'id' => $additional_cost->unit->id ?? '-',
+                        'unit_code' => $additional_cost->unit->unit_code ?? '-',
+                        'unit_name' => $additional_cost->unit->unit_name ?? '-',
+                    ],
+                    'subunit' => [
+                        'id' => $additional_cost->subunit->id ?? '-',
+                        'subunit_code' => $additional_cost->subunit->sub_unit_code ?? '-',
+                        'subunit_name' => $additional_cost->subunit->sub_unit_name ?? '-',
                     ],
                     'charged_department' => [
                         'id' => $additional_cost->department->id ?? '-',
@@ -712,7 +724,7 @@ class FixedAssetRepository
         ];
     }
 
-    public function transformSearchFixedAsset($fixed_asset): array
+    public function transformSearchFixedAsset($fixed_asset)
     {
         $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? count($fixed_asset->additionalCost) : 0;
         return [
@@ -813,15 +825,20 @@ class FixedAssetRepository
                 'business_unit_code' => $fixed_asset->businessUnit->business_unit_code ?? '-',
                 'business_unit_name' => $fixed_asset->businessUnit->business_unit_name ?? '-',
             ],
-            'subunit' => [
-                'id' => $fixed_asset->subunit->id ?? '-',
-                'subunit_code' => $fixed_asset->subunit->sub_unit_code ?? '-',
-                'subunit_name' => $fixed_asset->subunit->sub_unit_name ?? '-',
-            ],
             'department' => [
                 'id' => $fixed_asset->department->id ?? '-',
                 'department_code' => $fixed_asset->department->department_code ?? '-',
                 'department_name' => $fixed_asset->department->department_name ?? '-',
+            ],
+            'unit' => [
+                'id' => $fixed_asset->unit->id ?? '-',
+                'unit_code' => $fixed_asset->unit->unit_code ?? '-',
+                'unit_name' => $fixed_asset->unit->unit_name ?? '-',
+            ],
+            'subunit' => [
+                'id' => $fixed_asset->subunit->id ?? '-',
+                'subunit_code' => $fixed_asset->subunit->sub_unit_code ?? '-',
+                'subunit_name' => $fixed_asset->subunit->sub_unit_name ?? '-',
             ],
             'charged_department' => [
                 'id' => $fixed_asset->department->id ?? '-',
