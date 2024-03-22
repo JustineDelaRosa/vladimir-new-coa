@@ -233,9 +233,16 @@ class AdditionalCostController extends Controller
     {
         //Variable declaration
         $properties = $additionalCost->formula;
-        $depreciation_method = $additionalCost->depreciation_method;
-        $est_useful_life = $additionalCost->majorCategory->est_useful_life;
+//        $depreciation_method = $additionalCost->depreciation_method;
+//        $est_useful_life = $additionalCost->majorCategory->est_useful_life;
         $custom_end_depreciation = $validator->validated()['date'];
+
+        //FOR INFORMATION
+        $depreciation_method =  $properties->depreciation_method;
+        $est_useful_life = $additionalCost->majorCategory->est_useful_life;
+        $acquisition_date = $properties->acquisition_date;
+        $acquisition_cost = $properties->acquisition_cost;
+        $scrap_value = $properties->scrap_value;
 
         //calculation variables
         $custom_age = $this->calculationRepository->getMonthDifference($properties->start_depreciation, $custom_end_depreciation);
@@ -255,24 +262,31 @@ class AdditionalCostController extends Controller
                 'depreciable_basis' => $properties->depreciable_basis,
                 'start_depreciation' => $properties->start_depreciation,
                 'end_depreciation' => $properties->end_depreciation,
-                'depreciation' => $monthly_depreciation,
-                'depreciation_per_month' => 0,
+                'depreciated' => $monthly_depreciation,
+                'depreciation_per_month' => $monthly_depreciation,
                 'depreciation_per_year' => 0,
                 'accumulated_cost' => 0,
                 'remaining_book_value' => 0,
+                'scrap_value' => $scrap_value,
+                'acquisition_date' => $acquisition_date,
+                'acquisition_cost' => $acquisition_cost,
+                'est_useful_life' => 'One Time',
+                'months_depreciated' => $custom_age,
             ],
             'default' => [
                 'depreciation_method' => $depreciation_method,
                 'depreciable_basis' => $properties->depreciable_basis,
                 'est_useful_life' => $est_useful_life,
                 'months_depreciated' => $custom_age,
-                'scrap_value' => $properties->scrap_value,
+                'scrap_value' => $scrap_value,
                 'start_depreciation' => $properties->start_depreciation,
                 'end_depreciation' => $properties->end_depreciation,
                 'depreciation_per_month' => $monthly_depreciation,
                 'depreciation_per_year' => $yearly_depreciation,
                 'accumulated_cost' => $accumulated_cost,
                 'remaining_book_value' => $remaining_book_value,
+                'acquisition_date' => $acquisition_date,
+                'acquisition_cost' => $acquisition_cost,
             ]
         ];
     }

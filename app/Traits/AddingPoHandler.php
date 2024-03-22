@@ -98,7 +98,7 @@ trait AddingPoHandler
             'quantity_removed' => ($removeRemaining == true) ? $removedCount : (($remove == true) ? $assetRequest->quantity : null),
             'po_number' => $poNumber ?? null,
             'rr_number' => $rrNumber ?? null,
-            'remarks' => null,
+            'remarks' => $assetRequest->remarks,
             'description' => $assetRequest->asset_description,
         ];
     }
@@ -267,6 +267,7 @@ trait AddingPoHandler
                 'company_id' => $asset->company_id,
                 'business_unit_id' => $asset->business_unit_id,
                 'department_id' => $asset->department_id,
+                'unit_id' => $asset->unit_id,
                 'subunit_id' => $asset->subunit_id,
                 'location_id' => $asset->location_id,
                 'account_id' => $asset->account_title_id,
@@ -319,6 +320,7 @@ trait AddingPoHandler
                 'company_id' => $asset->company_id,
                 'business_unit_id' => $asset->business_unit_id,
                 'department_id' => $asset->department_id,
+                'unit_id' => $asset->unit_id,
                 'subunit_id' => $asset->subunit_id,
                 'location_id' => $asset->location_id,
                 'account_id' => $asset->account_title_id,

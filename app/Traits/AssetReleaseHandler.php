@@ -334,9 +334,9 @@ trait AssetReleaseHandler
             'release_date' => $fixed_asset->formula->release_date ?? '-',
             'start_depreciation' => $fixed_asset->formula->start_depreciation ?? '-',
             'company' => [
-                'id' => $fixed_asset->department->company->id ?? '-',
-                'company_code' => $fixed_asset->department->company->company_code ?? '-',
-                'company_name' => $fixed_asset->department->company->company_name ?? '-',
+                'id' => $fixed_asset->company->id ?? '-',
+                'company_code' => $fixed_asset->company->company_code ?? '-',
+                'company_name' => $fixed_asset->company->company_name ?? '-',
             ],
             'business_unit' => [
                 'id' => $fixed_asset->department->businessUnit->id ?? '-',
@@ -349,9 +349,9 @@ trait AssetReleaseHandler
                 'department_name' => $fixed_asset->department->department_name ?? '-',
             ],
             'charged_department' => [
-                'id' => $additional_cost->department->id ?? '-',
-                'charged_department_code' => $additional_cost->department->department_code ?? '-',
-                'charged_department_name' => $additional_cost->department->department_name ?? '-',
+                'id' => $fixed_asset->department->id ?? '-',
+                'charged_department_code' => $fixed_asset->department->department_code ?? '-',
+                'charged_department_name' => $fixed_asset->department->department_name ?? '-',
             ],
             'unit' => [
                 'id' => $fixed_asset->unit->id ?? '-',
@@ -360,8 +360,8 @@ trait AssetReleaseHandler
             ],
             'subunit' => [
                 'id' => $fixed_asset->subunit->id ?? '-',
-                'subunit_code' => $fixed_asset->subunit->subunit_code ?? '-',
-                'subunit_name' => $fixed_asset->subunit->subunit_name ?? '-',
+                'subunit_code' => $fixed_asset->subunit->sub_unit_code ?? '-',
+                'subunit_name' => $fixed_asset->subunit->sub_unit_name ?? '-',
             ],
             'location' => [
                 'id' => $fixed_asset->location->id ?? '-',
@@ -474,9 +474,9 @@ trait AssetReleaseHandler
                     'release_date' => $additional_cost->formula->release_date ?? '-',
                     'start_depreciation' => $additional_cost->formula->start_depreciation ?? '-',
                     'company' => [
-                        'id' => $additional_cost->department->company->id ?? '-',
-                        'company_code' => $additional_cost->department->company->company_code ?? '-',
-                        'company_name' => $additional_cost->department->company->company_name ?? '-',
+                        'id' => $additional_cost->company->id ?? '-',
+                        'company_code' => $additional_cost->company->company_code ?? '-',
+                        'company_name' => $additional_cost->company->company_name ?? '-',
                     ],
                     'business_unit' => [
                         'id' => $fixed_asset->department->businessUnit->id ?? '-',
@@ -500,8 +500,8 @@ trait AssetReleaseHandler
                     ],
                     'subunit' => [
                         'id' => $additional_cost->subunit->id ?? '-',
-                        'subunit_code' => $additional_cost->subunit->subunit_code ?? '-',
-                        'subunit_name' => $additional_cost->subunit->subunit_name ?? '-',
+                        'subunit_code' => $additional_cost->subunit->sub_unit_code ?? '-',
+                        'subunit_name' => $additional_cost->subunit->sub_unit_name ?? '-',
                     ],
                     'location' => [
                         'id' => $additional_cost->location->id ?? '-',
@@ -613,9 +613,9 @@ trait AssetReleaseHandler
             ],
             'care_of' => $fixed_asset->care_of ?? '-',
             'company' => [
-                'id' => $fixed_asset->department->company->id ?? '-',
-                'company_code' => $fixed_asset->department->company->company_code ?? '-',
-                'company_name' => $fixed_asset->department->company->company_name ?? '-',
+                'id' => $fixed_asset->company->id ?? '-',
+                'company_code' => $fixed_asset->company->company_code ?? '-',
+                'company_name' => $fixed_asset->company->company_name ?? '-',
             ],
             'business_unit' => [
                 'id' => $fixed_asset->department->businessUnit->id ?? '-',
@@ -639,8 +639,8 @@ trait AssetReleaseHandler
             ],
             'subunit' => [
                 'id' => $fixed_asset->subunit->id ?? '-',
-                'subunit_code' => $fixed_asset->subunit->subunit_code ?? '-',
-                'subunit_name' => $fixed_asset->subunit->subunit_name ?? '-',
+                'subunit_code' => $fixed_asset->subunit->sub_unit_code ?? '-',
+                'subunit_name' => $fixed_asset->subunit->sub_unit_name ?? '-',
             ],
             'location' => [
                 'id' => $fixed_asset->location->id ?? '-',

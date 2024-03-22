@@ -45,6 +45,7 @@ class FixedAssetRequest extends FormRequest
         if ($this->isMethod('post') &&
             ($this->sub_capex_id === null)) {
             return [
+                'po_number' => 'nullable',
 //              'capex_id' => 'nullable',
                 'sub_capex_id' => 'nullable',
                 'tag_number' => ['nullable', 'max:13', function ($attribute, $value, $fail) {
@@ -104,14 +105,14 @@ class FixedAssetRequest extends FormRequest
                 'major_category_id' => 'required|exists:major_categories,id',
                 'minor_category_id' => 'required|exists:minor_categories,id',
                 'voucher' => [function ($attribute, $value, $fail) {
-                    if (request()->depreciation_method != 'Supplier Rebase') {
-                        //if the depreciation status is running depreciation and fully depreciated required voucher
-                        $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
-                        if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
-                            if (in_array($value, [null, '-'])) {
-                                $fail('Voucher is required');
-                                return;
-                            }
+//                    if (request()->depreciation_method != 'Supplier Rebase') {
+//                        //if the depreciation status is running depreciation and fully depreciated required voucher
+//                        $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+//                        if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+//                            if (in_array($value, [null, '-'])) {
+//                                $fail('Voucher is required');
+//                                return;
+//                            }
 //                        if ($value == '-') {
 ////                            $fail('Voucher is required');
 //                            return;
@@ -124,8 +125,8 @@ class FixedAssetRequest extends FormRequest
 //                                $fail('Voucher previously uploaded.');
 //                            }
 //                        }
-                        }
-                    }
+//                        }
+//                    }
 
                 }],
                 'voucher_date' => ['nullable',
@@ -156,13 +157,13 @@ class FixedAssetRequest extends FormRequest
 //                }
                 ],
                 'receipt' => ['nullable', function ($attribute, $value, $fail) {
-                    //if the depreciation status is running depreciation and fully depreciated required voucher
-                    $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
-                    if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
-                        if ($value == null) {
-                            $fail('Receipt is required');
-                        }
-                    }
+//                    //if the depreciation status is running depreciation and fully depreciated required voucher
+//                    $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+//                    if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+//                        if ($value == null) {
+//                            $fail('Receipt is required');
+//                        }
+//                    }
 
                 }],
                 'quantity' => 'required',
@@ -275,6 +276,7 @@ class FixedAssetRequest extends FormRequest
 
         if ($this->isMethod('post')) {
             return [
+                'po_number' => 'nullable',
 //                'capex_id' => 'required|exists:capexes,id',
                 'sub_capex_id' => ['required', 'exists:sub_capexes,id'
 //                    ,function ($attribute, $value, $fail) {
@@ -345,15 +347,15 @@ class FixedAssetRequest extends FormRequest
                 'major_category_id' => 'required|exists:major_categories,id',
                 'minor_category_id' => 'required|exists:minor_categories,id',
                 'voucher' => [function ($attribute, $value, $fail) {
-                    if (request()->depreciation_method != 'Supplier Rebase') {
-                        //if the depreciation status is running depreciation and fully depreciated required voucher
-                        $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
-                        if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
-
-                            if (in_array($value, [null, '-'])) {
-                                $fail('Voucher is required');
-                                return;
-                            }
+//                    if (request()->depreciation_method != 'Supplier Rebase') {
+//                        //if the depreciation status is running depreciation and fully depreciated required voucher
+//                        $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+//                        if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+//
+//                            if (in_array($value, [null, '-'])) {
+//                                $fail('Voucher is required');
+//                                return;
+//                            }
 //                        if ($value == '-') {
 ////                            $fail('Voucher is required');
 //                            return;
@@ -366,8 +368,8 @@ class FixedAssetRequest extends FormRequest
 //                                $fail('Voucher previously uploaded.');
 //                            }
 //                        }
-                        }
-                    }
+//                        }
+//                    }
                 }],
                 'voucher_date' => ['nullable',
 //                    function ($attribute, $value, $fail) {
@@ -397,13 +399,13 @@ class FixedAssetRequest extends FormRequest
 //                }
                 ],
                 'receipt' => ['nullable', function ($attribute, $value, $fail) {
-                    //if the depreciation status is running depreciation and fully depreciated required
-                    $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
-                    if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
-                        if ($value == null) {
-                            $fail('Receipt is required');
-                        }
-                    }
+//                    //if the depreciation status is running depreciation and fully depreciated required
+//                    $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
+//                    if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+//                        if ($value == null) {
+//                            $fail('Receipt is required');
+//                        }
+//                    }
                 }],
                 'quantity' => 'required',
                 'asset_status_id' => 'required|exists:asset_statuses,id',
