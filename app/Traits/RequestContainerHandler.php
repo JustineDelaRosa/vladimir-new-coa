@@ -39,12 +39,8 @@ trait RequestContainerHandler
             'fixed_asset_id' => $request->fixed_asset_id ?? null,
             'type_of_request_id' => $request->type_of_request_id,
             'attachment_type' => $request->attachment_type,
-            'subunit_id' => $request->subunit_id,
-            'location_id' => $request->location_id,
             'account_title_id' => $request->account_title_id,
             'accountability' => $request->accountability,
-            'company_id' => $request->company_id,
-            'department_id' => $request->department_id,
             'accountable' => $request->accountable ?? null,
             'additional_info' => $request->additional_info ?? null,
             'acquisition_details' => $request->acquisition_details,
@@ -54,6 +50,12 @@ trait RequestContainerHandler
             'brand' => $request->brand ?? null,
             'quantity' => $request->quantity,
             'date_needed' => $request->date_needed,
+            'company_id' => $request->company_id,
+            'business_unit_id' => $request->business_unit_id,
+            'department_id' => $request->department_id,
+            'unit_id' => $request->unit_id,
+            'subunit_id' => $request->subunit_id,
+            'location_id' => $request->location_id,
         ]);
     }
 
@@ -88,7 +90,9 @@ trait RequestContainerHandler
             foreach ($requestContainer as $requestContainerItem) {
                 $requestContainerItem->update([
                     'company_id' => $request->company_id,
+                    'business_unit_id' => $request->business_unit_id,
                     'department_id' => $request->department_id,
+                    'unit_id' => $request->unit_id,
                     'subunit_id' => $request->subunit_id,
                     'location_id' => $request->location_id,
                 ]);

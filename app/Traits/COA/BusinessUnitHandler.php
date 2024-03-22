@@ -11,7 +11,13 @@ trait BusinessUnitHandler
                 'business_unit_code' => $businessUnit->business_unit_code,
                 'business_unit_name' => $businessUnit->business_unit_name,
                 'is_active' => $businessUnit->is_active,
-                'company' => $businessUnit->company_sync_id,
+                'company' => [
+                    'id' => $businessUnit->company->id ?? "-",
+                    'company_sync_id' => $businessUnit->company->sync_id ?? "-",
+                    'company_code' => $businessUnit->company->company_code ?? "-",
+                    'company_name' => $businessUnit->company->company_name ?? "-",
+                    'company_status' => $businessUnit->company->is_active ?? '-',
+                ],
             ];
         });
         return $businessUnit;

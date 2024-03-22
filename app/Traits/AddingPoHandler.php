@@ -99,6 +99,7 @@ trait AddingPoHandler
             'po_number' => $poNumber ?? null,
             'rr_number' => $rrNumber ?? null,
             'remarks' => null,
+            'description' => $assetRequest->asset_description,
         ];
     }
 

@@ -15,6 +15,15 @@ trait UnitHandler
                     'department_name' => $unit->departments->department_name ?? "-",
                     'department_status' => $unit->departments->is_active ?? '-',
                 ],
+                'subunit' => $unit->subunits->map(function ($subunit){
+                    return[
+                        'id' => $subunit->id,
+                        'sync_id' => $subunit->sync_id,
+                        'subunit_code' => $subunit->sub_unit_code,
+                        'subunit_name' => $subunit->sub_unit_name,
+                        'is_active' => $subunit->is_active,
+                    ];
+                }),
                 'unit_code' => $unit->unit_code,
                 'unit_name' => $unit->unit_name,
                 'is_active' => $unit->is_active,

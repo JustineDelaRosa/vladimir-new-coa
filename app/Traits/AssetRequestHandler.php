@@ -65,14 +65,16 @@ trait AssetRequestHandler
             'cellphone_number' => $request->cellphone_number ?? null,
             'brand' => $request->brand ?? null,
             'quantity' => $request->quantity,
-            'company_id' => $request->company_id,
-            'department_id' => $request->department_id,
-            'subunit_id' => $request->subunit_id,
-            'location_id' => $request->location_id,
             'acquisition_details' => $request->acquisition_details ?? null,
             'date_needed' => $request->date_needed ?? null,
             'fixed_asset_id' => $request->fixed_asset_id ?? null,
             'account_title_id' => $request->account_title_id ?? null,
+            'company_id' => $request->company_id,
+            'business_unit_id' => $request->business_unit_id,
+            'department_id' => $request->department_id,
+            'unit_id' => $request->unit_id,
+            'subunit_id' => $request->subunit_id,
+            'location_id' => $request->location_id,
         ]);
 
         $this->updateOtherRequestChargingDetails($assetRequest, $request, $save);
@@ -90,12 +92,14 @@ trait AssetRequestHandler
         foreach ($allRequest as $ar) {
             $ar->update([
                 'company_id' => $request->company_id,
+                'business_unit_id' => $request->business_unit_id,
                 'department_id' => $request->department_id,
+                'unit_id' => $request->unit_id,
                 'subunit_id' => $request->subunit_id,
                 'location_id' => $request->location_id,
                 'acquisition_details' => $request->acquisition_details ?? null,
                 'fixed_asset_id' => $request->fixed_asset_id ?? null,
-//                'account_title_id' =>  $request->account_title_id ?? null,
+//                'account_title_id' => $request->account_title_id ?? null,
             ]);
         }
         return $ar;
@@ -244,7 +248,8 @@ trait AssetRequestHandler
                 'created_at' => $activityLog->created_at,
                 'remarks' => $activityLog->properties['remarks'] ?? null,
                 'received_by' => $activityLog->properties['received_by'] ?? null,
-                'description' => $activityLog->properties['description'] ?? null,
+                'asset_description' => $activityLog->properties['description'] ?? null,
+                'vladimir_tag_number' => $activityLog->properties['vladimir_tag'] ?? null,
             ];
         });
     }

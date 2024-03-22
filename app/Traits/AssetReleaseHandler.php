@@ -35,6 +35,7 @@ trait AssetReleaseHandler
             'transaction_number' => $assetToRelease->transaction_number,
             'description' => $assetToRelease->asset_description,
             'received_by' => $assetToRelease->received_by,
+            'vladimir_tag' => $assetToRelease->vladimir_tag_number ?? $assetToRelease->fixedAsset->vladimir_tag_number ?? '-',
         ];
     }
 
@@ -147,6 +148,8 @@ trait AssetReleaseHandler
             'company_id',
             'business_unit_id',
             'department_id',
+            'unit_id',
+            'subunit_id',
             'charged_department',
             'location_id',
             'account_id',
@@ -204,6 +207,8 @@ trait AssetReleaseHandler
             'additional_costs.company_id',
             'additional_costs.business_unit_id',
             'additional_costs.department_id',
+            'additional_costs.unit_id',
+            'additional_costs.subunit_id',
             'fixed_assets.charged_department as charged_department',
             'additional_costs.location_id',
             'additional_costs.account_id',
@@ -348,6 +353,16 @@ trait AssetReleaseHandler
                 'charged_department_code' => $additional_cost->department->department_code ?? '-',
                 'charged_department_name' => $additional_cost->department->department_name ?? '-',
             ],
+            'unit' => [
+                'id' => $fixed_asset->unit->id ?? '-',
+                'unit_code' => $fixed_asset->unit->unit_code ?? '-',
+                'unit_name' => $fixed_asset->unit->unit_name ?? '-',
+            ],
+            'subunit' => [
+                'id' => $fixed_asset->subunit->id ?? '-',
+                'subunit_code' => $fixed_asset->subunit->subunit_code ?? '-',
+                'subunit_name' => $fixed_asset->subunit->subunit_name ?? '-',
+            ],
             'location' => [
                 'id' => $fixed_asset->location->id ?? '-',
                 'location_code' => $fixed_asset->location->location_code ?? '-',
@@ -478,6 +493,16 @@ trait AssetReleaseHandler
                         'charged_department_code' => $additional_cost->department->department_code ?? '-',
                         'charged_department_name' => $additional_cost->department->department_name ?? '-',
                     ],
+                    'unit' => [
+                        'id' => $additional_cost->unit->id ?? '-',
+                        'unit_code' => $additional_cost->unit->unit_code ?? '-',
+                        'unit_name' => $additional_cost->unit->unit_name ?? '-',
+                    ],
+                    'subunit' => [
+                        'id' => $additional_cost->subunit->id ?? '-',
+                        'subunit_code' => $additional_cost->subunit->subunit_code ?? '-',
+                        'subunit_name' => $additional_cost->subunit->subunit_name ?? '-',
+                    ],
                     'location' => [
                         'id' => $additional_cost->location->id ?? '-',
                         'location_code' => $additional_cost->location->location_code ?? '-',
@@ -603,9 +628,19 @@ trait AssetReleaseHandler
                 'department_name' => $fixed_asset->department->department_name ?? '-',
             ],
             'charged_department' => [
-                'id' => $additional_cost->department->id ?? '-',
-                'charged_department_code' => $additional_cost->department->department_code ?? '-',
-                'charged_department_name' => $additional_cost->department->department_name ?? '-',
+                'id' => $fixed_asset->department->id ?? '-',
+                'charged_department_code' => $fixed_asset->department->department_code ?? '-',
+                'charged_department_name' => $fixed_asset->department->department_name ?? '-',
+            ],
+            'unit' => [
+                'id' => $fixed_asset->unit->id ?? '-',
+                'unit_code' => $fixed_asset->unit->unit_code ?? '-',
+                'unit_name' => $fixed_asset->unit->unit_name ?? '-',
+            ],
+            'subunit' => [
+                'id' => $fixed_asset->subunit->id ?? '-',
+                'subunit_code' => $fixed_asset->subunit->subunit_code ?? '-',
+                'subunit_name' => $fixed_asset->subunit->subunit_name ?? '-',
             ],
             'location' => [
                 'id' => $fixed_asset->location->id ?? '-',
@@ -816,6 +851,16 @@ trait AssetReleaseHandler
                 'charged_department_code' => $additional_cost->department->department_code ?? '-',
                 'charged_department_name' => $additional_cost->department->department_name ?? '-',
             ],
+            'unit' => [
+                'id' => $additional_cost->unit->id ?? '-',
+                'unit_code' => $additional_cost->unit->unit_code ?? '-',
+                'unit_name' => $additional_cost->unit->unit_name ?? '-',
+            ],
+            'subunit' => [
+                'id' => $additional_cost->subunit->id ?? '-',
+                'subunit_code' => $additional_cost->subunit->subunit_code ?? '-',
+                'subunit_name' => $additional_cost->subunit->subunit_name ?? '-',
+            ],
             'location' => [
                 'id' => $additional_cost->location->id ?? '-',
                 'location_code' => $additional_cost->location->location_code ?? '-',
@@ -924,6 +969,16 @@ trait AssetReleaseHandler
                     'id' => $additional_cost->department->id ?? '-',
                     'charged_department_code' => $additional_cost->department->department_code ?? '-',
                     'charged_department_name' => $additional_cost->department->department_name ?? '-',
+                ],
+                'unit' => [
+                    'id' => $assitional_cost->unit->id ?? '-',
+                    'unit_code' => $assitional_cost->unit->unit_code ?? '-',
+                    'unit_name' => $assitional_cost->unit->unit_name ?? '-',
+                ],
+                'subunit' => [
+                    'id' => $assitional_cost->subunit->id ?? '-',
+                    'subunit_code' => $assitional_cost->subunit->subunit_code ?? '-',
+                    'subunit_name' => $assitional_cost->subunit->subunit_name ?? '-',
                 ],
                 'location' => [
                     'id' => $additional_cost->fixedAsset->location->id ?? '-',

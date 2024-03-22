@@ -1,10 +1,12 @@
 <?php
+
 namespace App\Traits\COA;
 
 trait DepartmentHandler
 {
-    public function transformDepartment($department){
-        $department->transform(function($department){
+    public function transformDepartment($department)
+    {
+        $department->transform(function ($department) {
             return [
                 'id' => $department->id,
                 'sync_id' => $department->sync_id,
@@ -26,6 +28,15 @@ trait DepartmentHandler
                     'division_id' => $department->division->id ?? "-",
                     'division_name' => $department->division->division_name ?? "-",
                 ],
+                'unit' => $department->unit->map(function ($unit) {
+                    return [
+                        'id' => $unit->id ?? "-",
+                        'unit_sync_id' => $unit->sync_id ?? "-",
+                        'unit_code' => $unit->unit_code ?? "-",
+                        'unit_name' => $unit->unit_name ?? "-",
+                        'unit_status' => $unit->is_active ?? '-',
+                    ];
+                }),
                 'department_code' => $department->department_code,
                 'department_name' => $department->department_name,
                 'is_active' => $department->is_active,
