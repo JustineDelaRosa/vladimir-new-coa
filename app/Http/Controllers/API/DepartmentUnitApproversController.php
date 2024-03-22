@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Models\DepartmentUnitApprovers;
 use App\Models\SubUnit;
+use App\Models\Unit;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -27,10 +28,10 @@ class  DepartmentUnitApproversController extends Controller
                 /*'department_id' => $item[0]->department_id,
                 'department_name' => $item[0]->department->department_name,
                 'department_code' => $item[0]->department->department_code,*/
-                'department' => [
-                    'id' => $item[0]->department_id,
-                    'department_name' => $item[0]->department->department_name,
-                    'department_code' => $item[0]->department->department_code,
+                'unit' => [
+                    'id' => $item[0]->unit_id,
+                    'unit_name' => $item[0]->unit->unit_name,
+                    'unit_code' => $item[0]->unit->unit_code,
                 ],
                 'created_at' => $item[0]->created_at,
                 'subunit' => [
@@ -67,14 +68,13 @@ class  DepartmentUnitApproversController extends Controller
 
     public function store(CreateDepartmentUnitApproversRequest $request): JsonResponse
     {
-        //        $departmentId = $request->department_id;
         $subunitId = $request->subunit_id;
         $approverId = $request->approver_id;
 
         foreach ($approverId as $key => $approverIds) {
             $layer = DepartmentUnitApprovers::where('subunit_id', $subunitId)->max('layer');
             DepartmentUnitApprovers::create([
-                'department_id' => SubUnit::where('id', $subunitId)->first()->department_id,
+                'unit_id' => SubUnit::where('id', $subunitId)->first()->unit->id,
                 'subunit_id' => $subunitId,
                 'approver_id' => $approverIds,
                 'layer' => $layer + 1,
@@ -105,20 +105,20 @@ class  DepartmentUnitApproversController extends Controller
 
     public function arrangeLayer(UpdateDepartmentUnitApproversRequest $request, $id): JsonResponse
     {
-        //        $departmentId = $request->department_id;
+        //        $unitId = $request->department_id;
         $subunitId = $id;
         $approverId = $request->approver_id;
-        $departmentId = SubUnit::where('id', $subunitId)->first()->department_id;
+        $unitId = SubUnit::where('id', $subunitId)->first()->unit_id;
         $layer = 1;
 
-        $approverIds = DepartmentUnitApprovers::where('department_id', $departmentId)
+        $approverIds = DepartmentUnitApprovers::where('department_id', $unitId)
             ->where('subunit_id', $subunitId)
             ->pluck('approver_id')->toArray();
 
 
         $deletableApproverIds = array_diff($approverIds, $approverId);
         if (count($deletableApproverIds) > 0) {
-            DepartmentUnitApprovers::where('department_id', $departmentId)
+            DepartmentUnitApprovers::where('unit_id', $unitId)
                 ->where('subunit_id', $subunitId)
                 ->whereIn('approver_id', $deletableApproverIds)->delete();
         }
@@ -126,7 +126,7 @@ class  DepartmentUnitApproversController extends Controller
         foreach ($approverId as $approver) {
             DepartmentUnitApprovers::updateOrCreate(
                 [
-                    'department_id' => $departmentId,
+                    'unit_id' => $unitId,
                     'subunit_id' => $subunitId,
                     'approver_id' => $approver,
                 ],

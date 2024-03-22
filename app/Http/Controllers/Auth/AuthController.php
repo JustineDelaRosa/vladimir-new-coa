@@ -200,7 +200,7 @@ class AuthController extends Controller
             'Fixed Asset Associate', 'Po-receiving',
             'Purchase Request', 'Approver',
             'Warehouse', 'Fixed Assets',
-            'ERP'
+            'ERP', 'Requester-approver'
         ];
         $response = [
             'toApproveCount' => 0,
@@ -230,7 +230,7 @@ class AuthController extends Controller
             'Warehouse' => ['getToRelease', 'getToReceive'],
             'Fixed Assets' => ['getToApproveCount','getToTagCount'],
             'ERP' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
-            'Requester-Approver' =>['getToApproveCount'],
+            'Requester-approver' =>['getToApproveCount'],
         ];
 
         foreach ($roleFunctionMapping as $role => $functions) {

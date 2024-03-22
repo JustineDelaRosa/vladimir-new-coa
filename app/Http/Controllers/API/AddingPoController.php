@@ -45,14 +45,25 @@ class AddingPoController extends Controller
     {
         $requiredRole =array_map('strtolower',['Purchase Order', 'Admin', 'Super Admin', 'Warehouse', 'Purchase Request','Po-Receiving']);
         $checkUserRole = strtolower(auth('sanctum')->user()->role->role_name);
+
         if (in_array($checkUserRole, $requiredRole)) {
-            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
-                ->orderByRaw('(quantity > quantity_delivered) desc')
-                ->dynamicPaginate();
+            $nonSoftDeletedTransactionNumbers = AssetRequest::whereNull('deleted_at')->pluck('reference_number');
+            $assetRequest = AssetRequest::withTrashed()->where('transaction_number', $transactionNumber);
         } else {
             return $this->responseUnprocessable('You are not allowed to view this transaction.');
         }
-        $assetRequest = $this->responseData($assetRequest);
+
+        $assetRequest->where(function ($query) use ($nonSoftDeletedTransactionNumbers) {
+            $query->whereNull('deleted_at')
+                ->orWhere(function ($query) use ($nonSoftDeletedTransactionNumbers) {
+                    $query->whereNotNull('deleted_at')
+                        ->whereNotIn('reference_number', $nonSoftDeletedTransactionNumbers);
+                });
+        });
+
+        $assetRequest->orderByRaw('(quantity > quantity_delivered) desc');
+
+        $assetRequest = $this->responseData($assetRequest->dynamicPaginate());
 
         if ($assetRequest->isEmpty()) {
             return $this->responseUnprocessable('Asset Request not found.');

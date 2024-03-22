@@ -84,17 +84,17 @@ class AddingPrController extends Controller
     public function update(UpdateAddingPrRequest $request, $transactionNumber): JsonResponse
     {
         $prNumber = $request->pr_number;
-        $businessUnitId = $request->business_unit_id;
+//        $businessUnitId = $request->business_unit_id;
         $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
             ->where('status', 'Approved')
             ->get();
         if ($assetRequests->isEmpty()) {
             return $this->responseUnprocessable('Asset Request is not yet approved');
         }
-        $assetRequests->each(function ($assetRequest) use ($prNumber, $businessUnitId) {
+        $assetRequests->each(function ($assetRequest) use ($prNumber) {
             $assetRequest->update([
                 'pr_number' => $prNumber,
-                'business_unit_id' => $businessUnitId,
+//                'business_unit_id' => $businessUnitId,
                 'filter' => 'To PO'
             ]);
         });
