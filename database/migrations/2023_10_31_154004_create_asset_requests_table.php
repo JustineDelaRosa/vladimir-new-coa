@@ -83,11 +83,12 @@ class CreateAssetRequestsTable extends Migration
             $table->double('depreciable_basis')->nullable();
             //COA
             $table->unsignedInteger('company_id')->nullable();
+            $table->unsignedInteger('business_unit_id')->nullable();
             $table->unsignedInteger('department_id')->nullable();
+            $table->unsignedInteger('unit_id')->nullable();
             $table->unsignedInteger('subunit_id');
             $table->unsignedInteger('location_id')->nullable();
             $table->unsignedInteger('account_title_id')->nullable();
-            $table->unsignedInteger('business_unit_id')->nullable();
             $table->integer('print_count')->default(0);
             $table->timestamp('last_printed')->nullable();
             $table->unsignedInteger('deleter_id')->nullable();
@@ -159,7 +160,11 @@ class CreateAssetRequestsTable extends Migration
             $table
                 ->foreign('business_unit_id')
                 ->references('id')
-                ->on('companies');
+                ->on('business_units');
+            $table
+                ->foreign('unit_id')
+                ->references('id')
+                ->on('units');
             $table
                 ->foreign('supplier_id')
                 ->references('id')

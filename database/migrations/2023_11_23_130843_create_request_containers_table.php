@@ -27,7 +27,7 @@ class CreateRequestContainersTable extends Migration
             $table->string('remarks')->nullable();
             $table->unsignedInteger('type_of_request_id');
             //            $table->UnsignedInteger('charged_department_id');
-            $table->unsignedInteger('subunit_id'); //For ChargedDepartment
+
             $table->enum('accountability', ['Personal Issued', 'Common']);
             $table->string('accountable')->nullable();
             $table->string('asset_description');
@@ -75,7 +75,10 @@ class CreateRequestContainersTable extends Migration
             $table->double('depreciable_basis')->nullable();
             //COA
             $table->unsignedInteger('company_id')->nullable();
+            $table->unsignedInteger('business_unit_id')->nullable();
             $table->unsignedInteger('department_id')->nullable();
+            $table->unsignedInteger('unit_id')->nullable();
+            $table->unsignedInteger('subunit_id');
             $table->unsignedInteger('location_id')->nullable();
             $table->unsignedInteger('account_title_id')->nullable();
             //            $table->string('company_code')->nullable();
@@ -93,9 +96,12 @@ class CreateRequestContainersTable extends Migration
             $table->foreign('requester_id')->references('id')->on('users');
             $table->foreign('type_of_request_id')->references('id')->on('type_of_requests');
             //            $table->foreign('charged_department_id')->references('id')->on('departments');
-            $table->foreign('subunit_id')->references('id')->on('sub_units');
+
             $table->foreign('company_id')->references('id')->on('companies');
+            $table->foreign('business_unit_id')->references('id')->on('business_units');
             $table->foreign('department_id')->references('id')->on('departments');
+            $table->foreign('unit_id')->references('id')->on('units');
+            $table->foreign('subunit_id')->references('id')->on('sub_units');
             $table->foreign('location_id')->references('id')->on('locations');
             $table->foreign('account_title_id')->references('id')->on('account_titles');
 
