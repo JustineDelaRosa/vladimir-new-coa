@@ -81,6 +81,11 @@ class RequestContainer extends Model implements HasMedia
         return $this->hasMany(AssetApproval::class, 'transaction_number', 'transaction_number');
     }
 
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(Unit::class, 'unit_id', 'id');
+    }
+
     public function subunit(){
         return $this->belongsTo(Subunit::class , 'subunit_id' , 'id');
     }

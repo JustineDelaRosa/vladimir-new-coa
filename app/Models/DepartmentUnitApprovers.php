@@ -21,9 +21,9 @@ class DepartmentUnitApprovers extends Model
      */
     protected $guarded = [];
 
-    public function department()
+    public function unit()
     {
-        return $this->belongsTo(Department::class, 'department_id', 'id');
+        return $this->belongsTo(Unit::class, 'unit_id', 'id');
     }
 
     public function subUnit()
