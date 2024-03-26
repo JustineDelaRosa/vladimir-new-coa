@@ -32,7 +32,7 @@ trait AssetRequestHandler
 
         //TODO:: CHECK THIS
         $approverCount = AssetApproval::where('transaction_number', $transactionNumber)->whereIN('status', ['For Approval', 'Returned'])
-            ->first()->layer;
+            ->first()->layer ?? 1;
         if ($singleResult) {
             $query = AssetRequest::where($field, $referenceNumber)
                 ->whereIn('status', [
