@@ -93,6 +93,10 @@ class User extends Authenticatable
         return $this->belongsTo(RoleManagement::class, 'role_id', 'id');
     }
 
+    public function unit(){
+        return $this->belongsTo(Unit::class, 'unit_id', 'id');
+    }
+
     //    public function requestor(){
     //        return $this->hasMany(ApproverLayer::class, 'user_id', 'id');
     //    }

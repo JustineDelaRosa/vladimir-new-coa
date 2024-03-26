@@ -25,7 +25,6 @@ class UserController extends Controller
     {
 //        $user = User::with('role')->get();
 //        return $user;
-
         $userStatus = $request->status;
         $isActiveStatus = ($userStatus === "deactivated") ? 0 : 1;
 
@@ -42,15 +41,15 @@ class UserController extends Controller
                 'lastname' => $item->lastname,
                 'username' => $item->username,
                 'role' => $item->role,
-                'department' => [
-                    'id' => $item->department->id ?? null,
-                    'department_code' => $item->department->department_code ?? null,
-                    'department_name' => $item->department->department_name ?? null,
+                'unit' => [
+                    'id' => $item->unit->id ?? null,
+                    'unit_code' => $item->unit->unit_code ?? null,
+                    'unit_name' => $item->unit->unit_name ?? null,
                 ],
                 'subunit' => [
-                    'id' => $item->subunit->id ?? null,
-                    'subunit_code' => $item->subunit->sub_unit_code ?? null,
-                    'subunit_name' => $item->subunit->sub_unit_name ?? null,
+                    'id' => $item->subUnit->id ?? null,
+                    'subunit_code' => $item->subUnit->sub_unit_code ?? null,
+                    'subunit_name' => $item->subUnit->sub_unit_name ?? null,
                 ],
                 'is_active' => $item->is_active,
                 'created_at' => $item->created_at,
@@ -75,7 +74,7 @@ class UserController extends Controller
         $lastname = ucwords(strtolower($request->lastname));
         $username = $request->username;
         $role_id = $request->role_id;
-        $department_id = $request->department_id;
+        $unit_id = $request->unit_id;
         $subunit_id = $request->subunit_id;
 
         // $accessPermissionConvertedToString = implode(", ",$access_permission);
@@ -87,7 +86,7 @@ class UserController extends Controller
             'lastname' => $lastname,
             'username' => $username,
             'password' => Crypt::encryptString($username),
-            'department_id' => $department_id,
+            'unit_id' => $unit_id,
             'subunit_id' => $subunit_id,
             'is_active' => 1,
             'role_id' => $role_id,
@@ -137,25 +136,25 @@ class UserController extends Controller
         $data = User::with('role')->findOrFail($id);
         return [
             'id' => $data->id,
-            'employee_id' => $data->employee_id,
-            'firstname' => $data->firstname,
-            'lastname' => $data->lastname,
-            'username' => $data->username,
-            'role' => $data->role,
-            'department' => [
-                'id' => $item->department->id ?? null,
-                'department_code' => $item->department->department_code ?? null,
-                'department_name' => $item->department->department_name ?? null,
-            ],
-            'subunit' => [
-                'id' => $item->subunit->id ?? null,
-                'sub_unit_code' => $item->subunit->sub_unit_code ?? null,
-                'sub_unit_name' => $item->subunit->sub_unit_name ?? null,
-            ],
-            'is_active' => $data->is_active,
-            'created_at' => $data->created_at,
-            'updated_at' => $data->updated_at,
-            'deleted_at' => $data->deleted_at,
+//            'employee_id' => $data->employee_id,
+//            'firstname' => $data->firstname,
+//            'lastname' => $data->lastname,
+//            'username' => $data->username,
+//            'role' => $data->role,
+//            'unit' => [
+//                'id' => $item->unit->id ?? null,
+//                'unit_code' => $item->unit->unit_code ?? null,
+//                'unit_name' => $item->unit->unit_name ?? null,
+//            ],
+//            'subunit' => [
+//                'id' => $item->subunit->id ?? null,
+//                'sub_unit_code' => $item->subunit->sub_unit_code ?? null,
+//                'sub_unit_name' => $item->subunit->sub_unit_name ?? null,
+//            ],
+//            'is_active' => $data->is_active,
+//            'created_at' => $data->created_at,
+//            'updated_at' => $data->updated_at,
+//            'deleted_at' => $data->deleted_at,
         ];
     }
 
@@ -182,7 +181,7 @@ class UserController extends Controller
             'lastname'      => ucwords(strtolower($request->lastname)),
             'username'      => $request->username,
             'role_id'       => $request->role_id,
-            'department_id' => $request->department_id,
+            'unit_id' => $request->unit_id,
             'subunit_id'    => $request->subunit_id,
         ];
 
