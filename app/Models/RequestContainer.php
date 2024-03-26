@@ -89,6 +89,9 @@ class RequestContainer extends Model implements HasMedia
     public function subunit(){
         return $this->belongsTo(Subunit::class , 'subunit_id' , 'id');
     }
+    public function businessUnit(){
+        return $this->belongsTo(BusinessUnit::class , 'business_unit_id' , 'id');
+    }
 
     public function typeOfRequest()
     {
