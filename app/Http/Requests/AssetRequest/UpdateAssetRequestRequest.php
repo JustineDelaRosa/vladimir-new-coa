@@ -5,6 +5,11 @@ namespace App\Http\Requests\AssetRequest;
 use App\Models\SubUnit;
 use App\Rules\FileOrX;
 use App\Models\TypeOfRequest;
+use App\Rules\NewCoaValidation\BusinessUnitValidation;
+use App\Rules\NewCoaValidation\DepartmentValidation;
+use App\Rules\NewCoaValidation\LocationValidation;
+use App\Rules\NewCoaValidation\SubunitValidation;
+use App\Rules\NewCoaValidation\UnitValidation;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -36,24 +41,6 @@ class UpdateAssetRequestRequest extends FormRequest
             'date_needed' => 'required|date|after_or_equal:today',
             'is_addcost' => 'nullable|in:0,1',
             'fixed_asset_id' => ['required-if:is_addcost,1', Rule::exists('fixed_assets', 'id')],
-            'company_id' => ['required', Rule::exists('companies', 'id')],
-            'department_id' => ['required', Rule::exists('departments', 'id')],
-            'subunit_id' => [
-                'required', Rule::exists('sub_units', 'id'),
-                //check if the subunit already has approvers assigned
-                function ($attribute, $value, $fail) {
-                    $subunit = SubUnit::find($value);
-                    if ($subunit->departmentUnitApprovers->isEmpty()) {
-                        $fail('No approvers assigned to the selected subunit.');
-                    }
-                    //check if this is the sub unit of the selected department
-                    if ($subunit->department_id != request()->department_id) {
-                        $fail('Subunit does not match department.');
-                    }
-                },
-            ],
-            'location_id' => ['required', Rule::exists('locations', 'id')],
-            'account_title_id' => ['required', Rule::exists('account_titles', 'id')],
             //            'charged_department_id' => ['required', Rule::exists('departments', 'id')],
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
             //            'subunit_id' =>['required', Rule::exists('sub_units', 'id')],
@@ -73,8 +60,16 @@ class UpdateAssetRequestRequest extends FormRequest
             'asset_description' => 'required',
             'asset_specification' => 'nullable',
             'cellphone_number' => 'nullable|numeric',
+            'acquisition_details' => 'required|string',
             'brand' => 'nullable',
             'quantity' => 'required|numeric|min:1',
+            'company_id' => 'required|exists:companies,id',
+            'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+            'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+            'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+            'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
+            'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
+            'account_title_id' => 'required|exists:account_titles,id',
             'letter_of_request' => ['bail', 'nullable', 'max:10000', new FileOrX],
             'quotation' => ['bail', 'nullable', 'max:10000', new FileOrX],
             'specification_form' => ['bail', 'nullable', 'max:10000', new FileOrX],
@@ -97,6 +92,7 @@ class UpdateAssetRequestRequest extends FormRequest
             'accountable.required_if' => 'The accountable field is required when accountability is personal issued',
             'accountable.exists' => 'The selected accountable is invalid',
             //            'accountable.validateAccountable' => 'The selected accountable is invalids',
+            'acquisition_details.required' => 'The acquisition details is required.',
             'cellphone_number.numeric' => 'The cellphone number must be a number',
             'brand.required' => 'The brand field is required',
             'quantity.required' => 'The quantity field is required',

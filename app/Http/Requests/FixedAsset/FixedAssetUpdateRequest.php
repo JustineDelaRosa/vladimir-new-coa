@@ -322,7 +322,7 @@ class FixedAssetUpdateRequest extends FormRequest
             'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
             'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
             'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
-            'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id)],
+            'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
             'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
 //            'print_count' => 'nullable|numeric',
         ];
