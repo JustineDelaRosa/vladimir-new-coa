@@ -140,9 +140,9 @@ trait RequestShowDataHandler
                 'company_name' => $ar->company->company_name,
             ],
             'business_unit' => [
-                'id' => $ar->businessUnit->id ?? '-',
-                'business_unit_code' => $ar->businessUnit->company_code ?? '-',
-                'business_unit_name' => $ar->businessUnit->company_name ?? '-',
+                'id' => $ar->businessUnit->id,
+                'business_unit_code' => $ar->businessUnit->business_unit_code ?? '-',
+                'business_unit_name' => $ar->businessUnit->business_unit_name ?? '-',
             ],
             'department' => [
                 'id' => $ar->department->id,
