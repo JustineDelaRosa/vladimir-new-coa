@@ -103,15 +103,16 @@ class  DepartmentUnitApproversController extends Controller
     }
 
 
-    public function arrangeLayer(UpdateDepartmentUnitApproversRequest $request, $id): JsonResponse
+    public function arrangeLayer(UpdateDepartmentUnitApproversRequest $request, $id)
     {
         //        $unitId = $request->department_id;
         $subunitId = $id;
         $approverId = $request->approver_id;
-        $unitId = SubUnit::where('id', $subunitId)->first()->unit_id;
+        $unitId = SubUnit::where('id', $subunitId)->first()->unit->id;
         $layer = 1;
 
-        $approverIds = DepartmentUnitApprovers::where('department_id', $unitId)
+
+        $approverIds = DepartmentUnitApprovers::where('unit_id', $unitId)
             ->where('subunit_id', $subunitId)
             ->pluck('approver_id')->toArray();
 
