@@ -57,7 +57,7 @@ class UpdateRequestContainerRequest extends FormRequest
             ],
             'asset_description' => 'required',
             'asset_specification' => 'nullable',
-            'cellphone_number' => 'nullable|numeric',
+            'cellphone_number' => 'nullable|digits_between:11,12',
             'brand' => 'nullable',
             'quantity' => 'required|numeric',
 //            'letter_of_request' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
@@ -95,7 +95,7 @@ class UpdateRequestContainerRequest extends FormRequest
             'other_attachments.file' => 'The other attachments must be a file.',
             'other_attachments.mimes' => 'The other attachments must be a file of type: pdf, doc, docx, xls, xlsx.',
             'other_attachments.max' => 'The other attachments may not be greater than 10000 kilobytes.',
-
+            'cellphone_number.digits_between' => 'Invalid cellphone number.',
         ];
     }
 }

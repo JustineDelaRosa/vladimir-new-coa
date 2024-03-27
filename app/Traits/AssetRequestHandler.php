@@ -66,6 +66,7 @@ trait AssetRequestHandler
             'brand' => $request->brand ?? null,
             'quantity' => $request->quantity,
             'acquisition_details' => $request->acquisition_details ?? null,
+            'additional_info' => $request->additional_info ?? null,
             'date_needed' => $request->date_needed ?? null,
             'fixed_asset_id' => $request->fixed_asset_id ?? null,
             'account_title_id' => $request->account_title_id ?? null,

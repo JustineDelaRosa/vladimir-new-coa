@@ -59,7 +59,7 @@ class UpdateAssetRequestRequest extends FormRequest
             ],
             'asset_description' => 'required',
             'asset_specification' => 'nullable',
-            'cellphone_number' => 'nullable|numeric',
+            'cellphone_number' => 'nullable|digits_between:11,12',
             'acquisition_details' => 'required|string',
             'brand' => 'nullable',
             'quantity' => 'required|numeric|min:1',
@@ -115,6 +115,7 @@ class UpdateAssetRequestRequest extends FormRequest
             'date_needed.required' => 'The date needed is required.',
             'date_needed.date' => 'The date needed must be a date.',
             'date_needed.after_or_equal' => 'Please select a valid date needed.',
+            'cellphone_number.digits_between' => 'Invalid cellphone number',
         ];
     }
 }
