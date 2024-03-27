@@ -207,11 +207,10 @@ class AssetRequest extends Model implements HasMedia
         return $this->hasMany(Activity::class, 'subject_id', 'transaction_number');
     }
 
-    public function businessUnit(): BelongsTo
+    public function businessUnit()
     {
-        return $this->belongsTo(Company::class, 'business_unit_id', 'id');
+        return $this->belongsTo(BusinessUnit::class, 'business_unit_id', 'id');
     }
-
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
