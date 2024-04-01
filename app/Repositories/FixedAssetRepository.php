@@ -360,10 +360,50 @@ class FixedAssetRepository
             ? AdditionalCost::onlyTrashed()->select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
             : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
-        if ($filter == "toDepreciate") {
-            $firstQuery->where('depreciation_method', null)->where('is_released', 1);
-            $secondQuery->where('additional_costs.depreciation_method', null)->where('additional_costs.is_released', 1);
+        $filter = $filter ? explode(',', $filter) : [];
+        $filter = array_map('trim', $filter);
+
+        $conditions = [
+            'To Depreciate' => ['depreciation_method' => null, 'is_released'=> 1],
+            'Fixed Asset' => ['is_additional_cost' => 0],
+            'Additional Cost' => ['is_additional_cost' => 1],
+            'From Request' => ['from_request' => 1],
+        ];
+
+        if (!empty($filter)) {
+            $firstQuery->where(function ($query) use ($filter, $conditions) {
+                foreach ($filter as $key) {
+                    if (isset($conditions[$key])) {
+                        $query->orWhere(function ($query) use ($conditions, $key) {
+                            foreach ($conditions[$key] as $field => $value) {
+                                if (is_array($value)) {
+                                    $query->where($field, $value[0], $value[1]);
+                                } else {
+                                    $query->where($field, $value);
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+
+            $secondQuery->where(function ($query) use ($filter, $conditions) {
+                foreach ($filter as $key) {
+                    if (isset($conditions[$key])) {
+                        $query->orWhere(function ($query) use ($conditions, $key) {
+                            foreach ($conditions[$key] as $field => $value) {
+                                if (is_array($value)) {
+                                    $query->where( 'additional_costs.'.$field, $value[0], $value[1]);
+                                } else {
+                                    $query->where('additional_costs.'.$field, $value);
+                                }
+                            }
+                        });
+                    }
+                }
+            });
         }
+
 
         if (!empty($search)) {
             $mainAttributesFixedAsset = [
@@ -422,7 +462,6 @@ class FixedAssetRepository
                 }
             }
         }
-
 
 
         $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'asc')->get();
