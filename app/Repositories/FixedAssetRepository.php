@@ -360,8 +360,7 @@ class FixedAssetRepository
             ? AdditionalCost::onlyTrashed()->select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
             : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
-        $filter = $filter ? explode(',', $filter) : [];
-        $filter = array_map('trim', $filter);
+        $filter = $filter ? array_map('trim', explode(',', $filter)) : [];
 
         $conditions = [
             'To Depreciate' => ['depreciation_method' => null, 'is_released'=> 1],
@@ -371,37 +370,8 @@ class FixedAssetRepository
         ];
 
         if (!empty($filter)) {
-            $firstQuery->where(function ($query) use ($filter, $conditions) {
-                foreach ($filter as $key) {
-                    if (isset($conditions[$key])) {
-                        $query->orWhere(function ($query) use ($conditions, $key) {
-                            foreach ($conditions[$key] as $field => $value) {
-                                if (is_array($value)) {
-                                    $query->where($field, $value[0], $value[1]);
-                                } else {
-                                    $query->where($field, $value);
-                                }
-                            }
-                        });
-                    }
-                }
-            });
-
-            $secondQuery->where(function ($query) use ($filter, $conditions) {
-                foreach ($filter as $key) {
-                    if (isset($conditions[$key])) {
-                        $query->orWhere(function ($query) use ($conditions, $key) {
-                            foreach ($conditions[$key] as $field => $value) {
-                                if (is_array($value)) {
-                                    $query->where( 'additional_costs.'.$field, $value[0], $value[1]);
-                                } else {
-                                    $query->where('additional_costs.'.$field, $value);
-                                }
-                            }
-                        });
-                    }
-                }
-            });
+            $this->applyFilters($firstQuery, $filter, $conditions);
+            $this->applyFilters($secondQuery, $filter, $conditions, 'additional_costs');
         }
 
 
@@ -475,6 +445,25 @@ class FixedAssetRepository
         return $results;
     }
 
+    function applyFilters($query, $filter, $conditions, $prefix = '') {
+        $query->where(function ($query) use ($filter, $conditions, $prefix) {
+            foreach ($filter as $key) {
+                if (isset($conditions[$key])) {
+                    $query->orWhere(function ($query) use ($conditions, $key, $prefix) {
+                        foreach ($conditions[$key] as $field => $value) {
+                            $field = $prefix ? $prefix . '.' . $field : $field;
+                            if (is_array($value)) {
+                                $query->where($field, $value[0], $value[1]);
+                            } else {
+                                $query->where($field, $value);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
     public function transformFixedAsset($fixed_asset): Collection
     {
         return collect($fixed_asset)->map(function ($asset) {
@@ -484,8 +473,6 @@ class FixedAssetRepository
 
     public function transformSingleFixedAsset($fixed_asset): array
     {
-
-
         $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? $fixed_asset->additionalCost->count() : 0;
         return [
             'total_cost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost, $fixed_asset->acquisition_cost),
