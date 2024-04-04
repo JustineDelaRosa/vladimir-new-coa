@@ -1,12 +1,10 @@
 <?php
 
-namespace App\Http\Requests\DepartmentUnitApprovers;
+namespace App\Http\Requests\FormSetting\AssetTransferApprover;
 
-use App\Models\DepartmentUnitApprovers;
-use App\Models\SubUnit;
 use Illuminate\Foundation\Http\FormRequest;
 
-class CreateDepartmentUnitApproversRequest extends FormRequest
+class UpdateAssetTransferApproverRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,22 +24,23 @@ class CreateDepartmentUnitApproversRequest extends FormRequest
     public function rules()
     {
         return [
-//            'unit_id' => ['required', 'exists:units,id'],
-            'subunit_id' => ['required', 'integer', 'exists:sub_units,id',
-                function ($attribute, $value, $fail) {
-                    $DepartmentUnitApprovers = DepartmentUnitApprovers::where('subunit_id', $value)->exists();
-                    if ($DepartmentUnitApprovers) {
-                        $fail('This Sub Unit is already have approvers');
-                    }
-
-                    //check if the subunit is belong to the unit
-//                    $subunit = SubUnit::find($value);
-//                    if ($subunit->unit_id != $this->unit_id) {
-//                        $fail('This Sub Unit is not belong to the unit');
-//                    }
-                }
+//            'department_id' =>[
+//                'required',
+//                'integer',
+//                'exists:departments,id'
+//            ],
+//            'subunit_id' =>[
+//                'required',
+//                'integer',
+//                'exists:sub_units,id'
+//            ],
+            'approver_id' =>[
+                'required',
+                'exists:approvers,id',
+                'array',
+                'unique_in_array',
+                'min:2'
             ],
-            'approver_id' => ['required', 'exists:approvers,id', 'array', 'unique_in_array', 'min:2'],
         ];
     }
 
@@ -59,6 +58,7 @@ class CreateDepartmentUnitApproversRequest extends FormRequest
             'approver_id.exists' => 'Approver does not exist.',
             'approver_id.array' => 'Invalid approver.',
             'approver_id.unique_in_array' => 'Approver must be unique.',
+            'approver_id.min' => 'At least 2 approvers are required.',
         ];
     }
 }
