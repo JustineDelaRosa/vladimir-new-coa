@@ -12,7 +12,7 @@ class DepartmentUnitApprovers extends Model
 {
     use HasFactory, Filterable;
 
-    protected $default_filters = DepartmentUnitApproversFilters::class;
+    protected string $default_filters = DepartmentUnitApproversFilters::class;
 
     /**
      * Mass-assignable attributes.

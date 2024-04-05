@@ -11,7 +11,7 @@ class DepartmentUnitApproversFilters extends QueryFilters
     protected array $columnSearch = [];
 
     protected array $relationSearch = [
-        'department' => ['department_name', 'department_code'],
+        'unit' => ['unit_name', 'unit_code'],
         'subUnit' => ['sub_unit_code', 'sub_unit_name'],
         'approver.user' => [
             'username',
