@@ -129,4 +129,20 @@ class AddingPrController extends Controller
 
         return $this->responseSuccess('PR No. removed successfully');
     }
+
+    //This is for Ymir
+    public function requestToPR(Request $request){
+        $toPr = $request->get('toPr', null);
+
+        $assetRequest = AssetRequest::where('status', 'Approved')
+            ->whereNull('deleted_at')
+            ->when($toPr !== null, function ($query) use ($toPr) {
+                return $query->where($toPr == 0 ? 'pr_number' : 'pr_number', $toPr == 0 ? '!=' : '=', null);
+            })
+            ->useFilters()
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return $assetRequest;
+    }
 }
