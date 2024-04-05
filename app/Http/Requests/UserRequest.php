@@ -3,6 +3,11 @@
 namespace App\Http\Requests;
 
 use App\Models\SubUnit;
+use App\Rules\NewCoaValidation\BusinessUnitValidation;
+use App\Rules\NewCoaValidation\DepartmentValidation;
+use App\Rules\NewCoaValidation\LocationValidation;
+use App\Rules\NewCoaValidation\SubunitValidation;
+use App\Rules\NewCoaValidation\UnitValidation;
 use Illuminate\Validation\Rule;
 
 use Illuminate\Foundation\Http\FormRequest;
@@ -33,13 +38,12 @@ class UserRequest extends FormRequest
                 'firstname' => 'required',
                 'lastname' => 'required',
                 'username' => 'required|unique:users,username',
-                'department_id' => ['required', 'exists:departments,id'],
-                'subunit_id' => ['bail','required', 'exists:sub_units,id',
-                    function ($attribute, $value, $fail) {
-                    if (!$this->checkSubunitOnDepartment($this->department_id, $value)) {
-                        $fail('Invalid subunit for this department');
-                    }
-                }],
+                'company_id' => 'required|exists:companies,id',
+                'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+                'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+                'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+                'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
+                'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
                 'role_id' => 'required|exists:role_management,id',
             ];
         }
@@ -50,13 +54,12 @@ class UserRequest extends FormRequest
                 // 'major_category_id' => 'exists:major_categories,id,deleted_at,NULL',
                 'username' => ['required', Rule::unique('users', 'username')->ignore($id)],
                 'role_id' => 'required|exists:role_management,id',
-                'department_id' => ['required', 'exists:departments,id'],
-                'subunit_id' => ['bail','required',  'exists:sub_units,id',
-                    function ($attribute, $value, $fail) {
-                    if (!$this->checkSubunitOnDepartment($this->department_id, $value)) {
-                        $fail('Invalid subunit for this department');
-                    }
-                }],
+                'company_id' => 'required|exists:companies,id',
+                'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+                'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+                'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+                'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
+                'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
             ];
         }
 

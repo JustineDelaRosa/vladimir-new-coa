@@ -56,13 +56,29 @@ class User extends Authenticatable
     //     return $this->belongsTo(Department::class)->select('id', 'department_name');
     // }
 
+    public function company()
+    {
+        return $this->belongsTo(Company::class, 'company_id', 'id');
+    }
+    public function businessUnit()
+    {
+        return $this->belongsTo(BusinessUnit::class, 'business_unit_id', 'id');
+    }
     public function department()
     {
         return $this->belongsTo(Department::class, 'department_id', 'id');
     }
-    public function subUnit()
+    public function unit()
+    {
+        return $this->belongsTo(Unit::class, 'unit_id', 'id');
+    }
+    public function subunit()
     {
         return $this->belongsTo(SubUnit::class, 'subunit_id', 'id');
+    }
+    public function location()
+    {
+        return $this->belongsTo(Location::class, 'location_id', 'id');
     }
     public function role()
     {
@@ -91,10 +107,6 @@ class User extends Authenticatable
     public function roleManagement()
     {
         return $this->belongsTo(RoleManagement::class, 'role_id', 'id');
-    }
-
-    public function unit(){
-        return $this->belongsTo(Unit::class, 'unit_id', 'id');
     }
 
     //    public function requestor(){

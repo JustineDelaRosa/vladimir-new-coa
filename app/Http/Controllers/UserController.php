@@ -41,15 +41,35 @@ class UserController extends Controller
                 'lastname' => $item->lastname,
                 'username' => $item->username,
                 'role' => $item->role,
+                'company' => [
+                    'id' => $item->company->id ?? null,
+                    'company_code' => $item->company->company_code ?? null,
+                    'company_name' => $item->company->company_name ?? null,
+                ],
+                'business_unit' => [
+                    'id' => $item->businessUnit->id ?? null,
+                    'business_unit_code' => $item->businessUnit->business_unit_code ?? null,
+                    'business_unit_name' => $item->businessUnit->business_unit_name ?? null,
+                ],
+                'department' => [
+                    'id' => $item->department->id ?? null,
+                    'department_code' => $item->department->department_code ?? null,
+                    'department_name' => $item->department->department_name ?? null,
+                ],
                 'unit' => [
                     'id' => $item->unit->id ?? null,
                     'unit_code' => $item->unit->unit_code ?? null,
                     'unit_name' => $item->unit->unit_name ?? null,
                 ],
                 'subunit' => [
-                    'id' => $item->subUnit->id ?? null,
-                    'subunit_code' => $item->subUnit->sub_unit_code ?? null,
-                    'subunit_name' => $item->subUnit->sub_unit_name ?? null,
+                    'id' => $item->subunit->id ?? null,
+                    'subunit_code' => $item->subunit->sub_unit_code ?? null,
+                    'subunit_name' => $item->subunit->sub_unit_name ?? null,
+                ],
+                'location' => [
+                    'id' => $item->location->id ?? null,
+                    'location_code' => $item->location->location_code ?? null,
+                    'location_name' => $item->location->location_name ?? null,
                 ],
                 'is_active' => $item->is_active,
                 'created_at' => $item->created_at,
@@ -74,8 +94,12 @@ class UserController extends Controller
         $lastname = ucwords(strtolower($request->lastname));
         $username = $request->username;
         $role_id = $request->role_id;
+        $company_id = $request->company_id;
+        $business_unit_id = $request->business_unit_id;
+        $department_id = $request->department_id;
         $unit_id = $request->unit_id;
         $subunit_id = $request->subunit_id;
+        $location_id = $request->location_id;
 
         // $accessPermissionConvertedToString = implode(", ",$access_permission);
 
@@ -86,8 +110,12 @@ class UserController extends Controller
             'lastname' => $lastname,
             'username' => $username,
             'password' => Crypt::encryptString($username),
+            'company_id' => $company_id,
+            'business_unit_id' => $business_unit_id,
+            'department_id' => $department_id,
             'unit_id' => $unit_id,
             'subunit_id' => $subunit_id,
+            'location_id' => $location_id,
             'is_active' => 1,
             'role_id' => $role_id,
         ]);
@@ -176,13 +204,17 @@ class UserController extends Controller
         $originalAttributes = $User->getOriginal();
 
         $updatedFields = [
-            'employee_id'   => $request->employee_id,
-            'firstname'     => ucwords(strtolower($request->firstname)),
-            'lastname'      => ucwords(strtolower($request->lastname)),
-            'username'      => $request->username,
-            'role_id'       => $request->role_id,
+            'employee_id' => $request->employee_id,
+            'firstname' => ucwords(strtolower($request->firstname)),
+            'lastname' => ucwords(strtolower($request->lastname)),
+            'username' => $request->username,
+            'role_id' => $request->role_id,
+            'company_id' => $request->company_id,
+            'business_unit_id' => $request->business_unit_id,
+            'department_id' => $request->department_id,
             'unit_id' => $request->unit_id,
-            'subunit_id'    => $request->subunit_id,
+            'subunit_id' => $request->subunit_id,
+            'location_id' => $request->location_id,
         ];
 
         foreach ($updatedFields as $field => $value) {
