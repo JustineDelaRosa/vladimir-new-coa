@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\Approvers\AssetTransferApproverController;
 use App\Http\Controllers\API\AssetReleaseController;
 use App\Http\Controllers\Masterlist\COA\BusinessUnitController;
 use App\Http\Controllers\Masterlist\COA\UnitController;
@@ -230,7 +231,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //ASSIGNING APPROVER//
     Route::resource('assign-approver', AssignApproverController::class);
-    Route::get('requester-view', [AssignApproverController::class, 'requesterView']);
+//    Route::get('requester-view', [AssignApproverController::class, 'requesterView']);
     //Route::put('arrange-layer/{id}', [AssignApproverController::class, 'arrangeLayer']);
     Route::put('arrange-layer/{id}', [DepartmentUnitApproversController::class, 'arrangeLayer']);
 
@@ -267,5 +268,13 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('notification-count', [AuthController::class, 'notificationCount']);
 
     Route::get('item-detail/{referenceNumber?}', [AssetRequestController::class, 'getItemDetails']);
+
+    //AssetTransferApprover
+    Route::resource('asset-transfer-approver', AssetTransferApproverController::class);
+    Route::put('update-transfer-approver/{id}', [AssetTransferApproverController::class, 'arrangeLayer']);
+
+    Route::prefix('ymir')->group(function () {
+        Route::get('pr-request', [AddingPrController::class, 'requestToPR']);
+    });
 });
 
