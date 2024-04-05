@@ -12,7 +12,7 @@ use App\Traits\AssetRequestHandler;
 use App\Http\Controllers\Controller;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
-use App\Http\Requests\AddingPO\UpdateAddingPoRequest;
+use App\Http\Requests\AddingPo\UpdateAddingPoRequest;
 
 class AddingPoController extends Controller
 {

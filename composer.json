@@ -26,8 +26,9 @@
 		"mike42/escpos-php": "^4.0",
 		"pusher/pusher-php-server": "^7.2",
 		"spatie/laravel-activitylog": "^3.17",
-		"spatie/laravel-medialibrary": "9.0.0"
-	},
+		"spatie/laravel-medialibrary": "9.0.0",
+      "ext-fileinfo": "*"
+    },
 	"require-dev": {
 		"facade/ignition": "^2.5",
 		"fakerphp/faker": "^1.9.1",

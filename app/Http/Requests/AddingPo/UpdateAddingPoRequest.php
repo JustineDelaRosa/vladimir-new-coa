@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\AddingPO;
+namespace App\Http\Requests\AddingPo;
 
 use App\Models\AssetRequest;
 use App\Rules\UniqueWithIgnore;
@@ -63,8 +63,8 @@ class UpdateAddingPoRequest extends FormRequest
             "supplier_id.exists" => "Supplier must be an existing supplier",
             "delivery_date.required" => "Delivery Date is required",
             "delivery_date.date" => "Delivery Date must be a date",
-            "quatity_delivered.required" => "Quantity Delivered is required",
-            "quatity_delivered.integer" => "Quantity Delivered must be an integer",
+            "quantity_delivered.required" => "Quantity Delivered is required",
+            "quantity_delivered.integer" => "Quantity Delivered must be an integer",
             "unit_price.required" => "Unit Price is required",
             "unit_price.numeric" => "Unit Price must be a number",
         ];

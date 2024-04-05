@@ -34,35 +34,6 @@ class AssetRequest extends Model implements HasMedia
 
     protected string $default_filters = AssetRequestFilters::class;
 
-    public function scopeFilterByConditions(Builder $query, array $filter): Builder
-    {
-        $conditions = [
-            'Returned' => ['status' => 'Returned'],
-            'For Approval' => ['status' => ['like', 'For Approval%']],
-            'For PR' => ['status' => 'Approved', 'pr_number' => null],
-            'For PO' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'quantity' => ['!=', DB::raw('quantity_delivered')]],
-            'For Tagging' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'print_count' => ['!=', 'quantity']],
-            'For Pickup' => ['status' => 'Approved', 'pr_number' => ['!=', null], 'po_number' => ['!=', null], 'print_count' => ['=', DB::raw('quantity')]],
-            'Released' => ['is_claimed' => 1],
-        ];
-
-        $query->where(function ($query) use ($filter, $conditions) {
-            foreach ($filter as $key) {
-                if (isset($conditions[$key])) {
-                    $query->orWhere(function ($query) use ($conditions, $key) {
-                        foreach ($conditions[$key] as $field => $value) {
-                            if (is_array($value)) {
-                                $query->where($field, $value[0], $value[1]);
-                            } else {
-                                $query->where($field, $value);
-                            }
-                        }
-                    });
-                }
-            }
-        });
-        return $query;
-    }
 
     public function generateReferenceNumber(): ?string
     {
