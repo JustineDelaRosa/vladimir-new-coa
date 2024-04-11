@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\API\Approvers\AssetDisposalApproverController;
+use App\Http\Controllers\API\Approvers\AssetPullOutApproverController;
 use App\Http\Controllers\API\Approvers\AssetTransferApproverController;
 use App\Http\Controllers\API\AssetReleaseController;
 use App\Http\Controllers\Masterlist\COA\BusinessUnitController;
@@ -74,6 +76,8 @@ Route::get('additional-cost-sample-file', [AdditionalCostController::class, 'sam
 Route::get('dl', [AssetRequestController::class, 'downloadAttachments']);
 
 Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
+//Route::post('auth/logout', [AuthController::class, 'Logout'])->middleware('auth:sanctum');
+//Route::get('notification-count', [AuthController::class, 'notificationCount'])->middleware('auth:sanctum');
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
 
@@ -230,7 +234,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::patch('approver-setting/archived-approver-setting/{id}', [ApproverSettingController::class, 'archived']);
 
     //ASSIGNING APPROVER//
-    Route::resource('assign-approver', AssignApproverController::class);
+//    Route::resource('assign-approver', AssignApproverController::class);
 //    Route::get('requester-view', [AssignApproverController::class, 'requesterView']);
     //Route::put('arrange-layer/{id}', [AssignApproverController::class, 'arrangeLayer']);
     Route::put('arrange-layer/{id}', [DepartmentUnitApproversController::class, 'arrangeLayer']);
@@ -251,6 +255,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::resource('approval-logs', AssetApprovalLoggerController::class);
     //DEPARTMENT UNIT APPROVER LAYER SETUP//
     Route::resource('department-unit-approvers', DepartmentUnitApproversController::class);
+    Route::put('arrange-layer/{id}', [DepartmentUnitApproversController::class, 'arrangeLayer']);
     //ADDING PR//
     Route::resource('adding-pr', AddingPrController::class);
     Route::put('remove-pr/{transactionNumber}', [AddingPrController::class, 'removePR']);
@@ -272,6 +277,12 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //AssetTransferApprover
     Route::resource('asset-transfer-approver', AssetTransferApproverController::class);
     Route::put('update-transfer-approver/{id}', [AssetTransferApproverController::class, 'arrangeLayer']);
+
+    Route::resource('asset-pullout-approver', AssetPullOutApproverController::class);
+    Route::put('update-pullout-approver/{id}', [AssetPullOutApproverController::class, 'arrangeLayer']);
+
+    Route::resource('asset-disposal-approver', AssetDisposalApproverController::class);
+    Route::put('update-disposal-approver/{id}', [AssetDisposalApproverController::class, 'arrangeLayer']);
 
     Route::prefix('ymir')->group(function () {
         Route::get('pr-request', [AddingPrController::class, 'requestToPR']);
