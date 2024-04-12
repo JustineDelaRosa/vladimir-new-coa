@@ -141,8 +141,85 @@ class AddingPrController extends Controller
             })
             ->useFilters()
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->groupBy('transaction_number')
+            ->map(function ($assetRequestCollection) {
+                $assetRequest = $assetRequestCollection->first();
+                $listOfItems = $assetRequestCollection->map(function($item) {
+                    return [
+                        'asset_description' => $item->asset_description,
+                        'asset_specification' => $item->asset_specification,
+                        // Add more fields as needed
+                    ];
+                })->toArray();
+                return [
+                    'transaction_number'=> $assetRequest->transaction_number,
+                    'company' => [
+                        'id' => $assetRequest->company->sync_id,
+                        'company_code' => $assetRequest->company->company_code,
+                        'company_name' => $assetRequest->company->company_name,
+                    ],
+                    'business_unit' => [
+                        'id' => $assetRequest->businessUnit->sync_id,
+                        'business_unit_code' => $assetRequest->businessUnit->business_unit_code,
+                        'business_unit_name' => $assetRequest->businessUnit->business_unit_name,
+                    ],
+                    'department' => [
+                        'id' => $assetRequest->department->sync_id,
+                        'department_code' => $assetRequest->department->department_code,
+                        'department_name' => $assetRequest->department->department_name,
+                    ],
+                    'subunit' => [
+                        'id' => $assetRequest->subunit->sync_id,
+                        'subunit_code' => $assetRequest->subunit->subunit_code,
+                        'subunit_name' => $assetRequest->subunit->subunit_name,
+                    ],
+                    'location' => [
+                        'id' => $assetRequest->location->sync_id,
+                        'location_code' => $assetRequest->location->location_code,
+                        'location_name' => $assetRequest->location->location_name,
+                    ],
+                    'list_of_items' => $listOfItems
+                ];
+            })
+            ->values();
 
         return $assetRequest;
+    }
+
+
+    public function transformForYmir($assetRequest): array
+    {
+        $deletedQuantity = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
+        return [
+            'company' => [
+                'id' => $assetRequest->company->sync_id,
+                'company_code' => $assetRequest->company->company_code,
+                'company_name' => $assetRequest->company->company_name,
+            ],
+            'business_unit' => [
+                'id' => $assetRequest->businessUnit->sync_id,
+                'business_unit_code' => $assetRequest->businessUnit->business_unit_code,
+                'business_unit_name' => $assetRequest->businessUnit->business_unit_name,
+            ],
+            'department' => [
+                'id' => $assetRequest->department->sync_id,
+                'department_code' => $assetRequest->department->department_code,
+                'department_name' => $assetRequest->department->department_name,
+            ],
+            'subunit' => [
+                'id' => $assetRequest->subunit->sync_id,
+                'subunit_code' => $assetRequest->subunit->subunit_code,
+                'subunit_name' => $assetRequest->subunit->subunit_name,
+            ],
+            'location' => [
+                'id' => $assetRequest->location->sync_id,
+                'location_code' => $assetRequest->location->location_code,
+                'location_name' => $assetRequest->location->location_name,
+            ],
+            'list_of_items' =>[
+
+            ]
+        ];
     }
 }
