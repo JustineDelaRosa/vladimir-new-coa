@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\UnitApproverBaseController;
 use App\Http\Requests\FormSetting\DepartmentUnitApprovers\CreateDepartmentUnitApproversRequest;
 use App\Http\Requests\FormSetting\DepartmentUnitApprovers\UpdateDepartmentUnitApproversRequest;
 use App\Models\DepartmentUnitApprovers;
@@ -11,39 +12,20 @@ use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class  DepartmentUnitApproversController extends Controller
+class  DepartmentUnitApproversController extends UnitApproverBaseController
 {
-    use ApiResponse, FormSettingHandler;
-
-    public function index(Request $request)
+    public function __construct()
     {
-        return $this->formSettingIndex($request, new DepartmentUnitApprovers);
+        parent::__construct(
+            new DepartmentUnitApprovers,
+        );
     }
-
-    public function store(CreateDepartmentUnitApproversRequest $request): JsonResponse
+    protected function getCreateFormRequest()
     {
-        return $this->formSettingStore($request, new DepartmentUnitApprovers);
+        return CreateDepartmentUnitApproversRequest::class;
     }
-
-    public function show(DepartmentUnitApprovers $departmentUnitApprovers): JsonResponse
+    protected function getUpdateFormRequest()
     {
-        return $this->responseSuccess(null, $departmentUnitApprovers);
-    }
-
-    public function update(UpdateDepartmentUnitApproversRequest $request, $id): JsonResponse
-    {
-
-        return $this->responseSuccess('DepartmentUnitApprovers updated Successfully');
-    }
-
-    public function destroy($subUnitId): JsonResponse
-    {
-        return $this->formSettingDestroy(new DepartmentUnitApprovers, $subUnitId);
-    }
-
-
-    public function arrangeLayer(UpdateDepartmentUnitApproversRequest $request, $id)
-    {
-        return $this->formSettingArrangeLayer($request, new DepartmentUnitApprovers, $id);
+        return UpdateDepartmentUnitApproversRequest::class;
     }
 }
