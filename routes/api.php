@@ -79,7 +79,7 @@ Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
 //Route::post('auth/logout', [AuthController::class, 'Logout'])->middleware('auth:sanctum');
 //Route::get('notification-count', [AuthController::class, 'notificationCount'])->middleware('auth:sanctum');
 
-Route::group(['middleware' => ['auth:sanctum']], function () {
+Route::group(['middleware' => 'auth:sanctum'], function () {
 
     //ROLE MANAGEMENT
     Route::post('setup/role', [SetupController::class, 'createRole']);

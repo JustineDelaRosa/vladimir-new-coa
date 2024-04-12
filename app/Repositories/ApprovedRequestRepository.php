@@ -12,7 +12,7 @@ use Illuminate\Http\JsonResponse;
 
 class ApprovedRequestRepository
 {
-    use ApiResponse,AssetRequestHandler;
+    use ApiResponse, AssetRequestHandler;
 
     public function approveRequest($assetApprovalId): JsonResponse
     {
@@ -74,6 +74,7 @@ class ApprovedRequestRepository
         $this->updateAssetRequestStatus($assetApproval->transaction_number, 'Returned', $remarks);
 
         $this->updateAssetApprovalStatus($assetApproval, 'Returned');
+//        $this->logActivity($assetApproval, 'Returned');
 
         return $this->responseSuccess('Asset Request Return Successfully');
     }
@@ -114,7 +115,8 @@ class ApprovedRequestRepository
         return $this->responseSuccess('Asset Request Resubmitted Successfully');
     }
 
-    public function isApproverChange($transactionNumber){
+    public function isApproverChange($transactionNumber)
+    {
         $user = auth('sanctum')->user();
         $subUnitId = $this->getSubUnitId($transactionNumber);
         $approverIds = $this->getApproverIds($subUnitId);
@@ -136,16 +138,20 @@ class ApprovedRequestRepository
         $assetApproval = AssetApproval::where('transaction_number', $transactionNumber)
             ->where('status', '!=', 'Void')
             ->where('layer', $defaultLayer)->first();
-
-
         if (!$assetApproval || $assetApproval->requester_id != $user->id) {
             return $this->responseUnprocessable('Invalid Action');
         }
-        $this->updateToNullOrVoid($transactionNumber);
-        $this->updateAssetRequestStatus($assetApproval->transaction_number, 'For Approval of Approver ' . ($assetApproval->layer));
-        $this->updateAssetApprovalStatus($assetApproval, 'For Approval');
-//        $this->logActivity($assetApproval, 'Resubmitted');
-        return $this->responseSuccess('Asset Request Resubmitted Successfully');
+
+        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->first();
+        if ($assetRequest->status == 'Returned') {
+//            $this->updateAssetRequestStatus($assetRequest->transaction_number, 'Returned' . ($assetApproval->layer));
+            $this->updateAssetApprovalStatus($assetApproval, 'Returned');
+        } else {
+            $this->updateToNullOrVoid($transactionNumber);
+            $this->updateAssetRequestStatus($assetApproval->transaction_number, 'For Approval of Approver ' . ($assetApproval->layer));
+            $this->updateAssetApprovalStatus($assetApproval, 'For Approval');
+        }
+        return $this->responseSuccess('Asset Request updated Successfully');
     }
 
     private function getSubUnitId($transactionNumber)
@@ -218,9 +224,14 @@ class ApprovedRequestRepository
 
     private function updateAssetApprovalStatus($assetApproval, string $status)
     {
+        $user = auth('sanctum')->user()->id;
+
         $assetApproval->update(['status' => $status]);
-        if ($status != 'For Approval') {
-            $this->logActivity($assetApproval, $status);
+        //check if the user is the requester
+        if ($assetApproval->requester_id !== $user) {
+            if ($status != 'For Approval') {
+                $this->logActivity($assetApproval, $status);
+            }
         }
     }
 
