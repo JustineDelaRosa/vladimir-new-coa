@@ -132,13 +132,16 @@ class AddingPrController extends Controller
 
     //This is for Ymir
     public function requestToPR(Request $request){
-        $toPr = $request->get('toPr', null);
+//        $toPr = $request->get('toPr', null);
+        $perPage = $request->input('per_page', null);
+        $pagination = $request->input('pagination', null);
 
         $assetRequest = AssetRequest::where('status', 'Approved')
+            ->whereNull('pr_number')
             ->whereNull('deleted_at')
-            ->when($toPr !== null, function ($query) use ($toPr) {
-                return $query->where($toPr == 0 ? 'pr_number' : 'pr_number', $toPr == 0 ? '!=' : '=', null);
-            })
+//            ->when($toPr !== null, function ($query) use ($toPr) {
+//                return $query->where($toPr == 0 ? 'pr_number' : 'pr_number', $toPr == 0 ? '!=' : '=', null);
+//            })
             ->useFilters()
             ->orderBy('created_at', 'desc')
             ->get()
@@ -147,8 +150,19 @@ class AddingPrController extends Controller
                 $assetRequest = $assetRequestCollection->first();
                 $listOfItems = $assetRequestCollection->map(function($item) {
                     return [
+                        'id' => $item->id,
+                        'reference_number' => $item->reference_number,
                         'asset_description' => $item->asset_description,
                         'asset_specification' => $item->asset_specification,
+                        'pr_number' => $item->pr_number,
+                        'quantity' => $item->quantity,
+                        'additional_info' => $item->additional_info,
+                        'accountability' => $item->accountability,
+                        'accountable' => $item->accountable,
+                        'cell_number' => $item->cell_number,
+                        'brand' => $item->brand,
+
+//                        'date_needed' => $item->date_needed,
                         // Add more fields as needed
                     ];
                 })->toArray();
@@ -171,8 +185,8 @@ class AddingPrController extends Controller
                     ],
                     'subunit' => [
                         'id' => $assetRequest->subunit->sync_id,
-                        'subunit_code' => $assetRequest->subunit->subunit_code,
-                        'subunit_name' => $assetRequest->subunit->subunit_name,
+                        'subunit_code' => $assetRequest->subunit->sub_unit_code,
+                        'subunit_name' => $assetRequest->subunit->sub_unit_name,
                     ],
                     'location' => [
                         'id' => $assetRequest->location->sync_id,
@@ -183,6 +197,15 @@ class AddingPrController extends Controller
                 ];
             })
             ->values();
+
+        if ($perPage !== null && $pagination == null) {
+            $page = $request->input('page', 1);
+            $offset = $page * $perPage - $perPage;
+            $assetRequest = new LengthAwarePaginator($assetRequest->slice($offset, $perPage)->values(), $assetRequest->count(), $perPage, $page, [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]);
+        }
 
         return $assetRequest;
     }
