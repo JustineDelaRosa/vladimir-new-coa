@@ -106,13 +106,13 @@ trait FormSettingHandler
 
     public function formSettingDestroy($model, $subUnitId)
     {
-        $record = $model::where('subunit_id', $subUnitId)->first();
+        $record = $model::where('subunit_id', $subUnitId)->get();
 
         if (!$record) {
             return $this->responseSuccess('Record was already deleted');
         }
 
-        $record->delete();
+        $record->each->delete();
 
         return $this->responseSuccess('Deleted Successfully');
     }
