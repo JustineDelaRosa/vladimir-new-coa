@@ -52,6 +52,7 @@ class CreateRequestContainersTable extends Migration
             $table->string('vladimir_tag_number')->nullable();
 
             $table->string('capitalized')->default('Capitalized');
+            $table->unsignedInteger('uom_id')->nullable();
 
             $table->unsignedInteger('division_id')->nullable();
             $table->unsignedInteger('major_category_id')->nullable();
@@ -115,6 +116,7 @@ class CreateRequestContainersTable extends Migration
             $table->foreign('depreciation_status_id')->references('id')->on('depreciation_statuses');
             $table->foreign('movement_status_id')->references('id')->on('movement_statuses');
             $table->foreign('fixed_asset_id')->references('id')->on('fixed_assets');
+            $table->foreign('uom_id')->references('id')->on('unit_of_measures');
 
             $table->timestamps();
         });

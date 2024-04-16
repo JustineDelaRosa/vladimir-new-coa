@@ -56,6 +56,7 @@ trait RequestContainerHandler
             'unit_id' => $request->unit_id,
             'subunit_id' => $request->subunit_id,
             'location_id' => $request->location_id,
+            'uom_id' => $request->uom_id,
         ]);
     }
 
@@ -95,6 +96,7 @@ trait RequestContainerHandler
                     'unit_id' => $request->unit_id,
                     'subunit_id' => $request->subunit_id,
                     'location_id' => $request->location_id,
+                    'account_title_id' => $request->account_title_id,
                 ]);
             }
         } elseif ($requestContainer->first()->acquisition_details != $request->acquisition_details) {

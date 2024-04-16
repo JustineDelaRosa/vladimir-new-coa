@@ -134,6 +134,11 @@ trait RequestShowDataHandler
                 'id' => $ar->typeOfRequest->id,
                 'type_of_request_name' => $ar->typeOfRequest->type_of_request_name ?? '-',
             ],
+            'unit_of_measure' => [
+                'id' => $ar->uom->id ?? '-',
+                'uom_code' => $ar->uom->uom_code ?? '-',
+                'uom_name' => $ar->uom->uom_name ?? '-',
+            ],
             'company' => [
                 'id' => $ar->company->id,
                 'company_code' => $ar->company->company_code,

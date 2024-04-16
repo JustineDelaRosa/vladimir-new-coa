@@ -164,6 +164,10 @@ class RequestContainer extends Model implements HasMedia
         return $this->belongsTo(AccountTitle::class, 'account_title_id', 'id');
     }
 
+    public function uom(){
+        return $this->belongsTo(UnitOfMeasure::class, 'uom_id', 'id');
+    }
+
     //move all the data of requestor from request container table then pass it to asset request table then delete the request container
     public function moveAssetRequest($requestorId){
         //move all item that has matching requestor id

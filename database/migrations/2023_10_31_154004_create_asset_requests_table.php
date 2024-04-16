@@ -50,7 +50,7 @@ class CreateAssetRequestsTable extends Migration
             $table->integer('quantity_delivered')->nullable()->default(0);
             $table->date('date_needed')->nullable();
             $table->string('filter')->nullable();
-
+            $table->unsignedInteger('uom_id')->nullable();
             //ATTACHMENT TYPE
             $table->enum('attachment_type', ['Budgeted', 'Unbudgeted']);
 
@@ -169,6 +169,9 @@ class CreateAssetRequestsTable extends Migration
                 ->foreign('supplier_id')
                 ->references('id')
                 ->on('suppliers');
+            $table->foreign('uom_id')
+                ->references('id')
+                ->on('unit_of_measures');
 
             $table->timestamps();
         });

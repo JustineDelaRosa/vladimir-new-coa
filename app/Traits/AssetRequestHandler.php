@@ -76,6 +76,7 @@ trait AssetRequestHandler
             'unit_id' => $request->unit_id,
             'subunit_id' => $request->subunit_id,
             'location_id' => $request->location_id,
+            'uom_id' => $request->uom_id ?? null,
         ]);
 
         $this->updateOtherRequestChargingDetails($assetRequest, $request, $save);
@@ -100,7 +101,8 @@ trait AssetRequestHandler
                 'location_id' => $request->location_id,
                 'acquisition_details' => $request->acquisition_details ?? null,
                 'fixed_asset_id' => $request->fixed_asset_id ?? null,
-//                'account_title_id' => $request->account_title_id ?? null,
+                'account_title_id' => $request->account_title_id ?? null,
+                'uom_id' => $request->uom_id ?? null,
             ]);
         }
         return $ar;

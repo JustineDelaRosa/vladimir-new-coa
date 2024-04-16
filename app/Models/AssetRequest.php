@@ -194,4 +194,7 @@ class AssetRequest extends Model implements HasMedia
     {
         return $this->belongsTo(User::class, 'deleter_id', 'id');
     }
+    public function uom(){
+        return $this->belongsTo(UnitOfMeasure::class, 'uom_id', 'id');
+    }
 }

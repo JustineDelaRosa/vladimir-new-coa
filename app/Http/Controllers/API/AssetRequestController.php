@@ -347,6 +347,7 @@ class AssetRequestController extends Controller
             $assetRequest->additional_info = $item->additional_info;
             $assetRequest->acquisition_details = $item->acquisition_details;
             $assetRequest->accountability = $item->accountability;
+            $assetRequest->uom_id = $item->uom_id;
             $assetRequest->company_id = $item->company_id;
             $assetRequest->business_unit_id = $item->business_unit_id;
             $assetRequest->department_id = $item->department_id;
