@@ -22,7 +22,7 @@ class CreateFixedAssetsTable extends Migration
             $table->string('po_number')->nullable();
             $table->string('rr_number')->nullable();
 //            $table->string('wh_number')->nullable();
-            $table->unsignedInteger('warehouse_number')->nullable();
+            $table->unsignedInteger('warehouse_number_id')->nullable();
             $table->unsignedInteger('capex_id')->nullable();
             //            $table->string('project_name');
             $table->unsignedInteger('sub_capex_id')->nullable();
@@ -87,7 +87,7 @@ class CreateFixedAssetsTable extends Migration
                 ->references('id')
                 ->on('sub_units')
                 ->onDelete('cascade');
-            $table->foreign('warehouse_number')
+            $table->foreign('warehouse_number_id')
                 ->references('id')
                 ->on('warehouse_numbers')
                 ->onDelete('cascade');
