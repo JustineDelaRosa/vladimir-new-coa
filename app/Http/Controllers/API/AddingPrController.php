@@ -68,7 +68,7 @@ class AddingPrController extends Controller
         $userRole = strtolower(auth('sanctum')->user()->role->role_name);
 
         if (in_array($userRole, $requiredRole)) {
-        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->dynamicPaginate();
+            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->dynamicPaginate();
         } else {
             return $this->responseUnprocessable('You are not allowed to view this transaction.');
         }
@@ -131,14 +131,20 @@ class AddingPrController extends Controller
     }
 
     //This is for Ymir
-    public function requestToPR(Request $request){
+    public function requestToPR(Request $request)
+    {
 //        $toPr = $request->get('toPr', null);
+        $filter = $request->input('filter', 'old');
         $perPage = $request->input('per_page', null);
         $pagination = $request->input('pagination', null);
 
         $assetRequest = AssetRequest::where('status', 'Approved')
             ->whereNull('pr_number')
             ->whereNull('deleted_at')
+            ->when($filter !== 'old', function($query) use($filter){
+                //filter all that item that is created only today
+                return $query->where('created_at', '>=', now()->startOfDay());
+            })
 //            ->when($toPr !== null, function ($query) use ($toPr) {
 //                return $query->where($toPr == 0 ? 'pr_number' : 'pr_number', $toPr == 0 ? '!=' : '=', null);
 //            })
@@ -148,52 +154,58 @@ class AddingPrController extends Controller
             ->groupBy('transaction_number')
             ->map(function ($assetRequestCollection) {
                 $assetRequest = $assetRequestCollection->first();
-                $listOfItems = $assetRequestCollection->map(function($item) {
+                $listOfItems = $assetRequestCollection->map(function ($item) {
                     return [
-                        'id' => $item->id,
-                        'reference_number' => $item->reference_number,
-                        'asset_description' => $item->asset_description,
-                        'asset_specification' => $item->asset_specification,
-                        'pr_number' => $item->pr_number,
+//                        'item_id' => $item->id,
+                        'item_code' => $item->reference_number,
+                        'item_name' => $item->asset_description,
+                        'remarks' => $item->asset_specification,
                         'quantity' => $item->quantity,
-                        'additional_info' => $item->additional_info,
-                        'accountability' => $item->accountability,
-                        'accountable' => $item->accountable,
-                        'cell_number' => $item->cell_number,
-                        'brand' => $item->brand,
+//                        'created_at' => $item->created_at,
+                        //                        'additional_info' => $item->additional_info,
+//                        'accountability' => $item->accountability,
+//                        'accountable' => $item->accountable == '-' ? null : $item->accountable,
+//                        'cell_number' => $item->cell_number,
+//                        'brand' => $item->brand,
+//                        'remarks' => $item->remarks,
 
 //                        'date_needed' => $item->date_needed,
                         // Add more fields as needed
                     ];
                 })->toArray();
                 return [
-                    'transaction_number'=> $assetRequest->transaction_number,
-                    'company' => [
-                        'id' => $assetRequest->company->sync_id,
-                        'company_code' => $assetRequest->company->company_code,
-                        'company_name' => $assetRequest->company->company_name,
-                    ],
-                    'business_unit' => [
-                        'id' => $assetRequest->businessUnit->sync_id,
-                        'business_unit_code' => $assetRequest->businessUnit->business_unit_code,
-                        'business_unit_name' => $assetRequest->businessUnit->business_unit_name,
-                    ],
-                    'department' => [
-                        'id' => $assetRequest->department->sync_id,
-                        'department_code' => $assetRequest->department->department_code,
-                        'department_name' => $assetRequest->department->department_name,
-                    ],
-                    'subunit' => [
-                        'id' => $assetRequest->subunit->sync_id,
-                        'subunit_code' => $assetRequest->subunit->sub_unit_code,
-                        'subunit_name' => $assetRequest->subunit->sub_unit_name,
-                    ],
-                    'location' => [
-                        'id' => $assetRequest->location->sync_id,
-                        'location_code' => $assetRequest->location->location_code,
-                        'location_name' => $assetRequest->location->location_name,
-                    ],
-                    'list_of_items' => $listOfItems
+                    'transaction_number' => $assetRequest->transaction_number,
+                    'company_id' => $assetRequest->company->sync_id,
+                    'company_code' => $assetRequest->company->company_code,
+                    'company_name' => $assetRequest->company->company_name,
+
+                    'business_unit_id' => $assetRequest->businessUnit->sync_id,
+                    'business_unit_code' => $assetRequest->businessUnit->business_unit_code,
+                    'business_unit_name' => $assetRequest->businessUnit->business_unit_name,
+
+                    'department_id' => $assetRequest->department->sync_id,
+                    'department_code' => $assetRequest->department->department_code,
+                    'department_name' => $assetRequest->department->department_name,
+
+                    'unit_id' => $assetRequest->unit->sync_id,
+                    'unit_code' => $assetRequest->unit->unit_code,
+                    'unit_name' => $assetRequest->unit->unit_name,
+
+                    'subunit_id' => $assetRequest->subunit->sync_id,
+                    'subunit_code' => $assetRequest->subunit->sub_unit_code,
+                    'subunit_name' => $assetRequest->subunit->sub_unit_name,
+
+                    'location_id' => $assetRequest->location->sync_id,
+                    'location_code' => $assetRequest->location->location_code,
+                    'location_name' => $assetRequest->location->location_name,
+
+                    'account_title_id' => $assetRequest->accountTitle->sync_id,
+                    'account_title_code' => $assetRequest->accountTitle->account_title_code,
+                    'account_title_name' => $assetRequest->accountTitle->account_title_name,
+                    'description' => $assetRequest->acquisition_details,
+                    'created_at' => $assetRequest->created_at,
+
+                    'order' => $listOfItems
                 ];
             })
             ->values();
@@ -240,7 +252,7 @@ class AddingPrController extends Controller
                 'location_code' => $assetRequest->location->location_code,
                 'location_name' => $assetRequest->location->location_name,
             ],
-            'list_of_items' =>[
+            'list_of_items' => [
 
             ]
         ];
