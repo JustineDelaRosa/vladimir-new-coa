@@ -102,7 +102,7 @@ trait AssetRequestHandler
                 'acquisition_details' => $request->acquisition_details ?? null,
                 'fixed_asset_id' => $request->fixed_asset_id ?? null,
                 'account_title_id' => $request->account_title_id ?? null,
-                'uom_id' => $request->uom_id ?? null,
+//                'uom_id' => $request->uom_id ?? null,
             ]);
         }
         return $ar;
