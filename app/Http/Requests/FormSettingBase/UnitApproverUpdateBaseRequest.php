@@ -34,7 +34,7 @@ class UnitApproverUpdateBaseRequest extends FormRequest
                 'exists:approvers,id',
                 'array',
                 'unique_in_array',
-                'min:2'
+                'min:1'
             ],
         ];
     }

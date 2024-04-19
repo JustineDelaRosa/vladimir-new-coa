@@ -75,6 +75,7 @@ class UpdateAssetRequestRequest extends FormRequest
             'specification_form' => ['bail', 'nullable', 'max:10000', new FileOrX],
             'tool_of_trade' => ['bail', 'nullable', 'max:10000', new FileOrX],
             'other_attachments' => ['bail', 'nullable', 'max:10000', new FileOrX],
+            'uom_id' => 'required|exists:unit_of_measures,id',
             //
         ];
     }
@@ -116,6 +117,9 @@ class UpdateAssetRequestRequest extends FormRequest
             'date_needed.date' => 'The date needed must be a date.',
             'date_needed.after_or_equal' => 'Please select a valid date needed.',
             'cellphone_number.digits_between' => 'Invalid cellphone number',
+            'uom_id.required' => 'The unit of measure field is required',
+            'uom_id.exists' => 'The selected unit of measure is invalid',
+
         ];
     }
 }

@@ -10,6 +10,8 @@ class SubUnitFilters extends QueryFilters
 
     protected array $columnSearch = ['sub_unit_name'];
 
-    protected  array $relationSearch = [];
+    protected  array $relationSearch = [
+        'unit' => ['unit_name', 'unit_code'],
+    ];
 
 }

@@ -11,6 +11,6 @@ class UnitFilters extends QueryFilters
     protected array $columnSearch = ['unit_code', 'unit_name'];
 
     protected  array $relationSearch =[
-        'department' => ['department_code', 'department_name']
+        'departments' => ['department_code', 'department_name']
     ];
 }

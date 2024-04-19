@@ -12,7 +12,8 @@ class DepartmentFilters extends QueryFilters
 
     protected array $relationSearch = [
         'division' => ['division_name'],
-        'company' => ['company_name'],
-        'location' => ['location_name'],
+        'businessUnit' => ['business_unit_name', 'business_unit_code'],
+//        'company' => ['company_name'],
+//        'location' => ['location_name'],
     ];
 }

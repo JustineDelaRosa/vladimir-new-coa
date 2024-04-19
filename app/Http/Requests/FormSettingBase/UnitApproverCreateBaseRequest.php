@@ -29,7 +29,7 @@ class UnitApproverCreateBaseRequest extends FormRequest
     {
         return [
             'subunit_id' => ['required', 'integer', 'exists:sub_units,id',new SubunitApproverExists($this->model)],
-            'approver_id' => ['required', 'exists:approvers,id', 'array', 'unique_in_array', 'min:2'],
+            'approver_id' => ['required', 'exists:approvers,id', 'array', 'unique_in_array', 'min:1'],
         ];
     }
 

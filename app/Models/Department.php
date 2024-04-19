@@ -60,13 +60,13 @@ class Department extends Model
 //    {
 //        return $this->belongsToMany(Location::class, 'location_sync_id', 'sync_id');
 //    }
-    public function location()
-    {
-        return $this->belongsToMany(Location::class, 'department_location',
-            'department_sync_id',
-            'location_sync_id',
-            'sync_id',
-            'sync_id');
-    }
+//    public function location()
+//    {
+//        return $this->belongsToMany(Location::class, 'department_location',
+//            'department_sync_id',
+//            'location_sync_id',
+//            'sync_id',
+//            'sync_id');
+//    }
 
 }
