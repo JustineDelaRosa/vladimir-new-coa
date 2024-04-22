@@ -7,6 +7,7 @@ use App\Models\Approvers;
 use App\Models\AssetRequest;
 use App\Traits\AddingPRHandler;
 use App\Traits\RequestShowDataHandler;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Traits\AssetRequestHandler;
@@ -134,16 +135,20 @@ class AddingPrController extends Controller
     public function requestToPR(Request $request)
     {
 //        $toPr = $request->get('toPr', null);
-        $filter = $request->input('filter', 'old');
+//        $filter = $request->input('filter', 'old');
+        $startDate = $request->input('start_date', null);
+        $endDate = $request->input('end_date', null);
         $perPage = $request->input('per_page', null);
         $pagination = $request->input('pagination', null);
+
+        $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
+        $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
 
         $assetRequest = AssetRequest::where('status', 'Approved')
             ->whereNull('pr_number')
             ->whereNull('deleted_at')
-            ->when($filter !== 'old', function($query) use($filter){
-                //filter all that item that is created only today
-                return $query->where('created_at', '>=', now()->startOfDay());
+            ->when($startDate && $endDate, function($query) use($startDate, $endDate){
+                return $query->whereBetween('created_at', [$startDate, $endDate]);
             })
 //            ->when($toPr !== null, function ($query) use ($toPr) {
 //                return $query->where($toPr == 0 ? 'pr_number' : 'pr_number', $toPr == 0 ? '!=' : '=', null);
@@ -153,7 +158,9 @@ class AddingPrController extends Controller
             ->get()
             ->groupBy('transaction_number')
             ->map(function ($assetRequestCollection) {
+                $latestDateNeeded = $assetRequestCollection->max('date_needed');
                 $assetRequest = $assetRequestCollection->first();
+                $assetRequest->date_needed = $latestDateNeeded;
                 $listOfItems = $assetRequestCollection->map(function ($item) {
                     return [
 //                        'item_id' => $item->id,
@@ -169,7 +176,10 @@ class AddingPrController extends Controller
 //                        'brand' => $item->brand,
 //                        'remarks' => $item->remarks,
 
-//                        'date_needed' => $item->date_needed,
+                        'date_needed' => $item->date_needed,
+                        'uom_id' => $item->uom->sync_id,
+                        'uom_code' => $item->uom->uom_code,
+                        'uom_name' => $item->uom->uom_name,
                         // Add more fields as needed
                     ];
                 })->toArray();
@@ -204,7 +214,7 @@ class AddingPrController extends Controller
                     'account_title_name' => $assetRequest->accountTitle->account_title_name,
                     'description' => $assetRequest->acquisition_details,
                     'created_at' => $assetRequest->created_at,
-
+                    'date_needed' => $assetRequest->date_needed,
                     'order' => $listOfItems
                 ];
             })
