@@ -101,7 +101,7 @@ trait FormSettingHandler
                 ['layer' => $layer++]
             );
         }
-        return $this->responseSuccess('Unit Approvers updated Successfully');
+        return $this->responseSuccess('Approvers updated Successfully');
     }
 
     public function formSettingDestroy($model, $subUnitId)
