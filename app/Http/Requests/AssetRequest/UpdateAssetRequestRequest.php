@@ -38,7 +38,7 @@ class UpdateAssetRequestRequest extends FormRequest
                 'required',
                 Rule::exists('type_of_requests', 'id')
             ],
-            'date_needed' => 'required|date|after_or_equal:today',
+            'date_needed' => 'required|date',
             'is_addcost' => 'nullable|in:0,1',
             'fixed_asset_id' => ['required-if:is_addcost,1', Rule::exists('fixed_assets', 'id')],
             //            'charged_department_id' => ['required', Rule::exists('departments', 'id')],
