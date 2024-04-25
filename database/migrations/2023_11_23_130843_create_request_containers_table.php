@@ -17,6 +17,7 @@ class CreateRequestContainersTable extends Migration
             //REQUEST FORM
             $table->increments('id');
             $table->unsignedInteger('requester_id');
+            $table->string('capex_number')->nullable();
             $table->string('status')->default('For Approval of Approver 1');
             $table->boolean('is_addcost')->default(0);
             $table->unsignedInteger('fixed_asset_id')->nullable();

@@ -21,6 +21,7 @@ class CreateAdditionalCostsTable extends Migration
             $table->string('reference_number')->nullable();
             $table->unsignedInteger('fixed_asset_id');
             $table->unsignedInteger('supplier_id')->nullable();
+            $table->unsignedInteger('uom_id');
             $table->foreign('fixed_asset_id')
                 ->references('id')
                 ->on('fixed_assets')
@@ -141,6 +142,10 @@ class CreateAdditionalCostsTable extends Migration
             $table->foreign('formula_id')
                 ->references('id')
                 ->on('formulas')
+                ->onDelete('cascade');
+            $table->foreign('uom_id')
+                ->references('id')
+                ->on('unit_of_measures')
                 ->onDelete('cascade');
         });
     }

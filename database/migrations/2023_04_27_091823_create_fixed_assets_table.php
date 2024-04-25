@@ -24,6 +24,8 @@ class CreateFixedAssetsTable extends Migration
 //            $table->string('wh_number')->nullable();
             $table->unsignedInteger('warehouse_number_id')->nullable();
             $table->unsignedInteger('capex_id')->nullable();
+            $table->string('capex_number')->nullable();
+            $table->unsignedInteger('uom_id');
             //            $table->string('project_name');
             $table->unsignedInteger('sub_capex_id')->nullable();
             //            $table->string('sub_project');
@@ -155,6 +157,10 @@ class CreateFixedAssetsTable extends Migration
                 ->foreign('supplier_id')
                 ->references('id')
                 ->on('suppliers');
+            $table
+                ->foreign('uom_id')
+                ->references('id')
+                ->on('unit_of_measures');
         });
     }
 

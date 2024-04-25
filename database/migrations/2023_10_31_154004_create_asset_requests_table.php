@@ -26,6 +26,7 @@ class CreateAssetRequestsTable extends Migration
             $table->string('wh_number')->nullable();
             $table->boolean('is_addcost')->default(0);
             $table->unsignedInteger('fixed_asset_id')->nullable();
+            $table->string('capex_number')->nullable();
             $table->string('additional_info')->nullable();
             $table->string('acquisition_details');
             // $table->date('delivery_date')->nullable(); //? Delivery Date = Acquisition Date
