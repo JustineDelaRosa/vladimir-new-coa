@@ -58,6 +58,7 @@ trait AssetRequestHandler
         $assetRequest->fill([
             'type_of_request_id' => $request->type_of_request_id,
             'attachment_type' => $request->attachment_type,
+            'capex_number' => $request->capex_number,
             'accountability' => $request->accountability,
             'accountable' => $request->accountable ?? null,
             'asset_description' => $request->asset_description,

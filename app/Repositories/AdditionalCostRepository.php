@@ -286,6 +286,11 @@ class AdditionalCostRepository
                 'id' => $additional_cost->minorCategory->id ?? '-',
                 'minor_category_name' => $additional_cost->minorCategory->minor_category_name ?? '-',
             ],
+            'unit_of_measure' => [
+                'id' => $additional_cost->uom->id ?? '-',
+                'uom_code' => $additional_cost->uom->uom_code ?? '-',
+                'uom_name' => $additional_cost->uom->uom_name ?? '-',
+            ],
             'est_useful_life' => $additional_cost->majorCategory->est_useful_life ?? '-',
             'voucher' => $additional_cost->voucher ?? '-',
             'voucher_date' => $additional_cost->voucher_date ?? '-',
@@ -375,6 +380,7 @@ class AdditionalCostRepository
                     'sub_capex' => $additional_cost->fixedAsset->subCapex->sub_capex ?? '-',
                     'sub_project' => $additional_cost->fixedAsset->subCapex->sub_project ?? '-',
                 ],
+                'capex_number' => $additional_cost->fixedAsset->capex_number ?? '-',
                 'vladimir_tag_number' => $additional_cost->fixedAsset->vladimir_tag_number,
                 'tag_number' => $additional_cost->fixedAsset->tag_number,
                 'tag_number_old' => $additional_cost->fixedAsset->tag_number_old,
@@ -399,6 +405,11 @@ class AdditionalCostRepository
                 'minor_category' => [
                     'id' => $additional_cost->fixedAsset->minorCategory->id ?? '-',
                     'minor_category_name' => $additional_cost->fixedAsset->minorCategory->minor_category_name ?? '-',
+                ],
+                'unit_of_measure' => [
+                    'id' => $additional_cost->fixedAsset->uom->id ?? '-',
+                    'uom_code' => $additional_cost->fixedAsset->uom->uom_code ?? '-',
+                    'uom_name' => $additional_cost->fixedAsset->uom->uom_name ?? '-',
                 ],
                 'est_useful_life' => $additional_cost->fixedAsset->majorCategory->est_useful_life ?? '-',
                 'voucher' => $additional_cost->fixedAsset->voucher ?? '-',

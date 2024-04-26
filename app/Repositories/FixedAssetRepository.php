@@ -505,6 +505,7 @@ class FixedAssetRepository
                 'sub_capex' => $fixed_asset->subCapex->sub_capex ?? '-',
                 'sub_project' => $fixed_asset->subCapex->sub_project ?? '-',
             ],
+            'capex_number' => $fixed_asset->capex_number ?? '-',
             'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
             'tag_number' => $fixed_asset->tag_number ?? '-',
             'tag_number_old' => $fixed_asset->tag_number_old ?? '-',
@@ -534,6 +535,11 @@ class FixedAssetRepository
             'minor_category' => [
                 'id' => $fixed_asset->minorCategory->id ?? '-',
                 'minor_category_name' => $fixed_asset->minorCategory->minor_category_name ?? '-',
+            ],
+            'unit_of_measure' => [
+                'id' => $fixed_asset->uom->id ?? '-',
+                'uom_code' => $fixed_asset->uom->uom_code ?? '-',
+                'uom_name' => $fixed_asset->uom->uom_name ?? '-',
             ],
             'est_useful_life' => $fixed_asset->majorCategory->est_useful_life ?? '-',
             'voucher' => $fixed_asset->voucher ?? '-',
@@ -666,6 +672,11 @@ class FixedAssetRepository
                         'id' => $additional_cost->minorCategory->id ?? '-',
                         'minor_category_name' => $additional_cost->minorCategory->minor_category_name ?? '-',
                     ],
+                    'unit_of_measure' => [
+                        'id' => $additional_cost->uom->id ?? '-',
+                        'uom_code' => $additional_cost->uom->uom_code ?? '-',
+                        'uom_name' => $additional_cost->uom->uom_name ?? '-',
+                    ],
                     'est_useful_life' => $additional_cost->majorCategory->est_useful_life ?? '-',
                     'voucher' => $additional_cost->voucher ?? '-',
                     'voucher_date' => $additional_cost->voucher_date ?? '-',
@@ -783,6 +794,7 @@ class FixedAssetRepository
                 'sub_capex' => $fixed_asset->subCapex->sub_capex ?? '-',
                 'sub_project' => $fixed_asset->subCapex->sub_project ?? '-',
             ],
+            'capex_number' => $fixed_asset->capex_number ?? '-',
             'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
             'tag_number' => $fixed_asset->tag_number ?? '-',
             'tag_number_old' => $fixed_asset->tag_number_old ?? '-',
@@ -812,6 +824,11 @@ class FixedAssetRepository
             'minor_category' => [
                 'id' => $fixed_asset->minorCategory->id ?? '-',
                 'minor_category_name' => $fixed_asset->minorCategory->minor_category_name ?? '-',
+            ],
+            'unit_of_measure' => [
+                'id' => $fixed_asset->uom->id ?? '-',
+                'uom_code' => $fixed_asset->uom->uom_code ?? '-',
+                'uom_name' => $fixed_asset->uom->uom_name ?? '-',
             ],
             'est_useful_life' => $fixed_asset->majorCategory->est_useful_life ?? '-',
             'voucher' => $fixed_asset->voucher ?? '-',

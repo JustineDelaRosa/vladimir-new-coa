@@ -38,6 +38,7 @@ class UpdateAssetRequestRequest extends FormRequest
                 'required',
                 Rule::exists('type_of_requests', 'id')
             ],
+            'capex_number' => 'nullable',
             'date_needed' => 'required|date',
             'is_addcost' => 'nullable|in:0,1',
             'fixed_asset_id' => ['required-if:is_addcost,1', Rule::exists('fixed_assets', 'id')],
@@ -70,11 +71,11 @@ class UpdateAssetRequestRequest extends FormRequest
             'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
             'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
             'account_title_id' => 'required|exists:account_titles,id',
-            'letter_of_request' => ['bail', 'nullable', 'max:10000', new FileOrX],
+            'letter_of_request' => ['bail', 'nullable', 'required-if:attachment_type,Unbudgeted', 'max:10000', new FileOrX],
             'quotation' => ['bail', 'nullable', 'max:10000', new FileOrX],
             'specification_form' => ['bail', 'nullable', 'max:10000', new FileOrX],
             'tool_of_trade' => ['bail', 'nullable', 'max:10000', new FileOrX],
-            'other_attachments' => ['bail', 'nullable', 'max:10000', new FileOrX],
+            'other_attachments' => ['bail','nullable', 'required-if:type_of_request_id,2', 'max:10000', new FileOrX],
             'uom_id' => 'required|exists:unit_of_measures,id',
             //
         ];
@@ -119,7 +120,8 @@ class UpdateAssetRequestRequest extends FormRequest
             'cellphone_number.digits_between' => 'Invalid cellphone number',
             'uom_id.required' => 'The unit of measure field is required',
             'uom_id.exists' => 'The selected unit of measure is invalid',
-
+            'letter_of_request.required_if' => 'The letter of request is required.',
+            'other_attachments.required_if' => 'The other attachments is required.',
         ];
     }
 }

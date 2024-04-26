@@ -298,6 +298,7 @@ trait AddingPoHandler
                 'po_number' => $asset->po_number,
                 'rr_number' => $asset->rr_number,
                 'receipt' => $asset->rr_number,
+                'capex_number' => $asset->capex_number,
                 'warehouse_number_id' => $warehouseNumber->id,
                 'from_request' => 1,
                 'transaction_number' => $asset->transaction_number,

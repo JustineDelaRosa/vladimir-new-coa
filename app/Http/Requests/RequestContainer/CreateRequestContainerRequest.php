@@ -45,6 +45,7 @@ class CreateRequestContainerRequest extends BaseRequest
             ],
 
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
+            'capex_number' => 'nullable',
             'is_addcost' => 'nullable|boolean',
             'fixed_asset_id' => [
                 'required-if:is_addcost,true',
@@ -82,11 +83,11 @@ class CreateRequestContainerRequest extends BaseRequest
             'brand' => 'nullable',
             'quantity' => 'required|numeric|min:1',
             'date_needed' => 'required|date|after_or_equal:today',
-            'letter_of_request' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
+            'letter_of_request' => 'nullable|required-if:attachment_type,Unbudgeted|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'quotation' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'specification_form' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
-            'other_attachments' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
+            'other_attachments' => 'nullable|required-if:type_of_request_id,2|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'company_id' => 'required|exists:companies,id',
             'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
             'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
@@ -147,7 +148,8 @@ class CreateRequestContainerRequest extends BaseRequest
             'date_needed.date' => 'The date needed must be a date.',
             'date_needed.after_or_equal' => 'Please select a valid date needed.',
             'cellphone_number.digits_between' => 'Invalid cellphone number.',
-
+            'letter_of_request.required_if' => 'The letter of request is required.',
+            'other_attachments.required_if' => 'The other attachments is required.',
         ];
     }
 

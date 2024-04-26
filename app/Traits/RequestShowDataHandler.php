@@ -98,6 +98,7 @@ trait RequestShowDataHandler
             'status' => $ar->status,
             'transaction_number' => $ar->transaction_number,
             'reference_number' => $ar->reference_number,
+            'capex_number' => $ar->capex_number ?? '-',
             'pr_number' => $ar->pr_number,
             'po_number' => $ar->po_number,
             'attachment_type' => $ar->attachment_type,
@@ -260,6 +261,7 @@ trait RequestShowDataHandler
                 'sub_capex' => $fixed_asset->subCapex->sub_capex ?? '-',
                 'sub_project' => $fixed_asset->subCapex->sub_project ?? '-',
             ],
+            'capex_number' => $fixed_asset->capex_number ?? '-',
             'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
             'tag_number' => $fixed_asset->tag_number ?? '-',
             'tag_number_old' => $fixed_asset->tag_number_old ?? '-',
@@ -289,6 +291,11 @@ trait RequestShowDataHandler
             'minor_category' => [
                 'id' => $fixed_asset->minorCategory->id ?? '-',
                 'minor_category_name' => $fixed_asset->minorCategory->minor_category_name ?? '-',
+            ],
+            'unit_of_measure' => [
+                'id' => $additional_cost->uom->id ?? '-',
+                'uom_code' => $additional_cost->uom->uom_code ?? '-',
+                'uom_name' => $additional_cost->uom->uom_name ?? '-',
             ],
             'est_useful_life' => $fixed_asset->majorCategory->est_useful_life ?? '-',
             'voucher' => $fixed_asset->voucher ?? '-',
@@ -410,6 +417,11 @@ trait RequestShowDataHandler
                     'minor_category' => [
                         'id' => $additional_cost->minorCategory->id ?? '-',
                         'minor_category_name' => $additional_cost->minorCategory->minor_category_name ?? '-',
+                    ],
+                    'unit_of_measure' => [
+                        'id' => $additional_cost->uom->id ?? '-',
+                        'uom_code' => $additional_cost->uom->uom_code ?? '-',
+                        'uom_name' => $additional_cost->uom->uom_name ?? '-',
                     ],
                     'est_useful_life' => $additional_cost->majorCategory->est_useful_life ?? '-',
                     'voucher' => $additional_cost->voucher ?? '-',
