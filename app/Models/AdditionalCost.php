@@ -147,6 +147,10 @@ class AdditionalCost extends Model implements HasMedia
         return $this->belongsTo(BusinessUnit::class, 'business_unit_id', 'id');
     }
 
+    public function uom(){
+        return $this->belongsTo(UnitOfMeasure::class, 'uom_id', 'id');
+    }
+
 //    public function getAccountableAttribute($value)
 //    {
 //        return $value ? json_decode($value) : null;
