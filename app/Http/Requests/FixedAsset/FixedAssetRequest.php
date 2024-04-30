@@ -271,6 +271,7 @@ class FixedAssetRequest extends FormRequest
                 'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
                 'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
                 'account_title_id' => 'required|exists:account_titles,id',
+                'uom_id' => 'required|exists:unit_of_measures,id',
             ];
         }
 
@@ -509,6 +510,7 @@ class FixedAssetRequest extends FormRequest
                 'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id , false)],
                 'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
                 'account_title_id' => 'required|exists:account_titles,id',
+                'uom_id' => 'required|exists:unit_of_measures,id',
             ];
         }
 
@@ -611,7 +613,8 @@ class FixedAssetRequest extends FormRequest
             'remarks.required_if' => 'Remarks is required',
             'remarks.string' => 'Remarks must be a string',
             'remarks.max' => 'Remarks must not exceed 255 characters',
-
+            'uom_id.required' => 'Unit of measure is required',
+            'uom_id.exists' => 'Unit of measure does not exist',
         ];
     }
 }

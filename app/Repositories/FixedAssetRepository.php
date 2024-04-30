@@ -113,6 +113,7 @@ class FixedAssetRepository
             'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
+            'uom_id' => $request['uom_id'],
         ];
     }
 
@@ -172,6 +173,7 @@ class FixedAssetRepository
             'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
+            'uom_id' => $request['uom_id'],
         ];
     }
 
@@ -904,6 +906,81 @@ class FixedAssetRepository
             'last_printed' => $fixed_asset->last_printed ?? '-',
             'created_at' => $fixed_asset->created_at ?? '-',
             'add_cost_sequence' => $fixed_asset->add_cost_sequence ?? null,
+        ];
+    }
+
+    public function transformIndex($fixed_asset): Collection
+    {
+        return collect($fixed_asset)->map(function ($asset) {
+            return $this->tranformForIndex($asset);
+        });
+    }
+    public function tranformForIndex($fixed_asset){
+        return [
+            'total_cost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost, $fixed_asset->acquisition_cost),
+            'total_adcost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost),
+            'additional_cost_count' => $fixed_asset->additional_cost_count,
+            'id' => $fixed_asset->id,
+            'requestor' => [
+                'id' => $fixed_asset->requestor->id ?? '-',
+                'username' => $fixed_asset->requestor->username ?? '-',
+                'first_name' => $fixed_asset->requestor->first_name ?? '-',
+                'last_name' => $fixed_asset->requestor->last_name ?? '-',
+                'employee_id' => $fixed_asset->requestor->employee_id ?? '-',
+            ],
+            'warehouse_number' => [
+                'id' => $fixed_asset->warehouseNumber->id ?? '-',
+                'warehouse_number' => $fixed_asset->warehouseNumber->warehouse_number ?? '-',
+            ],
+            'capex_number' => $fixed_asset->capex_number ?? '-',
+            'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
+            'tag_number' => $fixed_asset->tag_number ?? '-',
+            'tag_number_old' => $fixed_asset->tag_number_old ?? '-',
+            'asset_description' => $fixed_asset->asset_description ?? '-',
+            'type_of_request' => [
+                'id' => $fixed_asset->typeOfRequest->id ?? '-',
+                'type_of_request_name' => $fixed_asset->typeOfRequest->type_of_request_name ?? '-',
+            ],
+            'company' => [
+                'id' => $fixed_asset->company->id ?? '-',
+                'company_code' => $fixed_asset->company->company_code ?? '-',
+                'company_name' => $fixed_asset->company->company_name ?? '-',
+            ],
+            'business_unit' => [
+                'id' => $fixed_asset->businessUnit->id ?? '-',
+                'business_unit_code' => $fixed_asset->businessUnit->business_unit_code ?? '-',
+                'business_unit_name' => $fixed_asset->businessUnit->business_unit_name ?? '-',
+            ],
+            'department' => [
+                'id' => $fixed_asset->department->id ?? '-',
+                'department_code' => $fixed_asset->department->department_code ?? '-',
+                'department_name' => $fixed_asset->department->department_name ?? '-',
+            ],
+            'unit' => [
+                'id' => $fixed_asset->unit->id ?? '-',
+                'unit_code' => $fixed_asset->unit->unit_code ?? '-',
+                'unit_name' => $fixed_asset->unit->unit_name ?? '-',
+            ],
+            'subunit' => [
+                'id' => $fixed_asset->subunit->id ?? '-',
+                'subunit_code' => $fixed_asset->subunit->sub_unit_code ?? '-',
+                'subunit_name' => $fixed_asset->subunit->sub_unit_name ?? '-',
+            ],
+            'charged_department' => [
+                'id' => $fixed_asset->department->id ?? '-',
+                'department_code' => $fixed_asset->department->department_code ?? '-',
+                'department_name' => $fixed_asset->department->department_name ?? '-',
+            ],
+            'location' => [
+                'id' => $fixed_asset->location->id ?? '-',
+                'location_code' => $fixed_asset->location->location_code ?? '-',
+                'location_name' => $fixed_asset->location->location_name ?? '-',
+            ],
+            'account_title' => [
+                'id' => $fixed_asset->accountTitle->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
+            ],
         ];
     }
 }
