@@ -63,6 +63,13 @@ class AssetReleaseController extends Controller
         $accountable = $request->get('accountable');
         $receivedBy = $request->get('received_by');
         $signature = $request->get('signature') ?? null;
+        $companyId = $request->get('company_id');
+        $businessUnitId = $request->get('business_unit_id');
+        $departmentId = $request->get('department_id');
+        $unitId = $request->get('unit_id');
+        $subunitId = $request->get('subunit_id');
+        $locationId = $request->get('location_id');
+        $accountTitleId = $request->get('account_title_id');
         $depreciation = DepreciationStatus::where('depreciation_status_name', 'For Depreciation')->first()->id;
         foreach ($warehouseIds as $warehouseId) {
 
@@ -78,54 +85,29 @@ class AssetReleaseController extends Controller
 
 
             if ($fixedAssetCount > 0) {
-                $fixedAsset = (clone $fixedAssetQuery)->first();
-                $fixedAsset->storeBase64Image($signature, $receivedBy);
-                (clone $fixedAssetQuery)->update([
-                    'accountability' => $accountability,
-                    'accountable' => $accountable,
-                    'received_by' => $receivedBy,
-                    'is_released' => 1,
-                    'depreciation_status_id' => $depreciation
-                ]);
-                $formula = $fixedAsset->formula;
-                $formula->update(['release_date' => now()->format('Y-m-d')]);
-                $fixedAsset->refresh();
-                $this->assetReleaseActivityLog($fixedAsset);
-                $this->assetReleaseActivityLog($fixedAsset, true);
+                $processedAsset = $this->processAsset($fixedAssetQuery, $signature, $receivedBy, $accountability, $accountable, $depreciation, $companyId, $businessUnitId, $departmentId, $unitId, $subunitId, $locationId, $accountTitleId);
             }
 
             if ($additionalCostCount > 0) {
-                $additionalCost = (clone $additionalCostQuery)->first();
-                $additionalCost->storeBase64Image($signature, $receivedBy);
-                (clone $additionalCostQuery)->update([
-                    'accountability' => $accountability,
-                    'accountable' => $accountable,
-                    'received_by' => $receivedBy,
-                    'is_released' => 1,
-                    'depreciation_status_id' => $depreciation
-                ]);
-                $formula = $additionalCost->formula;
-                $formula->update(['release_date' => now()->format('Y-m-d')]);
-                $additionalCost->refresh();
-                $this->assetReleaseActivityLog($additionalCost);
-                $this->assetReleaseActivityLog($additionalCost, true);
+                $processedAsset = $this->processAsset($additionalCostQuery, $signature, $receivedBy, $accountability, $accountable, $depreciation, $companyId, $businessUnitId, $departmentId, $unitId, $subunitId, $locationId, $accountTitleId);
             }
 
-            $transactionNumber = $fixedAsset->transaction_number ?? $additionalCost->transaction_number;
-            $unreleasedFixedAssets = FixedAsset::where('transaction_number', $transactionNumber)->where('is_released', 0)->count();
-            $unreleasedAdditionalCosts = AdditionalCost::where('transaction_number', $transactionNumber)->where('is_released', 0)->count();
+            if ($processedAsset) {
+                $transactionNumber = $processedAsset->transaction_number;
+                $unreleasedFixedAssets = FixedAsset::where('transaction_number', $transactionNumber)->where('is_released', 0)->count();
+                $unreleasedAdditionalCosts = AdditionalCost::where('transaction_number', $transactionNumber)->where('is_released', 0)->count();
 
-            // If all assets are released, update the asset request
-            if ($unreleasedFixedAssets == 0 && $unreleasedAdditionalCosts == 0) {
-                AssetRequest::where('transaction_number', $transactionNumber)->update([
-                    'is_claimed' => 1,
-                    'filter' => 'Claimed'
-                ]);
+                // If all assets are released, update the asset request
+                if ($unreleasedFixedAssets == 0 && $unreleasedAdditionalCosts == 0) {
+                    AssetRequest::where('transaction_number', $transactionNumber)->update([
+                        'is_claimed' => 1,
+                        'filter' => 'Claimed'
+                    ]);
+                }
             }
         }
         return $this->responseSuccess('Assets Released');
     }
-
 
 
     private function getAssetRequest($fixedAssetQuery, $additionalCostQuery)
@@ -173,7 +155,7 @@ class AssetReleaseController extends Controller
         if ($assetRequest) {
             $assetRequest->update([
                 'is_claimed' => 1,
-                'filter'=> 'Claimed'
+                'filter' => 'Claimed'
             ]);
         }
     }

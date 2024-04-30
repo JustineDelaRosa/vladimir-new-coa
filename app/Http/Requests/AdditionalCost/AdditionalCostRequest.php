@@ -204,6 +204,7 @@ class AdditionalCostRequest extends FormRequest
                 'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
                 'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
                 'account_title_id' => 'required|exists:account_titles,id',
+                'uom_id' => 'required|exists:unit_of_measures,id',
             ];
         }
         if ($this->isMethod('patch') && ($this->route()->parameter('id'))) {
@@ -272,6 +273,8 @@ class AdditionalCostRequest extends FormRequest
             'remarks.required_if' => 'The remarks is required.',
             'remarks.string' => 'The remarks must be a string.',
             'remarks.max' => 'The remarks may not be greater than 255 characters.',
+            'uom_id' => 'The unit of measure is required.',
+            'uom_id.exists' => 'The unit of measure must be a valid unit of measure.',
 
         ];
     }
@@ -437,6 +440,7 @@ class AdditionalCostRequest extends FormRequest
             'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
             'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
             'account_title_id' => 'required|exists:account_titles,id',
+            'uom_id' => 'required|exists:unit_of_measures,id',
         ];
     }
 }

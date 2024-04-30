@@ -1040,4 +1040,51 @@ trait AssetReleaseHandler
 
         return $base64;
     }
+
+
+    private function processAsset($assetQuery, $signature, $receivedBy, $accountability, $accountable, $depreciation, $companyId, $businessUnitId, $departmentId, $unitId, $subunitId, $locationId, $accountTitleId)
+    {
+        $asset = (clone $assetQuery)->first();
+        $asset->storeBase64Image($signature, $receivedBy);
+
+        $updateData = [
+            'accountability' => $accountability,
+            'accountable' => $accountable,
+            'received_by' => $receivedBy,
+            'is_released' => 1,
+            'depreciation_status_id' => $depreciation,
+        ];
+
+        if ($companyId !== null) {
+            $updateData['company_id'] = $companyId;
+        }
+        if ($businessUnitId !== null) {
+            $updateData['business_unit_id'] = $businessUnitId;
+        }
+        if ($departmentId !== null) {
+            $updateData['department_id'] = $departmentId;
+        }
+        if ($unitId !== null) {
+            $updateData['unit_id'] = $unitId;
+        }
+        if ($subunitId !== null) {
+            $updateData['subunit_id'] = $subunitId;
+        }
+        if ($locationId !== null) {
+            $updateData['location_id'] = $locationId;
+        }
+        if ($accountTitleId !== null) {
+            $updateData['account_id'] = $accountTitleId;
+        }
+
+        (clone $assetQuery)->update($updateData);
+
+        $formula = $asset->formula;
+        $formula->update(['release_date' => now()->format('Y-m-d')]);
+        $asset->refresh();
+        $this->assetReleaseActivityLog($asset);
+        $this->assetReleaseActivityLog($asset, true);
+
+        return $asset;
+    }
 }
