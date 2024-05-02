@@ -99,7 +99,7 @@ class AdditionalCostRepository
             'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
-            'uom_id' => $request['uom_id'],
+            'uom_id' => $request['uom_id'] ?? null,
         ];
     }
 
@@ -152,7 +152,7 @@ class AdditionalCostRepository
             'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
-            'uom_id' => $request['uom_id'],
+            'uom_id' => $request['uom_id'] ?? null,
         ];
     }
 
@@ -341,9 +341,9 @@ class AdditionalCostRepository
                 'business_unit_name' => $additional_cost->businessUnit->business_unit_name ?? '-',
             ],
             'unit' => [
-                'id' => $fixed_asset->unit->id ?? '-',
-                'unit_code' => $fixed_asset->unit->unit_code ?? '-',
-                'unit_name' => $fixed_asset->unit->unit_name ?? '-',
+                'id' => $additional_cost->unit->id ?? '-',
+                'unit_code' => $additional_cost->unit->unit_code ?? '-',
+                'unit_name' => $additional_cost->unit->unit_name ?? '-',
             ],
             'subunit' => [
                 'id' => $additional_cost->subunit->id ?? '-',
@@ -443,7 +443,7 @@ class AdditionalCostRepository
                 ],
                 'is_additional_cost' => $additional_cost->fixedAsset->is_additional_cost,
                 'is_old_asset' => $additional_cost->fixedAsset->is_old_asset,
-                'status' => $additional_cost->fixedAsset->is_active,
+                'status' => $additional_cost->fixedAsset->is_active ?? '-',
                 'care_of' => $additional_cost->fixedAsset->care_of ?? '-',
                 'months_depreciated' => $additional_cost->fixedAsset->formula->months_depreciated,
                 'end_depreciation' => $additional_cost->fixedAsset->formula->end_depreciation,
@@ -453,44 +453,44 @@ class AdditionalCostRepository
                 'release_date' => $additional_cost->fixedAsset->formula->release_date ?? '-',
                 'start_depreciation' => $additional_cost->fixedAsset->formula->start_depreciation,
                 'company' => [
-                    'id' => $additional_cost->company->id ?? '-',
-                    'company_code' => $additional_cost->company->company_code ?? '-',
-                    'company_name' => $additional_cost->company->company_name ?? '-',
+                    'id' => $additional_cost->fixedAsset->company->id ?? '-',
+                    'company_code' => $additional_cost->fixedAsset->company->company_code ?? '-',
+                    'company_name' => $additional_cost->fixedAsset->company->company_name ?? '-',
                 ],
                 'business_unit' => [
-                    'id' => $additional_cost->businessUnit->id ?? '-',
-                    'business_unit_code' => $additional_cost->businessUnit->business_unit_code ?? '-',
-                    'business_unit_name' => $additional_cost->businessUnit->business_unit_name ?? '-',
+                    'id' => $additional_cost->fixedAsset->businessUnit->id ?? '-',
+                    'business_unit_code' => $additional_cost->fixedAsset->businessUnit->business_unit_code ?? '-',
+                    'business_unit_name' => $additional_cost->fixedAsset->businessUnit->business_unit_name ?? '-',
                 ],
                 'unit' => [
-                    'id' => $fixed_asset->unit->id ?? '-',
-                    'unit_code' => $fixed_asset->unit->unit_code ?? '-',
-                    'unit_name' => $fixed_asset->unit->unit_name ?? '-',
+                    'id' => $additional_cost->fixedAsset->unit->id ?? '-',
+                    'unit_code' => $additional_cost->fixedAsset->unit->unit_code ?? '-',
+                    'unit_name' => $additional_cost->fixedAsset->unit->unit_name ?? '-',
                 ],
                 'subunit' => [
-                    'id' => $additional_cost->subunit->id ?? '-',
-                    'subunit_code' => $additional_cost->subunit->sub_unit_code ?? '-',
-                    'subunit_name' => $additional_cost->subunit->sub_unit_name ?? '-',
+                    'id' => $additional_cost->fixedAsset->subunit->id ?? '-',
+                    'subunit_code' => $additional_cost->fixedAsset->subunit->sub_unit_code ?? '-',
+                    'subunit_name' => $additional_cost->fixedAsset->subunit->sub_unit_name ?? '-',
                 ],
                 'department' => [
-                    'id' => $additional_cost->department->id ?? '-',
-                    'department_code' => $additional_cost->department->department_code ?? '-',
-                    'department_name' => $additional_cost->department->department_name ?? '-',
+                    'id' => $additional_cost->fixedAsset->department->id ?? '-',
+                    'department_code' => $additional_cost->fixedAsset->department->department_code ?? '-',
+                    'department_name' => $additional_cost->fixedAsset->department->department_name ?? '-',
                 ],
                 'charged_department' => [
-                    'id' => $additional_cost->department->id ?? '-',
-                    'department_code' => $additional_cost->department->department_code ?? '-',
-                    'department_name' => $additional_cost->department->department_name ?? '-',
+                    'id' => $additional_cost->fixedAsset->department->id ?? '-',
+                    'department_code' => $additional_cost->fixedAsset->department->department_code ?? '-',
+                    'department_name' => $additional_cost->fixedAsset->department->department_name ?? '-',
                 ],
                 'location' => [
-                    'id' => $additional_cost->location->id ?? '-',
-                    'location_code' => $additional_cost->location->location_code ?? '-',
-                    'location_name' => $additional_cost->location->location_name ?? '-',
+                    'id' => $additional_cost->fixedAsset->location->id ?? '-',
+                    'location_code' => $additional_cost->fixedAsset->location->location_code ?? '-',
+                    'location_name' => $additional_cost->fixedAsset->location->location_name ?? '-',
                 ],
                 'account_title' => [
-                    'id' => $additional_cost->accountTitle->id ?? '-',
-                    'account_title_code' => $additional_cost->accountTitle->account_title_code ?? '-',
-                    'account_title_name' => $additional_cost->accountTitle->account_title_name ?? '-',
+                    'id' => $additional_cost->fixedAsset->accountTitle->id ?? '-',
+                    'account_title_code' => $additional_cost->fixedAsset->accountTitle->account_title_code ?? '-',
+                    'account_title_name' => $additional_cost->fixedAsset->accountTitle->account_title_name ?? '-',
                 ],
                 'remarks' => $additional_cost->fixedAsset->remarks,
                 'print_count' => $additional_cost->fixedAsset->print_count,
