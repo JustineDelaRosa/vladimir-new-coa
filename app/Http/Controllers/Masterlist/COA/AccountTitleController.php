@@ -11,6 +11,7 @@ class AccountTitleController extends Controller
 {
 
     use ApiResponse;
+
     /**
      * Display a listing of the resource.
      *
@@ -22,6 +23,7 @@ class AccountTitleController extends Controller
         $isActiveStatus = ($userStatus === 'deactivated') ? 0 : 1;
 
         $accountTitle = AccountTitle::where('is_active', $isActiveStatus)
+            ->whereIn('account_title_code', ['100000', '151700', '153700', '515260', '534300', '534400', '534630', '534800', '534840', '555400', '151302'])
             ->orderBy('created_at', 'DESC')
             ->useFilters()
             ->dynamicPaginate();
