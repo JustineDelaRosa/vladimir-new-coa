@@ -271,7 +271,7 @@ class FixedAssetRequest extends FormRequest
                 'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
                 'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
                 'account_title_id' => 'required|exists:account_titles,id',
-                'uom_id' => 'required|exists:unit_of_measures,id',
+                'uom_id' => 'nullable|exists:unit_of_measures,id',
             ];
         }
 
@@ -347,7 +347,7 @@ class FixedAssetRequest extends FormRequest
                 'brand' => 'nullable',
                 'major_category_id' => 'required|exists:major_categories,id',
                 'minor_category_id' => 'required|exists:minor_categories,id',
-                'voucher' => [function ($attribute, $value, $fail) {
+                'voucher' => ['nullable', function ($attribute, $value, $fail) {
 //                    if (request()->depreciation_method != 'Supplier Rebase') {
 //                        //if the depreciation status is running depreciation and fully depreciated required voucher
 //                        $depreciation_status = DepreciationStatus::where('id', request()->depreciation_status_id)->first();
@@ -507,10 +507,10 @@ class FixedAssetRequest extends FormRequest
                 'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
                 'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
                 'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
-                'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id , false)],
+                'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
                 'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
                 'account_title_id' => 'required|exists:account_titles,id',
-                'uom_id' => 'required|exists:unit_of_measures,id',
+                'uom_id' => 'nullable|exists:unit_of_measures,id',
             ];
         }
 

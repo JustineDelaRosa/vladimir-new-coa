@@ -100,6 +100,7 @@ class AdditionalCostController extends Controller
 //        $departmentQuery = Department::where('id', $request->department_id)->first();
         $additionalCost = AdditionalCost::where('id', $id)->first();
         $businessUnitQuery = BusinessUnit::where('id', $request->business_unit_id)->first();
+
         if ($additionalCost) {
             $additionalCost = $this->additionalCostRepository->updateAdditionalCost($request->all(), $businessUnitQuery, $id);
             return response()->json([

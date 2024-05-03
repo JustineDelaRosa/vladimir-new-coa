@@ -113,7 +113,7 @@ class FixedAssetRepository
             'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
-            'uom_id' => $request['uom_id'],
+            'uom_id' => $request['uom_id'] ?? null,
         ];
     }
 
@@ -173,7 +173,7 @@ class FixedAssetRepository
             'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
             'account_id' => $request['account_title_id'],
-            'uom_id' => $request['uom_id'],
+            'uom_id' => $request['uom_id'] ?? null,
         ];
     }
 

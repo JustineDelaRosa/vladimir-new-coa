@@ -325,7 +325,7 @@ class FixedAssetUpdateRequest extends FormRequest
             'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
             'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
 //            'print_count' => 'nullable|numeric',
-            'uom_id' => 'required|exists:unit_of_measures,id',
+            'uom_id' => 'nullable|exists:unit_of_measures,id',
         ];
     }
 
