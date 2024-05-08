@@ -5,17 +5,21 @@ namespace App\Rules\NewCoaValidation;
 use App\Models\SubUnit;
 use App\Models\Unit;
 use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Support\Facades\Route;
 
 class SubunitValidation implements Rule
 {
     private $unitId;
     private $requesting;
+
+    private $assetTransferRequestId;
     private string $errorMessage;
 
-    public function __construct($unitId, $requesting)
+    public function __construct($unitId, $requesting, $assetTransferRequestId = null)
     {
         $this->unitId = $unitId;
         $this->requesting = $requesting;
+        $this->assetTransferRequestId = $assetTransferRequestId;
     }
 
     public function passes($attribute, $value)
@@ -26,9 +30,22 @@ class SubunitValidation implements Rule
             return false;
         }
         if ($this->requesting) {
-            if ($subUnit->departmentUnitApprovers->isEmpty()) {
-                $this->errorMessage = 'No approvers assigned to the selected subunit.';
-                return false;
+
+            if(Route::currentRouteNamed('asset-transfer.store')){
+                if ($subUnit->departmentUnitApprovers->isEmpty()) {
+                    $this->errorMessage = 'No approvers assigned to the selected subunit.';
+                    return false;
+                }
+            }elseif(Route::currentRouteNamed('asset-transfer-container.store')){
+                if ($subUnit->transferApprovers->isEmpty()) {
+                    $this->errorMessage = 'No transfer approvers assigned to the selected subunit.';
+                    return false;
+                }
+            }elseif (Route::currentRouteNamed('asset-transfer.update')) {
+                if ($this->assetTransferRequestId !== null && $subUnit->departmentUnitApprovers->isEmpty()) {
+                    $this->errorMessage = 'No approvers assigned to the selected subunit.';
+                    return false;
+                }
             }
         }
 
