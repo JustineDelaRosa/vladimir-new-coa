@@ -2,6 +2,12 @@
 
 namespace App\Http\Requests\RequestContainer;
 
+use App\Rules\FileOrX;
+use App\Rules\NewCoaValidation\BusinessUnitValidation;
+use App\Rules\NewCoaValidation\DepartmentValidation;
+use App\Rules\NewCoaValidation\LocationValidation;
+use App\Rules\NewCoaValidation\SubunitValidation;
+use App\Rules\NewCoaValidation\UnitValidation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,12 +32,31 @@ class UpdateRequestContainerRequest extends FormRequest
     {
         return [
             'type_of_request_id' => [
-            'required',
-            Rule::exists('type_of_requests', 'id')
-        ],
+                'required',
+                Rule::exists('type_of_requests', 'id')
+            ],
+            'capex_number' => 'nullable',
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
+            'is_addcost' => 'nullable|boolean',
+            'fixed_asset_id' => [
+                'required-if:is_addcost,true',
+                Rule::exists('fixed_assets', 'id'),
+                //check if this has different fixed asset id from other request container
+                function ($attribute, $value, $fail) {
+//                    $userId = auth()->user()->id;
+//                    $requestContainerFA = RequestContainer::where('requester_id', $userId)->first()->fixed_asset->id ?? null;
+//                    if(!$requestContainerFA){
+//                        return;
+//                    }
+//                    if($requestContainerFA !== $value){
+//                        $fail('The selected fixed asset is different from the other item.');
+//                    }
+                },
+            ],
+
             'accountability' => 'required|in:Personal Issued,Common',
-            'accountable' => ['required_if:accountability,Personal Issued',
+            'accountable' => [
+                'required_if:accountability,Personal Issued',
                 function ($attribute, $value, $fail) {
                     $accountable = request()->input('accountable');
                     //if the accountability is not Personal Issued, nullify the accountable field and return
@@ -39,37 +64,35 @@ class UpdateRequestContainerRequest extends FormRequest
                         request()->merge(['accountable' => null]);
                         return;
                     }
-
-                    // Get full ID number if it exists or fail validation
-                    if (!empty($accountable['general_info']['full_id_number'])) {
-                        $full_id_number = trim($accountable['general_info']['full_id_number']);
-                        request()->merge(['accountable' => $full_id_number]);
-                    } else {
-                        $fail('The accountable person is required.');
-                        return;
-                    }
-
-                    // Validate full ID number
-                    if (empty($full_id_number)) {
-                        $fail('The accountable person cannot be empty.');
-                    }
                 },
             ],
+            'additional_info' => 'nullable',
+            'acquisition_details' => 'required|string',
             'asset_description' => 'required',
             'asset_specification' => 'nullable',
             'cellphone_number' => 'nullable|digits_between:11,12',
             'brand' => 'nullable',
-            'quantity' => 'required|numeric',
-//            'letter_of_request' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
-//            'quotation' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
-//            'specification_form' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
-//            'tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
-//            'other_attachments' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10000',
+            'quantity' => 'required|numeric|min:1',
+            'date_needed' => 'required|date|after_or_equal:today',
+            'letter_of_request' => ['bail', 'nullable', 'required-if:attachment_type,Unbudgeted', 'max:10000', new FileOrX],
+            'quotation' => ['bail', 'nullable', 'max:10000', new FileOrX],
+            'specification_form' => ['bail', 'nullable', 'max:10000', new FileOrX],
+            'tool_of_trade' => ['bail', 'nullable', 'max:10000', new FileOrX],
+            'other_attachments' => ['nullable', 'required-if:type_of_request_id,2', 'max:10000', new FileOrX],
+            'company_id' => 'required|exists:companies,id',
+            'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+            'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+            'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+            'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
+            'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
+            'account_title_id' => 'required|exists:account_titles,id',
+            'uom_id' => 'required|exists:unit_of_measures,id',
         ];
     }
 
-    function message(){
-        return[
+    function messages(): array
+    {
+        return [
             'type_of_request_id.required' => 'The type of request field is required.',
             'type_of_request_id.exists' => 'The selected type of request is invalid.',
             'attachment_type.required' => 'The attachment type field is required.',
@@ -96,6 +119,9 @@ class UpdateRequestContainerRequest extends FormRequest
             'other_attachments.mimes' => 'The other attachments must be a file of type: pdf, doc, docx, xls, xlsx.',
             'other_attachments.max' => 'The other attachments may not be greater than 10000 kilobytes.',
             'cellphone_number.digits_between' => 'Invalid cellphone number.',
+            'type_of_request_id.required-if' => 'The type of request field is required.',
+            'letter_of_request.required_if' => 'The letter of request is required.',
+            'other_attachments.required_if' => 'The other attachments is required.',
         ];
     }
 }
