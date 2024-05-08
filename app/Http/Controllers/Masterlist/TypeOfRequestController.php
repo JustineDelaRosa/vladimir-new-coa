@@ -19,11 +19,14 @@ class TypeOfRequestController extends Controller
      */
     public function index(Request $request)
     {
-
+        $forAcquisition = $request->forAacquisition ?? 'false';
         $typeOfRequestStatus = $request->status ?? 'active';
         $isActiveStatus =($typeOfRequestStatus === 'deactivated') ? 0 : 1;
 
         $typeOfRequest = TypeOfRequest::withTrashed()->where('is_active', $isActiveStatus)
+            ->when($forAcquisition === 'true', function ($query) {
+                return $query->where('type_of_request_name', 'Asset');
+            })
             ->orderByDesc('created_at')
             ->useFilters()
             ->dynamicPaginate();
