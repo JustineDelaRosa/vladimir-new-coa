@@ -3,9 +3,13 @@
 use App\Http\Controllers\API\Approvers\AssetDisposalApproverController;
 use App\Http\Controllers\API\Approvers\AssetPullOutApproverController;
 use App\Http\Controllers\API\Approvers\AssetTransferApproverController;
+use App\Http\Controllers\API\AssetMovement\AssetTransferContainerController;
+use App\Http\Controllers\API\AssetMovement\AssetTransferController;
+use App\Http\Controllers\API\AssetMovement\AssetTransferRequestController;
 use App\Http\Controllers\API\AssetReleaseController;
 use App\Http\Controllers\Masterlist\COA\BusinessUnitController;
 use App\Http\Controllers\Masterlist\COA\UnitController;
+use App\Http\Controllers\Masterlist\UnitOfMeasureController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Auth\AuthController;
@@ -124,6 +128,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     //SUPPLIER//
     Route::resource('supplier', SupplierController::class);
 
+    //UNIT OF MEASURE
+    Route::resource('uom', UnitOfMeasureController::class);
 
     ///AUTH//
     Route::put('auth/reset/{id}', [AuthController::class, 'resetPassword']);
@@ -283,6 +289,22 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::resource('asset-disposal-approver', AssetDisposalApproverController::class);
     Route::put('update-disposal-approver/{id}', [AssetDisposalApproverController::class, 'arrangeLayer']);
+
+    //ASSET TRANSFER
+//    Route::resource('asset-transfer', AssetTransferController::class);
+
+    //ASSET TRANSFER CONTAINER
+    Route::resource('asset-transfer-container', AssetTransferContainerController::class)->except(['destroy']);
+    Route::delete('asset-transfer-container/{id?}', [AssetTransferContainerController::class, 'destroy']);
+
+    //ASSET TRANSFER
+    Route::resource('asset-transfer', AssetTransferRequestController::class);
+    Route::post('move-to-asset-transfer', [AssetTransferRequestController::class, 'transferContainerData']);
+    Route::post('update-transfer-request/{id}', [AssetTransferRequestController::class, 'updateTransfer']);
+    Route::delete('remove-transfer-item/{transferNumber?}/{id?}', [AssetTransferRequestController::class, 'removedTransferItem']);
+
+
+
 
     Route::prefix('ymir')->group(function () {
         Route::get('pr-request', [AddingPrController::class, 'requestToPR']);
