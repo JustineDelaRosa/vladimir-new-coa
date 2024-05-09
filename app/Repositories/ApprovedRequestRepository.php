@@ -312,7 +312,7 @@ class ApprovedRequestRepository
                 'employee_id' => $requester->employee_id,
             ],
             'status' => $status,
-            'remarks' => $status == 'Returned' ? $assetApproval->assetRequest->remarks ?? 'test' : null,
+            'remarks' => $status == 'Returned' ? $assetApproval->assetRequest->remarks ?? '' : null,
         ];
     }
 
