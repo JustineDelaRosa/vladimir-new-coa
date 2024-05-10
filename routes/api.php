@@ -78,6 +78,7 @@ Route::get('capex-sample-file', [CapexController::class, 'sampleCapexDownload'])
 Route::get('fixed-asset-sample-file', [FixedAssetController::class, 'sampleFixedAssetDownload']);
 Route::get('additional-cost-sample-file', [AdditionalCostController::class, 'sampleAdditionalCostDownload']);
 Route::get('dl', [AssetRequestController::class, 'downloadAttachments']);
+Route::get('transfer-attachment/{transferNumber}', [AssetTransferRequestController::class, 'transferAttachmentDl']);
 
 Route::get('getIP', [PrinterIpController::class, 'getClientIP']);
 //Route::post('auth/logout', [AuthController::class, 'Logout'])->middleware('auth:sanctum');
