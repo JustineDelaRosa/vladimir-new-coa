@@ -77,7 +77,7 @@ class CreateAssetRequestRequest extends FormRequest
                     'required',
                     Rule::exists('type_of_requests', 'id')
                 ],
-                'uerRequest.*.department_id.company.company_id' => [
+                'userRequest.*.department_id.company.company_id' => [
                     'required',
                     Rule::exists('companies', 'id')
                 ],
