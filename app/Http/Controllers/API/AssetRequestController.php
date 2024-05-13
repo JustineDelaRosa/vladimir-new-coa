@@ -691,4 +691,37 @@ class AssetRequestController extends Controller
 
         return $result;
     }
+
+
+    //zip the file
+
+//    public function downloadAttachments(Request $request)
+//    {
+//        $assetRequest = AssetRequest::find($request->id);
+//
+//        if (!$assetRequest) {
+//            return $this->responseUnprocessable('No asset request found');
+//        }
+//
+//        $mediaItems = $assetRequest->getMedia($request->attachment);
+//
+//        if ($mediaItems->isEmpty()) {
+//            return $this->responseUnprocessable('No attachment found');
+//        }
+//
+//        // Create a temporary zip file
+//        $zipFile = tempnam(sys_get_temp_dir(), 'attachments') . '.zip';
+//        $zip = new \ZipArchive();
+//        $zip->open($zipFile, \ZipArchive::CREATE);
+//
+//        // Add all media files to the zip
+//        foreach ($mediaItems as $mediaItem) {
+//            $zip->addFile($mediaItem->getPath(), $mediaItem->file_name);
+//        }
+//
+//        $zip->close();
+//
+//        // Return a response to download the zip file
+//        return response()->download($zipFile, 'attachments.zip')->deleteFileAfterSend(true);
+//    }
 }
