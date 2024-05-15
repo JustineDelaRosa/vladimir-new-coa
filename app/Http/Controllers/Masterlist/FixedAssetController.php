@@ -77,7 +77,7 @@ class FixedAssetController extends Controller
 
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
-            'data' => $this->fixedAssetRepository->transformFixedAsset($fixed_assets)
+            'data' => $this->fixedAssetRepository->transformIndex($fixed_assets)
         ], 200);
     }
 
