@@ -62,6 +62,17 @@ class AdditionalCost extends Model implements HasMedia
         }
     }
 
+    public function setAccountableAttribute($value)
+    {
+        if ($value !== null && $value !== '-') {
+            $parts = explode(' ', $value, 2); // Split the string into two parts
+            $parts[1] = ucwords(str_replace(',', ',', strtolower($parts[1] ?? '')), " \t\r\n\f\v-"); // Apply transformation to the second part
+            $value = implode(' ', $parts); // Join the parts back together
+        }
+
+        $this->attributes['accountable'] = $value;
+    }
+
     public function fixedAsset()
     {
         return $this->belongsTo(FixedAsset::class, 'fixed_asset_id', 'id');

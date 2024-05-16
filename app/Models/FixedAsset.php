@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Status\DepreciationStatus;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -29,6 +30,21 @@ class FixedAsset extends Model implements HasMedia
     protected $guarded = [];
 
     protected string $default_filters = FixedAssetFilters::class;
+
+    protected static function booted()
+    {
+        static::created(function () {
+            Cache::forget('fixed_assets_data');
+        });
+
+        static::updated(function () {
+            Cache::forget('fixed_assets_data');
+        });
+
+        static::deleted(function () {
+            Cache::forget('fixed_assets_data');
+        });
+    }
 
     public function storeBase64Image(string $base64Image, string $receiver)
     {
@@ -52,6 +68,17 @@ class FixedAsset extends Model implements HasMedia
         if (file_exists($filePath)) {
             unlink($filePath);
         }
+    }
+
+    public function setAccountableAttribute($value)
+    {
+        if ($value !== null && $value !== '-') {
+            $parts = explode(' ', $value, 2); // Split the string into two parts
+            $parts[1] = ucwords(str_replace(',', ',', strtolower($parts[1] ?? '')), " \t\r\n\f\v-"); // Apply transformation to the second part
+            $value = implode(' ', $parts); // Join the parts back together
+        }
+
+        $this->attributes['accountable'] = $value;
     }
 
 
