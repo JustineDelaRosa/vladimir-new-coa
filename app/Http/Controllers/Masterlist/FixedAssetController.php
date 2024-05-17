@@ -25,8 +25,9 @@ use App\Repositories\FixedAssetRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
 use Carbon\Carbon;
 use Essa\APIToolKit\Api\ApiResponse;
-use http\Client\Response;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Validator;
 
 class FixedAssetController extends Controller
@@ -45,40 +46,13 @@ class FixedAssetController extends Controller
 
     public function index()
     {
-
-
-        $fixed_assets = FixedAsset::with([
-            'formula',
-            'additionalCost',
-            'requestor',
-            'warehouseNumber',
-            'capex',
-            'subCapex',
-            'typeOfRequest',
-            'supplier',
-            'department.division',
-            'majorCategory',
-            'minorCategory',
-            'assetStatus',
-            'cycleCountStatus',
-            'depreciationStatus',
-            'movementStatus',
-            'department.company',
-            'department',
-            'location',
-            'accountTitle'])
-            ->where(function ($query) {
-                $query->where('from_request', '!=', 1)
-                    ->orWhere(function ($query) {
-                        $query->where('from_request', 1)
-                            ->where('is_released', 1);
-                    });
-            })->get();
-
-        return response()->json([
-            'message' => 'Fixed Assets retrieved successfully.',
-            'data' => $this->fixedAssetRepository->transformIndex($fixed_assets)
-        ], 200);
+        $data = Cache::get('fixed_assets_data');
+        if ($data) {
+            return Crypt::decrypt($data);
+        } else {
+//            return 'none';
+            return $this->fixedAssetRepository->faIndex();
+        }
     }
 
 
@@ -468,7 +442,7 @@ class FixedAssetController extends Controller
         $end_depreciation = $fixedAsset->formula->end_depreciation;
         $custom_end_depreciation = $validator->validated()['date'];
         //FOR INFORMATION
-        $depreciation_method =  $properties->depreciation_method;
+        $depreciation_method = $properties->depreciation_method;
         $est_useful_life = $fixedAsset->majorCategory->est_useful_life;
         $acquisition_date = $properties->acquisition_date;
         $acquisition_cost = $properties->acquisition_cost;

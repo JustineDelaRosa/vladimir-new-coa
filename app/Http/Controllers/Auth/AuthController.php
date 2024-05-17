@@ -7,12 +7,14 @@ use App\Models\AdditionalCost;
 use App\Models\AssetRequest;
 use App\Models\RoleManagement;
 use App\Models\User;
+use App\Repositories\FixedAssetRepository;
 use App\Traits\NotificationHandler;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Approvers;
 use App\Models\AssetApproval;
 use App\Models\FixedAsset;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 
@@ -20,6 +22,14 @@ class AuthController extends Controller
 {
 
     use NotificationHandler;
+
+    private $fixedAssetRepository;
+
+    public function __construct(FixedAssetRepository $fixedAssetRepository)
+    {
+        $this->fixedAssetRepository = $fixedAssetRepository;
+    }
+
     public function Login(Request $request)
     {
         $username = $request->username;
@@ -53,6 +63,7 @@ class AuthController extends Controller
             'user' => $user,
             'token' => $token,
         ];
+        $this->fixedAssetData();
 
         $cookie = cookie('authcookie', $token);
         return response()->json([
@@ -96,6 +107,7 @@ class AuthController extends Controller
     public function Logout(Request $request)
     {
         auth('sanctum')->user()->currentAccessToken()->delete(); //logout currentAccessToken
+        Cache::forget('fixed_assets_data');
         return response()->json(['message' => 'You are Successfully Logged Out!']);
     }
 
@@ -223,14 +235,14 @@ class AuthController extends Controller
         $roleFunctionMapping = [
             'Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
             'Super Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
-            'Fixed Asset Associate' => ['getToApproveCount','getToTagCount'],
+            'Fixed Asset Associate' => ['getToApproveCount', 'getToTagCount'],
             'Po-receiving' => ['getToRelease', 'getToReceive'],
             'Purchase Request' => 'getToPurchaseRequest',
             'Approver' => 'getToApproveCount',
             'Warehouse' => ['getToRelease', 'getToReceive'],
-            'Fixed Assets' => ['getToApproveCount','getToTagCount'],
+            'Fixed Assets' => ['getToApproveCount', 'getToTagCount'],
             'ERP' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
-            'Requester-approver' =>['getToApproveCount'],
+            'Requester-approver' => ['getToApproveCount'],
         ];
 
         foreach ($roleFunctionMapping as $role => $functions) {
@@ -246,5 +258,17 @@ class AuthController extends Controller
         }
 
         return response()->json($response);
+    }
+
+
+    public function fixedAssetData()
+    {
+        $cacheKey = 'fixed_assets_data';
+        $cacheDuration = now()->addMinutes(60); // Set the cache duration
+        Cache::forget('fixed_assets_data');
+        Cache::remember($cacheKey, $cacheDuration, function () {
+            $data = $this->fixedAssetRepository->faIndex();
+            return Crypt::encrypt($data);
+        });
     }
 }

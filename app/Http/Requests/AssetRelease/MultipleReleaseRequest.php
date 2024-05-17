@@ -2,6 +2,11 @@
 
 namespace App\Http\Requests\AssetRelease;
 
+use App\Rules\NewCoaValidation\BusinessUnitValidation;
+use App\Rules\NewCoaValidation\DepartmentValidation;
+use App\Rules\NewCoaValidation\LocationValidation;
+use App\Rules\NewCoaValidation\SubunitValidation;
+use App\Rules\NewCoaValidation\UnitValidation;
 use Illuminate\Foundation\Http\FormRequest;
 
 class MultipleReleaseRequest extends FormRequest
@@ -28,7 +33,14 @@ class MultipleReleaseRequest extends FormRequest
             'accountability' => ['required', 'string', 'in:Common,Personal Issued'],
             'accountable' => ['required_if:accountability,Personal Issued', 'string'],
             'received_by' => ['required', 'string'],
-            'signature' => ['required']
+            'signature' => ['required'],
+            'company_id' => 'nullable|exists:companies,id',
+            'business_unit_id' => ['nullable', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+            'department_id' => ['nullable', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+            'unit_id' => ['nullable', 'exists:units,id', new UnitValidation(request()->department_id)],
+            'subunit_id' => ['nullable', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
+            'location_id' => ['nullable', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
+            'account_title_id' => 'nullable|exists:account_titles,id',
         ];
     }
 

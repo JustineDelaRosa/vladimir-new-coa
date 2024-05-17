@@ -365,7 +365,7 @@ class FixedAssetRepository
         $filter = $filter ? array_map('trim', explode(',', $filter)) : [];
 
         $conditions = [
-            'To Depreciate' => ['depreciation_method' => null, 'is_released'=> 1],
+            'To Depreciate' => ['depreciation_method' => null, 'is_released' => 1],
             'Fixed Asset' => ['is_additional_cost' => 0],
             'Additional Cost' => ['is_additional_cost' => 1],
             'From Request' => ['from_request' => 1],
@@ -447,7 +447,8 @@ class FixedAssetRepository
         return $results;
     }
 
-    function applyFilters($query, $filter, $conditions, $prefix = '') {
+    function applyFilters($query, $filter, $conditions, $prefix = '')
+    {
         $query->where(function ($query) use ($filter, $conditions, $prefix) {
             foreach ($filter as $key) {
                 if (isset($conditions[$key])) {
@@ -915,7 +916,9 @@ class FixedAssetRepository
             return $this->tranformForIndex($asset);
         });
     }
-    public function tranformForIndex($fixed_asset){
+
+    public function tranformForIndex($fixed_asset)
+    {
         return [
             'total_cost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost, $fixed_asset->acquisition_cost),
             'total_adcost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost),
@@ -937,6 +940,8 @@ class FixedAssetRepository
             'tag_number' => $fixed_asset->tag_number ?? '-',
             'tag_number_old' => $fixed_asset->tag_number_old ?? '-',
             'asset_description' => $fixed_asset->asset_description ?? '-',
+            'accountability' => $fixed_asset->accountability ?? '-',
+            'accountable' => $fixed_asset->accountable ?? '-',
             'type_of_request' => [
                 'id' => $fixed_asset->typeOfRequest->id ?? '-',
                 'type_of_request_name' => $fixed_asset->typeOfRequest->type_of_request_name ?? '-',
@@ -981,6 +986,55 @@ class FixedAssetRepository
                 'account_title_code' => $fixed_asset->accountTitle->account_title_code ?? '-',
                 'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
             ],
+            'created_at' => $fixed_asset->created_at ?? '-',
         ];
+    }
+
+
+    public function faIndex()
+    {
+        $fixed_assets = FixedAsset::select([
+            'id', 'vladimir_tag_number', 'tag_number', 'tag_number_old', 'asset_description', 'accountability', 'accountable',
+            'from_request', 'is_released', 'formula_id', 'requester_id',
+            'warehouse_number_id', 'capex_id', 'sub_capex_id', 'type_of_request_id', 'supplier_id',
+            'department_id', 'major_category_id', 'minor_category_id', 'asset_status_id',
+            'cycle_count_status_id', 'depreciation_status_id', 'movement_status_id',
+            'location_id', 'account_id', 'company_id', 'business_unit_id', 'unit_id', 'subunit_id'
+        ])
+            ->with([
+                'formula',
+                'additionalCost',
+                'requestor',
+                'warehouseNumber:id,warehouse_number',
+                'capex',
+                'subCapex',
+                'typeOfRequest:id,type_of_request_name',
+                'supplier:id,supplier_code,supplier_name',
+                'department.division:id,division_name',
+                'majorCategory:id,major_category_name',
+                'minorCategory:id,minor_category_name',
+                'assetStatus:id,asset_status_name',
+                'cycleCountStatus:id,cycle_count_status_name',
+                'depreciationStatus:id,depreciation_status_name',
+                'movementStatus:id,movement_status_name',
+                'company:id,company_name,company_code',
+                'businessUnit:id,business_unit_name,business_unit_code',
+                'department:id,department_name,department_code',
+                'unit:id,unit_name,unit_code',
+                'subunit:id,sub_unit_name,sub_unit_code',
+                'location:id,location_name,location_code',
+                'accountTitle:id,account_title_name,account_title_code'
+            ])
+            ->where(function ($query) {
+                $query->where('from_request', '!=', 1)
+                    ->orWhere(function ($query) {
+                        $query->where('from_request', 1)
+                            ->where('is_released', 1);
+                    });
+            })->get();
+        return response()->json([
+            'message' => 'Fixed Assets retrieved successfully.',
+            'data' => $this->transformIndex($fixed_assets)
+        ], 200);
     }
 }

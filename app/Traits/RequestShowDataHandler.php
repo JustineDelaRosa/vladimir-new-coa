@@ -53,7 +53,7 @@ trait RequestShowDataHandler
 
     private function response($ar): array
     {
-        $letterOfRequestMedia = $ar->getMedia('letter_of_request')->first();
+        $letterOfRequestMedia = $ar->getMedia('letter_of_request')->first(); //change from firsty() to all()
         $quotationMedia = $ar->getMedia('quotation')->first();
         $specificationFormMedia = $ar->getMedia('specification_form')->first();
         $toolOfTradeMedia = $ar->getMedia('tool_of_trade')->first();
