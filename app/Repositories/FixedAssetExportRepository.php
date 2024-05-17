@@ -51,7 +51,8 @@ class FixedAssetExportRepository
             ->leftJoin('movement_statuses', 'fixed_assets.movement_status_id', '=', 'movement_statuses.id');
 
         if ($search) {
-            $fixedAsset->where(function ($query) use ($search) {
+            $fixedAsset->whereNotNull('major_category_id')
+                ->where(function ($query) use ($search) {
                 $query->where('users.username', 'LIKE', "%{$search}%")
                     ->orWhere('capexes.capex', 'LIKE', "%{$search}%")
                     ->orWhere('asset_description', 'LIKE', "%{$search}%")
@@ -188,7 +189,8 @@ class FixedAssetExportRepository
             ->leftJoin('movement_statuses', 'fixed_assets.movement_status_id', '=', 'movement_statuses.id');
 
         if ($search) {
-            $additionalCost->where(function ($query) use ($search) {
+            $additionalCost->whereNotNull('major_category_id')
+                ->where(function ($query) use ($search) {
                 $query->where('users.username', 'LIKE', "%{$search}%")
                     ->orWhere('capexes.capex', 'LIKE', "%{$search}%")
                     ->orWhere('additional_costs.asset_description', 'LIKE', "%{$search}%")
