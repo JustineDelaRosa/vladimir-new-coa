@@ -132,13 +132,11 @@ class AssetTransferRequestController extends Controller
 
             if ($index === 0 && $attachments) {
                 $attachments = is_array($attachments) ? $attachments : [$attachments];
-                foreach ($attachments as $attachment) {
-                    foreach ($attachment as $file) {
-                        $transferRequest->addMedia($file)->toMediaCollection('attachments');
-                    }
+                        $transferRequest->addMedia($attachments)->toMediaCollection('attachments');
+
 //                        $transferRequest->addMedia($attachment)->toMediaCollection('attachments');
 //                    $transferRequest->addMediaFromRequest($attachment)->toMediaCollection('attachments');
-                }
+
 
             }
         }

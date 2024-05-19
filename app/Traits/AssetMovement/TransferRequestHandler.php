@@ -417,12 +417,12 @@ trait TransferRequestHandler
             ->where('approver_id', $approverId)
             ->where('status', 'For Approval')
             ->first();
-        if (!$isApprover) {
-            if ((!$this->isUserFa() && !$this->isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName))) {
+
+        if ((!$this->isUserFa() && !$this->isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName))) {
+            if (!$isApprover) {
                 return $this->responseUnprocessable('Invalid Action');
             }
         }
-        return 'asdfasdf';
 
         switch (strtolower($action)) {
             case 'approve':
