@@ -422,6 +422,7 @@ trait TransferRequestHandler
             if (!$isApprover) {
                 return $this->responseUnprocessable('Invalid Action');
             }
+            return $this->responseUnprocessable('Invalid Action');
         }
 
         switch (strtolower($action)) {
