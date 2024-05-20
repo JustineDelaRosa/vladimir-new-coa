@@ -57,7 +57,7 @@ class CreateAssetTransferRequestRequest extends FormRequest
             'accountable' => 'nullable|required_if:assetTransfer.*.accountability,Personal Issued',
             'remarks' => 'nullable',
             'description' => 'required',
-            'attachments.*' => 'nullable|max:5120',
+            'attachments' => 'nullable|max:5120',
         ];
     }
 

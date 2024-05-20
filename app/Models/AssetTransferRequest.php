@@ -87,6 +87,10 @@ class AssetTransferRequest extends Model implements HasMedia
         return $this->belongsTo(User::class, 'created_by_id', 'id');
     }
 
+    public function transferApproval(){
+        return $this->hasMany(TransferApproval::class, 'transfer_number', 'transfer_number');
+    }
+
     public static function generateTransferNumber()
     {
         $transferNumber = null;

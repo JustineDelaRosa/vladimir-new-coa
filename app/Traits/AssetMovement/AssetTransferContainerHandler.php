@@ -44,7 +44,7 @@ trait AssetTransferContainerHandler
         return $this->response($ar);
     }
 
-    private function response($ar)
+    private function response1($ar)
     {
         $attachments = $ar->getMedia('attachments')->all();
         return [
@@ -146,6 +146,59 @@ trait AssetTransferContainerHandler
                         'url' => $attachment->getUrl(),
                     ];
                 }) : collect([]),
+            ],
+            'created_at' => $ar->created_at,
+        ];
+    }
+
+    private function response($ar){
+        return [
+            'transfer_number' => $ar->transfer_number,
+            'description' => $ar->description,
+            'fixed_asset' =>[
+                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number,
+                'description' => $ar->fixedAsset->description,
+                'accountability' => $ar->fixedAsset->accountability,
+                'accountable' => $ar->fixedAsset->accountable?? '-',
+            ],
+            'quantity' => $ar->fixedAsset->quantity,
+            'requester' => [
+                'id' => $ar->createdBy->id,
+                'first_name' => $ar->createdBy->firstname,
+                'last_name' => $ar->createdBy->lastname,
+                'employee_id' => $ar->createdBy->employee_id,
+                'username' => $ar->createdBy->username,
+            ],
+            'status' => $ar->status,
+            'company' => [
+                'id' => $ar->company->id ?? '-',
+                'company_code' => $ar->company->company_code ?? '-',
+                'company_name' => $ar->company->company_name ?? '-',
+            ],
+            'business_unit' => [
+                'id' => $ar->businessUnit->id ?? '-',
+                'business_unit_code' => $ar->businessUnit->business_unit_code ?? '-',
+                'business_unit_name' => $ar->businessUnit->business_unit_name ?? '-',
+            ],
+            'department' => [
+                'id' => $ar->department->id ?? '-',
+                'department_code' => $ar->department->department_code ?? '-',
+                'department_name' => $ar->department->department_name ?? '-',
+            ],
+            'unit' => [
+                'id' => $ar->unit->id ?? '-',
+                'unit_code' => $ar->unit->unit_code ?? '-',
+                'unit_name' => $ar->unit->unit_name ?? '-',
+            ],
+            'subunit' => [
+                'id' => $ar->subunit->id ?? '-',
+                'subunit_code' => $ar->subunit->sub_unit_code ?? '-',
+                'subunit_name' => $ar->subunit->sub_unit_name ?? '-',
+            ],
+            'location' => [
+                'id' => $ar->location->id ?? '-',
+                'location_code' => $ar->location->location_code ?? '-',
+                'location_name' => $ar->location->location_name ?? '-',
             ],
             'created_at' => $ar->created_at,
         ];

@@ -417,12 +417,16 @@ trait TransferRequestHandler
             ->where('approver_id', $approverId)
             ->where('status', 'For Approval')
             ->first();
+//        return $this->isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName);
 
         if (!$this->isUserFa() && !$this->isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName)) {
             if (!$isApprover) {
-                return $this->responseUnprocessable('Invalid Action');
+                return $this->responseNotFound('Request not found');
             }
         }
+//        if(!$this->isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName)){
+//            return $this->responseNotFound('Request not found');
+//        }
 
         switch (strtolower($action)) {
             case 'approve':
@@ -467,7 +471,7 @@ trait TransferRequestHandler
         $fixedAssets = $model::where($uniqueNumber, $uniqueNumberValue)->get();
         $isFaApproved = $fixedAssets->where('is_fa_approved', 0)->where('status', 'Approved')->first();
         if ($isFaApproved) {
-            $model::where($uniqueNumber, $uniqueNumberValue)->update(['is_fa_approved' => true]);
+           return $model::where($uniqueNumber, $uniqueNumberValue)->update(['is_fa_approved' => true]);
 
             // Add to asset movement history
             $this->addToAssetMovementHistory($fixedAssets->pluck('fixed_asset_id')->toArray(), $fixedAssets[0]->created_by_id);

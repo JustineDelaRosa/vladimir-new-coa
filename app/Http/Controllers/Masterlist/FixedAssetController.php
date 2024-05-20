@@ -44,15 +44,19 @@ class FixedAssetController extends Controller
     }
 
 
-    public function index()
+    public function index(Request $request)
     {
+        $movement = $request->get('movement');
         $data = Cache::get('fixed_assets_data');
-        if ($data) {
-            return Crypt::decrypt($data);
-        } else {
-//            return 'none';
-            return $this->fixedAssetRepository->faIndex();
-        }
+
+        return $this->fixedAssetRepository->faIndex($movement);
+//        if ($data) {
+////            return $this->fixedAssetRepository->faIndex();
+//            return Crypt::decrypt($data);
+//        } else {
+////            return 'none';
+//            return $this->fixedAssetRepository->faIndex();
+//        }
     }
 
 

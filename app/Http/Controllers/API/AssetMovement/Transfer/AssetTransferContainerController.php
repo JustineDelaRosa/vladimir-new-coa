@@ -1,13 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\API\AssetMovement;
+namespace App\Http\Controllers\API\AssetMovement\Transfer;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AssetMovement\AssetTransfer\CreateAssetTransferContainerRequest;
 use App\Models\AssetMovementContainer\AssetTransferContainer;
 use App\Models\AssetTransferApprover;
-use App\Models\FixedAsset;
-use App\Models\TransferApproval;
 use App\Traits\AssetMovement\AssetTransferContainerHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;

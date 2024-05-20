@@ -81,6 +81,12 @@ class FixedAsset extends Model implements HasMedia
         $this->attributes['accountable'] = $value;
     }
 
+    public function transferRequest(){
+        return $this->hasMany(AssetTransferRequest::class, 'fixed_asset_id', 'id');
+    }
+    public function notOnTransferRequest(){
+        return $this->hasMany(AssetTransferRequest::class, 'fixed_asset_id', 'id')->where('status', '!=', 'Approved');
+    }
 
     public function additionalCost()
     {

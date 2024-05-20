@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\API\AssetMovement;
+namespace App\Http\Controllers\API\AssetMovement\Transfer;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AssetTransfer\CreateAssetTransferRequestRequest;
 use App\Http\Requests\AssetTransfer\UpdateAssetTransferRequestRequest;
 use App\Models\Approvers;
 use App\Models\AssetMovementContainer\AssetTransferContainer;
-use App\Models\AssetRequest;
 use App\Models\AssetTransferApprover;
 use App\Models\AssetTransferRequest;
 use App\Models\TransferApproval;
@@ -92,62 +91,58 @@ class AssetTransferRequestController extends Controller
     public function store(CreateAssetTransferRequestRequest $request)
     {
 
-//        try {
-//            DB::beginTransaction();
-        $fixedAssetIds = $request->assets;
-        $attachments = $request->attachments;
-        $createdBy = auth('sanctum')->user()->id;
-        $transferNumber = AssetTransferRequest::generateTransferNumber();
-        $transferApproval = AssetTransferApprover::where('subunit_id', $request->subunit_id)
-            ->orderBy('layer', 'asc')
-            ->get();
+        try {
+            DB::beginTransaction();
+            $fixedAssetIds = $request->assets;
+            $attachments = $request->file('attachments');
+            $createdBy = auth('sanctum')->user()->id;
+            $transferNumber = AssetTransferRequest::generateTransferNumber();
+            $transferApproval = AssetTransferApprover::where('subunit_id', $request->subunit_id)
+                ->orderBy('layer', 'asc')
+                ->get();
 
+            list($isRequesterApprover, $isLastApprover, $requesterLayer) = $this->checkIfRequesterIsApprover($createdBy, $transferApproval);
 
-        list($isRequesterApprover, $isLastApprover, $requesterLayer) = $this->checkIfRequesterIsApprover($createdBy, $transferApproval);
+            foreach ($fixedAssetIds as $index => $fixedAssetId) {
+                $transferRequest = AssetTransferRequest::create([
+                    'transfer_number' => $transferNumber,
+                    'status' => $isLastApprover
+                        ? 'Approved'
+                        : ($isRequesterApprover
+                            ? 'For Approval of Approver ' . ($requesterLayer + 1)
+                            : 'For Approval of Approver 1'),
+                    'created_by_id' => $createdBy,
+                    'fixed_asset_id' => $fixedAssetId['fixed_asset_id'],
+                    'accountability' => $request->accountability,
+                    'accountable' => $request->accountable,
+                    'company_id' => $request->company_id,
+                    'business_unit_id' => $request->business_unit_id,
+                    'department_id' => $request->department_id,
+                    'unit_id' => $request->unit_id,
+                    'subunit_id' => $request->subunit_id,
+                    'location_id' => $request->location_id,
+                    'remarks' => $request->remarks,
+                    'description' => $request->description,
+                ]);
 
-        foreach ($fixedAssetIds as $index => $fixedAssetId) {
-            $transferRequest = AssetTransferRequest::create([
-                'transfer_number' => $transferNumber,
-                'status' => $isLastApprover
-                    ? 'Approved'
-                    : ($isRequesterApprover
-                        ? 'For Approval of Approver ' . ($requesterLayer + 1)
-                        : 'For Approval of Approver 1'),
-                'created_by_id' => $createdBy,
-                'fixed_asset_id' => $fixedAssetId['fixed_asset_id'],
-                'accountability' => $request->accountability,
-                'accountable' => $request->accountable,
-                'company_id' => $request->company_id,
-                'business_unit_id' => $request->business_unit_id,
-                'department_id' => $request->department_id,
-                'unit_id' => $request->unit_id,
-                'subunit_id' => $request->subunit_id,
-                'location_id' => $request->location_id,
-                'remarks' => $request->remarks,
-                'description' => $request->description,
-            ]);
-
-            // If this is the first iteration, add the attachments
-
-
-            if ($index === 0 && $attachments) {
-                $attachments = is_array($attachments) ? $attachments : [$attachments];
-                        $transferRequest->addMedia($attachments)->toMediaCollection('attachments');
-
+                // If this is the first iteration, add the attachments
+                if ($index === 0 && $attachments) {
+                    foreach ($attachments as $attachment) {
+                        $attachments = is_array($attachment) ? $attachment : [$attachment];
+                        $transferRequest->addMedia($attachment)->toMediaCollection('attachments');
 //                        $transferRequest->addMedia($attachment)->toMediaCollection('attachments');
 //                    $transferRequest->addMediaFromRequest($attachment)->toMediaCollection('attachments');
-
-
+                    }
+                }
             }
-        }
-        $this->setTransferApprovals($request->subunit_id, $createdBy, $transferRequest, new AssetTransferApprover(), new TransferApproval());
+            $this->setTransferApprovals($request->subunit_id, $createdBy, $transferRequest, new AssetTransferApprover(), new TransferApproval());
 
-//            DB::commit();
-        return $this->responseSuccess('Asset Transfer Request Created');
-//        } catch (\Exception $e) {
-//            DB::rollBack();
-//            return $this->responseServerError($e);
-//        }
+            DB::commit();
+            return $this->responseSuccess('Asset Transfer Request Created');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->responseServerError($e);
+        }
     }
 
     public function show($transferNumber)

@@ -11,6 +11,7 @@ use App\Models\FixedAsset;
 use App\Models\MajorCategory;
 use App\Models\AdditionalCost;
 use Essa\APIToolKit\Api\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use App\Models\Status\DepreciationStatus;
@@ -924,6 +925,7 @@ class FixedAssetRepository
             'total_adcost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost),
             'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
+            'acquisition_date' => $fixed_asset->formula->acquisition_date ?? '-',
             'requestor' => [
                 'id' => $fixed_asset->requestor->id ?? '-',
                 'username' => $fixed_asset->requestor->username ?? '-',
@@ -986,12 +988,12 @@ class FixedAssetRepository
                 'account_title_code' => $fixed_asset->accountTitle->account_title_code ?? '-',
                 'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
             ],
-            'created_at' => $fixed_asset->created_at ?? '-',
+            'created_at' => $fixed_asset->created_at,
         ];
     }
 
 
-    public function faIndex()
+    public function faIndex($movement = null): JsonResponse
     {
         $fixed_assets = FixedAsset::select([
             'id', 'vladimir_tag_number', 'tag_number', 'tag_number_old', 'asset_description', 'accountability', 'accountable',
@@ -999,7 +1001,7 @@ class FixedAssetRepository
             'warehouse_number_id', 'capex_id', 'sub_capex_id', 'type_of_request_id', 'supplier_id',
             'department_id', 'major_category_id', 'minor_category_id', 'asset_status_id',
             'cycle_count_status_id', 'depreciation_status_id', 'movement_status_id',
-            'location_id', 'account_id', 'company_id', 'business_unit_id', 'unit_id', 'subunit_id'
+            'location_id', 'account_id', 'company_id', 'business_unit_id', 'unit_id', 'subunit_id', 'created_at'
         ])
             ->with([
                 'formula',
@@ -1025,6 +1027,9 @@ class FixedAssetRepository
                 'location:id,location_name,location_code',
                 'accountTitle:id,account_title_name,account_title_code'
             ])
+            ->when($movement == 'transfer', function ($query) {
+                $query->doesntHave('notOnTransferRequest');
+            })
             ->where(function ($query) {
                 $query->where('from_request', '!=', 1)
                     ->orWhere(function ($query) {

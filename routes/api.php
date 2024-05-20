@@ -1,53 +1,50 @@
 <?php
 
+use App\Http\Controllers\API\AddingPoController;
+use App\Http\Controllers\API\AddingPrController;
 use App\Http\Controllers\API\Approvers\AssetDisposalApproverController;
 use App\Http\Controllers\API\Approvers\AssetPullOutApproverController;
 use App\Http\Controllers\API\Approvers\AssetTransferApproverController;
-use App\Http\Controllers\API\AssetMovement\AssetTransferContainerController;
-use App\Http\Controllers\API\AssetMovement\AssetTransferController;
-use App\Http\Controllers\API\AssetMovement\AssetTransferRequestController;
-use App\Http\Controllers\API\AssetReleaseController;
-use App\Http\Controllers\Masterlist\COA\BusinessUnitController;
-use App\Http\Controllers\Masterlist\COA\UnitController;
-use App\Http\Controllers\Masterlist\UnitOfMeasureController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\Setup\SetupController;
-use App\Http\Controllers\API\AddingPoController;
-use App\Http\Controllers\API\AddingPrController;
-use App\Http\Controllers\CategoryListController;
-use App\Http\Controllers\ServiceProviderController;
-use App\Http\Controllers\Setup\PrinterIPController;
-use App\Http\Controllers\API\AssetRequestController;
-use App\Http\Controllers\Masterlist\CapexController;
-use App\Http\Controllers\API\AssetApprovalController;
-use App\Http\Controllers\API\AssignApproverController;
 use App\Http\Controllers\API\ApproverSettingController;
-use App\Http\Controllers\Masterlist\DivisionController;
-use App\Http\Controllers\Masterlist\SubCapexController;
-use App\Http\Controllers\Masterlist\SupplierController;
-use App\Http\Controllers\API\RequestContainerController;
-use App\Http\Controllers\Setup\RoleManagementController;
-use App\Http\Controllers\Masterlist\FixedAssetController;
-use App\Http\Controllers\Masterlist\COA\CompanyController;
-use App\Http\Controllers\Masterlist\COA\SubUnitController;
-use App\Http\Controllers\Masterlist\COA\LocationController;
-use App\Http\Controllers\Masterlist\MajorCategoryController;
-use App\Http\Controllers\Masterlist\MinorCategoryController;
-use App\Http\Controllers\Masterlist\TypeOfRequestController;
-use App\Http\Controllers\Masterlist\AdditionalCostController;
-use App\Http\Controllers\Masterlist\COA\DepartmentController;
+use App\Http\Controllers\API\AssetApprovalController;
+use App\Http\Controllers\API\AssetApprovalLogger\AssetApprovalLoggerController;
+use App\Http\Controllers\API\AssetMovement\Transfer\AssetTransferApprovalController;
+use App\Http\Controllers\API\AssetMovement\Transfer\AssetTransferContainerController;
+use App\Http\Controllers\API\AssetMovement\Transfer\AssetTransferRequestController;
+use App\Http\Controllers\API\AssetReleaseController;
+use App\Http\Controllers\API\AssetRequestController;
 use App\Http\Controllers\API\DepartmentUnitApproversController;
+use App\Http\Controllers\API\RequestContainerController;
+use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Masterlist\AdditionalCostController;
+use App\Http\Controllers\Masterlist\CapexController;
 use App\Http\Controllers\Masterlist\COA\AccountTitleController;
+use App\Http\Controllers\Masterlist\COA\BusinessUnitController;
+use App\Http\Controllers\Masterlist\COA\CompanyController;
+use App\Http\Controllers\Masterlist\COA\DepartmentController;
+use App\Http\Controllers\Masterlist\COA\LocationController;
+use App\Http\Controllers\Masterlist\COA\SubUnitController;
+use App\Http\Controllers\Masterlist\COA\UnitController;
+use App\Http\Controllers\Masterlist\DivisionController;
+use App\Http\Controllers\Masterlist\FixedAssetController;
 use App\Http\Controllers\Masterlist\FixedAssetExportController;
 use App\Http\Controllers\Masterlist\FixedAssetImportController;
-use App\Http\Controllers\Masterlist\Status\AssetStatusController;
-use App\Http\Controllers\Masterlist\Status\MovementStatusController;
-use App\Http\Controllers\Masterlist\Status\CycleCountStatusController;
+use App\Http\Controllers\Masterlist\MajorCategoryController;
+use App\Http\Controllers\Masterlist\MinorCategoryController;
 use App\Http\Controllers\Masterlist\PrintBarcode\PrintBarCodeController;
+use App\Http\Controllers\Masterlist\Status\AssetStatusController;
+use App\Http\Controllers\Masterlist\Status\CycleCountStatusController;
 use App\Http\Controllers\Masterlist\Status\DepreciationStatusController;
-use App\Http\Controllers\API\AssetApprovalLogger\AssetApprovalLoggerController;
+use App\Http\Controllers\Masterlist\Status\MovementStatusController;
+use App\Http\Controllers\Masterlist\SubCapexController;
+use App\Http\Controllers\Masterlist\SupplierController;
+use App\Http\Controllers\Masterlist\TypeOfRequestController;
+use App\Http\Controllers\Masterlist\UnitOfMeasureController;
+use App\Http\Controllers\Setup\PrinterIPController;
+use App\Http\Controllers\Setup\RoleManagementController;
+use App\Http\Controllers\Setup\SetupController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Route;
 
 
 /*
@@ -303,7 +300,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::POST('move-to-asset-transfer', [AssetTransferRequestController::class, 'transferContainerData']);
     Route::POST('update-transfer-request/{id}', [AssetTransferRequestController::class, 'updateTransfer']);
     Route::DELETE('remove-transfer-item/{transferNumber?}/{id?}', [AssetTransferRequestController::class, 'removedTransferItem']);
-    Route::POST('transfer-approval', [AssetTransferRequestController::class, 'transferRequestAction']);
+
+    //ASSET TRANSFER APPROVAL
+    Route::RESOURCE('transfer-approver', AssetTransferApprovalController::class);
+    Route::POST('transfer-approval', [AssetTransferApprovalController::class, 'transferRequestAction']);
 
 
 
