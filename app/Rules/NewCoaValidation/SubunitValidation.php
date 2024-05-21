@@ -32,8 +32,9 @@ class SubunitValidation implements Rule
         if ($this->requesting) {
 
             if(Route::currentRouteNamed('asset-transfer.store')){
-                if ($subUnit->departmentUnitApprovers->isEmpty()) {
-                    $this->errorMessage = 'No approvers assigned to the selected subunit.';
+                //departmentUnitApprovers
+                if ($subUnit->transferApprovers->isEmpty()) {
+                    $this->errorMessage = 'No approvers assigned to the selected subunits.';
                     return false;
                 }
             }elseif(Route::currentRouteNamed('asset-transfer-container.store')){
