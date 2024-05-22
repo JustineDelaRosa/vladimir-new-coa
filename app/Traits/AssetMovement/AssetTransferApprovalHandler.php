@@ -7,19 +7,21 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 trait AssetTransferApprovalHandler
 {
-    public function approverViewing($transfer_number, $is_for_fa_approval = false)
+    public function approverViewing($transfer_number)
     {
         $transferRequest = AssetTransferRequest::where('transfer_number', $transfer_number)->get();
         $transferRequest->quantity = $transferRequest->count();
         foreach ($transferRequest as $transferRequests) {
-            $approver = $transferRequests->transferApproval->where('status', 'For Approval')->first();
+//            $approver = $transferRequests->transferApproval->where('status', 'For Approval')->first();
             return [
-                'id'=> $approver->id,
+//                'id'=> $approver ? $approver->id : null,
                 'transfer_number' => $transferRequests->transfer_number,
                 'description' => $transferRequests->description,
                 'date_requested' => $transferRequests->created_at,
                 'quantity' => $transferRequests->fixedAsset->quantity,
-                'status' => $is_for_fa_approval ? 'Last Approval' :$approver->status,
+                'status' => $transferRequests->status == 'Approved' ?
+                    ($transferRequests->is_fa_approved ? 'Approved' : 'Last Approval')
+                    : $transferRequests->status,
                 'requester' => [
                     'id' => $transferRequests->createdBy->id,
                     'username' => $transferRequests->createdBy->username,
@@ -27,13 +29,19 @@ trait AssetTransferApprovalHandler
                     'firstname' => $transferRequests->createdBy->firstname,
                     'lastname' => $transferRequests->createdBy->lastname,
                 ],
-                'approver' => [
-                    'id' => $approver->approver->id,
-                    'username' => $approver->approver->user->username,
-                    'employee_id' => $approver->approver->user->employee_id,
-                    'firstname' => $approver->approver->user->firstname,
-                    'lastname' => $approver->approver->user->lastname,
-                ],
+//                'approver' => $approver ? [
+//                    'id' => $approver->approver->id,
+//                    'username' => $approver->approver->user->username,
+//                    'employee_id' => $approver->approver->user->employee_id,
+//                    'firstname' => $approver->approver->user->firstname,
+//                    'lastname' => $approver->approver->user->lastname,
+//                ] : [
+//                    'id' => null,
+//                    'username' => '',
+//                    'employee_id' => '',
+//                    'firstname' => null,
+//                    'lastname' => null,
+//                ],
                 'asset_transfer_request' => [
                     'transfer_number' => $transferRequests->transfer_number,
                     'date_requested' => $transferRequests->created_at,
