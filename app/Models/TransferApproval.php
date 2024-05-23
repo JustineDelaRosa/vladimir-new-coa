@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Filters\AssetTransferApproverFilters;
 use App\Filters\AssetTransferRequestFilters;
 use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,7 @@ class TransferApproval extends Model
 
     protected $guarded = [];
 
-    protected string $default_filters = AssetTransferRequestFilters::class;
+    protected string $default_filters = AssetTransferApproverFilters::class;
 
     public function transferRequest()
     {
