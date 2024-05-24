@@ -24,6 +24,9 @@ class SubunitValidation implements Rule
 
     public function passes($attribute, $value)
     {
+        if(!$value) {
+            return true;
+        }
         $subUnit = SubUnit::query()->find($value);
         if (!$subUnit || !$subUnit->is_active) {
             $this->errorMessage = 'The subunit does not exist or is not active';

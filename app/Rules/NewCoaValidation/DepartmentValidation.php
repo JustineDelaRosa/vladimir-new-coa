@@ -19,6 +19,9 @@ class DepartmentValidation implements Rule
 
     public function passes($attribute, $value)
     {
+        if(!$value) {
+            return true;
+        }
         $department = Department::query()->find($value);
         if (!$department || !$department->is_active) {
             $this->errorMessage = 'The department does not exist or is not active';

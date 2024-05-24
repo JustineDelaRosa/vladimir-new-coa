@@ -19,6 +19,9 @@ class UnitValidation implements Rule
 
     public function passes($attribute, $value)
     {
+        if(!$value) {
+            return true;
+        }
         $unit = Unit::query()->find($value);
         if (!$unit || !$unit->is_active) {
             $this->errorMessage = 'The unit does not exist or is not active';

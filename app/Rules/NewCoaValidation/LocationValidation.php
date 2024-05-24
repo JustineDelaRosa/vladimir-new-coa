@@ -18,6 +18,9 @@ class LocationValidation implements Rule
 
     public function passes($attribute, $value)
     {
+        if(!$value) {
+            return true;
+        }
         $location = Location::query()->find($value);
         if (!$location || !$location->is_active) {
             $this->errorMessage = 'The location does not exist or is not active';
