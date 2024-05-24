@@ -40,12 +40,12 @@ class CreateAssetTransferRequestRequest extends FormRequest
                 if (count($fixedAssetIds) !== count(array_unique($fixedAssetIds))) {
                     $fail('Duplicate fixed asset found');
                 }
-                //check if the fixed asset is already in asset transfer container
-//                $assetTransferRequest = AssetTransferRequest::where('fixed_asset_id', $value)
-//                    ->where('status', '!=', 'Approved')->first();
-//                if ($assetTransferRequest) {
-//                    $fail('The fixed asset is already in an asset transfer request');
-//                }
+//                check if the fixed asset is already in asset transfer container
+                $assetTransferRequest = AssetTransferRequest::where('fixed_asset_id', $value)
+                    ->where('status', '!=', 'Approved')->first();
+                if ($assetTransferRequest) {
+                    $fail('The fixed asset is already in an asset transfer request');
+                }
             }],
             'company_id' => 'required|exists:companies,id',
             'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
