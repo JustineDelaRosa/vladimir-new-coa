@@ -10,6 +10,11 @@ use App\Models\Department;
 use App\Models\DepartmentUnitApprovers;
 use App\Models\RequestContainer;
 use App\Models\SubUnit;
+use App\Rules\NewCoaValidation\BusinessUnitValidation;
+use App\Rules\NewCoaValidation\DepartmentValidation;
+use App\Rules\NewCoaValidation\LocationValidation;
+use App\Rules\NewCoaValidation\SubunitValidation;
+use App\Rules\NewCoaValidation\UnitValidation;
 use App\Traits\AssetRequestHandler;
 use App\Traits\RequestContainerHandler;
 use App\Traits\RequestShowDataHandler;
@@ -39,11 +44,36 @@ class RequestContainerController extends Controller
     {
         DB::beginTransaction();
         try {
-            $requesterId = auth('sanctum')->user()->id;
-            $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $request->subunit_id)
-                ->orderBy('layer', 'asc')
-                ->get();
+            $user = auth('sanctum')->user();
+            $requesterId = $user->id;
+            if (!isset($request->company_id)) {
+                if ($user->company_id == null) return $this->responseUnprocessable('This user does not have a COA');
+                $companyId = $user->company_id;
+                $businessUnitId = $user->business_unit_id;
+                $departmentId = $user->department_id;
+                $unitId = $user->unit_id;
+                $subunitId = $user->subunit_id;
+                $locationId = $user->location_id;
+                //merge it to request
+                $request->merge([
+                    'company_id' => $companyId,
+                    'business_unit_id' => $businessUnitId,
+                    'department_id' => $departmentId,
+                    'unit_id' => $unitId,
+                    'subunit_id' => $subunitId,
+                    'location_id' => $locationId,
+                ]);
+                $request = $request->validate([
+                    'company_id' => 'nullable|exists:companies,id',
+                    'business_unit_id' => ['nullable', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+                    'department_id' => ['nullable', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+                    'unit_id' => ['nullable', 'exists:units,id', new UnitValidation(request()->department_id)],
+                    'subunit_id' => ['nullable', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
+                    'location_id' => ['nullable', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
+                ]);
+            }
 
+//            return $request->all();
             list($isRequesterApprover, $isLastApprover, $requesterLayer) = $this->checkIfRequesterIsApprover($requesterId, $departmentUnitApprovers);
 //            return $isRequesterApprover;
             $this->checkDifferentCOA($request);

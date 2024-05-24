@@ -9,12 +9,10 @@ class AssetTransferRequestFilters extends QueryFilters
     protected array $allowedFilters = [
         'transfer_number',
         'description',
-        'status',
     ];
 
     protected array $columnSearch = [
         'transfer_number',
         'description',
-        'status',
     ];
 }

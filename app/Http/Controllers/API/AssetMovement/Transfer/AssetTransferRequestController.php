@@ -51,13 +51,13 @@ class AssetTransferRequestController extends Controller
         if ($status == 'deactivated') {
             $transferRequest->withTrashed();
         }
+
         if (!$forMonitoring) {
             $transferRequest->where('created_by_id', $requesterId);
         }
 
-        $transferRequest = $transferRequest->orderByDesc('created_at')->useFilters();
+        $transferRequest = $transferRequest->orderByDesc('created_at')->useFilters()->get();
         $transferRequest = $transferRequest
-            ->get()
             ->groupBy('transfer_number')
             ->map(function ($transferCollection) use ($status) {
                 $firstTransfer = $transferCollection->first();
@@ -72,7 +72,6 @@ class AssetTransferRequestController extends Controller
             })
             ->filter()
             ->values();
-
 
         if ($perPage !== null) {
             $page = $request->input('page', 1);
@@ -121,6 +120,7 @@ class AssetTransferRequestController extends Controller
                     'unit_id' => $request->unit_id,
                     'subunit_id' => $request->subunit_id,
                     'location_id' => $request->location_id,
+                    'account_id' => $request->account_id,
                     'remarks' => $request->remarks,
                     'description' => $request->description,
                 ]);
@@ -147,8 +147,81 @@ class AssetTransferRequestController extends Controller
 
     public function show($transferNumber)
     {
-        $transferRequest = AssetTransferRequest::where('transfer_number', $transferNumber)->get();
-        return $this->setContainerResponse($transferRequest);
+        $transferRequests = AssetTransferRequest::withTrashed()->where('transfer_number', $transferNumber)
+            ->orderByDesc('created_at')
+            ->useFilters()
+            ->get();
+
+        $groupedTransferRequests = $transferRequests
+            ->groupBy('transfer_number')
+            ->map(function ($transferCollection) {
+                $firstTransfer = $transferCollection->first();
+                $attachments = $transferCollection->first()->getMedia('attachments')->all();
+                return [
+                    'transfer_number' => $firstTransfer->transfer_number,
+                    'assets' => $transferCollection->whereNull('deleted_at')->map(function ($transfer) {
+                        return [
+                            'id' => $transfer->id,
+                            'vladimir_tag_number' => $transfer->fixedAsset->vladimir_tag_number,
+                            'asset_description' => $transfer->fixedAsset->asset_description,
+                            'asset_specification' => $transfer->fixedAsset->asset_specification,
+                            'brand' => $transfer->fixedAsset->brand,
+                            'accountability' => $transfer->fixedAsset->accountability,
+                            'accountable' => $transfer->fixedAsset->accountable ?? '-',
+                            'quantity' => $transfer->fixedAsset->quantity,
+                        ];
+                    }),
+                    'accountability' => $firstTransfer->accountability,
+                    'accountable' => $firstTransfer->accountable,
+                    'company' => [
+                        'id' => $firstTransfer->company->id ?? '-',
+                        'company_code' => $firstTransfer->company->company_code ?? '-',
+                        'company_name' => $firstTransfer->company->company_name ?? '-',
+                    ],
+                    'business_unit' => [
+                        'id' => $firstTransfer->businessUnit->id ?? '-',
+                        'business_unit_code' => $firstTransfer->businessUnit->business_unit_code ?? '-',
+                        'business_unit_name' => $firstTransfer->businessUnit->business_unit_name ?? '-',
+                    ],
+                    'department' => [
+                        'id' => $firstTransfer->department->id ?? '-',
+                        'department_code' => $firstTransfer->department->department_code ?? '-',
+                        'department_name' => $firstTransfer->department->department_name ?? '-',
+                    ],
+                    'unit' => [
+                        'id' => $firstTransfer->unit->id ?? '-',
+                        'unit_code' => $firstTransfer->unit->unit_code ?? '-',
+                        'unit_name' => $firstTransfer->unit->unit_name ?? '-',
+                    ],
+                    'subunit' => [
+                        'id' => $firstTransfer->subunit->id ?? '-',
+                        'subunit_code' => $firstTransfer->subunit->sub_unit_code ?? '-',
+                        'subunit_name' => $firstTransfer->subunit->sub_unit_name ?? '-',
+                    ],
+                    'location' => [
+                        'id' => $firstTransfer->location->id ?? '-',
+                        'location_code' => $firstTransfer->location->location_code ?? '-',
+                        'location_name' => $firstTransfer->location->location_name ?? '-',
+                    ],
+                    'account_title' => [
+                        'id' => $firstTransfer->accountTitle->id ?? '-',
+                        'account_title_code' => $firstTransfer->accountTitle->account_title_code ?? '-',
+                        'account_title_name' => $firstTransfer->accountTitle->account_title_name ?? '-',
+                    ],
+                    'created_at' => $firstTransfer->created_at,
+                    'attachments' => $attachments ? collect($attachments)->map(function ($attachment) {
+                        return [
+                            'id' => $attachment->id,
+                            'name' => $attachment->file_name,
+                            'url' => $attachment->getUrl(),
+                        ];
+                    }) : collect([]),
+                ];
+            })
+            ->filter()
+            ->values();
+
+        return $groupedTransferRequests;
     }
 
 

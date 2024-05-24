@@ -157,11 +157,13 @@ trait AssetTransferContainerHandler
         return [
             'transfer_number' => $ar->transfer_number,
             'description' => $ar->description,
-            'fixed_asset' => [
-                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number,
-                'description' => $ar->fixedAsset->description,
-                'accountability' => $ar->fixedAsset->accountability,
-                'accountable' => $ar->fixedAsset->accountable ?? '-',
+            'assets' => [
+                'id' => $ar->fixedAsset->id,
+                'asset_code' => $ar->fixedAsset->asset_code,
+                'asset_description' => $ar->fixedAsset->asset_description,
+                'asset_specification' => $ar->fixedAsset->asset_specification,
+                'brand' => $ar->fixedAsset->brand,
+                'quantity' => $ar->fixedAsset->quantity,
             ],
             'quantity' => $ar->fixedAsset->quantity,
             'requester' => [

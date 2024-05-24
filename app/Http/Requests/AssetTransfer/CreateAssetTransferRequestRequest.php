@@ -53,6 +53,7 @@ class CreateAssetTransferRequestRequest extends FormRequest
             'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
             'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
             'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
+            'account_title_id' => ['required', 'exists:account_titles,id'],
             'accountability' => 'required|in:Common,Personal Issued',
             'accountable' => 'nullable|required_if:assetTransfer.*.accountability,Personal Issued',
             'remarks' => 'nullable',

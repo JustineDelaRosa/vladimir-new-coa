@@ -51,12 +51,12 @@ trait RequestContainerHandler
             'brand' => $request->brand ?? null,
             'quantity' => $request->quantity,
             'date_needed' => $request->date_needed,
-            'company_id' => $request->company_id,
-            'business_unit_id' => $request->business_unit_id,
-            'department_id' => $request->department_id,
-            'unit_id' => $request->unit_id,
-            'subunit_id' => $request->subunit_id,
-            'location_id' => $request->location_id,
+//            'company_id' => $request->company_id,
+//            'business_unit_id' => $request->business_unit_id,
+//            'department_id' => $request->department_id,
+//            'unit_id' => $request->unit_id,
+//            'subunit_id' => $request->subunit_id,
+//            'location_id' => $request->location_id,
             'uom_id' => $request->uom_id,
         ]);
     }
