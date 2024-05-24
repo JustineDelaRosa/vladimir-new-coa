@@ -49,7 +49,7 @@ trait AssetTransferContainerHandler
         $attachments = $ar->getMedia('attachments')->all();
         return [
             'id' => $ar->id,
-            'created_by_id' => [
+            'requestor_id' => [
                 'id' => $ar->createdBy->id,
                 'firstname' => $ar->createdBy->firstname,
                 'lastname' => $ar->createdBy->lastname,
@@ -151,15 +151,17 @@ trait AssetTransferContainerHandler
         ];
     }
 
-    private function response($ar){
+    private function response($ar)
+    {
+        $attachments = $ar->getMedia('attachments')->all();
         return [
             'transfer_number' => $ar->transfer_number,
             'description' => $ar->description,
-            'fixed_asset' =>[
+            'fixed_asset' => [
                 'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number,
                 'description' => $ar->fixedAsset->description,
                 'accountability' => $ar->fixedAsset->accountability,
-                'accountable' => $ar->fixedAsset->accountable?? '-',
+                'accountable' => $ar->fixedAsset->accountable ?? '-',
             ],
             'quantity' => $ar->fixedAsset->quantity,
             'requester' => [
@@ -201,6 +203,13 @@ trait AssetTransferContainerHandler
                 'location_name' => $ar->location->location_name ?? '-',
             ],
             'created_at' => $ar->created_at,
+            'attachments' => $attachments ? collect($attachments)->map(function ($attachment) {
+                return [
+                    'id' => $attachment->id,
+                    'name' => $attachment->file_name,
+                    'url' => $attachment->getUrl(),
+                ];
+            }) : collect([]),
         ];
     }
 
@@ -228,15 +237,15 @@ trait AssetTransferContainerHandler
     {
         $requesterId = auth('sanctum')->user()->id;
         $transferContainer = AssetTransferContainer::where('created_by_id', $requesterId)->get();
-        if($transferContainer->isNotEmpty()){
+        if ($transferContainer->isNotEmpty()) {
             $this->updateRequestContainer($request, $transferContainer);
         }
     }
 
     public function updateRequestContainer($request, $transferContainer)
     {
-        if($transferContainer->first()->subunit_id != $request->subunit_id){
-            foreach($transferContainer as $container){
+        if ($transferContainer->first()->subunit_id != $request->subunit_id) {
+            foreach ($transferContainer as $container) {
                 $container->update([
                     'company_id' => $request->company_id,
                     'business_unit_id' => $request->business_unit_id,

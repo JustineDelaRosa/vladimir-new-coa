@@ -10,6 +10,7 @@ use App\Models\FixedAsset;
 use App\Models\RoleManagement;
 use App\Models\TransferApproval;
 use App\Models\User;
+use Spatie\Activitylog\Models\Activity;
 
 trait TransferRequestHandler
 {
@@ -58,6 +59,23 @@ trait TransferRequestHandler
             'transfer_number' => $transferRequest->transfer_number,
             'description' => $transferRequest->description,
             'quantity' => $transferRequest->quantity,
+            'current_approver' => $this->getCurrentApprover($transferRequest),
+            'process_count' => $this->getProcessCount($transferRequest),
+            'steps' => $this->setSteps($transferRequest),
+            'history' => Activity::whereSubjectType(AssetTransferRequest::class)
+                ->whereSubjectId($transferRequest->transfer_number)
+                ->get()
+                ->map(function ($activity) {
+                    return [
+                        'id' => $activity->id,
+                        'action' => $activity->log_name,
+                        'causer' => $activity->causer,
+                        'description' => $activity->properties['description'],
+                        'vladimir_tag_number' => $activity->properties['vladimir_tag_number'],
+                        'remarks' => $activity->properties['remarks'],
+                        'created_at' => $activity->created_at,
+                    ];
+                }),
             'requester' => [
                 'id' => $transferRequest->createdBy->id,
                 'first_name' => $transferRequest->createdBy->firstname,
@@ -65,7 +83,7 @@ trait TransferRequestHandler
                 'employee_id' => $transferRequest->createdBy->employee_id,
                 'username' => $transferRequest->createdBy->username,
             ],
-            'status' => $transferRequest->status,
+            'status' => $transferRequest->is_fa_approved ? 'Approved' : $transferRequest->status,
             'company' => [
                 'id' => $transferRequest->company->id ?? '-',
                 'company_code' => $transferRequest->company->company_code ?? '-',
@@ -145,20 +163,13 @@ trait TransferRequestHandler
 
     public function handleAttachment($transferRequest, $request)
     {
-        if ($request->attachments !== 'x') {
-            if (isset($request->attachments)) {
-                $transferRequest->clearMediaCollection('attachments');
-                $transferRequest->addMedia($request->attachments)->toMediaCollection('attachments');
+
+        if (isset($request->attachments)) {
+            $transferRequest->clearMediaCollection('attachments');
+            foreach ($request->attachments as $attachment) {
+                $transferRequest->addMedia($attachment)->toMediaCollection('attachments');
             }
-        }
-//        else if($request->attachments != null){
-////            $transferRequest->addMultipleMediaFromRequest(['attachments'])
-////                ->each(function ($fileAdder) {
-////                    $fileAdder->toMediaCollection('attachments');
-////                });
-//            $transferRequest->addMedia($request->attachments)->toMediaCollection('attachments');
-//        }
-        else {
+        } else {
             $transferRequest->clearMediaCollection('attachments');
         }
     }
@@ -193,7 +204,7 @@ trait TransferRequestHandler
             $this->updateTransferStatus($approvalModelName, $modelName, 'Returned');
         } else {
             $this->setToNull($uniqueNumber, $uniqueNumberValue, $approvalModelName);
-            $this->setRequestStatus($uniqueNumber, $uniqueNumberValue, $modelName, 'For Approval ' . ($currentApprovalLayer->layer));
+            $this->setRequestStatus($uniqueNumber, $uniqueNumberValue, $modelName, 'For Approval of Approver ' . ($currentApprovalLayer->layer));
             $this->updateTransferStatus($approvalModelName, $modelName, 'For Approval');
         }
         return $this->responseSuccess('Request updated Successfully');
@@ -367,7 +378,6 @@ trait TransferRequestHandler
     {
         $items = $model::withTrashed()->where($uniqueNumber, $uniqueNumberValue)->get();
 
-
         // Create a temporary zip file
         $zipFile = tempnam(sys_get_temp_dir(), 'attachments') . '.zip';
         $zip = new \ZipArchive();
@@ -417,16 +427,12 @@ trait TransferRequestHandler
             ->where('approver_id', $approverId)
             ->where('status', 'For Approval')
             ->first();
-//        return $this->isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName);
 
         if (!$this->isUserFa() && !$this->isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName)) {
             if (!$isApprover) {
                 return $this->responseNotFound('Request not found');
             }
         }
-//        if(!$this->isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName)){
-//            return $this->responseNotFound('Request not found');
-//        }
 
         switch (strtolower($action)) {
             case 'approve':
@@ -442,6 +448,8 @@ trait TransferRequestHandler
             default:
                 return $this->responseUnprocessable('Invalid Action');
         }
+
+        $this->assetMovementLogger($model::where($uniqueNumber, $uniqueNumberValue)->first(), $action, $model);
         return $this->responseSuccess('Request ' . $action . ' successfully');
     }
 
@@ -471,7 +479,7 @@ trait TransferRequestHandler
         $fixedAssets = $model::where($uniqueNumber, $uniqueNumberValue)->get();
         $isFaApproved = $fixedAssets->where('is_fa_approved', 0)->where('status', 'Approved')->first();
         if ($isFaApproved) {
-           return $model::where($uniqueNumber, $uniqueNumberValue)->update(['is_fa_approved' => true]);
+            $model::where($uniqueNumber, $uniqueNumberValue)->update(['is_fa_approved' => true]);
 
             // Add to asset movement history
             $this->addToAssetMovementHistory($fixedAssets->pluck('fixed_asset_id')->toArray(), $fixedAssets[0]->created_by_id);
@@ -547,4 +555,73 @@ trait TransferRequestHandler
         }
     }
 
+    public function getCurrentApprover($movementRequest)
+    {
+        $approver = $movementRequest->load('transferApproval')->transferApproval->where('status', 'For Approval')->first()->approver->user ?? null;
+        if (!$approver) {
+            $isFaApprove = $movementRequest->is_fa_approved;
+            if (!$isFaApprove) {
+                return [
+                    'firstname' => 'For Approval of FA',
+                    'lastname' => '',
+                ];
+            } else {
+                return [
+                    'firstname' => 'Transfer Approved',
+                    'lastname' => '',
+                ];
+            }
+        }
+        return $approver;
+    }
+
+    public function getProcessCount($movementRequest)
+    {
+        $approver = $movementRequest->load('transferApproval')->transferApproval->where('status', 'For Approval')->first()->layer ?? null;
+        if (!$approver) {
+            $isFaApprove = $movementRequest->is_fa_approved;
+            $allLayers = $movementRequest->load('transferApproval')->transferApproval->pluck('layer');
+            if (!$isFaApprove) {
+                return $allLayers->max() + 1;
+            } else {
+                return $allLayers->max() + 2;
+            }
+        }
+        return $approver;
+
+    }
+
+    public function setSteps($movementRequest)
+    {
+        $approvers = $movementRequest->transferApproval;
+        $approvers = $approvers->sortBy('layer');
+
+        $steps = [];
+        foreach ($approvers as $approver) {
+            $steps[] = $approver->approver->user->firstname . ' ' . $approver->approver->user->lastname;
+        }
+        $steps[] = 'For Approval of FA';
+        return $steps;
+    }
+
+    public function assetMovementLogger($movementRequest, $action, $modelIncetance)
+    {
+        $user = auth('sanctum')->user();
+        activity()
+            ->causedBy($user)
+            ->performedOn($modelIncetance)
+            ->withProperties([
+                'action' => $action,
+                'transfer_number' => $movementRequest->transfer_number,
+                'remarks' => $movementRequest->remarks ?? null,
+                'vladimir_tag_number' => $movementRequest->fixedAsset->vladimir_tag_number,
+                'description' => $movementRequest->description,
+            ])
+            ->inLog('Asset Movement')
+            ->tap(function ($activity) use ($movementRequest) {
+                $activity->subject_id = $movementRequest->transfer_number;
+            })
+            ->log($action . ' Request');
+
+    }
 }

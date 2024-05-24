@@ -6,18 +6,14 @@ use Essa\APIToolKit\Filters\QueryFilters;
 
 class AssetTransferApproverFilters extends QueryFilters
 {
-    protected array $allowedFilters = ['department_id, subunit_id, approver_id'];
+    protected array $allowedFilters = ['transfer_number'];
 
-    protected array $columnSearch = [];
+    protected array $columnSearch = ['transfer_number'];
 
     protected array $relationSearch = [
-        'unit' => ['unit_name', 'unit_code'],
-        'subUnit' => ['sub_unit_code', 'sub_unit_name'],
-        'approver.user' => [
-            'username',
-            'employee_id',
-            'firstname',
-            'lastname'
+        'transferRequest' => [
+            'description',
+            'status',
         ],
     ];
 }

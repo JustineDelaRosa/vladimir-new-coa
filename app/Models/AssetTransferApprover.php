@@ -30,4 +30,9 @@ class AssetTransferApprover extends Model
         return $this->belongsTo(Approvers::class, 'approver_id', 'id');
     }
 
+//    public function activityLog(){
+//
+//    }
+
+
 }

@@ -55,7 +55,8 @@ class AssetTransferApprovalController extends Controller
 
         $transferApproval = $transferApprovalQuery->where('status', $status)->useFilters()->dynamicPaginate();
 
-        $transferNumbers = $transferNumbers->concat($transferApproval->pluck('transfer_number'));
+        $transferNumbers = is_array($transferNumbers) ? $transferNumbers : [$transferNumbers];
+        $transferNumbers = array_merge($transferNumbers, $transferApproval->pluck('transfer_number')->toArray());
 
         $data = AssetTransferRequest::with('transferApproval', 'transferApproval.approver', 'transferApproval.approver.user')
             ->whereIn('transfer_number', $transferNumbers)

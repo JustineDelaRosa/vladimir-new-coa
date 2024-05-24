@@ -272,17 +272,12 @@ class AssetTransferRequestController extends Controller
         return $this->dlAttachments($transferNumber, 'transfer_number', new AssetTransferRequest());
     }
 
-    public function transferRequestAction(Request $request)
-    {
-        $action = $request->action;
-        $transferNumber = $request->transfer_number;
-        $remarks = $request->remarks;
-
-        return $this->requestAction($action, $transferNumber, 'transfer_number', new AssetTransferRequest(), new TransferApproval(), $remarks);
-    }
-
-    public function transferApproverView()
-    {
-
-    }
+//    public function transferRequestAction(Request $request)
+//    {
+//        $action = $request->action;
+//        $transferNumber = $request->transfer_number;
+//        $remarks = $request->remarks;
+//
+//        return $this->requestAction($action, $transferNumber, 'transfer_number', new AssetTransferRequest(), new TransferApproval(), $remarks);
+//    }
 }

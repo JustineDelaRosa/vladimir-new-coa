@@ -48,7 +48,7 @@ class UpdateAssetTransferRequestRequest extends FormRequest
             'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true,$this->route('id'))],
             'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
             'remarks' => 'nullable|string',
-            'attachments' => ['nullable', 'max:10000', new FileOrX],
+            'attachments' => ['nullable', 'max:10000'],
         ];
     }
 }
