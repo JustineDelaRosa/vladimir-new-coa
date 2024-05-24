@@ -192,7 +192,23 @@ trait AssetRequestHandler
             'process_count' => $this->getProcessCount($assetRequest),
             'current_approver' => $this->getCurrentApprover($assetRequest),
             'requestor' => $this->getRequestor($assetRequest),
-            'history' => $this->getHistory($assetRequest),
+            'history' => Activity::whereSubjectType(AssetRequest::class)
+                ->whereSubjectId($assetRequest->transaction_number)
+                ->get()
+                ->map(function ($activityLog){
+                   return[
+                       'id' => $activityLog->id,
+                       'action' => $activityLog->log_name,
+                       'causer' => $activityLog->causer,
+                       'created_at' => $activityLog->created_at,
+                       'remarks' => $activityLog->properties['remarks'] ?? null,
+                       'received_by' => $activityLog->properties['received_by'] ?? null,
+                       'asset_description' => $activityLog->properties['description'] ?? null,
+                       'vladimir_tag_number' => $activityLog->properties['vladimir_tag'] ?? null,
+                   ];
+                }),
+
+//                $this->getHistory($assetRequest),
             'steps' => $this->getSteps($assetRequest),
         ];
     }
