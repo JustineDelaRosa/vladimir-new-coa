@@ -25,7 +25,7 @@ class TypeOfRequestController extends Controller
 
         $typeOfRequest = TypeOfRequest::withTrashed()->where('is_active', $isActiveStatus)
             ->when($forAcquisition === 'true', function ($query) {
-                return $query->where('type_of_request_name', 'Asset');
+                return $query->whereIn('type_of_request_name',['Asset', 'Capex', 'Small Tools']);
             })
             ->orderByDesc('created_at')
             ->useFilters()
