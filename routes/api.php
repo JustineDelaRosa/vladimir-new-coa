@@ -40,6 +40,7 @@ use App\Http\Controllers\Masterlist\SubCapexController;
 use App\Http\Controllers\Masterlist\SupplierController;
 use App\Http\Controllers\Masterlist\TypeOfRequestController;
 use App\Http\Controllers\Masterlist\UnitOfMeasureController;
+use App\Http\Controllers\Masterlist\WarehouseController;
 use App\Http\Controllers\Setup\PrinterIPController;
 use App\Http\Controllers\Setup\RoleManagementController;
 use App\Http\Controllers\Setup\SetupController;
@@ -112,7 +113,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     //SUB UNIT//
     Route::RESOURCE('sub-unit', SubUnitController::class);
-    Route::patch('archived-sub-unit/{id}', [SubUnitController::class, 'archived']);
+    Route::PATCH('archived-sub-unit/{id}', [SubUnitController::class, 'archived']);
 
     //LOCATION//
     Route::RESOURCE('location', LocationController::class);
@@ -121,7 +122,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     //ACCOUNT TITLE//
     Route::RESOURCE('account-title', AccountTitleController::class);
     Route::GET('account-titles/search', [AccountTitleController::class, 'search']);
-    Route::patch('account-title/archived-account-title/{id}', [AccountTitleController::class, 'archived']);
+    Route::PATCH('account-title/archived-account-title/{id}', [AccountTitleController::class, 'archived']);
 
     //SUPPLIER//
     Route::RESOURCE('supplier', SupplierController::class);
@@ -174,12 +175,12 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     //CAPEX//
     Route::RESOURCE('capex', CapexController::class);
-    Route::patch('capex/archived-capex/{id}', [CapexController::class, 'archived']);
+    Route::PATCH('capex/archived-capex/{id}', [CapexController::class, 'archived']);
     Route::POST('sub_capex/{id}', [CapexController::class, 'storeSubCapex']);
     Route::GET('capex-export', [CapexController::class, 'capexExport']);
     //SUB CAPEX//
     Route::RESOURCE('sub-capex', SubCapexController::class);
-    Route::patch('sub-capex/archived-sub-capex/{id}', [SubCapexController::class, 'archived']);
+    Route::PATCH('sub-capex/archived-sub-capex/{id}', [SubCapexController::class, 'archived']);
 
     //MASTERLIST IMPORT//
     Route::POST('import-masterlist', [FixedAssetImportController::class, 'masterlistImport']);
@@ -191,13 +192,13 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     //FIXED ASSET//
     Route::RESOURCE('fixed-asset', FixedAssetController::class);
-    Route::patch('fixed-asset/archived-fixed-asset/{id}', [FixedAssetController::class, 'archived']);
+    Route::PATCH('fixed-asset/archived-fixed-asset/{id}', [FixedAssetController::class, 'archived']);
     Route::GET('fixed-asset-search', [FixedAssetController::class, 'search']);
     Route::GET('fixed-assets/search-asset-tag', [FixedAssetController::class, 'searchAssetTag']);
     //ADDITIONAL COST//
     Route::RESOURCE('additional-cost', AdditionalCostController::class);
     Route::POST('add-cost-depreciation/{id}', [AdditionalCostController::class, 'assetDepreciation']);
-    Route::patch('add-cost/archived-add-cost/{id}', [AdditionalCostController::class, 'archived']);
+    Route::PATCH('add-cost/archived-add-cost/{id}', [AdditionalCostController::class, 'archived']);
     Route::POST('import-add-cost', [AdditionalCostController::class, 'additionalCostImport']);
 
     //CUSTOM ASSET DEPRECIATION CALCULATION//
@@ -210,32 +211,32 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     //TYPE OF REQUEST//
     Route::RESOURCE('type-of-request', TypeOfRequestController::class);
-    Route::patch('type-of-request/archived-tor/{id}', [TypeOfRequestController::class, 'archived']);
+    Route::PATCH('type-of-request/archived-tor/{id}', [TypeOfRequestController::class, 'archived']);
 
     //PRINT IP//
     Route::RESOURCE('printer-ip', PrinterIpController::class);
-    Route::patch('activateIp/{id}', [PrinterIpController::class, 'activateIP']);
+    Route::PATCH('activateIp/{id}', [PrinterIpController::class, 'activateIP']);
     //    Route::GET('getIP', [PrinterIpController::class, 'getClientIP']);
 
 
     //STATUSES//
     //ASSET STATUS
     Route::RESOURCE('asset-status', AssetStatusController::class);
-    Route::patch('asset-status/archived-asset-status/{id}', [AssetStatusController::class, 'archived']);
+    Route::PATCH('asset-status/archived-asset-status/{id}', [AssetStatusController::class, 'archived']);
     //CYCLE COUNT STATUS
     Route::RESOURCE('cycle-count-status', CycleCountStatusController::class);
-    Route::patch('cycle-count-status/archived-cycle-count-status/{id}', [CycleCountStatusController::class, 'archived']);
+    Route::PATCH('cycle-count-status/archived-cycle-count-status/{id}', [CycleCountStatusController::class, 'archived']);
     //DEPRECIATION STATUS
     Route::RESOURCE('depreciation-status', DepreciationStatusController::class);
-    Route::patch('depreciation-status/archived-depreciation-status/{id}', [DepreciationStatusController::class, 'archived']);
+    Route::PATCH('depreciation-status/archived-depreciation-status/{id}', [DepreciationStatusController::class, 'archived']);
     //MOVEMENT STATUS
     Route::RESOURCE('movement-status', MovementStatusController::class);
-    Route::patch('movement-status/archived-movement-status/{id}', [MovementStatusController::class, 'archived']);
+    Route::PATCH('movement-status/archived-movement-status/{id}', [MovementStatusController::class, 'archived']);
 
     //APPROVER SETTING//
     Route::RESOURCE('approver-setting', ApproverSettingController::class);
     Route::GET('setup-approver', [ApproverSettingController::class, 'approverSetting']);
-    Route::patch('approver-setting/archived-approver-setting/{id}', [ApproverSettingController::class, 'archived']);
+    Route::PATCH('approver-setting/archived-approver-setting/{id}', [ApproverSettingController::class, 'archived']);
 
     //ASSIGNING APPROVER//
 //    Route::RESOURCE('assign-approver', AssignApproverController::class);
@@ -247,13 +248,13 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::RESOURCE('asset-request', AssetRequestController::class);
     Route::POST('update-request/{referenceNumber}', [AssetRequestController::class, 'updateRequest']);
     Route::DELETE('DELETE-request/{transactionNumber}/{referenceNumber?}', [AssetRequestController::class, 'removeRequestItem']);
-    Route::patch('resubmit-request', [AssetRequestController::class, 'resubmitRequest']);
+    Route::PATCH('resubmit-request', [AssetRequestController::class, 'resubmitRequest']);
     Route::POST('move-to-asset-request', [AssetRequestController::class, 'moveData']);
     Route::GET('show-by-id/{id}', [AssetRequestController::class, 'showById']);
     Route::GET('per-request/{transaction_number}', [AssetRequestController::class, 'getPerRequest']);
     //ASSET APPROVAL//
     Route::RESOURCE('asset-approval', AssetApprovalController::class);
-    Route::patch('handle-request', [AssetApprovalController::class, 'handleRequest']);
+    Route::PATCH('handle-request', [AssetApprovalController::class, 'handleRequest']);
     Route::GET('next-request', [AssetApprovalController::class, 'getNextRequest']);
     //APPROVAL LOGGER//
     Route::RESOURCE('approval-logs', AssetApprovalLoggerController::class);
@@ -305,7 +306,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::RESOURCE('transfer-approver', AssetTransferApprovalController::class);
     Route::POST('transfer-approval', [AssetTransferApprovalController::class, 'transferRequestAction']);
 
-
+    //WAREHOUSE MASTERLIST
+    Route::RESOURCE('warehouse', WarehouseController::class);
+    Route::PATCH('warehouse/archived-warehouse/{id}', [WarehouseController::class, 'archived']);
 
 
     Route::prefix('ymir')->group(function () {
