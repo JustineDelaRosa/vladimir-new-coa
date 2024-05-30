@@ -299,7 +299,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     //ASSET TRANSFER
     Route::RESOURCE('asset-transfer', AssetTransferRequestController::class);
     Route::POST('move-to-asset-transfer', [AssetTransferRequestController::class, 'transferContainerData']);
-    Route::POST('update-transfer-request/{id}', [AssetTransferRequestController::class, 'updateTransfer']);
+    Route::POST('update-transfer-request/{transferNumber}', [AssetTransferRequestController::class, 'updateTransfer']);
     Route::DELETE('remove-transfer-item/{transferNumber?}/{id?}', [AssetTransferRequestController::class, 'removedTransferItem']);
 
     //ASSET TRANSFER APPROVAL
