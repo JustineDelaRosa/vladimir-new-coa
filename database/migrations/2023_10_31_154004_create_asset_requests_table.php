@@ -20,6 +20,8 @@ class CreateAssetRequestsTable extends Migration
             $table->string('status')->default('For Approval of Approver 1');
             $table->string('transaction_number')->index()->nullable();
             $table->string('reference_number')->nullable();
+            $table->unsignedInteger('receiving_warehouse_id');
+            $table->boolean('is_fa_approved')->default(0);
             $table->string('pr_number')->nullable();
             $table->string('po_number')->nullable();
             $table->string('rr_number')->nullable();
