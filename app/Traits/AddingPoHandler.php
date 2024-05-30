@@ -31,7 +31,7 @@ trait AddingPoHandler
     public function createAssetRequestQuery($toPo)
     {
         return AssetRequest::where('status', 'Approved')
-            ->wherenotnull('pr_number')
+            ->where('is_fa_approved', 1)
             ->whereNull('deleted_at') // Exclude soft deleted records
             ->when($toPo !== null, function ($query) use ($toPo) {
                 return $query->whereNotIn('transaction_number', function ($query) use ($toPo) {
