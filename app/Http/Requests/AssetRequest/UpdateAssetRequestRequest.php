@@ -77,6 +77,7 @@ class UpdateAssetRequestRequest extends FormRequest
             'tool_of_trade' => ['bail', 'nullable', 'max:10000', new FileOrX],
             'other_attachments' => ['bail','nullable', 'required-if:type_of_request_id,2', 'max:10000', new FileOrX],
             'uom_id' => 'required|exists:unit_of_measures,id',
+            'receiving_warehouse_id' => 'required|exists:warehouses,id',
             //
         ];
     }
@@ -122,6 +123,8 @@ class UpdateAssetRequestRequest extends FormRequest
             'uom_id.exists' => 'The selected unit of measure is invalid',
             'letter_of_request.required_if' => 'The letter of request is required.',
             'other_attachments.required_if' => 'The other attachments is required.',
+            'receiving_warehouse_id.required' => 'The receiving warehouse field is required',
+            'receiving_warehouse_id.exists' => 'The selected receiving warehouse is invalid',
         ];
     }
 }
