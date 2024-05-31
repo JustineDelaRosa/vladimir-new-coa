@@ -19,7 +19,7 @@ class TypeOfRequestController extends Controller
      */
     public function index(Request $request)
     {
-        $forAcquisition = $request->forAacquisition ?? 'false';
+        $forAcquisition = $request->forAcquisition ?? 'false';
         $typeOfRequestStatus = $request->status ?? 'active';
         $isActiveStatus =($typeOfRequestStatus === 'deactivated') ? 0 : 1;
 
