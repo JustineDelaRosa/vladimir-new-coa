@@ -21,10 +21,12 @@ class AccountTitleController extends Controller
     {
         $userStatus = $request->status ?? 'activated';
         $isActiveStatus = ($userStatus === 'deactivated') ? 0 : 1;
+        $forRequest = $request->query('for_request',false);
 
         $accountTitle = AccountTitle::where('is_active', $isActiveStatus)
-            ->whereIn('account_title_code', ['100000', '151700', '153700', '515260', '534300', '534400', '534630', '534800', '534840', '555400', '151302'])
-            ->orderBy('created_at', 'DESC')
+            ->when($forRequest, function ($query) use ($forRequest) {
+                return $query->where('account_title_name', 'Asset Clearing');
+            })->orderBy('created_at', 'DESC')
             ->useFilters()
             ->dynamicPaginate();
 
