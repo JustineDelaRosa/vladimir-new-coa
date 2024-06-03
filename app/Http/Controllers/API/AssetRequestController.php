@@ -362,6 +362,7 @@ class AssetRequestController extends Controller
             $assetRequest->brand = $item->brand;
             $assetRequest->quantity = $item->quantity;
             $assetRequest->date_needed = $item->date_needed;
+            $assetRequest->receiving_warehouse_id = $item->receiving_warehouse_id;
 
             // Add transaction number and reference number
             $assetRequest->transaction_number = $transactionNumber;

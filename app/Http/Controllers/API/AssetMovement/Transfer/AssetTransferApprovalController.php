@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Traits\AssetMovement\AssetTransferApprovalHandler;
 use App\Traits\AssetMovement\AssetTransferContainerHandler;
 use App\Traits\AssetMovement\TransferRequestHandler;
+use App\Traits\ReusableFunctions\Reusables;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\Cache;
 
 class AssetTransferApprovalController extends Controller
 {
-    use ApiResponse, TransferRequestHandler, AssetTransferContainerHandler, AssetTransferApprovalHandler;
+    use ApiResponse, AssetTransferContainerHandler, AssetTransferApprovalHandler, Reusables;
 
     public function index(Request $request)
     {
@@ -29,7 +30,7 @@ class AssetTransferApprovalController extends Controller
 
         $forMonitoring = $request->for_monitoring ?? false;
         $perPage = $request->input('per_page', null);
-        $search = $request->input('search', null);
+//        $search = $request->input('search', null);
         $user = auth('sanctum')->user();
         $role = RoleManagement::whereId($user->role_id)->pluck('role_name');
         $adminRoles = ['Super Admin', 'Admin', 'ERP'];

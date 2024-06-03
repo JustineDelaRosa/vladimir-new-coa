@@ -40,12 +40,13 @@ class RequestContainerController extends Controller
         return $this->responseData($requestContainer);
     }
 
-    public function store(CreateRequestContainerRequest $request): JsonResponse
+    public function store(CreateRequestContainerRequest $request)
     {
         DB::beginTransaction();
         try {
             $user = auth('sanctum')->user();
             $requesterId = $user->id;
+
             if (!isset($request->company_id)) {
                 if ($user->company_id == null) return $this->responseUnprocessable('This user does not have a COA');
                 $companyId = $user->company_id;
@@ -72,6 +73,9 @@ class RequestContainerController extends Controller
                     'location_id' => ['nullable', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
                 ]);
             }
+            $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $request->subunit_id)
+                ->orderBy('layer', 'asc')
+                ->get();
 
 //            return $request->all();
             list($isRequesterApprover, $isLastApprover, $requesterLayer) = $this->checkIfRequesterIsApprover($requesterId, $departmentUnitApprovers);
