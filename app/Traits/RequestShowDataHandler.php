@@ -124,6 +124,7 @@ trait RequestShowDataHandler
 //                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
 //            ],
             'fixed_asset' => $ar->fixedAsset ? $this->transformSingleFixedAssetShowData($ar->fixedAsset) : '-',
+            'receiving_warehouse_name' => $ar->receivingWarehouse->warehouse_name ?? '-',
             'requestor' => [
                 'id' => $ar->requestor->id,
                 'username' => $ar->requestor->username,
@@ -230,7 +231,6 @@ trait RequestShowDataHandler
 
     private function transformSingleFixedAssetShowData($fixed_asset): array
     {
-
         $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? $fixed_asset->additionalCost->count() : 0;
         return [
             'additional_cost_count' => $fixed_asset->additional_cost_count,

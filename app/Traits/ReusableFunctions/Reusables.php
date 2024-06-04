@@ -92,7 +92,10 @@ trait Reusables
         $fixedAssets = $model::where($uniqueNumber, $uniqueNumberValue)->get();
         $isFaApproved = $fixedAssets->where('is_fa_approved', 0)->where('status', 'Approved')->first();
         if ($isFaApproved) {
-            $model::where($uniqueNumber, $uniqueNumberValue)->update(['is_fa_approved' => true]);
+            $model::where($uniqueNumber, $uniqueNumberValue)->update([
+                'is_fa_approved' => true,
+                'filter' => 'Sent to Ymir', // Can be Change
+            ]);
 
 //            // Add to asset movement history
 //            $this->addToAssetMovementHistory($fixedAssets->pluck('fixed_asset_id')->toArray(), $fixedAssets[0]->created_by_id);
@@ -147,7 +150,7 @@ trait Reusables
                 'vladimir_tag_number' => $movementRequest->fixedAsset->vladimir_tag_number ?? null,
                 'description' => $movementRequest->description,
             ])
-            ->inLog('Asset Movement')
+            ->inLog(ucwords(strtolower($action)))
             ->tap(function ($activity) use ($uniqueNumber, $movementRequest) {
                 $activity->subject_id = $movementRequest->$uniqueNumber;
             })
