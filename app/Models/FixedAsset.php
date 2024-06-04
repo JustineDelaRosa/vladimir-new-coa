@@ -84,8 +84,16 @@ class FixedAsset extends Model implements HasMedia
     public function transferRequest(){
         return $this->hasMany(AssetTransferRequest::class, 'fixed_asset_id', 'id');
     }
-    public function notOnTransferRequest(){
-        return $this->hasMany(AssetTransferRequest::class, 'fixed_asset_id', 'id')->where('status', '!=', 'Approved');
+
+    public function isStillInTransferApproval()
+    {
+        // Check if the fixed asset is still in transfer approval
+        $isInTransferApproval = AssetTransferRequest::where('fixed_asset_id', $this->id)
+            ->where('status', '!=', 'Approved')
+            ->where('is_fa_approved', false)
+            ->exists();
+
+        return $isInTransferApproval;
     }
 
     public function additionalCost()
