@@ -13,6 +13,7 @@ use App\Models\TransferApproval;
 use App\Models\User;
 use App\Traits\AssetMovement\AssetTransferContainerHandler;
 use App\Traits\AssetMovement\TransferRequestHandler;
+use App\Traits\RequestShowDataHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -89,7 +90,6 @@ class AssetTransferRequestController extends Controller
 
     public function store(CreateAssetTransferRequestRequest $request)
     {
-
         try {
             DB::beginTransaction();
             $fixedAssetIds = $request->assets;
@@ -156,21 +156,23 @@ class AssetTransferRequestController extends Controller
             ->groupBy('transfer_number')
             ->map(function ($transferCollection) {
                 $firstTransfer = $transferCollection->first();
-                $attachments = $transferCollection->first()->getMedia('attachments')->all();
+                $attachments = $firstTransfer->first()->getMedia('attachments')->all();
                 return [
                     'transfer_number' => $firstTransfer->transfer_number,
                     'assets' => $transferCollection->whereNull('deleted_at')->map(function ($transfer) {
-                        return [
-                            'id' => $transfer->id,
-                            'vladimir_tag_number' => $transfer->fixedAsset->vladimir_tag_number,
-                            'asset_description' => $transfer->fixedAsset->asset_description,
-                            'asset_specification' => $transfer->fixedAsset->asset_specification,
-                            'brand' => $transfer->fixedAsset->brand,
-                            'accountability' => $transfer->fixedAsset->accountability,
-                            'accountable' => $transfer->fixedAsset->accountable ?? '-',
-                            'quantity' => $transfer->fixedAsset->quantity,
-                        ];
-                    }),
+                        return $this->transformSingleFixedAssetShowData($transfer->fixedAsset);
+//                        return [
+//                            'id' => $transfer->fixedAsset->id,
+//                            'vladimir_tag_number' => $this->transformSingleFixedAssetShowData($transfer->fixedAsset),
+//                            'asset_description' => $transfer->fixedAsset->asset_description,
+//                            'asset_specification' => $transfer->fixedAsset->asset_specification,
+//                            'brand' => $transfer->fixedAsset->brand,
+//                            'accountability' => $transfer->fixedAsset->accountability,
+//                            'accountable' => $transfer->fixedAsset->accountable ?? '-',
+//                            'quantity' => $transfer->fixedAsset->quantity,
+//                            'created_at' => $transfer->fixedAsset->created_at
+//                        ];
+                    })->values(),
                     'accountability' => $firstTransfer->accountability,
                     'accountable' => $firstTransfer->accountable,
                     'company' => [
@@ -178,6 +180,7 @@ class AssetTransferRequestController extends Controller
                         'company_code' => $firstTransfer->company->company_code ?? '-',
                         'company_name' => $firstTransfer->company->company_name ?? '-',
                     ],
+                    'description' => $firstTransfer->description,
                     'business_unit' => [
                         'id' => $firstTransfer->businessUnit->id ?? '-',
                         'business_unit_code' => $firstTransfer->businessUnit->business_unit_code ?? '-',
@@ -230,36 +233,30 @@ class AssetTransferRequestController extends Controller
         //
     }
 
-    public function updateTransfer(UpdateAssetTransferRequestRequest $request, $id)
+    public function updateTransfer(UpdateAssetTransferRequestRequest $request, $transferNumber)
     {
-        //check if the status of the request is return or not yet approved by the first approver
-        $transferRequest = AssetTransferRequest::withTrashed()->where('id', $id)->first();
-        if ($transferRequest->deleted_at) {
-            return $this->responseUnprocessable('Request not found');
-        }
+        $tagNumbers = $request->assets;
+        $createdBy = auth('sanctum')->user()->id;
+        $transferApproval = $this->getTransferApproval($request->subunit_id);
 
-        $transferApprovals = TransferApproval::where('transfer_number', $transferRequest->transfer_number)->get();
-        //check if the user is one of the approver if it is then check if the next approver to the user has approved the request if it is then return an error
-        $user = $transferRequest->created_by_id;
-        $isUserApprover = Approvers::where('approver_id', $user)->first()->id;
-        $userApprover = $transferApprovals->where('approver_id', $isUserApprover)->first();
-        if ($userApprover) {
-            $userLayer = $userApprover->layer;
-            $nextApprover = $transferApprovals->where('layer', $userLayer + 1)->first();
-            if ($nextApprover->status == 'Approved') {
-                return $this->responseUnprocessable('This request cannot be updated.');
+        foreach ($tagNumbers as $tagNumber) {
+            $transferRequest = $this->getTransferRequest($transferNumber, $tagNumber['fixed_asset_id']);
+
+            if ($transferRequest && $transferRequest->trashed()) {
+                $transferRequest->restore();
+            } elseif (!$transferRequest) {
+                $this->createTransferRequest($tagNumber, $transferNumber, $request, $createdBy, $transferApproval);
+            }
+
+            if ($transferRequest) {
+                $this->updateTransferRequest($transferRequest, $tagNumber, $request);
             }
         }
-//        return $transferRequest;
-        $this->updateTransferRequest($transferRequest, $request);
 
-        $isDataUpdated = $transferRequest->isDirty() ? 'true' : 'false';
-
-        $transferRequest->save();
-
+        $this->deleteNonExistingTransfers($transferNumber, $tagNumbers);
         $this->handleAttachment($transferRequest, $request);
-        Cache::put('isDataUpdated', $isDataUpdated, 60);
-        $this->approverChanged($id, new AssetTransferRequest(), new TransferApproval(), new AssetTransferApprover(), 'transfer_number');
+        $this->approverChanged($transferNumber, new AssetTransferRequest(), new TransferApproval(), new AssetTransferApprover(), 'transfer_number');
+
         return $this->responseSuccess('Request updated Successfully');
     }
 
