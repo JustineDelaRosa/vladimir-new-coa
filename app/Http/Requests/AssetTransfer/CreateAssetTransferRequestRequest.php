@@ -31,6 +31,7 @@ class CreateAssetTransferRequestRequest extends FormRequest
     public function rules()
     {
         return [
+            'assets' => 'required|array',
             'assets.*.fixed_asset_id' => ['required', 'exists:fixed_assets,id', function ($attribute, $value, $fail) {
 
                 // Get all fixed_asset_id values
@@ -55,7 +56,7 @@ class CreateAssetTransferRequestRequest extends FormRequest
             'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
             'account_title_id' => ['required', 'exists:account_titles,id'],
             'accountability' => 'required|in:Common,Personal Issued',
-            'accountable' => 'nullable|required_if:assetTransfer.*.accountability,Personal Issued',
+            'accountable' => 'nullable|required_if:accountability,Personal Issued',
             'remarks' => 'nullable',
             'description' => 'required',
             'attachments' => 'nullable|max:5120',

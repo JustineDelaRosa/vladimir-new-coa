@@ -96,6 +96,7 @@ class CreateRequestContainerRequest extends BaseRequest
             'location_id' => ['nullable', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
             'account_title_id' => 'nullable|exists:account_titles,id',
             'uom_id' => 'required|exists:unit_of_measures,id',
+            'receiving_warehouse_id' => 'required|exists:warehouses,id',
         ];
     }
 
