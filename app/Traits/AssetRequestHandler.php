@@ -5,6 +5,8 @@ namespace App\Traits;
 use App\Models\Approvers;
 use App\Models\AssetRequest;
 use App\Models\AssetApproval;
+use App\Models\RoleManagement;
+use App\Models\User;
 use App\Traits\AddingPoHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
@@ -18,6 +20,37 @@ trait AssetRequestHandler
 {
 
     use AddingPoHandler;
+
+    public function approverViewing($transactionNumber)
+    {
+        $transactionNumber = AssetRequest::where('transaction_number', $transactionNumber)->get();
+        //get the quantity of the transaction number and sum it
+        $quantity = $transactionNumber->sum('quantity');
+
+        foreach ($transactionNumber as $transactionNumbers) {
+            return [
+                'id' => $transactionNumbers->id ?? null,
+                'transaction_number' => $transactionNumbers->transaction_number,
+                'number_of_item' => $quantity,
+                'requester' => [
+                    'id' => $transactionNumbers->requestor->id ?? '-',
+                    'username' => $transactionNumbers->requestor->username ?? '-',
+                    'employee_id' => $transactionNumbers->requestor->employee_id ?? '-',
+                    'firstname' => $transactionNumbers->requestor->firstname ?? '-',
+                    'lastname' => $transactionNumbers->requestor->lastname ?? '-',
+                ],
+                'asset_request' => [
+//                    'id' => $transactionNumbers->transaction_number ?? '-',
+                    'transaction_number' => $transactionNumbers->transaction_number ?? '-',
+                    'date_requested' => $transactionNumbers->created_at ?? '-',
+                    'status' => $transactionNumbers->status ?? '-',
+                    'additional_info' => $transactionNumbers->additional_info ?? '-',
+                    'acquisition_details' => $transactionNumbers->acquisition_details ?? '-',
+                ],
+            ];
+        }
+
+    }
 
     public function getAssetRequest($field, $value, $singleResult = true)
     {
@@ -78,6 +111,7 @@ trait AssetRequestHandler
             'subunit_id' => $request->subunit_id,
             'location_id' => $request->location_id,
             'uom_id' => $request->uom_id ?? null,
+            'receiving_warehouse_id' => $request->receiving_warehouse_id,
         ]);
 
         $this->updateOtherRequestChargingDetails($assetRequest, $request, $save);
@@ -103,6 +137,7 @@ trait AssetRequestHandler
                 'acquisition_details' => $request->acquisition_details ?? null,
                 'fixed_asset_id' => $request->fixed_asset_id ?? null,
                 'account_title_id' => $request->account_title_id ?? null,
+                'receiving_warehouse_id' => $request->receiving_warehouse_id,
 //                'uom_id' => $request->uom_id ?? null,
             ]);
         }
@@ -186,6 +221,7 @@ trait AssetRequestHandler
 //                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
 //            ],
             'acquisition_details' => $assetRequest->acquisition_details ?? '-',
+            'receiving_warehouse_name' => $assetRequest->receivingWarehouse->warehouse_name ?? '-',
             'deleted_at' => $assetRequest->deleted_at,
             'created_at' => $this->getDateRequested($assetRequest->transaction_number),
             'approver_count' => $assetRequest->assetApproval->count(),
@@ -195,17 +231,17 @@ trait AssetRequestHandler
             'history' => Activity::whereSubjectType(AssetRequest::class)
                 ->whereSubjectId($assetRequest->transaction_number)
                 ->get()
-                ->map(function ($activityLog){
-                   return[
-                       'id' => $activityLog->id,
-                       'action' => $activityLog->log_name,
-                       'causer' => $activityLog->causer,
-                       'created_at' => $activityLog->created_at,
-                       'remarks' => $activityLog->properties['remarks'] ?? null,
-                       'received_by' => $activityLog->properties['received_by'] ?? null,
-                       'asset_description' => $activityLog->properties['description'] ?? null,
-                       'vladimir_tag_number' => $activityLog->properties['vladimir_tag'] ?? null,
-                   ];
+                ->map(function ($activityLog) {
+                    return [
+                        'id' => $activityLog->id,
+                        'action' => $activityLog->log_name,
+                        'causer' => $activityLog->causer,
+                        'created_at' => $activityLog->created_at,
+                        'remarks' => $activityLog->properties['remarks'] ?? null,
+                        'received_by' => $activityLog->properties['received_by'] ?? null,
+                        'asset_description' => $activityLog->properties['description'] ?? null,
+                        'vladimir_tag_number' => $activityLog->properties['vladimir_tag'] ?? null,
+                    ];
                 }),
 
 //                $this->getHistory($assetRequest),
@@ -281,18 +317,15 @@ trait AssetRequestHandler
         $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number);
         if ($approvers) {
             //check if null pr number
-            if ($assetRequest->pr_number == null) {
+            if($assetRequest->is_fa_approved == false){
                 return [
-                    'firstname' => 'Inputting of PR No.',
+                    'firstname' => 'For Approval of FA',
                     'lastname' => '',
                 ];
             }
-            //check if null po number
-            if (($assetRequest->po_number == null && $assetRequest->pr_number != null) ||
-                ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
-            ) {
+            if($assetRequest->is_fa_approved == true){
                 return [
-                    'firstname' => 'Inputting of PO No. and RR No.',
+                    'firstname' => 'Sent to ymir for Receiving',
                     'lastname' => '',
                 ];
             }
@@ -327,26 +360,31 @@ trait AssetRequestHandler
                 'lastname' => '',
             ];
         }
-
-
         return 'Something went wrong';
     }
 
     private function getAfterApprovedStatus($assetRequest): string
     {
         $approvers = $assetRequest->status == 'Approved';
+//        $faApproved = $assetRequest->is_fa_approved == true;
         $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number);
-        if ($approvers) {
-            //check if null pr number
-            if ($assetRequest->pr_number == null) {
-                return 'Inputting of PR No.';
+        if ($approvers){
+
+            if(!$assetRequest->is_fa_approved){
+                return 'For Approval of FA';
             }
+            if($assetRequest->is_fa_approved){
+                return 'Sent to ymir for Receiving';
+            }
+//            if ($assetRequest->pr_number == null) {
+//                return 'Inputting of PR No.';
+//            }
             //check if null po number
-            if (($assetRequest->po_number == null && $assetRequest->pr_number != null) ||
-                ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
-            ) {
-                return 'Inputting of PO No. and RR No.';
-            }
+//            if (($assetRequest->po_number == null && $assetRequest->pr_number != null) ||
+//                ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
+//            ) {
+//                return 'Inputting of PO No. and RR No.';
+//            }
             //$assetRequest->is_addcost != 1 && $assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count != $assetRequest->quantity
             if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Received") {
                 return 'Asset Tagging';
@@ -376,8 +414,9 @@ trait AssetRequestHandler
         foreach ($approvers as $approver) {
             $steps[] = $approver->approver->user->firstname . ' ' . $approver->approver->user->lastname;
         }
-        $steps[] = 'Inputting of PR No.';
-        $steps[] = 'Inputting of PO No. and RR No.';
+        $steps[] = 'For Approval of FA';
+        $steps[] = 'Sent to ymir for Receiving.';
+//        $steps[] = 'Inputting of PO No. and RR No.';
         $steps[] = 'Asset Tagging';
         $steps[] = 'Ready to Pickup';
         $steps[] = 'Claimed';
@@ -401,10 +440,8 @@ trait AssetRequestHandler
         } else {
             $lastLayer = $highestLayerNumber ?? 0;
 //            dd($assetRequest->pr_number);
-            if ($assetRequest->pr_number === null) $lastLayer++;
-            if (($assetRequest->po_number == null && $assetRequest->pr_number != null) ||
-                ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
-            ) $lastLayer += 2;
+            if ($assetRequest->is_fa_approved == false) $lastLayer++;
+            if ($assetRequest->is_fa_approved == true) $lastLayer += 2;
             if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Received") $lastLayer += 3;
             if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) $lastLayer += 4;
             if (($assetRequest->is_claimed == 1 && $assetRequest->filter == "Claimed") || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) $lastLayer += 6;
@@ -468,6 +505,7 @@ trait AssetRequestHandler
                 'firstname' => $assetRequest->requestor->firstname,
                 'lastname' => $assetRequest->requestor->lastname,
             ],
+            'receiving_warehouse_name' => $assetRequest->receivingWarehouse->warehouse_name ?? '-',
             'type_of_request' => [
                 'id' => $assetRequest->typeOfRequest->id,
                 'type_of_request_name' => $assetRequest->typeOfRequest->type_of_request_name,
