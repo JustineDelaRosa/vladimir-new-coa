@@ -2,10 +2,10 @@
 
 use App\Http\Controllers\API\AddingPoController;
 use App\Http\Controllers\API\AddingPrController;
+use App\Http\Controllers\API\ApproverSettingController;
 use App\Http\Controllers\API\Approvers\AssetDisposalApproverController;
 use App\Http\Controllers\API\Approvers\AssetPullOutApproverController;
 use App\Http\Controllers\API\Approvers\AssetTransferApproverController;
-use App\Http\Controllers\API\ApproverSettingController;
 use App\Http\Controllers\API\AssetApprovalController;
 use App\Http\Controllers\API\AssetApprovalLogger\AssetApprovalLoggerController;
 use App\Http\Controllers\API\AssetMovement\Transfer\AssetTransferApprovalController;
@@ -47,7 +47,6 @@ use App\Http\Controllers\Setup\SetupController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -57,16 +56,14 @@ use Illuminate\Support\Facades\Route;
 | routes are loaded by the RouteServiceProvider within a group which
 | is assigned the "api" middleware group. Enjoy building your API!
 |
-*/
+ */
 
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //     return $request->user();
 
 // Route::POST('setup/department', [SetupController::class, 'createDepartment']);
 
-
 // Route::RESOURCE('user', UserController::class);
-
 
 Route::POST('/auth/login', [AuthController::class, 'Login']);
 // Route::RESOURCE('user', UserController::class);
@@ -141,18 +138,15 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::PUT('user/archived-user/{id}', [UserController::class, 'archived']);
     Route::GET('test', [UserController::class, 'test']);
 
-
     //ServiceProvider
-//    Route::RESOURCE('service-provider', ServiceProviderController::class);
-//    Route::PUT('service-provider/archived-service-provider/{id}', [ServiceProviderController::class, 'archived']);
-//    Route::GET('service-providers/search', [ServiceProviderController::class, 'search']);
-
+    //    Route::RESOURCE('service-provider', ServiceProviderController::class);
+    //    Route::PUT('service-provider/archived-service-provider/{id}', [ServiceProviderController::class, 'archived']);
+    //    Route::GET('service-providers/search', [ServiceProviderController::class, 'search']);
 
     //MAJOR CATEGORY//
     Route::RESOURCE('major-category', MajorCategoryController::class);
     Route::PUT('major-category/archived-major-category/{id}', [MajorCategoryController::class, 'archived']);
     Route::GET('major-categories/search', [MajorCategoryController::class, 'search']);
-
 
     //MINOR CATEGORY//
     Route::RESOURCE('minor-category', MinorCategoryController::class);
@@ -160,9 +154,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::GET('minor-categories/search', [MinorCategoryController::class, 'search']);
 
 //    Route::RESOURCE('category-list', CategoryListController::class);
-//    Route::PUT('category-list/archived-category-list/{id}', [CategoryListController::class, 'archived']);
-//    Route::GET('category-lists/search', [CategoryListController::class, 'search']);
-//    Route::PUT('category-list/add-update-minorcategory/{id}', [CategoryListController::class, 'UpdateMinorCategory']);
+    //    Route::PUT('category-list/archived-category-list/{id}', [CategoryListController::class, 'archived']);
+    //    Route::GET('category-lists/search', [CategoryListController::class, 'search']);
+    //    Route::PUT('category-list/add-update-minorcategory/{id}', [CategoryListController::class, 'UpdateMinorCategory']);
 
     Route::RESOURCE('supplier', SupplierController::class);
     Route::PUT('supplier/archived-supplier/{id}', [SupplierController::class, 'archived']);
@@ -188,7 +182,6 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::GET('export-masterlist', [FixedAssetExportController::class, 'export']);
     //CAPEX IMPORT//
     Route::POST('import-capex', [CapexController::class, 'capexImport']);
-
 
     //FIXED ASSET//
     Route::RESOURCE('fixed-asset', FixedAssetController::class);
@@ -218,7 +211,6 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::PATCH('activateIp/{id}', [PrinterIpController::class, 'activateIP']);
     //    Route::GET('getIP', [PrinterIpController::class, 'getClientIP']);
 
-
     //STATUSES//
     //ASSET STATUS
     Route::RESOURCE('asset-status', AssetStatusController::class);
@@ -239,8 +231,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::PATCH('approver-setting/archived-approver-setting/{id}', [ApproverSettingController::class, 'archived']);
 
     //ASSIGNING APPROVER//
-//    Route::RESOURCE('assign-approver', AssignApproverController::class);
-//    Route::GET('requester-view', [AssignApproverController::class, 'requesterView']);
+    //    Route::RESOURCE('assign-approver', AssignApproverController::class);
+    //    Route::GET('requester-view', [AssignApproverController::class, 'requesterView']);
     //Route::PUT('arrange-layer/{id}', [AssignApproverController::class, 'arrangeLayer']);
     Route::PUT('arrange-layer/{id}', [DepartmentUnitApproversController::class, 'arrangeLayer']);
 
@@ -254,6 +246,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::GET('per-request/{transaction_number}', [AssetRequestController::class, 'getPerRequest']);
     //ASSET APPROVAL//
     Route::RESOURCE('asset-approval', AssetApprovalController::class);
+    // Route::GET('asset-approvals/{transactionNumber}', [AssetApprovalController::class, 'showtest']);
     Route::PATCH('handle-request', [AssetApprovalController::class, 'handleRequest']);
     Route::GET('next-request', [AssetApprovalController::class, 'getNextRequest']);
     //APPROVAL LOGGER//
@@ -290,7 +283,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::PUT('update-disposal-approver/{id}', [AssetDisposalApproverController::class, 'arrangeLayer']);
 
     //ASSET TRANSFER
-//    Route::RESOURCE('asset-transfer', AssetTransferController::class);
+    //    Route::RESOURCE('asset-transfer', AssetTransferController::class);
 
     //ASSET TRANSFER CONTAINER
     Route::RESOURCE('asset-transfer-container', AssetTransferContainerController::class)->except(['destroy']);
@@ -310,9 +303,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::RESOURCE('warehouse', WarehouseController::class);
     Route::PATCH('warehouse/archived-warehouse/{id}', [WarehouseController::class, 'archived']);
 
-
     Route::prefix('ymir')->group(function () {
         Route::GET('pr-request', [AddingPrController::class, 'requestToPR']);
     });
 });
-
