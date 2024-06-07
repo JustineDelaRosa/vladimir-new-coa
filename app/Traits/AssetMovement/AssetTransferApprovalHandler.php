@@ -10,15 +10,14 @@ trait AssetTransferApprovalHandler
     public function approverViewing($transfer_number)
     {
         $transferRequest = AssetTransferRequest::where('transfer_number', $transfer_number)->get();
-        $transferRequest->quantity = $transferRequest->count();
+        $quantity = $transferRequest->count();
         foreach ($transferRequest as $transferRequests) {
-//            $approver = $transferRequests->transferApproval->where('status', 'For Approval')->first();
             return [
 //                'id'=> $approver ? $approver->id : null,
                 'transfer_number' => $transferRequests->transfer_number,
                 'description' => $transferRequests->description,
                 'date_requested' => $transferRequests->created_at,
-                'quantity' => $transferRequests->fixedAsset->quantity,
+                'quantity' => $quantity,
                 'status' => $transferRequests->status == 'Approved' ?
                     ($transferRequests->is_fa_approved ? 'Approved' : 'Last Approval')
                     : $transferRequests->status,

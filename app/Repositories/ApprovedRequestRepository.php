@@ -6,6 +6,8 @@ use App\Models\Approvers;
 use App\Models\AssetApproval;
 use App\Models\AssetRequest;
 use App\Models\DepartmentUnitApprovers;
+use App\Models\RoleManagement;
+use App\Models\User;
 use App\Traits\AssetRequestHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -171,7 +173,7 @@ class ApprovedRequestRepository
 
     private function isApproverListChanged($approverIds, $assetApprovalIds)
     {
-        return array_diff($approverIds, $assetApprovalIds);
+        return array_diff($approverIds, $assetApprovalIds) || array_diff($assetApprovalIds, $approverIds) || $approverIds!= $assetApprovalIds;
     }
 
     //VOID REQUEST
@@ -337,4 +339,5 @@ class ApprovedRequestRepository
 
         return $assetApproval ? $assetApproval->layer + 1 : 1;
     }
+
 }
