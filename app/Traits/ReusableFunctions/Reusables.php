@@ -10,7 +10,6 @@ trait Reusables
 {
     use ApiResponse;
 
-
     public function isUserFa(): bool
     {
         $user = auth('sanctum')->user()->id;
@@ -23,7 +22,7 @@ trait Reusables
     {
         $request = $model::where([
             $uniqueNumber => $uniqueNumberValue,
-            'status' => 'Approved'
+            'status' => 'Approved',
         ])->exists();
 
         return $request ? 1 : 0;
@@ -98,10 +97,10 @@ trait Reusables
             ]);
 
 //            // Add to asset movement history
-//            $this->addToAssetMovementHistory($fixedAssets->pluck('fixed_asset_id')->toArray(), $fixedAssets[0]->created_by_id);
-//
-//            // Save to FA table
-//            $this->saveToFaTable($uniqueNumberValue, $uniqueNumber, $model, 'transfer');
+            //            $this->addToAssetMovementHistory($fixedAssets->pluck('fixed_asset_id')->toArray(), $fixedAssets[0]->created_by_id);
+            //
+            //            // Save to FA table
+            //            $this->saveToFaTable($uniqueNumberValue, $uniqueNumber, $model, 'transfer');
         }
     }
 
@@ -130,6 +129,7 @@ trait Reusables
         }
 
         $nextItem = $approvalModelName::where($uniqueNumber, $uniqueNumberValue)
+            ->orderBy('layer')
             ->skip($lastUserToApproved->layer)
             ->take(1)
             ->first();

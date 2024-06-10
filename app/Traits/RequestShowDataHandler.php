@@ -7,9 +7,6 @@ use App\Models\AssetApproval;
 use App\Models\AssetRequest;
 use App\Models\DepartmentUnitApprovers;
 use App\Models\FixedAsset;
-use App\Repositories\CalculationRepository;
-use App\Repositories\FixedAssetRepository;
-use App\Repositories\VladimirTagGeneratorRepository;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -91,8 +88,8 @@ trait RequestShowDataHandler
             'can_edit' => ($ar->status == 'Returned' || $ar->status == 'For Approval of Approver 1') || ($isUserLastApprover) ? 1 : 0,
             'can_resubmit' => $ar->status == 'Returned' ? 1 : 0,
             'asset_approval_id' => $ar->assetApproval->first(function ($approval) {
-                    return $approval->status == 'For Approval';
-                })->id ?? '',
+                return $approval->status == 'For Approval';
+            })->id ?? '',
             'id' => $ar->id,
             'total_remaining' => $totalRemaining,
             'status' => $ar->status,
@@ -120,9 +117,9 @@ trait RequestShowDataHandler
             'cancelled' => AssetRequest::onlyTrashed()->where('transaction_number', $ar->transaction_number)->where('reference_number', $ar->reference_number)->sum('quantity') ?? '-',
             'is_equal' => $isEqual,
 //            'fixed_asset' => [
-//                'id' => $ar->fixedAsset->id ?? '-',
-//                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
-//            ],
+            //                'id' => $ar->fixedAsset->id ?? '-',
+            //                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
+            //            ],
             'fixed_asset' => $ar->fixedAsset ? $this->transformSingleFixedAssetShowData($ar->fixedAsset) : '-',
             'receiving_warehouse_name' => $ar->receivingWarehouse->warehouse_name ?? '-',
             'requestor' => [
@@ -142,40 +139,40 @@ trait RequestShowDataHandler
                 'uom_name' => $ar->uom->uom_name ?? '-',
             ],
             'company' => [
-                'id' => $ar->company->id,
-                'company_code' => $ar->company->company_code,
-                'company_name' => $ar->company->company_name,
+                'id' => $ar->company->id ?? '-',
+                'company_code' => $ar->company->company_code ?? '-',
+                'company_name' => $ar->company->company_name ?? '-',
             ],
             'business_unit' => [
-                'id' => $ar->businessUnit->id,
+                'id' => $ar->businessUnit->id ?? '-',
                 'business_unit_code' => $ar->businessUnit->business_unit_code ?? '-',
                 'business_unit_name' => $ar->businessUnit->business_unit_name ?? '-',
             ],
             'department' => [
                 'id' => $ar->department->id,
-                'department_code' => $ar->department->department_code,
-                'department_name' => $ar->department->department_name,
-                'sync_id' => $ar->department->sync_id,
+                'department_code' => $ar->department->department_code ?? '-',
+                'department_name' => $ar->department->department_name ?? '-',
+                'sync_id' => $ar->department->sync_id ?? '-',
             ],
             'unit' => [
                 'id' => $ar->unit->id,
-                'unit_code' => $ar->unit->unit_code,
-                'unit_name' => $ar->unit->unit_name,
+                'unit_code' => $ar->unit->unit_code ?? '-',
+                'unit_name' => $ar->unit->unit_name ?? '-',
             ],
             'subunit' => [
-                'id' => $ar->subunit->id,
-                'subunit_code' => $ar->subunit->sub_unit_code,
-                'subunit_name' => $ar->subunit->sub_unit_name,
+                'id' => $ar->subunit->id ?? '-',
+                'subunit_code' => $ar->subunit->sub_unit_code ?? '-',
+                'subunit_name' => $ar->subunit->sub_unit_name ?? '-',
             ],
             'location' => [
-                'id' => $ar->location->id,
-                'location_code' => $ar->location->location_code,
-                'location_name' => $ar->location->location_name,
+                'id' => $ar->location->id ?? '-',
+                'location_code' => $ar->location->location_code ?? '-',
+                'location_name' => $ar->location->location_name ?? '-',
             ],
             'account_title' => [
-                'id' => $ar->accountTitle->id,
-                'account_title_code' => $ar->accountTitle->account_title_code,
-                'account_title_name' => $ar->accountTitle->account_title_name,
+                'id' => $ar->accountTitle->id ?? '-',
+                'account_title_code' => $ar->accountTitle->account_title_code ?? '-',
+                'account_title_name' => $ar->accountTitle->account_title_name ?? '-',
             ],
             'supplier' => [
                 'id' => $ar->supplier->id ?? '-',
@@ -186,15 +183,15 @@ trait RequestShowDataHandler
                 //TODO: This is the viewing if the attachments are multiple
                 /*
                  *
-                  $letterOfRequestMedia ? collect($letterOfRequestMedia)->map(function ($media) {
-                      return [
-                          'id' => $media->id,
-                          'file_name' => $media->file_name,
-                          'file_path' => $media->getPath(),
-                          'file_url' => $media->getUrl(),
-                      ];
-                  }) : '-',
-                */
+                $letterOfRequestMedia ? collect($letterOfRequestMedia)->map(function ($media) {
+                return [
+                'id' => $media->id,
+                'file_name' => $media->file_name,
+                'file_path' => $media->getPath(),
+                'file_url' => $media->getUrl(),
+                ];
+                }) : '-',
+                 */
                 'letter_of_request' => $letterOfRequestMedia ? [
                     'id' => $letterOfRequestMedia->id,
                     'file_name' => $letterOfRequestMedia->file_name,
@@ -225,7 +222,7 @@ trait RequestShowDataHandler
                     'file_path' => $otherAttachmentsMedia->getPath(),
                     'file_url' => $otherAttachmentsMedia->getUrl(),
                 ] : null,
-            ]
+            ],
         ];
     }
 
