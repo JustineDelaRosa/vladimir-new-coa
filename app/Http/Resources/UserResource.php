@@ -2,10 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Approvers;
-use App\Models\AssetApproval;
-use App\Models\FixedAsset;
-use App\Models\RoleManagement;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class UserResource extends JsonResource
@@ -19,12 +15,36 @@ class UserResource extends JsonResource
             'firstname' => $this->firstname,
             'lastname' => $this->lastname,
             'username' => $this->username,
-            'company_id' => $this->company_id,
-            'business_unit_id' => $this->business_unit_id,
-            'department_id' => $this->department_id,
-            'unit_id' => $this->unit_id,
-            'subunit_id' => $this->subunit_id,
-            'location_id' => $this->location_id,
+            'company' => [
+                'id' => $this->company->id ?? '-',
+                'company_code' => $this->company->company_code ?? '-',
+                'company_name' => $this->company->company_name ?? '-',
+            ],
+            'business_unit' => [
+                'id' => $this->businessUnit->id ?? '-',
+                'business_unit_code' => $this->businessUnit->unit_code ?? '-',
+                'business_unit_name' => $this->businessUnit->unit_name ?? '-',
+            ],
+            'department' => [
+                'id' => $this->department->id ?? '-',
+                'department_code' => $this->department->department_code ?? '-',
+                'department_name' => $this->department->department_name ?? '-',
+            ],
+            'unit' => [
+                'id' => $this->unit->id ?? '-',
+                'unit_code' => $this->unit->unit_code ?? '-',
+                'unit_name' => $this->unit->unit_name ?? '-',
+            ],
+            'subunit' => [
+                'id' => $this->subunit->id ?? '-',
+                'subunit_code' => $this->subunit->subunit_code ?? '-',
+                'subunit_name' => $this->subunit->subunit_name ?? '-',
+            ],
+            'location' => [
+                'id' => $this->location->id ?? '-',
+                'location_code' => $this->location->location_code ?? '-',
+                'location_name' => $this->location->location_name ?? '-',
+            ],
             'is_active' => $this->is_active,
             'role_id' => $this->role_id,
             'created_at' => $this->created_at,
