@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\AssetApproval\CreateAssetApprovalRequest;
+use App\Http\Requests\AssetApproval\UpdateAssetApprovalRequest;
 use App\Models\Approvers;
 use App\Models\AssetApproval;
 use App\Models\AssetRequest;
@@ -9,21 +12,14 @@ use App\Models\RoleManagement;
 use App\Models\User;
 use App\Repositories\ApprovedRequestRepository;
 use App\Traits\AssetApprovalHandler;
-use App\Traits\AssetMovement\TransferRequestHandler;
 use App\Traits\AssetRequestHandler;
 use App\Traits\RequestShowDataHandler;
 use App\Traits\ReusableFunctions\Reusables;
 use Essa\APIToolKit\Api\ApiResponse;
-use Essa\APIToolKit\Filters\DTO\FiltersDTO;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Http\Controllers\Controller;
-
-use App\Http\Requests\AssetApproval\CreateAssetApprovalRequest;
-use App\Http\Requests\AssetApproval\UpdateAssetApprovalRequest;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Spatie\Activitylog\Models\Activity;
+use Illuminate\Support\Arr;
 
 class AssetApprovalController extends Controller
 {
@@ -57,19 +53,23 @@ class AssetApprovalController extends Controller
 
         $assetApprovalsQuery = AssetApproval::query();
         if (!$forMonitoring) {
-            $assetApprovalsQuery->where('approver_id', $approverId);
+             $assetApprovalsQuery->where('approver_id', $approverId)->get();
         }
         $transactionNumbers = [];
         if ($this->isUserFa()) {
-            $transactionNumbers = AssetRequest::where('status', 'Approved')
-                ->where('is_fa_approved', false)
+             $transactionNumbers = AssetRequest::where('status', 'Approved')
+                ->when($status == 'Approved', function ($query) {
+                    return $query->where('is_fa_approved', true);
+                }, function ($query) {
+                    return $query->where('is_fa_approved', false);
+                })
                 ->pluck('transaction_number');
         }
 
-        $assetApprovals = $assetApprovalsQuery->where('status', $status)->useFilters()->dynamicPaginate();
+        $assetApprovals = $assetApprovalsQuery->where('status', $status)->get();
         $transactionNumbers = is_array($transactionNumbers) ? $transactionNumbers : [$transactionNumbers];
         $transactionNumbers = array_merge($transactionNumbers, $assetApprovals->pluck('transaction_number')->toArray());
-
+        $transactionNumbers = Arr::flatten($transactionNumbers);
 
         $data = AssetRequest::with('assetApproval', 'assetApproval.approver', 'assetApproval.approver.user')
             ->whereIn('transaction_number', $transactionNumbers)
@@ -77,7 +77,6 @@ class AssetApprovalController extends Controller
             ->get()
             ->groupBy('transaction_number')
             ->map(function ($assetRequests) {
-                //group it by transactionNumber
                 $assetRequest = $assetRequests->first();
                 $assetRequest->quantity = $assetRequests->sum('quantity');
                 return $this->approverViewing($assetRequest->transaction_number);
@@ -86,13 +85,14 @@ class AssetApprovalController extends Controller
 
         if ($perPage !== null) {
             $data = $this->paginateApproval($request, $data->toArray(), $perPage);
+            $data->setCollection($data->getCollection()->values());
         }
 
         return $data;
 
 //        $transactionNumbers = $assetApprovals->map(function ($item) {
-//            return $item->transaction_number;
-//        });
+        //            return $item->transaction_number;
+        //        });
 
 //        return $this->transformIndexApproval($assetApprovals, $transactionNumbers);
     }
@@ -103,7 +103,7 @@ class AssetApprovalController extends Controller
         return $this->responseCreated('AssetApproval created successfully', $assetApproval);
     }
 
-    public function show($id)
+    public function show($transactionNumber)
     {
         $user = auth('sanctum')->user();
         $role = RoleManagement::whereId($user->role_id)->value('role_name');
@@ -111,9 +111,16 @@ class AssetApprovalController extends Controller
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
         $assetApprovalQuery = AssetApproval::query();
         if (!in_array($role, $adminRoles)) {
-            $assetApprovalQuery->where('approver_id', $approverId);
+            if (!$this->isUserFa()) {
+                $assetApprovalQuery->where('approver_id', $approverId);
+            }
         }
-        $assetApproval = $assetApprovalQuery->where('id', $id)->first();
+
+        // if ($this->isUserFa()) {
+        //     $assetApprovalQuery->where('status', 'Approved');
+        // }
+
+        $assetApproval = $assetApprovalQuery->where('transaction_number', $transactionNumber)->first();
         if (!$assetApproval) {
             return $this->responseUnprocessable('Unauthorized Access');
         }
@@ -134,7 +141,7 @@ class AssetApprovalController extends Controller
         return $this->responseDeleted();
     }
 
-    public function handleRequest(CreateAssetApprovalRequest $request): JsonResponse
+    public function handleRequest(CreateAssetApprovalRequest $request)
     {
 //        $assetApprovalIds = $request->asset_approval_id;
         //$assetRequestIds = $request->asset_request_id;
@@ -142,22 +149,22 @@ class AssetApprovalController extends Controller
         $remarks = $request->remarks;
         $action = ucwords($request->action);
 
-
         return $this->requestAction($action, $transactionNumber, 'transaction_number', new AssetRequest(), new AssetApproval(), $remarks);
 
 //        switch ($action) {
-//            case 'Approve':
-//                return $this->approveRequestRepository->approveRequest($assetApprovalIds);
-//                break;
-//            case 'Return':
-//                return $this->approveRequestRepository->returnRequest($assetApprovalIds, $remarks);
-//                break;
-//            default:
-//                return $this->responseUnprocessable('Invalid Action');
-//                break;
-//        }
+        //            case 'Approve':
+        //                return $this->approveRequestRepository->approveRequest($assetApprovalIds);
+        //                break;
+        //            case 'Return':
+        //                return $this->approveRequestRepository->returnRequest($assetApprovalIds, $remarks);
+        //                break;
+        //            default:
+        //                return $this->responseUnprocessable('Invalid Action');
+        //                break;
+        //        }
     }
 
+    //TODO: To be adjust because of FA Approval
     public function getNextRequest()
     {
         $user = auth('sanctum')->user();

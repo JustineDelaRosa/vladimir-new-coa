@@ -50,11 +50,15 @@ class AssetTransferApprovalController extends Controller
         $transferNumbers = [];
         if ($this->isUserFa()) {
             $transferNumbers = AssetTransferRequest::where('status', 'Approved')
-                ->where('is_fa_approved', false)
+                ->when($status == 'Approved', function ($query) {
+                    return $query->where('is_fa_approved', true);
+                }, function ($query) {
+                    return $query->where('is_fa_approved', false);
+                })
                 ->pluck('transfer_number');
         }
 
-        $transferApproval = $transferApprovalQuery->where('status', $status)->useFilters()->get();
+        $transferApproval = $transferApprovalQuery->where('status', $status)->get();
         $transferNumbers = is_array($transferNumbers) ? $transferNumbers : [$transferNumbers];
         $transferNumbers = array_merge($transferNumbers, $transferApproval->pluck('transfer_number')->toArray());
 
