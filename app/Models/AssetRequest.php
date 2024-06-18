@@ -95,6 +95,18 @@ class AssetRequest extends Model implements HasMedia
         $this->attributes['accountable'] = $value;
     }
 
+    public function scopeWhereHasTransactionNumberSynced($query, $toPo)
+    {
+        return $query->whereIn('transaction_number', function ($query) use ($toPo) {
+            $query->select('transaction_number')
+                ->from('asset_requests')
+                ->whereNull('deleted_at')
+                ->where('synced', $toPo == 1 ? 1 : 0)
+                ->groupBy('transaction_number')
+                ->havingRaw('SUM(quantity) ' . ($toPo == 1 ? '!=' : '=') . ' SUM(quantity_delivered)');
+        });
+    }
+
     public function assetApproval(): HasMany
     {
         return $this->hasMany(AssetApproval::class, 'transaction_number', 'transaction_number');
@@ -207,5 +219,9 @@ class AssetRequest extends Model implements HasMedia
     }
     public function uom(){
         return $this->belongsTo(UnitOfMeasure::class, 'uom_id', 'id');
+    }
+
+    public function receivingWarehouse(){
+        return $this->belongsTo(Warehouse::class, 'receiving_warehouse_id', 'id');
     }
 }
