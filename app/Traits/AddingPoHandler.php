@@ -30,20 +30,20 @@ trait AddingPoHandler
 
     public function createAssetRequestQuery($toPo)
     {
-        return AssetRequest::where('status', 'Approved')
+        $query = AssetRequest::query();
+
+        $query->where('status', 'Approved')
             ->where('is_fa_approved', 1)
-            ->whereNull('deleted_at') // Exclude soft deleted records
-            ->when($toPo !== null, function ($query) use ($toPo) {
-                return $query->whereNotIn('transaction_number', function ($query) use ($toPo) {
-                    $query->select('transaction_number')
-                        ->from('asset_requests')
-                        ->whereNull('deleted_at') // Exclude soft deleted records
-                        ->groupBy('transaction_number')
-                        ->havingRaw('SUM(quantity) ' . ($toPo == 1 ? '=' : '!=') . ' SUM(quantity_delivered)');
-                });
-            })
-            ->orderBy('created_at', 'desc')
+            ->whereNull('deleted_at');
+
+        if ($toPo !== null) {
+            $query->whereHasTransactionNumberSynced($toPo);
+        }
+
+        $query->orderBy('created_at', 'desc')
             ->useFilters();
+
+        return $query;
     }
 
     public function paginate($request, $assetRequest, $perPage)
