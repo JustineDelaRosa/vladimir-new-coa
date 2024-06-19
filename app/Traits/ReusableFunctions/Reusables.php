@@ -1,10 +1,14 @@
 <?php
+
 namespace App\Traits\ReusableFunctions;
 
 use App\Models\Approvers;
+use App\Models\AssetRequest;
+use App\Models\FixedAsset;
 use App\Models\RoleManagement;
 use App\Models\User;
 use Essa\APIToolKit\Api\ApiResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 trait Reusables
 {
@@ -93,14 +97,21 @@ trait Reusables
         if ($isFaApproved) {
             $model::where($uniqueNumber, $uniqueNumberValue)->update([
                 'is_fa_approved' => true,
-                'filter' => 'Sent to Ymir', // Can be Change
             ]);
 
-//            // Add to asset movement history
-            //            $this->addToAssetMovementHistory($fixedAssets->pluck('fixed_asset_id')->toArray(), $fixedAssets[0]->created_by_id);
-            //
-            //            // Save to FA table
-            //            $this->saveToFaTable($uniqueNumberValue, $uniqueNumber, $model, 'transfer');
+            //check the $model instance is not AssetRequest
+            if (!($model instanceof AssetRequest)) {
+                // Add to asset movement history
+                $this->addToAssetMovementHistory($fixedAssets->pluck('fixed_asset_id')->toArray(), $fixedAssets[0]->created_by_id);
+
+                // Save to FA table
+                $this->saveToFaTable($uniqueNumberValue, $uniqueNumber, $model, 'transfer');
+            } else {
+                $model::where($uniqueNumber, $uniqueNumberValue)->update([
+                    'filter' => 'Sent to Ymir', // Can be Change
+                ]);
+            }
+
         }
     }
 
@@ -140,6 +151,9 @@ trait Reusables
     public function assetMovementLogger($movementRequest, $action, $modelInstance, $uniqueNumber)
     {
         $user = auth('sanctum')->user();
+        //add ed or only d to the action if it was approve or return
+        $action .= strtolower($action) == 'approve' ? 'd' : (strtolower($action) == 'return' ? 'ed' : '');
+
         activity()
             ->causedBy($user)
             ->performedOn($modelInstance)
@@ -156,4 +170,70 @@ trait Reusables
             })
             ->log($action . ' Request');
     }
+
+    public function addToAssetMovementHistory($assetIds, $requestorId)
+    {
+//        return $assetIds;
+        foreach ($assetIds as $assetId) {
+            $asset = FixedAsset::find($assetId);
+            if ($asset) {
+                $newAssetMovementHistory = $asset->replicate();
+                $newAssetMovementHistory->setTable('asset_movement_histories'); // Set the table name to 'asset_movement_histories'
+                $newAssetMovementHistory->fixed_asset_id = $asset->id; // Set the 'fixed_asset_id' field to the 'id' of the 'FixedAsset' model
+                $newAssetMovementHistory->remarks = 'From Transfer'; // Set any additional attributes
+                $newAssetMovementHistory->created_by_id = $requestorId;
+                $newAssetMovementHistory->save(); // Save the new model instance to the database
+            }
+        }
+    }
+
+    public function saveToFaTable($uniqueNumberValue, $uniqueNumber, $model, $movementType)
+    {
+        switch ($movementType) {
+            case 'transfer':
+                $this->transfer($uniqueNumberValue, $uniqueNumber, $model, $movementType);
+                break;
+            case 'pullout':
+//                $this->pullout();
+                break;
+            case 'disposal':
+//                $this->desposal();
+                break;
+            default:
+                return $this->responseUnprocessable('Invalid Action');
+
+        }
+    }
+
+    public function transfer($uniqueNumberValue, $uniqueNumber, $model, $movementType)
+    {
+        $request = $model::where($uniqueNumber, $uniqueNumberValue)->get();
+        $fixedAssetIds = $request->pluck('fixed_asset_id');
+        foreach ($fixedAssetIds as $fixedAssetId) {
+            $fixedAsset = FixedAsset::find($fixedAssetId);
+            $fixedAsset->update([
+                'company_id' => $request[0]->company_id,
+                'business_unit_id' => $request[0]->business_unit_id,
+                'department_id' => $request[0]->department_id,
+                'unit_id' => $request[0]->unit_id,
+                'subunit_id' => $request[0]->subunit_id,
+                'location_id' => $request[0]->location_id,
+                'accountability' => $request[0]->accountability,
+                'accountable' => $request[0]->accountable,
+                'remarks' => $request[0]->remarks,
+            ]);
+        }
+    }
+//    public function paginate($request, $data, $perPage)
+//    {
+//        $page = $request->input('page', 1);
+//        $offset = ($page * $perPage) - $perPage;
+//        return new LengthAwarePaginator(
+//            array_slice($data, $offset, $perPage, true),
+//            count($data),
+//            $perPage,
+//            $page,
+//            ['path' => $request->url(), 'query' => $request->query()]
+//        );
+//    }
 }
