@@ -16,7 +16,7 @@ use App\Http\Requests\AddingPo\UpdateAddingPoRequest;
 
 class AddingPoController extends Controller
 {
-    use ApiResponse, AssetRequestHandler, AddingPoHandler,RequestShowDataHandler;
+    use ApiResponse, AssetRequestHandler, AddingPoHandler, RequestShowDataHandler;
 
     public function index(Request $request)
     {
@@ -43,7 +43,7 @@ class AddingPoController extends Controller
 
     public function show(Request $request, $transactionNumber)
     {
-        $requiredRole =array_map('strtolower',['Purchase Order', 'Admin', 'Super Admin', 'Warehouse', 'Purchase Request','Po-Receiving']);
+        $requiredRole = array_map('strtolower', ['Purchase Order', 'Admin', 'Super Admin', 'Warehouse', 'Purchase Request', 'Po-Receiving']);
         $checkUserRole = strtolower(auth('sanctum')->user()->role->role_name);
 
         if (in_array($checkUserRole, $requiredRole)) {
@@ -98,5 +98,8 @@ class AddingPoController extends Controller
         } else {
             return $this->handleIdCase($id, $remarks);
         }
+    }
+    public function handleSyncData(Request $request){
+
     }
 }
