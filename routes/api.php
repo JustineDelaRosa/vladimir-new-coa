@@ -79,7 +79,7 @@ Route::GET('getIP', [PrinterIpController::class, 'getClientIP']);
 //Route::POST('auth/logout', [AuthController::class, 'Logout'])->middleware('auth:sanctum');
 //Route::GET('notification-count', [AuthController::class, 'notificationCount'])->middleware('auth:sanctum');
 
-Route::group(['middleware' => 'auth:sanctum'], function () {
+Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //ROLE MANAGEMENT
     Route::POST('setup/role', [SetupController::class, 'createRole']);
@@ -193,6 +193,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::POST('add-cost-depreciation/{id}', [AdditionalCostController::class, 'assetDepreciation']);
     Route::PATCH('add-cost/archived-add-cost/{id}', [AdditionalCostController::class, 'archived']);
     Route::POST('import-add-cost', [AdditionalCostController::class, 'additionalCostImport']);
+    //FISTO VOUCHER
+    Route::GET('fisto-voucher', [FixedAssetController::class, 'getVoucher']);
 
     //CUSTOM ASSET DEPRECIATION CALCULATION//
     Route::POST('asset-depreciation/{id}', [FixedAssetController::class, 'assetDepreciation']);
@@ -249,6 +251,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     // Route::GET('asset-approvals/{transactionNumber}', [AssetApprovalController::class, 'showtest']);
     Route::PATCH('handle-request', [AssetApprovalController::class, 'handleRequest']);
     Route::GET('next-request', [AssetApprovalController::class, 'getNextRequest']);
+    Route::GET('next-transfer', [AssetTransferApprovalController::class, 'getNextTransferRequest']);
     //APPROVAL LOGGER//
     Route::RESOURCE('approval-logs', AssetApprovalLoggerController::class);
     //DEPARTMENT UNIT APPROVER LAYER SETUP//
@@ -270,7 +273,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     //NOTIFICATION COUNT//
     Route::GET('notification-count', [AuthController::class, 'notificationCount']);
 
-    Route::GET('item-detail/{referenceNumber?}', [AssetRequestController::class, 'getItemDetails']);
+    Route::GET('item-detail/{referenceNumber?}', [AssetRequestController::class, 'getItemDetails'])->name('item-detail');
 
     //AssetTransferApprover
     Route::RESOURCE('asset-transfer-approver', AssetTransferApproverController::class);
@@ -297,11 +300,12 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     //ASSET TRANSFER APPROVAL
     Route::RESOURCE('transfer-approver', AssetTransferApprovalController::class);
-    Route::POST('transfer-approval', [AssetTransferApprovalController::class, 'transferRequestAction']);
+    Route::PATCH('transfer-approval', [AssetTransferApprovalController::class, 'transferRequestAction']);
 
     //WAREHOUSE MASTERLIST
     Route::RESOURCE('warehouse', WarehouseController::class);
     Route::PATCH('warehouse/archived-warehouse/{id}', [WarehouseController::class, 'archived']);
+
 
     Route::prefix('ymir')->group(function () {
         Route::GET('pr-request', [AddingPrController::class, 'requestToPR']);

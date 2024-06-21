@@ -45,12 +45,7 @@ class AddingPrController extends Controller
             ->values();
 
         if ($perPage !== null) {
-            $page = $request->input('page', 1);
-            $offset = $page * $perPage - $perPage;
-            $assetRequest = new LengthAwarePaginator($assetRequest->slice($offset, $perPage)->values(), $assetRequest->count(), $perPage, $page, [
-                'path' => $request->url(),
-                'query' => $request->query(),
-            ]);
+            $assetRequest->paginate($perPage);
         }
 
         return $assetRequest;
@@ -136,8 +131,6 @@ class AddingPrController extends Controller
     {
 //        $toPr = $request->get('toPr', null);
 //        $filter = $request->input('filter', 'old');
-        $startDate = $request->input('start_date', null);
-        $endDate = $request->input('end_date', null);
         $perPage = $request->input('per_page', null);
         $pagination = $request->input('pagination', null);
 
@@ -145,6 +138,7 @@ class AddingPrController extends Controller
         $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
 
         $assetRequest = AssetRequest::where('status', 'Approved')
+            ->where('is_fa_approved', true)
             ->whereNull('pr_number')
             ->whereNull('deleted_at')
             ->when($startDate && $endDate, function($query) use($startDate, $endDate){
@@ -185,6 +179,10 @@ class AddingPrController extends Controller
                 })->toArray();
                 return [
                     'transaction_number' => $assetRequest->transaction_number,
+
+                    'r_warehouse_id' => $assetRequest->receivingWarehouse->id,
+                    'r_warehouse_name' => $assetRequest->receivingWarehouse->warehouse_name,
+
                     'company_id' => $assetRequest->company->sync_id,
                     'company_code' => $assetRequest->company->company_code,
                     'company_name' => $assetRequest->company->company_name,
@@ -230,41 +228,5 @@ class AddingPrController extends Controller
         }
 
         return $assetRequest;
-    }
-
-
-    public function transformForYmir($assetRequest): array
-    {
-        $deletedQuantity = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
-        return [
-            'company' => [
-                'id' => $assetRequest->company->sync_id,
-                'company_code' => $assetRequest->company->company_code,
-                'company_name' => $assetRequest->company->company_name,
-            ],
-            'business_unit' => [
-                'id' => $assetRequest->businessUnit->sync_id,
-                'business_unit_code' => $assetRequest->businessUnit->business_unit_code,
-                'business_unit_name' => $assetRequest->businessUnit->business_unit_name,
-            ],
-            'department' => [
-                'id' => $assetRequest->department->sync_id,
-                'department_code' => $assetRequest->department->department_code,
-                'department_name' => $assetRequest->department->department_name,
-            ],
-            'subunit' => [
-                'id' => $assetRequest->subunit->sync_id,
-                'subunit_code' => $assetRequest->subunit->subunit_code,
-                'subunit_name' => $assetRequest->subunit->subunit_name,
-            ],
-            'location' => [
-                'id' => $assetRequest->location->sync_id,
-                'location_code' => $assetRequest->location->location_code,
-                'location_name' => $assetRequest->location->location_name,
-            ],
-            'list_of_items' => [
-
-            ]
-        ];
     }
 }
