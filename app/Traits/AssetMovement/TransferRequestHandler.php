@@ -286,20 +286,26 @@ trait TransferRequestHandler
 
     public function deleteRequestItem($id, $uniqueNumber, $model, $approvalModelName)
     {
-
-        //check if the user is in approvers table
+        //check if the user is in approver table
         $user = auth('sanctum')->user()->id;
         $approverId = Approvers::where('approver_id', $user)->first()->id;
         $uniqueNumberValue = $model::withTrashed()->where('id', $id)->first()->$uniqueNumber;
         $nextApprover = $this->getNextApprover($approvalModelName, $uniqueNumber, $uniqueNumberValue, $approverId);
         $requestItem = $model::withTrashed()->where('id', $id)->first();
+
+        //check if this item is the last item that is not yet deleted
+        $lastItem = $model::where($uniqueNumber, $uniqueNumberValue)->get();
+        $lastItem = $lastItem->filter(function ($item) {
+            return !$item->deleted_at;
+        });
         if (!$nextApprover) {
-            //if status is not For Approval of approver 1 or Returned then give an error
+            //if the status is not For Approval of approver 1 or Returned then give an error
             if ($requestItem->status !== 'For Approval of Approver 1' && $requestItem->status !== 'Returned') {
                 return $this->responseUnprocessable('Item cannot be deleted');
             }
         }
-        if ($nextApprover->status !== 'For Approval' && $nextApprover->status !== 'Returned') {
+
+        if ($nextApprover && $nextApprover->status !== 'For Approval' && $nextApprover->status !== 'Returned') {
             return $this->responseUnprocessable('Item cannot be deleted');
         }
 
@@ -314,6 +320,10 @@ trait TransferRequestHandler
 //        ]);
         //delete the request item
         $requestItem->update(['status' => 'Cancelled']);
+        if ($lastItem->count() == 1) {
+            $approvalModelName::where($uniqueNumber, $uniqueNumberValue)->update(['status' => 'Cancelled']);
+        }
+        $this->assetMovementLogger($requestItem->first(), 'Cancelled', $model);
         $requestItem->delete();
         $cookie = cookie('is_changed', true);
         return $this->responseSuccess('Item successfully deleted')->withCookie($cookie);
@@ -352,6 +362,8 @@ trait TransferRequestHandler
         //delete the request item
         //change the status firsts to cancelled
         $requestItem->each->update(['status' => 'Cancelled']);
+        $approvalModelName::where($uniqueNumber, $uniqueNumberValue)->update(['status' => 'Cancelled']);
+        $this->assetMovementLogger($requestItem->first(), 'Cancelled', $model);
         $requestItem->each->delete();
         $cookie = cookie('is_changed', true);
         return $this->responseSuccess('Item successfully deleted')->withCookie($cookie);
@@ -402,162 +414,6 @@ trait TransferRequestHandler
             ->deleteFileAfterSend(true);
     }
 
-    public function isUserFa(): bool
-    {
-        $user = auth('sanctum')->user()->id;
-        $faRoleIds = RoleManagement::whereIn('role_name', ['Fixed Assets', 'Fixed Asset Associate'])->pluck('id');
-        $user = User::where('id', $user)->whereIn('role_id', $faRoleIds)->exists();
-        return $user ? 1 : 0;
-    }
-
-    public function isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName): bool
-    {
-        $request = $model::where([
-            $uniqueNumber => $uniqueNumberValue,
-            'status' => 'Approved'
-        ])->exists();
-
-        return $request ? 1 : 0;
-    }
-
-    public function requestAction($action, $uniqueNumberValue, $uniqueNumber, $model, $approvalModelName, $remarks = null)
-    {
-        $user = auth('sanctum')->user()->id;
-        $approverId = Approvers::where('approver_id', $user)->first()->id;
-
-        //check if the user is the approver for this request
-        $nextApprover = $this->getNextApprover($approvalModelName, $uniqueNumber, $uniqueNumberValue, $approverId);
-        $isApprover = $approvalModelName::where($uniqueNumber, $uniqueNumberValue)
-            ->where('approver_id', $approverId)
-            ->where('status', 'For Approval')
-            ->first();
-
-        if (!$this->isUserFa() && !$this->isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName)) {
-            if (!$isApprover) {
-                return $this->responseNotFound('Request not found');
-            }
-        }
-
-        switch (strtolower($action)) {
-            case 'approve':
-                if ($this->isUserFa() && $this->isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName)) {
-                    $this->faApproval($uniqueNumberValue, $uniqueNumber, $model);
-                    break;
-                }
-                $this->approveRequest($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName, $nextApprover->layer ?? null);
-                break;
-            case 'return':
-                $this->returnRequest($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName, $remarks);
-                break;
-            default:
-                return $this->responseUnprocessable('Invalid Action');
-        }
-
-        $this->assetMovementLogger($model::where($uniqueNumber, $uniqueNumberValue)->first(), $action, $model);
-        return $this->responseSuccess('Request ' . $action . ' successfully');
-    }
-
-    public function approveRequest($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName, $nextApprover)
-    {
-        // Update the status of the approval model to 'Approved'
-        $approvalModelName::where($uniqueNumber, $uniqueNumberValue)->where('status', 'For Approval')->update(['status' => 'Approved']);
-
-        // If the approval model exists
-        if ($approvalModelName) {
-            // If there is a next approver
-            if ($nextApprover) {
-                // Update the status of the model to 'For Approval of Approver {nextApprover}'
-                $model::where($uniqueNumber, $uniqueNumberValue)->update(['status' => 'For Approval of Approver ' . $nextApprover]);
-
-                // Update the status of the approval model to 'For Approval'
-                $approvalModelName::where($uniqueNumber, $uniqueNumberValue)->where('layer', $nextApprover)->update(['status' => 'For Approval']);
-            } else {
-                // If there is no next approver, update the status of the model to 'Approved'
-                $model::where($uniqueNumber, $uniqueNumberValue)->update(['status' => 'Approved']);
-            }
-        }
-    }
-
-    public function faApproval($uniqueNumberValue, $uniqueNumber, $model)
-    {
-        $fixedAssets = $model::where($uniqueNumber, $uniqueNumberValue)->get();
-        $isFaApproved = $fixedAssets->where('is_fa_approved', 0)->where('status', 'Approved')->first();
-        if ($isFaApproved) {
-            $model::where($uniqueNumber, $uniqueNumberValue)->update(['is_fa_approved' => true]);
-
-            // Add to asset movement history
-            $this->addToAssetMovementHistory($fixedAssets->pluck('fixed_asset_id')->toArray(), $fixedAssets[0]->created_by_id);
-
-            // Save to FA table
-            $this->saveToFaTable($uniqueNumberValue, $uniqueNumber, $model, 'transfer');
-        }
-    }
-
-    public function returnRequest($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName, $remarks)
-    {
-        $approvalModelName::where($uniqueNumber, $uniqueNumberValue)
-//            ->where('status', 'For Approval')
-            ->update(['status' => 'Returned']);
-        $model::where($uniqueNumber, $uniqueNumberValue)
-            ->update([
-                'status' => 'Returned',
-                'remarks' => $remarks,
-            ]);
-    }
-
-    public function addToAssetMovementHistory($assetIds, $requestorId)
-    {
-//        return $assetIds;
-        foreach ($assetIds as $assetId) {
-            $asset = FixedAsset::find($assetId);
-            if ($asset) {
-                $newAssetMovementHistory = $asset->replicate();
-                $newAssetMovementHistory->setTable('asset_movement_histories'); // Set the table name to 'asset_movement_histories'
-                $newAssetMovementHistory->fixed_asset_id = $asset->id; // Set the 'fixed_asset_id' field to the 'id' of the 'FixedAsset' model
-                $newAssetMovementHistory->remarks = 'From Transfer'; // Set any additional attributes
-                $newAssetMovementHistory->created_by_id = $requestorId;
-                $newAssetMovementHistory->save(); // Save the new model instance to the database
-            }
-        }
-    }
-
-    public function saveToFaTable($uniqueNumberValue, $uniqueNumber, $model, $movementType)
-    {
-        switch ($movementType) {
-            case 'transfer':
-                $this->transfer($uniqueNumberValue, $uniqueNumber, $model, $movementType);
-                break;
-            case 'pullout':
-//                $this->pullout();
-                break;
-            case 'disposal':
-//                $this->desposal();
-                break;
-            default:
-                return $this->responseUnprocessable('Invalid Action');
-
-        }
-    }
-
-    public function transfer($uniqueNumberValue, $uniqueNumber, $model, $movementType)
-    {
-        $request = $model::where($uniqueNumber, $uniqueNumberValue)->get();
-        $fixedAssetIds = $request->pluck('fixed_asset_id');
-        foreach ($fixedAssetIds as $fixedAssetId) {
-            $fixedAsset = FixedAsset::find($fixedAssetId);
-            $fixedAsset->update([
-                'company_id' => $request[0]->company_id,
-                'business_unit_id' => $request[0]->business_unit_id,
-                'department_id' => $request[0]->department_id,
-                'unit_id' => $request[0]->unit_id,
-                'subunit_id' => $request[0]->subunit_id,
-                'location_id' => $request[0]->location_id,
-                'accountability' => $request[0]->accountability,
-                'accountable' => $request[0]->accountable,
-                'remarks' => $request[0]->remarks,
-            ]);
-        }
-    }
 
     public function getCurrentApprover($movementRequest)
     {
@@ -581,6 +437,12 @@ trait TransferRequestHandler
 
     public function getProcessCount($movementRequest)
     {
+        if ($movementRequest->status == 'Cancelled') {
+            return -1;
+        }
+        if ($movementRequest->status == 'Returned') {
+            return 1;
+        }
         $approver = $movementRequest->load('transferApproval')->transferApproval->where('status', 'For Approval')->first()->layer ?? null;
         if (!$approver) {
             $isFaApprove = $movementRequest->is_fa_approved;
@@ -608,12 +470,12 @@ trait TransferRequestHandler
         return $steps;
     }
 
-    public function assetMovementLogger($movementRequest, $action, $modelIncetance)
+    public function assetMovementLogger($movementRequest, $action, $modelInstance)
     {
         $user = auth('sanctum')->user();
         activity()
             ->causedBy($user)
-            ->performedOn($modelIncetance)
+            ->performedOn($modelInstance)
             ->withProperties([
                 'action' => $action,
                 'transfer_number' => $movementRequest->transfer_number,
@@ -621,7 +483,7 @@ trait TransferRequestHandler
                 'vladimir_tag_number' => $movementRequest->fixedAsset->vladimir_tag_number,
                 'description' => $movementRequest->description,
             ])
-            ->inLog('Asset Movement')
+            ->inLog(ucwords(strtolower($action)))
             ->tap(function ($activity) use ($movementRequest) {
                 $activity->subject_id = $movementRequest->transfer_number;
             })
@@ -896,7 +758,6 @@ trait TransferRequestHandler
 //            }) : [],
         ];
     }
-
 
 
     //FOR TRANSFER UPDATE
