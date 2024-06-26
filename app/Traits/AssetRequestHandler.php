@@ -27,6 +27,9 @@ trait AssetRequestHandler
     public function approverViewing($transactionNumber)
     {
         $transactionNumber = AssetRequest::where('transaction_number', $transactionNumber)->get();
+        if($transactionNumber->isEmpty()){
+            return [];
+        }
         //get the quantity of the transaction number and sum it
         $quantity = $transactionNumber->sum('quantity');
 

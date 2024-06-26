@@ -390,6 +390,7 @@ class AssetRequestController extends Controller
             );
         } else {
             $result = $unionQuery->all();
+
         }
 
         if (empty($result)) {

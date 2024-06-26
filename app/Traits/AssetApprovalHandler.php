@@ -47,4 +47,5 @@ trait AssetApprovalHandler
 
         return $assetApprovals;
     }
+
 }
