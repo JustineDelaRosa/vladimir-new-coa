@@ -169,24 +169,42 @@ class AssetApprovalController extends Controller
     {
         $user = auth('sanctum')->user();
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
-        $assetApproval = AssetApproval::where('approver_id', $approverId)
-            ->where('status', 'For Approval')
-            ->oldest()
-            ->first();
-        if (!$assetApproval) {
-            return $this->responseNotFound('No Request Found');
+        $status = 'For Approval'; // or any other status you want to check
+
+        // Check if the user is a FA approver
+        $isUserFa = $this->isUserFa();
+
+        $assetApprovalsQuery = AssetApproval::where('approver_id', $approverId);
+
+        $transactionNumbers = [];
+        if ($isUserFa) {
+            $transactionNumbers = AssetRequest::where('status', 'Approved')
+                ->when($status == 'Approved', function ($query) {
+                    return $query->where('is_fa_approved', true);
+                }, function ($query) {
+                    return $query->where('is_fa_approved', false);
+                })
+                ->pluck('transaction_number');
         }
-        $assetRequest = AssetRequest::where('transaction_number', $assetApproval->transaction_number)->get();
-        return $this->responseData($assetRequest);
+
+        $assetApprovals = $assetApprovalsQuery->where('status', $status)->get();
+        $transactionNumbers = is_array($transactionNumbers) ? $transactionNumbers : [$transactionNumbers];
+        $transactionNumbers = array_merge($transactionNumbers, $assetApprovals->pluck('transaction_number')->toArray());
+        $transactionNumbers = Arr::flatten($transactionNumbers);
+
+        $data = AssetRequest::with('assetApproval', 'assetApproval.approver', 'assetApproval.approver.user')
+            ->whereIn('transaction_number', $transactionNumbers)
+            ->get()
+            ->groupBy('transaction_number')
+            ->map(function ($assetRequests) {
+                return $this->responseData($assetRequests);
+            })
+            ->flatten(1)
+            ->values();
+
+        return $data;
     }
 
-    public function isUserFa(): bool
-    {
-        $user = auth('sanctum')->user()->id;
-        $faRoleIds = RoleManagement::whereIn('role_name', ['Fixed Assets', 'Fixed Asset Associate'])->pluck('id');
-        $user = User::where('id', $user)->whereIn('role_id', $faRoleIds)->exists();
-        return $user ? 1 : 0;
-    }
 
     public function paginateApproval($request, $data, $perPage)
     {
