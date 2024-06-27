@@ -15,35 +15,37 @@ class UserResource extends JsonResource
             'firstname' => $this->firstname,
             'lastname' => $this->lastname,
             'username' => $this->username,
-            'company' => [
-                'id' => $this->company->id ?? '-',
-                'company_code' => $this->company->company_code ?? '-',
-                'company_name' => $this->company->company_name ?? '-',
-            ],
-            'business_unit' => [
-                'id' => $this->businessUnit->id ?? '-',
-                'business_unit_code' => $this->businessUnit->unit_code ?? '-',
-                'business_unit_name' => $this->businessUnit->unit_name ?? '-',
-            ],
-            'department' => [
-                'id' => $this->department->id ?? '-',
-                'department_code' => $this->department->department_code ?? '-',
-                'department_name' => $this->department->department_name ?? '-',
-            ],
-            'unit' => [
-                'id' => $this->unit->id ?? '-',
-                'unit_code' => $this->unit->unit_code ?? '-',
-                'unit_name' => $this->unit->unit_name ?? '-',
-            ],
-            'subunit' => [
-                'id' => $this->subunit->id ?? '-',
-                'subunit_code' => $this->subunit->subunit_code ?? '-',
-                'subunit_name' => $this->subunit->subunit_name ?? '-',
-            ],
-            'location' => [
-                'id' => $this->location->id ?? '-',
-                'location_code' => $this->location->location_code ?? '-',
-                'location_name' => $this->location->location_name ?? '-',
+            'coa' => [
+                'company' => [
+                    'id' => $this->company->id ?? '-',
+                    'company_code' => $this->company->company_code ?? '-',
+                    'company_name' => $this->company->company_name ?? '-',
+                ],
+                'business_unit' => [
+                    'id' => $this->businessUnit->id ?? '-',
+                    'business_unit_code' => $this->businessUnit->business_unit_code ?? '-',
+                    'business_unit_name' => $this->businessUnit->business_unit_name ?? '-',
+                ],
+                'department' => [
+                    'id' => $this->department->id ?? '-',
+                    'department_code' => $this->department->department_code ?? '-',
+                    'department_name' => $this->department->department_name ?? '-',
+                ],
+                'unit' => [
+                    'id' => $this->unit->id ?? '-',
+                    'unit_code' => $this->unit->unit_code ?? '-',
+                    'unit_name' => $this->unit->unit_name ?? '-',
+                ],
+                'subunit' => [
+                    'id' => $this->subunit->id ?? '-',
+                    'subunit_code' => $this->subunit->sub_unit_code ?? '-',
+                    'subunit_name' => $this->subunit->sub_unit_name ?? '-',
+                ],
+                'location' => [
+                    'id' => $this->location->id ?? '-',
+                    'location_code' => $this->location->location_code ?? '-',
+                    'location_name' => $this->location->location_name ?? '-',
+                ],
             ],
             'is_active' => $this->is_active,
             'role_id' => $this->role_id,
