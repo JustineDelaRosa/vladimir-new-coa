@@ -92,7 +92,7 @@ trait RequestShowDataHandler
             })->id ?? '',
             'id' => $ar->id,
             'total_remaining' => $totalRemaining,
-            'status' => $ar->status,
+            'status' => strpos($ar->status, 'For Approval') === 0 ? 'For Approval' : ($ar->is_fa_approved ? 'Approved' : 'For Approval'),
             'transaction_number' => $ar->transaction_number,
             'reference_number' => $ar->reference_number,
             'capex_number' => $ar->capex_number ?? '-',
@@ -121,7 +121,10 @@ trait RequestShowDataHandler
             //                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
             //            ],
             'fixed_asset' => $ar->fixedAsset ? $this->transformSingleFixedAssetShowData($ar->fixedAsset) : '-',
-            'receiving_warehouse_name' => $ar->receivingWarehouse->warehouse_name ?? '-',
+            'warehouse' => [
+                'id' => $ar->receivingWarehouse->id ?? '-',
+                'warehouse_name' => $ar->receivingWarehouse->warehouse_name?? '-',
+            ],
             'requestor' => [
                 'id' => $ar->requestor->id,
                 'username' => $ar->requestor->username,
