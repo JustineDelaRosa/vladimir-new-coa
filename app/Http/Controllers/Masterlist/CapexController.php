@@ -27,12 +27,16 @@ class CapexController extends Controller
         $capexStatus = $request->status ?? 'active';
         $isActiveStatus = ($capexStatus === 'deactivated') ? 0 : 1;
 
-        $capexQuery = Capex::withTrashed()->where('is_active', $isActiveStatus)
+        $capexQuery = Capex::withTrashed()->with([
+            'subCapex' => function ($query) {
+                $query->withTrashed();
+            },
+        ])->where('is_active', $isActiveStatus)
             ->orderByDesc('created_at')
             ->useFilters()
             ->dynamicPaginate();
 
-//        $result->transform(function ($capex) {
+//        $capexQuery->transform(function ($capex) {
 //            $capex->sub_capex =
 //                $capex->subCapex
 //                    ->map(function ($sub_capex) {
