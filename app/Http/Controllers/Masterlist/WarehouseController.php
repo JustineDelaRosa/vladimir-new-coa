@@ -20,11 +20,10 @@ class WarehouseController extends Controller
         $rWarehouseStatus = $request->status ?? 'status';
         $isActiveStatus = ($rWarehouseStatus === 'deactivated') ? 0 : 1;
 
-        $rWarehouse = Warehouse::withTrashed()->where('is_active', $isActiveStatus)
+        $rWarehouse = Warehouse::withTrashed()->with('location')->where('is_active', $isActiveStatus)
             ->orderByDesc('created_at')
             ->useFilters()
             ->dynamicPaginate();
-
 
         return $rWarehouse;
     }
@@ -33,9 +32,11 @@ class WarehouseController extends Controller
     public function store(CreateWarehouseRequest $request)
     {
         $warehouse_name = ucwords(strtolower($request->warehouse_name));
+        $locationId = $request->location_id;
 
         Warehouse::create([
-            'warehouse_name' => $warehouse_name
+            'warehouse_name' => $warehouse_name,
+            'location_id' => $locationId
         ]);
 
         return $this->responseCreated('Successfully created warehouse.');
@@ -56,15 +57,17 @@ class WarehouseController extends Controller
     public function update(UpdateWarehouseRequest $request, $id)
     {
         $warehouseName = ucwords(strtolower($request->warehouse_name));
+        $locationId = $request->location_id;
         $rWarehouse = Warehouse::find($id);
         if (!$rWarehouse) {
             return $this->responseNotFound('Warehouse not found.');
         }
-        if ($rWarehouse->warehouse_name == $warehouseName) {
+        if ($rWarehouse->warehouse_name == $warehouseName && $rWarehouse->location_id == $locationId) {
             return $this->responseSuccess('No changes were made.');
         }
         $rWarehouse->update([
-            'warehouse_name' => $warehouseName
+            'warehouse_name' => $warehouseName,
+            'location_id' => $locationId
         ]);
 
         return $this->responseSuccess('Warehouse updated successfully.');
