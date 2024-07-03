@@ -775,7 +775,7 @@ trait TransferRequestHandler
             ->first();
     }
 
-    private function createTransferRequest($tagNumber, $transferNumber, $request, $createdBy, $transferApproval)
+    public function createTransferRequest($tagNumber, $transferNumber, $request, $createdBy, $transferApproval)
     {
         list($isRequesterApprover, $isLastApprover, $requesterLayer) = $this->checkIfRequesterIsApprover($createdBy, $transferApproval);
         AssetTransferRequest::create([

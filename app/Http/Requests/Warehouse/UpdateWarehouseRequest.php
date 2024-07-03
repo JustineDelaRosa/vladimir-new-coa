@@ -24,7 +24,8 @@ class UpdateWarehouseRequest extends FormRequest
     public function rules()
     {
         return [
-            'warehouse_name' => 'required|string|unique:warehouses,warehouse_name',
+            'warehouse_name' => ['required','string','unique:warehouses,warehouse_name,'.$this->route('warehouse').',id,deleted_at,NULL'],
+            'location_id' => 'required|exists:locations,id'
         ];
     }
 
@@ -33,7 +34,9 @@ class UpdateWarehouseRequest extends FormRequest
         return [
             'warehouse_name.required' => 'Warehouse name is required.',
             'warehouse_name.string' => 'Warehouse name must be a string.',
-            'warehouse_name.unique' => 'Warehouse name already exists.'
+            'warehouse_name.unique' => 'Warehouse name already exists.',
+            'location_id.exists' => 'Location does not exist.',
+            'location_id.required' => 'Location is required.'
         ];
     }
 }

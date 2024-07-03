@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\Models\AccountTitle;
 use App\Models\RequestContainer;
 use Essa\APIToolKit\Api\ApiResponse;
 
@@ -28,6 +29,7 @@ trait RequestContainerHandler
 
     private function createRequestContainer($request, $isRequesterApprover, $isLastApprover, $requesterLayer, $requesterId)
     {
+        $assetClearing = AccountTitle::where('account_title_name', 'Asset Clearing')->first()->id;
         return RequestContainer::create([
             'status' => $isLastApprover
                 ? 'Approved'
@@ -36,11 +38,11 @@ trait RequestContainerHandler
                     : 'For Approval of Approver 1'),
             'requester_id' => $requesterId,
             'capex_number' => $request->capex_number,
-            'is_addcost' => (bool)$request->feixd_asset_id,
+            'is_addcost' => (bool)$request->fixed_asset_id,
             'fixed_asset_id' => $request->fixed_asset_id ?? null,
             'type_of_request_id' => $request->type_of_request_id,
             'attachment_type' => $request->attachment_type,
-            'account_title_id' => $request->account_title_id,
+            'account_title_id' => $assetClearing,
             'accountability' => $request->accountability,
             'accountable' => $request->accountable ?? null,
             'additional_info' => $request->additional_info ?? null,
@@ -51,13 +53,14 @@ trait RequestContainerHandler
             'brand' => $request->brand ?? null,
             'quantity' => $request->quantity,
             'date_needed' => $request->date_needed,
-//            'company_id' => $request->company_id,
-//            'business_unit_id' => $request->business_unit_id,
-//            'department_id' => $request->department_id,
-//            'unit_id' => $request->unit_id,
-//            'subunit_id' => $request->subunit_id,
-//            'location_id' => $request->location_id,
+            'company_id' => $request->company_id,
+            'business_unit_id' => $request->business_unit_id,
+            'department_id' => $request->department_id,
+            'unit_id' => $request->unit_id,
+            'subunit_id' => $request->subunit_id,
+            'location_id' => $request->location_id,
             'uom_id' => $request->uom_id,
+            'receiving_warehouse_id' => $request->receiving_warehouse_id,
         ]);
     }
 

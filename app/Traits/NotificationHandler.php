@@ -21,9 +21,9 @@ trait NotificationHandler
             case 'getToRelease':
                 $response['toRelease'] += $this->$function($user);
                 break;
-            case 'getToPurchaseRequest':
-                $response['toPR'] += $this->$function($user);
-                break;
+//            case 'getToPurchaseRequest':
+//                $response['toPR'] += $this->$function($user);
+//                break;
             case 'getToReceive':
                 $response['toReceive'] += $this->$function($user);
                 break;
@@ -44,19 +44,19 @@ trait NotificationHandler
 
     private function getToRelease($user)
     {
-        $fixeAssetCount = FixedAsset::where('from_request', 1)->where('print_count', 1)->where('can_release', 1)->where('is_released', 0)->count();
+        $fixeAssetCount = FixedAsset::where('from_request', 1)->whereNotNull('print_count')->where('can_release', 1)->where('is_released', 0)->count();
         $additionalCostCount = AdditionalCost::where('from_request', 1)->where('can_release', 1)->where('is_released', 0)->count();
         return $fixeAssetCount + $additionalCostCount;
     }
 
-    private function getToPurchaseRequest($user)
-    {
-        return AssetRequest::where('status', 'Approved')->where('pr_number', null)->distinct('transaction_number')->count();
-    }
+//    private function getToPurchaseRequest($user)
+//    {
+//        return AssetRequest::where('status', 'Approved')->where('pr_number', null)->distinct('transaction_number')->count();
+//    }
 
     private function getToReceive($user)
     {
-        return AssetRequest::where('status', 'Approved')->where('pr_number', '!=', null)
+        return AssetRequest::where('status', 'Approved')->where('is_fa_approved', 1)->where('synced',1)
             ->whereRaw('quantity != quantity_delivered')->distinct('transaction_number')->count();
     }
 }

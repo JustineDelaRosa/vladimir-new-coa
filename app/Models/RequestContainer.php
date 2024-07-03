@@ -186,4 +186,8 @@ class RequestContainer extends Model implements HasMedia
     {
         return $this->belongsTo(FixedAsset::class, 'fixed_asset_id', 'id');
     }
+
+    public function receivingWarehouse(){
+        return $this->belongsTo(Warehouse::class, 'receiving_warehouse_id', 'id');
+    }
 }
