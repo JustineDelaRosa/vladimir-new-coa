@@ -2,6 +2,8 @@
 
 namespace App\Repositories;
 
+use App\Models\AssetApproval;
+use App\Models\AssetTransferRequest;
 use Carbon\Carbon;
 use App\Models\Company;
 use App\Models\Formula;
@@ -921,6 +923,7 @@ class FixedAssetRepository
     public function tranformForIndex($fixed_asset)
     {
         return [
+            'transfer' => $fixed_asset->transfer,
             'total_cost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost, $fixed_asset->acquisition_cost),
             'total_adcost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost),
             'additional_cost_count' => $fixed_asset->additional_cost_count,
@@ -1027,9 +1030,6 @@ class FixedAssetRepository
                 'location:id,location_name,location_code',
                 'accountTitle:id,account_title_name,account_title_code'
             ])
-            ->when($movement == 'transfer', function ($query) {
-                $query->doesntHave('notOnTransferRequest');
-            })
             ->where(function ($query) {
                 $query->where('from_request', '!=', 1)
                     ->orWhere(function ($query) {
@@ -1037,6 +1037,12 @@ class FixedAssetRepository
                             ->where('is_released', 1);
                     });
             })->get();
+
+        $fixed_assets = $fixed_assets->map(function ($fixedAsset) {
+            $fixedAsset->transfer = $fixedAsset->isStillInTransferApproval() ? 1 : 0;
+            return $fixedAsset;
+        });
+
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
             'data' => $this->transformIndex($fixed_assets)
