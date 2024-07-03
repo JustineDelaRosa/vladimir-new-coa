@@ -81,23 +81,23 @@ class MajorCategoryController extends Controller
         $major_category_name = ucwords(strtolower($request->major_category_name));
         $est_useful_life = $request->est_useful_life;
 
-        $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name)
-            ->exists();
-        if ($majorCategory) {
-//            return response()->json(
-//                [
-//                    'message' => 'The given data was invalid.',
-//                    'errors' => [
-//                        'major_category_name' => [
-//                            'The major category name has already been taken.'
-//                        ]
-//                    ]
-//                ],
-//                422
-//            );
-
-            return $this->responseUnprocessable('The major category name has already been taken.');
-        }
+//        $majorCategory = MajorCategory::withTrashed()->where('major_category_name', $major_category_name)
+//            ->exists();
+//        if ($majorCategory) {
+////            return response()->json(
+////                [
+////                    'message' => 'The given data was invalid.',
+////                    'errors' => [
+////                        'major_category_name' => [
+////                            'The major category name has already been taken.'
+////                        ]
+////                    ]
+////                ],
+////                422
+////            );
+//
+//            return $this->responseUnprocessable('The major category name has already been taken.');
+//        }
 
 
         $majorCategory = MajorCategory::create([
