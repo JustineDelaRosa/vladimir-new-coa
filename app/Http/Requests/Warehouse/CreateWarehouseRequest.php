@@ -25,6 +25,7 @@ class CreateWarehouseRequest extends FormRequest
     {
         return [
             'warehouse_name' => 'required|string|unique:warehouses,warehouse_name',
+            'location_id' => 'required|exists:locations,id',
 //            'is_active' => 'required|boolean'
         ];
     }
@@ -34,7 +35,9 @@ class CreateWarehouseRequest extends FormRequest
         return [
             'warehouse_name.required' => 'Warehouse name is required.',
             'warehouse_name.string' => 'Warehouse name must be a string.',
-            'warehouse_name.unique' => 'Warehouse name already exists.'
+            'warehouse_name.unique' => 'Warehouse name already exists.',
+            'location_id.required' => 'Location is required.',
+            'location_id.exists' => 'Location does not exist.',
 
         ];
     }
