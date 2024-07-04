@@ -17,6 +17,7 @@ use App\Models\Formula;
 use App\Models\Location;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
+use App\Models\PoBatch;
 use App\Models\Status\DepreciationStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
@@ -534,5 +535,35 @@ class FixedAssetController extends Controller
         //download file from storage/sample
         $path = storage_path('app/sample/fixed_asset.xlsx');
         return response()->download($path);
+    }
+
+
+    //FISTO
+    public function getVoucher(Request $request)
+    {
+        $poFromRequest = $request->query('po_no');
+        $rrFromRequest = $request->query('rr_no');
+        $poBatches = PoBatch::with('fistoTransaction')->where('po_no', "PO#" . $poFromRequest)->orderBy('request_id')->get();
+
+        $poBatch = $poBatches->first(function ($poBatch) use ($rrFromRequest) {
+            $rr_group = json_decode($poBatch->rr_group);
+            return in_array($rrFromRequest, $rr_group);
+        });
+
+        if ($poBatch) {
+            if ($poBatch->fistoTransaction->voucher_no == null || $poBatch->fistoTransaction->voucher_month == null) {
+                return $this->responseNotFound('No Voucher Found');
+            }
+            $result = [
+                'request_id' => $poBatch->request_id,
+                'voucher_no' => $poBatch->fistoTransaction->voucher_no ?? null,
+                'voucher_date' => $poBatch->fistoTransaction->voucher_month ?? null,
+                'rr_group' => json_decode($poBatch->rr_group)
+            ];
+        } else {
+            return $this->responseNotFound('No Voucher Found');
+        }
+
+        return $result;
     }
 }
