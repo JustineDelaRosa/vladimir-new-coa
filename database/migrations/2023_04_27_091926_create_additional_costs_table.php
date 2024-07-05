@@ -30,6 +30,7 @@ class CreateAdditionalCostsTable extends Migration
             $table->string('po_number')->nullable();
             $table->string('rr_number')->nullable();
 //            $table->string('wh_number')->nullable();
+            $table->unsignedInteger('warehouse_id')->nullable();
             $table->unsignedInteger('warehouse_number_id')->nullable();
             $table->boolean('from_request')->default(0);
             $table->boolean('can_release')->default(0);
@@ -146,6 +147,10 @@ class CreateAdditionalCostsTable extends Migration
             $table->foreign('uom_id')
                 ->references('id')
                 ->on('unit_of_measures')
+                ->onDelete('cascade');
+            $table->foreign('warehouse_id')
+                ->references('id')
+                ->on('warehouses')
                 ->onDelete('cascade');
         });
     }

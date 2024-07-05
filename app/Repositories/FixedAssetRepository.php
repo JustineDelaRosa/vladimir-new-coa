@@ -258,6 +258,7 @@ class FixedAssetRepository
             'pr_number',
             'po_number',
             'rr_number',
+            'warehouse_id',
             'warehouse_number_id',
             'capex_id',
             'sub_capex_id',
@@ -311,6 +312,7 @@ class FixedAssetRepository
             'additional_costs.pr_number',
             'additional_costs.po_number',
             'additional_costs.rr_number',
+            'additional_costs.warehouse_id',
             'additional_costs.warehouse_number_id',
             'fixed_assets.capex_id AS capex_id',
             'fixed_assets.sub_capex_id AS sub_capex_id',
@@ -499,6 +501,10 @@ class FixedAssetRepository
                 'id' => $fixed_asset->warehouseNumber->id ?? '-',
                 'warehouse_number' => $fixed_asset->warehouseNumber->warehouse_number ?? '-',
             ],
+            'warehouse' => [
+                'id' => $fixed_asset->warehouse->id ?? '-',
+                'warehouse_name' => $fixed_asset->warehouse->warehouse_name ?? '-',
+            ],
             'from_request' => $fixed_asset->from_request ?? '-',
             'can_release' => $fixed_asset->can_release ?? '-',
             'capex' => [
@@ -648,6 +654,10 @@ class FixedAssetRepository
                         'id' => $additional_cost->warehouseNumber->id ?? '-',
                         'warehouse_number' => $additional_cost->warehouseNumber->warehouse_number ?? '-',
                     ],
+                    'warehouse' => [
+                        'id' => $additional_cost->warehouse->id ?? '-',
+                        'warehouse_name' => $additional_cost->warehouse->warehouse_name ?? '-',
+                    ],
                     'from_request' => $additional_cost->from_request ?? '-',
                     'can_release' => $additional_cost->can_release ?? '-',
                     'add_cost_sequence' => $additional_cost->add_cost_sequence ?? '-',
@@ -787,6 +797,10 @@ class FixedAssetRepository
             'warehouse_number' => [
                 'id' => $fixed_asset->warehouseNumber->id ?? '-',
                 'warehouse_number' => $fixed_asset->warehouseNumber->warehouse_number ?? '-',
+            ],
+            'warehouse' => [
+                'id' => $fixed_asset->warehouse->id ?? '-',
+                'warehouse_name' => $fixed_asset->warehouse->warehouse_name ?? '-',
             ],
             'from_request' => $fixed_asset->from_request ?? '-',
             'can_release' => $fixed_asset->can_release ?? '-',
@@ -939,6 +953,10 @@ class FixedAssetRepository
             'warehouse_number' => [
                 'id' => $fixed_asset->warehouseNumber->id ?? '-',
                 'warehouse_number' => $fixed_asset->warehouseNumber->warehouse_number ?? '-',
+            ],
+            'warehouse' => [
+                'id' => $fixed_asset->warehouse->id ?? '-',
+                'warehouse_name' => $fixed_asset->warehouse->warehouse_name ?? '-',
             ],
             'capex_number' => $fixed_asset->capex_number ?? '-',
             'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,

@@ -22,6 +22,7 @@ class CreateFixedAssetsTable extends Migration
             $table->string('po_number')->nullable();
             $table->string('rr_number')->nullable();
 //            $table->string('wh_number')->nullable();
+            $table->unsignedInteger('warehouse_id')->nullable();
             $table->unsignedInteger('warehouse_number_id')->nullable();
             $table->unsignedInteger('capex_id')->nullable();
             $table->string('capex_number')->nullable();
@@ -161,6 +162,10 @@ class CreateFixedAssetsTable extends Migration
                 ->foreign('uom_id')
                 ->references('id')
                 ->on('unit_of_measures');
+            $table
+                ->foreign('warehouse_id')
+                ->references('id')
+                ->on('warehouses');
         });
     }
 
