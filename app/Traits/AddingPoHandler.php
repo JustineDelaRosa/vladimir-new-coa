@@ -15,6 +15,7 @@ use App\Repositories\VladimirTagGeneratorRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 trait AddingPoHandler
 {
@@ -30,10 +31,14 @@ trait AddingPoHandler
 
     public function createAssetRequestQuery($toPo)
     {
+        $userLocationId = auth('sanctum')->user()->location_id;
         $query = AssetRequest::query();
 
         $query->where('status', 'Approved')
             ->where('is_fa_approved', 1)
+            ->whereHas('receivingWarehouse', function ($query) use($userLocationId) {
+                $query->where('location_id', $userLocationId);
+            })
             ->whereNull('deleted_at');
 
         if ($toPo !== null) {
@@ -167,7 +172,6 @@ trait AddingPoHandler
         // Get the count of all items from FixedAsset and AdditionalCost for this transaction number
         $fixedAssetCount = FixedAsset::where('transaction_number', $assetRequest->transaction_number)->count();
         $additionalCostCount = AdditionalCost::where('transaction_number', $assetRequest->transaction_number)->count();
-
         // Get the total quantity of all items in the request
         $totalQuantity = $allItemInRequest->sum('quantity');
 
@@ -216,6 +220,7 @@ trait AddingPoHandler
         } else {
             $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost);
         }
+
     }
 
 
@@ -504,4 +509,45 @@ trait AddingPoHandler
         }
     }
 
+    protected function validateSyncData($data, $apiUrl, $bearerToken): ?JsonResponse
+    {
+        if ($data === null) {
+            return $this->responseUnprocessable('No data to sync');
+        }
+        if (is_null($apiUrl) || is_null($bearerToken)) {
+            return $this->responseUnprocessable('API URL or Bearer Token is not configured properly.');
+        }
+        return null;
+    }
+
+    protected function processAsset($asset, $userLocationId, $bearerToken, $apiUrl)
+    {
+        $transactionNumber = $asset['transaction_no'];
+        $assetRequest = AssetRequest::where('filter', 'Sent to Ymir')
+            ->where('transaction_number', $transactionNumber)
+            ->where('reference_number', $asset['order']['item_code'])
+            ->whereHas('receivingWarehouse', function ($query) use ($userLocationId) {
+                $query->where('location_id', $userLocationId);
+            })->first();
+
+        if (!$assetRequest) {
+            return;
+        }
+
+        foreach ($asset['rr_orders'] as $rrOrder) {
+            $assetRequest->update([
+                'synced' => 1,
+                'pr_number' => $asset['po_number'],
+                'po_number' => $asset['pr_number'],
+                'rr_number' => $rrOrder['rr_number'],
+                'supplier_id' => $asset['order']['supplier'],
+                'quantity_delivered' => $assetRequest->quantity_delivered + $rrOrder['quantity_receive'],
+                'acquisition_date' => $rrOrder['delivery_date'],
+                'acquisition_cost' => $asset['order']['unit_price'],
+            ]);
+            $this->createNewAssetRequests($assetRequest, $rrOrder['quantity_receive']);
+            Http::withHeaders(['Authorization' => 'Bearer ' . $bearerToken,])->put($apiUrl, ['rr_number' => $rrOrder['rr_number']]);
+        }
+        $this->updateRequestStatusFilter($assetRequest);
+    }
 }

@@ -13,6 +13,7 @@ use App\Http\Controllers\Controller;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Http\Requests\AddingPo\UpdateAddingPoRequest;
+use Illuminate\Support\Facades\Http;
 
 class AddingPoController extends Controller
 {
@@ -27,6 +28,11 @@ class AddingPoController extends Controller
             ->groupBy('transaction_number')->map(function ($assetRequestCollection) {
                 $assetRequest = $assetRequestCollection->first();
                 $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+                $anyRecentlyUpdated = $assetRequestCollection->contains(function ($item) {
+                    return $item->updated_at->diffInMinutes(now()) < 2;
+                });
+
+                $assetRequest->newly_sync = $anyRecentlyUpdated ? 1 : 0;
                 return $this->transformIndexAssetRequest($assetRequest);
             })->values();
 
@@ -99,7 +105,104 @@ class AddingPoController extends Controller
             return $this->handleIdCase($id, $remarks);
         }
     }
-    public function handleSyncData(Request $request){
 
+    public function handleSyncData(Request $request)
+    {
+        $userLocationId = auth('sanctum')->user()->location_id;
+        $data = $request->get('result');
+        $apiUrl = config('ymir-api.ymir_put_api_url');
+        $bearerToken = config('ymir-api.ymir_put_api_token');
+        if ($data == null) {
+            return $this->responseUnprocessable('No data to sync');
+        }
+        if (is_null($apiUrl) || is_null($bearerToken)) {
+            return $this->responseUnprocessable('API URL or Bearer Token is not configured properly.');
+        }
+        $itemReceivedCount = 0;
+        $cancelledCount = 0;
+        $rrNumbers = [];
+        foreach ($data as $asset) {
+            $transactionNumber = $asset['transaction_no'];
+            $poNo = $asset['po_number'];
+            $prNo = $asset['pr_number'];
+            $supplier = $asset['order']['supplier'];
+            $unitPrice = $asset['order']['unit_price'];
+            $referenceNumber = $asset['order']['item_code'];
+//            $quantityDelivered = $asset['order']['quantity_delivered'];
+            $deletedAt = $asset['cancelled_at'];
+            $remaining = $asset['order']['remaining'];
+
+            $assetRequest = AssetRequest::where('filter', 'Sent to Ymir')
+                ->where('transaction_number', $transactionNumber)
+                ->where('reference_number', $referenceNumber)
+                ->whereHas('receivingWarehouse', function ($query) use ($userLocationId) {
+                    $query->where('location_id', $userLocationId);
+                })->first();
+            if ($assetRequest && $deletedAt != null) {
+                $replicatedAssetRequest = $assetRequest->replicate();
+                $replicatedAssetRequest->quantity = $remaining;
+                $replicatedAssetRequest->quantity_delivered = 0;
+                $replicatedAssetRequest->filter = NULL;
+                $replicatedAssetRequest->save();
+                $replicatedAssetRequest->delete();
+
+                $assetRequest->quantity -= $remaining;
+                $assetRequest->save();
+
+                $cancelledCount++;
+            }
+            if ($assetRequest) {
+                foreach ($asset['rr_orders'] as $rrOrder) {
+                    if($rrOrder['sync'] == 1) {
+                        continue;
+                    }
+                    $assetRequest->update([
+                        'synced' => 1,
+                        'pr_number' => $prNo,
+                        'po_number' => $poNo,
+                        'rr_number' => $rrOrder['rr_number'],
+                        'supplier_id' => $supplier,
+                        'quantity_delivered' => $assetRequest->quantity_delivered + $rrOrder['quantity_receive'],
+                        'acquisition_date' => $rrOrder['delivery_date'],
+                        'acquisition_cost' => $unitPrice,
+                    ]);
+                    $this->createNewAssetRequests($assetRequest, $rrOrder['quantity_receive']);
+                    $rrNumbers[] = [
+                        'rr_number' => $rrOrder['rr_number'],
+                    ];
+//                    Http::withHeaders(['Authorization' => 'Bearer ' . $bearerToken,])
+//                        ->put($apiUrl, ['rr_number' => $rrOrder['rr_number']]);
+                    $itemReceivedCount++;
+                }
+                $this->updateRequestStatusFilter($assetRequest);
+            }
+        }
+        if (!empty($rrNumbers)) {
+            Http::withHeaders(['Authorization' => 'Bearer ' . $bearerToken])
+                ->put($apiUrl, ['rr_numbers' => $rrNumbers]);
+        }
+        $data = [
+            'synced' => $itemReceivedCount,
+            'cancelled' => $cancelledCount,
+        ];
+        return $this->responseSuccess('successfully sync received asset', $data);
     }
+//    public function handleSyncData(Request $request)
+//    {
+//        $userLocationId = auth('sanctum')->user()->location_id;
+//        $data = $request->get('result');
+//        $apiUrl = config('api.ymir_put_api_url');
+//        $bearerToken = config('api.ymir_put_api_token');
+//
+//        $validationResponse = $this->validateSyncData($data, $apiUrl, $bearerToken);
+//        if ($validationResponse !== null) {
+//            return $validationResponse;
+//        }
+//
+//        foreach ($data as $asset) {
+//            $this->processAsset($asset, $userLocationId, $bearerToken, $apiUrl);
+//        }
+//
+//        return $this->responseSuccess('Successfully synced received asset');
+//    }
 }

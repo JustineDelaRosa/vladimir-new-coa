@@ -141,7 +141,7 @@ class AddingPrController extends Controller
             ->where('is_fa_approved', true)
             ->whereNull('pr_number')
             ->whereNull('deleted_at')
-            ->when($startDate && $endDate, function($query) use($startDate, $endDate){
+            ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
                 return $query->whereBetween('created_at', [$startDate, $endDate]);
             })
 //            ->when($toPr !== null, function ($query) use ($toPr) {
@@ -158,6 +158,7 @@ class AddingPrController extends Controller
                 $listOfItems = $assetRequestCollection->map(function ($item) {
                     return [
 //                        'item_id' => $item->id,
+                        'reference_number' => $item->reference_number,
                         'item_code' => $item->reference_number,
                         'item_name' => $item->asset_description,
                         'remarks' => $item->asset_specification,
