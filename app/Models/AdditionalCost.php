@@ -35,30 +35,26 @@ class AdditionalCost extends Model implements HasMedia
      * @throws FileDoesNotExist
      * @throws FileIsTooBig
      */
-    public function storeBase64Image(string $base64Image, string $receiver)
+    public function storeBase64Images(array $images)
     {
-        // Decode the base64 image data
-        $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64Image));
+        foreach ($images as $key => $base64Image) {
+            // Decode the base64 image data
+            $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64Image));
 
-        // Create a temporary image file
-        $receiver = Str::slug($receiver);
-        $fileName = $receiver . '-signature.png';
-        $filePath = sys_get_temp_dir() . '/' . $fileName;
-        file_put_contents($filePath, $imageData);
-        //check if the file exists
-        if (!file_exists($filePath)) {
-            return response()->json(['message' => 'File not found'], 404);
-        }
+            // Create a temporary image file
+//            $imageName = Str::slug($key);
+            $fileName = $key . '.png';
+            $filePath = sys_get_temp_dir() . '/' . $fileName;
+            file_put_contents($filePath, $imageData);
 
-        // Store the image file to the Spatie Media Library
-        $this->addMedia($filePath)
-            ->toMediaCollection($receiver . '-signature');
-        //return the media collection
-//        return $this->getMedia($receiver.'-signature')->first()->getPath();
+            // Store the image file to the Spatie Media Library
+            $this->addMedia($filePath)
+                ->toMediaCollection($key);
 
-        // Delete the temporary image file
-        if (file_exists($filePath)) {
-            unlink($filePath);
+            // Delete the temporary image file
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
         }
     }
 
@@ -160,6 +156,9 @@ class AdditionalCost extends Model implements HasMedia
 
     public function uom(){
         return $this->belongsTo(UnitOfMeasure::class, 'uom_id', 'id');
+    }
+    public function warehouse(){
+        return $this->belongsTo(Warehouse::class, 'warehouse_id', 'id');
     }
 
 //    public function getAccountableAttribute($value)
