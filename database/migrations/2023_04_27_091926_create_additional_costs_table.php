@@ -17,6 +17,7 @@ class CreateAdditionalCostsTable extends Migration
         Schema::create('additional_costs', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('requester_id')->nullable();
+            $table->boolean('is_memo_printed')->default(false);
             $table->string('transaction_number')->nullable();
             $table->string('reference_number')->nullable();
             $table->unsignedInteger('fixed_asset_id');

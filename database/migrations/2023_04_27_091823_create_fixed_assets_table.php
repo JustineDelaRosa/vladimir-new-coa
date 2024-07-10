@@ -16,6 +16,7 @@ class CreateFixedAssetsTable extends Migration
         Schema::create('fixed_assets', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('requester_id')->nullable();
+            $table->boolean('is_memo_printed')->default(false);
             $table->string('transaction_number')->nullable();
             $table->string('reference_number')->nullable();
             $table->string('pr_number')->nullable();
