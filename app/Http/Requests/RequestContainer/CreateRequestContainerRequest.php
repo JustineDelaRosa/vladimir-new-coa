@@ -94,7 +94,7 @@ class CreateRequestContainerRequest extends BaseRequest
             'unit_id' => ['nullable', 'exists:units,id', new UnitValidation(request()->department_id)],
             'subunit_id' => ['nullable', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
             'location_id' => ['nullable', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
-            'account_title_id' => 'nullable|exists:account_titles,id',
+//            'account_title_id' => 'nullable|exists:account_titles,id',
             'uom_id' => 'required|exists:unit_of_measures,id',
             'receiving_warehouse_id' => 'required|exists:warehouses,id',
         ];
