@@ -12,6 +12,7 @@ trait NotificationHandler
     private function executeFunction($function, $user, $response)
     {
         switch ($function) {
+            case 'getFaApproval':
             case 'getToApproveCount':
                 $response['toApproveCount'] += $this->$function($user);
                 break;
@@ -58,5 +59,12 @@ trait NotificationHandler
     {
         return AssetRequest::where('status', 'Approved')->where('is_fa_approved', 1)->where('synced',1)
             ->whereRaw('quantity != quantity_delivered')->distinct('transaction_number')->count();
+    }
+
+    private function getFaApproval($user){
+        $approverId = Approvers::where('approver_id', $user->id)->value('id');
+        $assetApproval = AssetApproval::where('approver_id', $approverId)->where('status', 'For pAproval')->count();
+        $forFaApproval = AssetRequest::where('status', 'Approved')->where('is_fa_approved', 0)->distinct('transaction_number')->count();
+        return $assetApproval + $forFaApproval;
     }
 }
