@@ -12,7 +12,8 @@ use Illuminate\Support\Str;
 
 trait AssetReleaseHandler
 {
-    public function assetReleaseActivityLog($AssetToRelease, $isClaimed = false){
+    public function assetReleaseActivityLog($AssetToRelease, $isClaimed = false)
+    {
         $user = auth('sanctum')->user();
         $assetRequests = new AssetRequest();
         activity()
@@ -26,7 +27,7 @@ trait AssetReleaseHandler
                     $activity->subject_id = $AssetToRelease->transaction_number;
                 }
             })
-            ->log($isClaimed ? "Claimed by $assetRequests->received_by"  : "Asset is Released by $user->employee_id - $user->firstname $user->lastname");
+            ->log($isClaimed ? "Claimed by $assetRequests->received_by" : "Asset is Released by $user->employee_id - $user->firstname $user->lastname");
     }
 
     private function composeLogPropertiesRelease($assetToRelease): array
@@ -84,13 +85,29 @@ trait AssetReleaseHandler
         $firstQuery = FixedAsset::select($fixedAssetFields)
             ->where('from_request', 1)
             ->where('can_release', 1)
-            ->where('is_released', $isReleased);
+            ->where('is_released', $isReleased)
+            ->where(function ($query) {
+                $query->where('accountability', 'Common')
+                    ->where('is_memo_printed', 0)
+                    ->orWhere(function ($query) {
+                        $query->where('accountability', 'Personal Issued')
+                            ->where('is_memo_printed', 1);
+                    });
+            });
 
         $secondQuery = AdditionalCost::select($additionalCostFields)
             ->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
             ->where('additional_costs.from_request', 1)
             ->where('additional_costs.can_release', 1)
-            ->where('additional_costs.is_released', $isReleased);
+            ->where('additional_costs.is_released', $isReleased)
+            ->where(function ($query) {
+                $query->where('additional_costs.accountability', 'Common')
+                    ->where('additional_costs.is_memo_printed', 0)
+                    ->orWhere(function ($query) {
+                        $query->where('additional_costs.accountability', 'Personal Issued')
+                            ->where('additional_costs.is_memo_printed', 1);
+                    });
+            });
 
         return $firstQuery->unionAll($secondQuery)->orderBy('created_at', 'desc')->get();
     }
@@ -110,6 +127,7 @@ trait AssetReleaseHandler
             'pr_number',
             'po_number',
             'rr_number',
+            'warehouse_id',
             'warehouse_number_id',
             'capex_id',
             'sub_capex_id',
@@ -169,6 +187,7 @@ trait AssetReleaseHandler
             'additional_costs.pr_number',
             'additional_costs.po_number',
             'additional_costs.rr_number',
+            'additional_costs.warehouse_id',
             'additional_costs.warehouse_number_id',
             'fixed_assets.capex_id AS capex_id',
             'fixed_assets.sub_capex_id AS sub_capex_id',
@@ -232,7 +251,10 @@ trait AssetReleaseHandler
 
     public function transformSingleFixedAsset($fixed_asset): array
     {
-            $signature = $fixed_asset->getMedia(Str::slug($fixed_asset->received_by) . '-signature')->first();
+        $signature = $fixed_asset->getMedia(Str::slug($fixed_asset->received_by) . '-signature')->first();
+        $receiverImg = $fixed_asset->getMedia('receiverImg')->first();
+        $assignmentMemoImg = $fixed_asset->getMedia('assignmentMemoImg')->first();
+        $authorizationMemoImg = $fixed_asset->getMedia('authorizationMemoImg')->first();
         return [
 //            'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
@@ -250,6 +272,10 @@ trait AssetReleaseHandler
             'warehouse_number' => [
                 'id' => $fixed_asset->warehouseNumber->id ?? '-',
                 'warehouse_number' => $fixed_asset->warehouseNumber->warehouse_number ?? '-',
+            ],
+            'warehouse' => [
+                'id' => $fixed_asset->warehouse->id ?? '-',
+                'warehouse_name' => $fixed_asset->warehouse->warehouse_name ?? '-',
             ],
             'from_request' => $fixed_asset->from_request ?? '-',
             'can_release' => $fixed_asset->can_release ?? '-',
@@ -383,14 +409,38 @@ trait AssetReleaseHandler
             'print' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
             'last_printed' => $fixed_asset->last_printed,
             'tagging' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
-            'signature' => $signature ? [
-                'id' => $signature->id,
-                'file_name' => $signature->file_name,
-                'file_path' => $signature->getPath(),
-                'file_url' => $signature->getUrl(),
-                'collection_name' => $signature->collection_name,
-                'viewing' => $this->convertImageToBase64($signature->getPath()),
+            'receiverImg' => $receiverImg ? [
+                'id' => $receiverImg->id,
+                'file_name' => $receiverImg->file_name,
+                'file_path' => $receiverImg->getPath(),
+                'file_url' => $receiverImg->getUrl(),
+                'collection_name' => $receiverImg->collection_name,
+                'viewing' => $this->convertImageToBase64($receiverImg->getPath()),
             ] : null,
+            'assignmentMemoImg' => $assignmentMemoImg ? [
+                'id' => $assignmentMemoImg->id,
+                'file_name' => $assignmentMemoImg->file_name,
+                'file_path' => $assignmentMemoImg->getPath(),
+                'file_url' => $assignmentMemoImg->getUrl(),
+                'collection_name' => $assignmentMemoImg->collection_name,
+                'viewing' => $this->convertImageToBase64($assignmentMemoImg->getPath()),
+            ] : null,
+            'authorizationMemoImg' => $authorizationMemoImg ? [
+                'id' => $authorizationMemoImg->id,
+                'file_name' => $authorizationMemoImg->file_name,
+                'file_path' => $authorizationMemoImg->getPath(),
+                'file_url' => $authorizationMemoImg->getUrl(),
+                'collection_name' => $authorizationMemoImg->collection_name,
+                'viewing' => $this->convertImageToBase64($authorizationMemoImg->getPath()),
+            ] : null,
+//            'signature' => $signature ? [
+//                'id' => $signature->id,
+//                'file_name' => $signature->file_name,
+//                'file_path' => $signature->getPath(),
+//                'file_url' => $signature->getUrl(),
+//                'collection_name' => $signature->collection_name,
+//                'viewing' => $this->convertImageToBase64($signature->getPath()),
+//            ] : null,
             'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
                 return [
                     'id' => $additional_cost->id ?? '-',
@@ -408,6 +458,10 @@ trait AssetReleaseHandler
                     'warehouse_number' => [
                         'id' => $additional_cost->warehouseNumber->id ?? '-',
                         'warehouse_number' => $additional_cost->warehouseNumber->warehouse_number ?? '-',
+                    ],
+                    'warehouse' => [
+                        'id' => $additional_cost->warehouse->id ?? '-',
+                        'warehouse_name' => $additional_cost->warehouse->warehouse_name ?? '-',
                     ],
                     'from_request' => $additional_cost->from_request ?? '-',
                     'can_release' => $additional_cost->can_release ?? '-',
@@ -550,6 +604,10 @@ trait AssetReleaseHandler
             'warehouse_number' => [
                 'id' => $fixed_asset->warehouseNumber->id ?? '-',
                 'warehouse_number' => $fixed_asset->warehouseNumber->warehouse_number ?? '-',
+            ],
+            'warehouse' => [
+                'id' => $fixed_asset->warehouse->id ?? '-',
+                'warehouse_name' => $fixed_asset->warehouse->warehouse_name ?? '-',
             ],
             'from_request' => $fixed_asset->from_request ?? '-',
             'can_release' => $fixed_asset->can_release ?? '-',
@@ -741,7 +799,10 @@ trait AssetReleaseHandler
 
     public function transformSingleAdditionalCost($additional_cost): array
     {
-        $signature = $additional_cost->getMedia(Str::slug($additional_cost->received_by) . '-signature')->first();
+//        $signature = $additional_cost->getMedia(Str::slug($additional_cost->received_by) . '-signature')->first();
+        $receiverImg = $additional_cost->getMedia('receiverImg')->first();
+        $assignmentMemoImg = $additional_cost->getMedia('assignmentMemoImg')->first();
+        $authorizationMemoImg = $additional_cost->getMedia('authorizationMemoImg')->first();
         return [
             //            'total_adcost' => $this->calculationRepository->getTotalCost($additional_cost->fixedAsset->additionalCosts),
             'id' => $additional_cost->id,
@@ -765,6 +826,10 @@ trait AssetReleaseHandler
             'warehouse_number' => [
                 'id' => $additional_cost->warehouseNumber->id ?? '-',
                 'warehouse_number' => $additional_cost->warehouseNumber->warehouse_number ?? '-',
+            ],
+            'warehouse' => [
+                'id' => $additional_cost->warehouse->id ?? '-',
+                'warehouse_name' => $additional_cost->warehouse->warehouse_name ?? '-',
             ],
             'from_request' => $additional_cost->from_request ?? '-',
             'can_release' => $additional_cost->can_release ?? '-',
@@ -891,14 +956,38 @@ trait AssetReleaseHandler
                 'account_title_code' => $additional_cost->accountTitle->account_title_code ?? '-',
                 'account_title_name' => $additional_cost->accountTitle->account_title_name ?? '-',
             ],
-            'signature' => $signature ? [
-                'id' => $signature->id,
-                'file_name' => $signature->file_name,
-                'file_path' => $signature->getPath(),
-                'file_url' => $signature->getUrl(),
-                'collection_name' => $signature->collection_name,
-                'viewing' => $this->convertImageToBase64($signature->getPath()),
+            'receiverImg' => $receiverImg ? [
+                'id' => $receiverImg->id,
+                'file_name' => $receiverImg->file_name,
+                'file_path' => $receiverImg->getPath(),
+                'file_url' => $receiverImg->getUrl(),
+                'collection_name' => $receiverImg->collection_name,
+                'viewing' => $this->convertImageToBase64($receiverImg->getPath()),
             ] : null,
+            'assignmentMemoImg' => $assignmentMemoImg ? [
+                'id' => $assignmentMemoImg->id,
+                'file_name' => $assignmentMemoImg->file_name,
+                'file_path' => $assignmentMemoImg->getPath(),
+                'file_url' => $assignmentMemoImg->getUrl(),
+                'collection_name' => $assignmentMemoImg->collection_name,
+                'viewing' => $this->convertImageToBase64($assignmentMemoImg->getPath()),
+            ] : null,
+            'authorizationMemoImg' => $authorizationMemoImg ? [
+                'id' => $authorizationMemoImg->id,
+                'file_name' => $authorizationMemoImg->file_name,
+                'file_path' => $authorizationMemoImg->getPath(),
+                'file_url' => $authorizationMemoImg->getUrl(),
+                'collection_name' => $authorizationMemoImg->collection_name,
+                'viewing' => $this->convertImageToBase64($authorizationMemoImg->getPath()),
+            ] : null,
+//            'signature' => $signature ? [
+//                'id' => $signature->id,
+//                'file_name' => $signature->file_name,
+//                'file_path' => $signature->getPath(),
+//                'file_url' => $signature->getUrl(),
+//                'collection_name' => $signature->collection_name,
+//                'viewing' => $this->convertImageToBase64($signature->getPath()),
+//            ] : null,
             'main' => [
                 'id' => $additional_cost->fixedAsset->id,
                 'capex' => [
@@ -1042,10 +1131,10 @@ trait AssetReleaseHandler
     }
 
 
-    private function processAsset($assetQuery, $signature, $receivedBy, $accountability, $accountable, $depreciation, $companyId, $businessUnitId, $departmentId, $unitId, $subunitId, $locationId, $accountTitleId)
+    private function processAsset($assetQuery, $images, $receivedBy, $accountability, $accountable, $depreciation, $companyId, $businessUnitId, $departmentId, $unitId, $subunitId, $locationId)
     {
         $asset = (clone $assetQuery)->first();
-        $asset->storeBase64Image($signature, $receivedBy);
+        $asset->storeBase64Images($images);
 
         $updateData = [
             'accountability' => $accountability,
@@ -1073,9 +1162,9 @@ trait AssetReleaseHandler
         if ($locationId !== null) {
             $updateData['location_id'] = $locationId;
         }
-        if ($accountTitleId !== null) {
-            $updateData['account_id'] = $accountTitleId;
-        }
+//        if ($accountTitleId !== null) {
+//            $updateData['account_id'] = $accountTitleId;
+//        }
 
         (clone $assetQuery)->update($updateData);
 

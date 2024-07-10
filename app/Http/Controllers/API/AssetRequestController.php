@@ -61,8 +61,8 @@ class AssetRequestController extends Controller
         $conditions = [
             'Returned' => ['status' => 'Returned'],
             'For Approval' => ['status' => ['like', 'For Approval%']],
-            'For PR' => ['status' => 'Approved', 'pr_number' => null],
-            'For PO' => ['status' => 'Approved', 'filter' => 'To PO'],
+            'For FA Approval' => ['status' => 'Approved', 'is_fa_approved' => 0],
+            'Sent To Ymir' => ['status' => 'Approved', 'filter' => 'Sent to Ymir'],
             'For Tagging' => ['status' => 'Approved', 'filter' => 'Received'], //'filter' => 'Ready to Pickup'
             'For Pickup' => ['status' => 'Approved', 'filter' => 'Ready to Pickup'],
             'Released' => ['is_claimed' => 1],
@@ -188,11 +188,10 @@ class AssetRequestController extends Controller
 
     public function resubmitRequest(CreateAssetRequestRequest $request)
     {
-        $isFileDataUpdated = Cache::get('isFileDataUpdated');
-        $isDataUpdated = Cache::get('isDataUpdated');
-//        return "isFileDataUpdated: $isFileDataUpdated, isDataUpdated: $isDataUpdated";
+        $isFileDataUpdated = Cache::get('isFileDataUpdated', false);
+        $isDataUpdated = Cache::get('isDataUpdated', false);
         $transactionNumber = $request->transaction_number;
-        if ($isDataUpdated == 'true' || $isFileDataUpdated == 'true') {
+        if ($isDataUpdated || $isFileDataUpdated) {
             $this->approveRequestRepository->resubmitRequest($transactionNumber);
             Cache::forget('isDataUpdated');
             Cache::forget('isFileDataUpdated');
@@ -214,7 +213,7 @@ class AssetRequestController extends Controller
         // Make changes to the $assetRequest and $ar objects but don't save them
         $assetRequest = $this->updateAssetRequest($assetRequest, $request, $save = false);
         // Check if the $assetRequest and $ar objects are dirty
-        $isDataUpdated = $assetRequest->isDirty() ? 'true' : 'false';
+        $isDataUpdated = (bool)$assetRequest->isDirty();
 
         // Save the changes to the $assetRequest and $ar objects
         $assetRequest->save();
@@ -222,9 +221,13 @@ class AssetRequestController extends Controller
         $this->handleMediaAttachments($assetRequest, $request);
 
         //TODO: Make this last for only 20 mins if there is bug
-        Cache::put('isDataUpdated', $isDataUpdated, 60);
+        Cache::put('isDataUpdated', $isDataUpdated, now()->addMinutes(20));
         $this->approveRequestRepository->isApproverChange($transactionNumber);
-        return $this->responseSuccess('AssetRequest updated Successfully');
+        return $this->responseSuccess('AssetRequest updated Successfully',
+            [
+                'isDataUpdates' => Cache::get('isDataUpdated') || Cache::get('isFileDataUpdated') ? 1 : 0,
+            ]
+        );
     }
 
     public function removeRequestItem($transactionNumber, $referenceNumber = null)
@@ -367,7 +370,6 @@ class AssetRequestController extends Controller
         $allowedRole = ['Super Admin', 'Admin', 'ERP'];
 
 
-
         $fixedAsset = $this->getFAItemDetails($referenceNumber);
         $additionalCost = $this->getACItemDetails($referenceNumber);
         $assetRequest = $this->getARItemDetails($referenceNumber);
@@ -400,65 +402,65 @@ class AssetRequestController extends Controller
         return $result;
     }
 
-/*    public function store(CreateAssetRequestRequest $request): JsonResponse
-    {
-        $userRequest = $request->userRequest;
-        $requesterId = auth('sanctum')->user()->id;
-        $transactionNumber = AssetRequest::generateTransactionNumber();
-        $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')
-            ->where('subunit_id', $userRequest[0]['subunit_id'])
-            ->orderBy('layer', 'asc')
-            ->get();
+    /*    public function store(CreateAssetRequestRequest $request): JsonResponse
+        {
+            $userRequest = $request->userRequest;
+            $requesterId = auth('sanctum')->user()->id;
+            $transactionNumber = AssetRequest::generateTransactionNumber();
+            $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')
+                ->where('subunit_id', $userRequest[0]['subunit_id'])
+                ->orderBy('layer', 'asc')
+                ->get();
 
-        $layerIds = $departmentUnitApprovers
-            ->map(function ($approverObject) {
-                return $approverObject->approver->approver_id;
-            })
-            ->toArray();
+            $layerIds = $departmentUnitApprovers
+                ->map(function ($approverObject) {
+                    return $approverObject->approver->approver_id;
+                })
+                ->toArray();
 
-        $isRequesterApprover = in_array($requesterId, $layerIds);
-        $requesterLayer = array_search($requesterId, $layerIds) + 1;
-        $maxLayer = $departmentUnitApprovers->max('layer');
-        $isLastApprover = $maxLayer == $requesterLayer;
+            $isRequesterApprover = in_array($requesterId, $layerIds);
+            $requesterLayer = array_search($requesterId, $layerIds) + 1;
+            $maxLayer = $departmentUnitApprovers->max('layer');
+            $isLastApprover = $maxLayer == $requesterLayer;
 
-        foreach ($userRequest as $request) {
-            $assetRequest = AssetRequest::create([
-                'status' => $isLastApprover ? 'Approved' : ($isRequesterApprover ? 'For Approval of Approver ' . ($requesterLayer + 1) : 'For Approval'),
-                'requester_id' => $requesterId,
-                'transaction_number' => $transactionNumber,
-                'reference_number' => (new AssetRequest())->generateReferenceNumber(),
-                'type_of_request_id' => $request['type_of_request_id']['id'],
-                'additional_info' => $request['additional_info'] ?? null,
-                'acquisition_details' => $request['acquisition_details'],
-                'attachment_type' => $request['attachment_type'],
-                'subunit_id' => $request['subunit_id']['id'],
-                'location_id' => $request['location_id']['id'],
-                'account_title_id' => $request['account_title_id']['id'],
-                'accountability' => $request['accountability'],
-                'company_id' => $request['department_id']['company']['company_id'],
-                'department_id' => $request['department_id']['id'],
-                'accountable' => $request['accountable'] ?? null,
-                'asset_description' => $request['asset_description'],
-                'asset_specification' => $request['asset_specification'] ?? null,
-                'cellphone_number' => $request['cellphone_number'] ?? null,
-                'brand' => $request['brand'] ?? null,
-                'quantity' => $request['quantity'],
-            ]);
+            foreach ($userRequest as $request) {
+                $assetRequest = AssetRequest::create([
+                    'status' => $isLastApprover ? 'Approved' : ($isRequesterApprover ? 'For Approval of Approver ' . ($requesterLayer + 1) : 'For Approval'),
+                    'requester_id' => $requesterId,
+                    'transaction_number' => $transactionNumber,
+                    'reference_number' => (new AssetRequest())->generateReferenceNumber(),
+                    'type_of_request_id' => $request['type_of_request_id']['id'],
+                    'additional_info' => $request['additional_info'] ?? null,
+                    'acquisition_details' => $request['acquisition_details'],
+                    'attachment_type' => $request['attachment_type'],
+                    'subunit_id' => $request['subunit_id']['id'],
+                    'location_id' => $request['location_id']['id'],
+                    'account_title_id' => $request['account_title_id']['id'],
+                    'accountability' => $request['accountability'],
+                    'company_id' => $request['department_id']['company']['company_id'],
+                    'department_id' => $request['department_id']['id'],
+                    'accountable' => $request['accountable'] ?? null,
+                    'asset_description' => $request['asset_description'],
+                    'asset_specification' => $request['asset_specification'] ?? null,
+                    'cellphone_number' => $request['cellphone_number'] ?? null,
+                    'brand' => $request['brand'] ?? null,
+                    'quantity' => $request['quantity'],
+                ]);
 
-            $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
+                $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
 
-            foreach ($fileKeys as $fileKey) {
-                if (isset($request[$fileKey])) {
-                    $files = is_array($request[$fileKey]) ? $request[$fileKey] : [$request[$fileKey]];
-                    foreach ($files as $file) {
-                        $assetRequest->addMedia($file)->toMediaCollection($fileKey);
+                foreach ($fileKeys as $fileKey) {
+                    if (isset($request[$fileKey])) {
+                        $files = is_array($request[$fileKey]) ? $request[$fileKey] : [$request[$fileKey]];
+                        foreach ($files as $file) {
+                            $assetRequest->addMedia($file)->toMediaCollection($fileKey);
+                        }
                     }
                 }
             }
-        }
 
-        $this->createAssetApprovals($departmentUnitApprovers, $isRequesterApprover, $requesterLayer, $assetRequest, $requesterId);
+            $this->createAssetApprovals($departmentUnitApprovers, $isRequesterApprover, $requesterLayer, $assetRequest, $requesterId);
 
-        return $this->responseCreated('AssetRequest created successfully');
-    }*/
+            return $this->responseCreated('AssetRequest created successfully');
+        }*/
 }

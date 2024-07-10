@@ -9,8 +9,11 @@
 	"license": "MIT",
 	"require": {
 		"php": "^7.4|^8.0",
+		"ext-fileinfo": "*",
 		"ext-json": "*",
-        "essa/api-tool-kit": "^1.1",
+		"ext-pdo": "*",
+		"ext-zip": "*",
+		"essa/api-tool-kit": "^1.1",
 		"fruitcake/laravel-cors": "^2.0",
 		"guzzlehttp/guzzle": "^7.5",
 		"laravel/framework": "^8.75",
@@ -20,14 +23,12 @@
 		"mike42/escpos-php": "^4.0",
 		"pusher/pusher-php-server": "^7.2",
 		"spatie/laravel-activitylog": "^3.17",
-		"spatie/laravel-medialibrary": "9.0.0",
-      "ext-fileinfo": "*",
-		"ext-zip": "*"
+		"spatie/laravel-medialibrary": "9.0.0"
 	},
 	"require-dev": {
 		"facade/ignition": "^2.5",
 		"fakerphp/faker": "^1.9.1",
-		"laravel/sail": "^1.0.1",
+		"laravel/sail": "^1.19",
 		"mockery/mockery": "^1.4.4",
 		"nunomaduro/collision": "^5.10",
 		"phpunit/phpunit": "^9.5.10",

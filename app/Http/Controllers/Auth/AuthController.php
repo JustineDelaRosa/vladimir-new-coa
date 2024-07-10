@@ -39,7 +39,6 @@ class AuthController extends Controller
             return response()->json(['message' => 'The Username or Password is Incorrect!'], 404);
         }
         $pass_decrypt = Crypt::decryptString($user->password);
-
         //if Username and password match
         // if ($username == $pass_decrypt) {
         //     return response()->json(['message' => 'Successfully Logged In!', 'data' => [
@@ -212,11 +211,11 @@ class AuthController extends Controller
             'Fixed Asset Associate', 'Po-receiving',
             'Purchase Request', 'Approver',
             'Warehouse', 'Fixed Assets',
-            'ERP', 'Requester-approver'
+            'ERP', 'Requester-approver', 'Fixed Asset Associate'
         ];
         $response = [
             'toApproveCount' => 0,
-            'toPR' => 0,
+//            'toPR' => 0,
             'toReceive' => 0,
             'toTagCount' => 0,
             'toRelease' => 0,
@@ -225,7 +224,7 @@ class AuthController extends Controller
         if (!in_array($user->role->role_name, $roleList)) {
             return response()->json([
                 'toApproveCount' => 0,
-                'toPR' => 0,
+//                'toPR' => 0,
                 'toReceive' => 0,
                 'toTagCount' => 0,
                 'toRelease' => 0,
@@ -235,12 +234,12 @@ class AuthController extends Controller
         $roleFunctionMapping = [
             'Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
             'Super Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
-            'Fixed Asset Associate' => ['getToApproveCount', 'getToTagCount'],
+            'Fixed Asset Associate' => ['getFaApproval', 'getToTagCount'],
             'Po-receiving' => ['getToRelease', 'getToReceive'],
             'Purchase Request' => 'getToPurchaseRequest',
             'Approver' => 'getToApproveCount',
             'Warehouse' => ['getToRelease', 'getToReceive'],
-            'Fixed Assets' => ['getToApproveCount', 'getToTagCount'],
+            'Fixed Assets' => ['getFaApproval', 'getToTagCount'],
             'ERP' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
             'Requester-approver' => ['getToApproveCount'],
         ];

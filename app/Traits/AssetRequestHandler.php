@@ -189,7 +189,9 @@ trait AssetRequestHandler
         }
         //TODO: Make this last for only 20 mins if there is bug
         if ($totalAfterCount !== $totalBeforeCount) {
-            Cache::put('isFileDataUpdated', true, 60);
+            Cache::put('isFileDataUpdated', true, now()->addMinutes(20));
+        }else{
+            Cache::put('isFileDataUpdated', false, now()->addMinutes(20));
         }
     }
 
@@ -212,6 +214,7 @@ trait AssetRequestHandler
     {
         $deletedQuantity = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
         return [
+            'is_newly_sync' => $assetRequest->newly_sync,
             'id' => $assetRequest->transaction_number,
             'transaction_number' => $assetRequest->transaction_number,
             'item_count' => $assetRequest->quantity + $deletedQuantity ?? 0,
@@ -322,6 +325,7 @@ trait AssetRequestHandler
 
     private function getAfterApprovedStep($assetRequest)
     {
+
         //check if the status is approved
         $approvers = $assetRequest->status == 'Approved';
         $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number);
@@ -705,7 +709,10 @@ trait AssetRequestHandler
     private function isUserAnApprover($transactionNumber)
     {
         $user = auth('sanctum')->user()->id;
-        $approversId = Approvers::where('approver_id', $user)->first()->id;
+        $approversId = Approvers::where('approver_id', $user)->first()->id ?? null;
+        if($approversId == null){
+            return null;
+        }
         $approverId = AssetApproval::where('transaction_number', $transactionNumber)
             ->where('status', 'approved')->where('approver_id', $approversId)->first();
 
