@@ -202,6 +202,10 @@ class AssetApprovalController extends Controller
             ->flatten(1)
             ->values();
 
+        if($data->isEmpty()){
+            return $this->responseNotFound('No request found');
+        }
+
         return $data;
     }
 
