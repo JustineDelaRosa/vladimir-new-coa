@@ -127,25 +127,25 @@ class FixedAssetUpdateRequest extends FormRequest
 //                        $fail('Please select a valid depreciation status');
                         return;
                     }
-                    if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
-                        if (in_array($value, [null, '-'])) {
-                            $fail('Voucher is required');
-                            return;
-                        }
-
-//                    if ($value == '-') {
-////                            $fail('Voucher is required');
-//                        return;
-//                    }
-//                    $voucher = FixedAsset::where('voucher', $value)->first();
-//                    if ($voucher) {
-//                        $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
-//                        $current_date = Carbon::now()->format('Y-m-d');
-//                        if ($uploaded_date != $current_date) {
-//                            $fail('Voucher previously uploaded.');
+//                    if ($depreciation_status->depreciation_status_name == 'Running Depreciation' || $depreciation_status->depreciation_status_name == 'Fully Depreciated') {
+//                        if (in_array($value, [null, '-'])) {
+//                            $fail('Voucher is required');
+//                            return;
 //                        }
+//
+////                    if ($value == '-') {
+//////                            $fail('Voucher is required');
+////                        return;
+////                    }
+////                    $voucher = FixedAsset::where('voucher', $value)->first();
+////                    if ($voucher) {
+////                        $uploaded_date = Carbon::parse($voucher->created_at)->format('Y-m-d');
+////                        $current_date = Carbon::now()->format('Y-m-d');
+////                        if ($uploaded_date != $current_date) {
+////                            $fail('Voucher previously uploaded.');
+////                        }
+////                    }
 //                    }
-                    }
                 }
 
             }],
