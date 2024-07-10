@@ -70,7 +70,7 @@ class UpdateAssetRequestRequest extends FormRequest
             'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
             'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
             'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
-            'account_title_id' => 'required|exists:account_titles,id',
+//            'account_title_id' => 'required|exists:account_titles,id',
             'letter_of_request' => ['bail', 'nullable', 'required-if:attachment_type,Unbudgeted', 'max:10000', new FileOrX],
             'quotation' => ['bail', 'nullable', 'max:10000', new FileOrX],
             'specification_form' => ['bail', 'nullable', 'max:10000', new FileOrX],
