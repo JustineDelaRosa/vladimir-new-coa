@@ -17,6 +17,7 @@ use App\Traits\AssetRequestHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AssetReleaseController extends Controller
 {
@@ -29,10 +30,20 @@ class AssetReleaseController extends Controller
         $per_page = $request->get('per_page');
         $page = $request->get('page');
         $isReleased = $request->get('isReleased');
-
         if ($per_page == null) {
-            $fixed_assets = FixedAsset::where('can_release', 1)->where('from_request', 1)->orderByDesc('created_at')
-                ->get();
+            $query = FixedAsset::where('can_release', 1)
+                ->where('from_request', 1)
+                ->where(function ($query) {
+                    $query->where('accountability', 'Common')
+                        ->where('is_memo_printed', 0)
+                        ->orWhere(function ($query) {
+                            $query->where('accountability', 'Personal Issued')
+                                ->where('is_memo_printed', 1);
+                        });
+                });
+
+            $fixed_assets = $query->orderByDesc('created_at')->get();
+
             return $this->transformFixedAsset($fixed_assets);
         } else {
             return $this->searchFixedAsset($search, $page, $isReleased, $per_page);
@@ -58,59 +69,74 @@ class AssetReleaseController extends Controller
     public function releaseAssets(MultipleReleaseRequest $request)
     {
 //        return $request->all();
-        $warehouseIds = $request->get('warehouse_number_id');
-        $accountability = $request->get('accountability');
-        $accountable = $request->get('accountable');
-        $receivedBy = $request->get('received_by');
-        $signature = $request->get('signature') ?? null;
-        $companyId = $request->get('company_id');
-        $businessUnitId = $request->get('business_unit_id');
-        $departmentId = $request->get('department_id');
-        $unitId = $request->get('unit_id');
-        $subunitId = $request->get('subunit_id');
-        $locationId = $request->get('location_id');
-        $accountTitleId = $request->get('account_title_id');
-        $depreciation = DepreciationStatus::where('depreciation_status_name', 'For Depreciation')->first()->id;
-        foreach ($warehouseIds as $warehouseId) {
+        DB::beginTransaction();
+        try {
+            $warehouseIds = $request->get('warehouse_number_id');
+            $accountability = $request->get('accountability');
+            $accountable = $request->get('accountable');
+            $receivedBy = $request->get('received_by');
+//        $signature = $request->get('signature') ?? null;
+            $images = [
+                'receiverImg' => $request->get('receiver_img') ?? null,
+                'assignmentMemoImg' => $request->get('assignment_memo_img') ?? null,
+                'authorizationMemoImg' => $request->get('authorization_memo_img') ?? null
+            ];
+            $companyId = $request->get('company_id');
+            $businessUnitId = $request->get('business_unit_id');
+            $departmentId = $request->get('department_id');
+            $unitId = $request->get('unit_id');
+            $subunitId = $request->get('subunit_id');
+            $locationId = $request->get('location_id');
+            $accountTitleId = $request->get('account_title_id');
 
-            $fixedAssetQuery = FixedAsset::where('warehouse_number_id', $warehouseId)->where('is_released', 0);
-            $fixedAssetCount = (clone $fixedAssetQuery)->count();
+            $depreciation = DepreciationStatus::where('depreciation_status_name', 'For Depreciation')->first()->id;
+            foreach ($warehouseIds as $warehouseId) {
 
-            $additionalCostQuery = AdditionalCost::where('warehouse_number_id', $warehouseId)->where('is_released', 0);
-            $additionalCostCount = (clone $additionalCostQuery)->count();
+                $fixedAssetQuery = FixedAsset::where('warehouse_number_id', $warehouseId)->where('is_released', 0);
+                $fixedAssetCount = (clone $fixedAssetQuery)->count();
 
-            if ($fixedAssetCount == 0 && $additionalCostCount == 0) {
-                return $this->responseNotFound('Asset Not Found');
-            }
+                $additionalCostQuery = AdditionalCost::where('warehouse_number_id', $warehouseId)->where('is_released', 0);
+                $additionalCostCount = (clone $additionalCostQuery)->count();
 
+                if ($fixedAssetCount == 0 && $additionalCostCount == 0) {
+                    return $this->responseNotFound('Asset Not Found');
+                }
 
-            if ($fixedAssetCount > 0) {
-                $processedAsset = $this->processAsset($fixedAssetQuery, $signature, $receivedBy, $accountability, $accountable, $depreciation, $companyId, $businessUnitId, $departmentId, $unitId, $subunitId, $locationId, $accountTitleId);
-            }
+                $processedAsset = null;
 
-            if ($additionalCostCount > 0) {
-                $processedAsset = $this->processAsset($additionalCostQuery, $signature, $receivedBy, $accountability, $accountable, $depreciation, $companyId, $businessUnitId, $departmentId, $unitId, $subunitId, $locationId, $accountTitleId);
-            }
+                if ($fixedAssetCount > 0) {
+                    $processedAsset = $this->processAsset($fixedAssetQuery, $images, $receivedBy, $accountability, $accountable, $depreciation, $companyId, $businessUnitId, $departmentId, $unitId, $subunitId, $locationId);
+                }
 
-            if ($processedAsset) {
-                $transactionNumber = $processedAsset->transaction_number;
-                $unreleasedFixedAssets = FixedAsset::where('transaction_number', $transactionNumber)->where('is_released', 0)->count();
-                $unreleasedAdditionalCosts = AdditionalCost::where('transaction_number', $transactionNumber)->where('is_released', 0)->count();
+                if ($additionalCostCount > 0) {
+                    $processedAsset = $this->processAsset($additionalCostQuery, $images, $receivedBy, $accountability, $accountable, $depreciation, $companyId, $businessUnitId, $departmentId, $unitId, $subunitId, $locationId);
+                }
 
-                // If all assets are released, update the asset request
-                if ($unreleasedFixedAssets == 0 && $unreleasedAdditionalCosts == 0) {
-                    AssetRequest::where('transaction_number', $transactionNumber)->update([
-                        'is_claimed' => 1,
-                        'filter' => 'Claimed'
-                    ]);
+                if ($processedAsset) {
+                    $transactionNumber = $processedAsset->transaction_number;
+                    $unreleasedFixedAssets = FixedAsset::where('transaction_number', $transactionNumber)->where('is_released', 0)->count();
+                    $unreleasedAdditionalCosts = AdditionalCost::where('transaction_number', $transactionNumber)->where('is_released', 0)->count();
+
+                    // If all assets are released, update the asset request
+                    if ($unreleasedFixedAssets == 0 && $unreleasedAdditionalCosts == 0) {
+                        AssetRequest::where('transaction_number', $transactionNumber)->update([
+                            'is_claimed' => 1,
+                            'filter' => 'Claimed'
+                        ]);
+                    }
                 }
             }
+            DB::commit();
+            return $this->responseSuccess('Assets Released');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->responseUnprocessable('An error occurred while releasing assets: ' . $e->getMessage());
         }
-        return $this->responseSuccess('Assets Released');
+
     }
 
 
-    private function getAssetRequest($fixedAssetQuery, $additionalCostQuery)
+    public function getAssetRequest($fixedAssetQuery, $additionalCostQuery)
     {
 //        if ($fixedAssetCount == 1 || $additionalCostCount == 1) {
 //                $assetRequest = $this->getAssetRequest($fixedAssetQuery, $additionalCostQuery);
@@ -136,7 +162,7 @@ class AssetReleaseController extends Controller
         });
     }
 
-    private function hasUnreleasedAssets($assetRequest)
+    public function hasUnreleasedAssets($assetRequest)
     {
         $transactionNumber = $assetRequest->value('transaction_number');
         $unreleasedFixedAssets = FixedAsset::where('transaction_number', $transactionNumber)
@@ -149,7 +175,7 @@ class AssetReleaseController extends Controller
         return $unreleasedFixedAssets > 0 || $unreleasedAdditionalCosts > 0;
     }
 
-    private function updateIsClaimed($assetRequestQuery)
+    public function updateIsClaimed($assetRequestQuery)
     {
         $assetRequest = $assetRequestQuery->first();
         if ($assetRequest) {
