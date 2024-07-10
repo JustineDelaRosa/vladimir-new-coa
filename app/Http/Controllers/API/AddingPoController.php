@@ -110,6 +110,7 @@ class AddingPoController extends Controller
     {
         $userLocationId = auth('sanctum')->user()->location_id;
         $data = $request->get('result');
+
         $apiUrl = config('ymir-api.ymir_put_api_url');
         $bearerToken = config('ymir-api.ymir_put_api_token');
         if ($data == null) {
@@ -125,62 +126,74 @@ class AddingPoController extends Controller
             $transactionNumber = $asset['transaction_no'];
             $poNo = $asset['po_number'];
             $prNo = $asset['pr_number'];
-            $supplier = $asset['order']['supplier'];
-            $unitPrice = $asset['order']['unit_price'];
-            $referenceNumber = $asset['order']['item_code'];
-//            $quantityDelivered = $asset['order']['quantity_delivered'];
             $deletedAt = $asset['cancelled_at'];
-            $remaining = $asset['order']['remaining'];
 
             $assetRequest = AssetRequest::where('filter', 'Sent to Ymir')
                 ->where('transaction_number', $transactionNumber)
-                ->where('reference_number', $referenceNumber)
                 ->whereHas('receivingWarehouse', function ($query) use ($userLocationId) {
                     $query->where('location_id', $userLocationId);
-                })->first();
-            if ($assetRequest && $deletedAt != null) {
-                $replicatedAssetRequest = $assetRequest->replicate();
-                $replicatedAssetRequest->quantity = $remaining;
-                $replicatedAssetRequest->quantity_delivered = 0;
-                $replicatedAssetRequest->filter = NULL;
-                $replicatedAssetRequest->save();
-                $replicatedAssetRequest->delete();
-
-                $assetRequest->quantity -= $remaining;
-                $assetRequest->save();
-
-                $cancelledCount++;
+                })->get();
+            if($assetRequest->isEmpty()){
+                return $this->responseUnprocessable('No asset request to sync.');
             }
             if ($assetRequest) {
-                foreach ($asset['rr_orders'] as $rrOrder) {
-                    if($rrOrder['sync'] == 1) {
-                        continue;
+                foreach ($asset['order'] as $order) {
+                    $supplier = $order['supplier'];
+                    $unitPrice = $order['unit_price'];
+                    $referenceNumber = $order['item_code'];
+                    $remaining = $order['remaining'];
+
+
+                    if ($deletedAt != null) {
+                        foreach ($assetRequest as $request) {
+                            $replicatedAssetRequest = $assetRequest->replicate();
+                            $replicatedAssetRequest->quantity = $remaining;
+                            $replicatedAssetRequest->quantity_delivered = 0;
+                            $replicatedAssetRequest->filter = NULL;
+                            $replicatedAssetRequest->save();
+                            $replicatedAssetRequest->delete();
+
+                            $request->quantity -= $remaining;
+                            $request->save();
+
+                            $cancelledCount++;
+                        }
                     }
-                    $assetRequest->update([
-                        'synced' => 1,
-                        'pr_number' => $prNo,
-                        'po_number' => $poNo,
-                        'rr_number' => $rrOrder['rr_number'],
-                        'supplier_id' => $supplier,
-                        'quantity_delivered' => $assetRequest->quantity_delivered + $rrOrder['quantity_receive'],
-                        'acquisition_date' => $rrOrder['delivery_date'],
-                        'acquisition_cost' => $unitPrice,
-                    ]);
-                    $this->createNewAssetRequests($assetRequest, $rrOrder['quantity_receive']);
-                    $rrNumbers[] = [
-                        'rr_number' => $rrOrder['rr_number'],
-                    ];
-//                    Http::withHeaders(['Authorization' => 'Bearer ' . $bearerToken,])
-//                        ->put($apiUrl, ['rr_number' => $rrOrder['rr_number']]);
-                    $itemReceivedCount++;
+                    $itemRequest = $assetRequest->where('reference_number', $referenceNumber)->first();
+                    foreach ($order['rr_orders'] as $rr) {
+                        $deliveryDate = $rr['delivery_date'];
+                        $itemRemaining = $rr['remaining'];
+                        $rrNumber = $rr['rr_number'];
+
+                        if ($rr['sync'] == 1) {
+                            continue;
+                        }
+
+                        $itemRequest->update([
+                            'synced' => 1,
+                            'pr_number' => $prNo,
+                            'po_number' => $poNo,
+                            'rr_number' => $rrNumber,
+                            'supplier_id' => $supplier,
+                            'quantity_delivered' => $itemRequest->quantity_delivered + $rr['quantity_receive'],
+                            'acquisition_date' => $deliveryDate,
+                            'acquisition_cost' => $unitPrice,
+                        ]);
+                        $this->createNewAssetRequests($itemRequest, $rr['quantity_receive']);
+                        $rrNumbers[] = [
+                            'rr_number' => $rr['rr_number'],
+                        ];
+                        $itemReceivedCount++;
+                    }
+                    $this->updateRequestStatusFilter($itemRequest);
                 }
-                $this->updateRequestStatusFilter($assetRequest);
             }
         }
         if (!empty($rrNumbers)) {
             Http::withHeaders(['Authorization' => 'Bearer ' . $bearerToken])
                 ->put($apiUrl, ['rr_numbers' => $rrNumbers]);
         }
+
         $data = [
             'synced' => $itemReceivedCount,
             'cancelled' => $cancelledCount,
