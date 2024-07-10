@@ -115,6 +115,12 @@ trait RequestContainerHandler
                     'fixed_asset_id' => $request->fixed_asset_id,
                 ]);
             }
+        }elseif ($requestContainer->first()->receiving_warehouse_id != $request->receiving_warehouse_id) {
+            foreach ($requestContainer as $requestContainerItem) {
+                $requestContainerItem->update([
+                    'receiving_warehouse_id' => $request->receiving_warehouse_id,
+                ]);
+            }
         }
     }
 
