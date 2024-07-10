@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\AssetRelease;
 
+use App\Rules\Base64ImageValidation;
 use App\Rules\NewCoaValidation\BusinessUnitValidation;
 use App\Rules\NewCoaValidation\DepartmentValidation;
 use App\Rules\NewCoaValidation\LocationValidation;
@@ -34,16 +35,16 @@ class MultipleReleaseRequest extends FormRequest
             'accountable' => ['required_if:accountability,Personal Issued', 'string'],
             'received_by' => ['required', 'string'],
 //            'signature' => ['required'],
-            'receiver_img' => ['required'],
-            'assignment_memo_img' => ['required'],
-            'authorization_memo_img' => ['required'],
+            'receiver_img' => ['required', new Base64ImageValidation()],
+            'assignment_memo_img' => ['required', new Base64ImageValidation()],
+            'authorization_memo_img' => ['required', new Base64ImageValidation()],
             'company_id' => 'nullable|exists:companies,id',
             'business_unit_id' => ['nullable', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
             'department_id' => ['nullable', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
             'unit_id' => ['nullable', 'exists:units,id', new UnitValidation(request()->department_id)],
             'subunit_id' => ['nullable', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
             'location_id' => ['nullable', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
-            'account_title_id' => 'nullable|exists:account_titles,id',
+//            'account_title_id' => 'nullable|exists:account_titles,id',
         ];
     }
 
