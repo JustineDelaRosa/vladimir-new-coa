@@ -9,6 +9,9 @@ use App\Models\Approvers;
 use App\Models\AssetMovementContainer\AssetTransferContainer;
 use App\Models\AssetTransferApprover;
 use App\Models\AssetTransferRequest;
+use App\Models\MovementApproval;
+use App\Models\MovementNumber;
+use App\Models\Transfer;
 use App\Models\TransferApproval;
 use App\Models\User;
 use App\Traits\AssetMovement\AssetTransferContainerHandler;
@@ -94,11 +97,15 @@ class AssetTransferRequestController extends Controller
             DB::beginTransaction();
             $fixedAssetIds = $request->assets;
             $attachments = $request->file('attachments');
+            $requesterSubUnit = auth('sanctum')->user()->subunit_id;
             $createdBy = auth('sanctum')->user()->id;
             $transferNumber = AssetTransferRequest::generateTransferNumber();
-            $transferApproval = AssetTransferApprover::where('subunit_id', $request->subunit_id)
+            $transferApproval = AssetTransferApprover::where('subunit_id', $requesterSubUnit)
                 ->orderBy('layer', 'asc')
                 ->get();
+            if($transferApproval->isEmpty()){
+                return $this->responseUnprocessable('No approver found for you, please contact support');
+            }
 
             list($isRequesterApprover, $isLastApprover, $requesterLayer) = $this->checkIfRequesterIsApprover($createdBy, $transferApproval);
 
@@ -120,7 +127,7 @@ class AssetTransferRequestController extends Controller
                     'unit_id' => $request->unit_id,
                     'subunit_id' => $request->subunit_id,
                     'location_id' => $request->location_id,
-                    'account_id' => $request->account_id,
+//                    'account_id' => $request->account_id,
                     'remarks' => $request->remarks,
                     'description' => $request->description,
                 ]);
@@ -135,7 +142,7 @@ class AssetTransferRequestController extends Controller
                     }
                 }
             }
-            $this->setTransferApprovals($request->subunit_id, $createdBy, $transferRequest, new AssetTransferApprover(), new TransferApproval());
+            $this->setTransferApprovals($requesterSubUnit, $createdBy, $transferRequest, new AssetTransferApprover(), new TransferApproval());
 
             DB::commit();
             return $this->responseSuccess('Asset Transfer Request Created');
@@ -237,7 +244,11 @@ class AssetTransferRequestController extends Controller
     {
         $tagNumbers = $request->assets;
         $createdBy = auth('sanctum')->user()->id;
-        $transferApproval = $this->getTransferApproval($request->subunit_id);
+        $userSubUnit = auth('sanctum')->user()->subunit_id;
+        $transferApproval = $this->getTransferApproval($userSubUnit);
+        if($transferApproval->isEmpty()){
+            return $this->responseUnprocessable('No approver found for you, please contact support');
+        }
 
         foreach ($tagNumbers as $tagNumber) {
             $transferRequest = $this->getTransferRequest($transferNumber, $tagNumber['fixed_asset_id']);
@@ -342,12 +353,4 @@ class AssetTransferRequestController extends Controller
         return $this->dlAttachments($transferNumber, 'transfer_number', new AssetTransferRequest());
     }
 
-//    public function transferRequestAction(Request $request)
-//    {
-//        $action = $request->action;
-//        $transferNumber = $request->transfer_number;
-//        $remarks = $request->remarks;
-//
-//        return $this->requestAction($action, $transferNumber, 'transfer_number', new AssetTransferRequest(), new TransferApproval(), $remarks);
-//    }
 }
