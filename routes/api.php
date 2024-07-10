@@ -241,7 +241,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //ASSET REQUEST//
     Route::RESOURCE('asset-request', AssetRequestController::class);
     Route::POST('update-request/{referenceNumber}', [AssetRequestController::class, 'updateRequest']);
-    Route::DELETE('DELETE-request/{transactionNumber}/{referenceNumber?}', [AssetRequestController::class, 'removeRequestItem']);
+    Route::DELETE('delete-request/{transactionNumber}/{referenceNumber?}', [AssetRequestController::class, 'removeRequestItem']);
     Route::PATCH('resubmit-request', [AssetRequestController::class, 'resubmitRequest']);
     Route::POST('move-to-asset-request', [AssetRequestController::class, 'moveData']);
     Route::GET('show-by-id/{id}', [AssetRequestController::class, 'showById']);
@@ -267,6 +267,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::POST('update-container/{id}', [RequestContainerController::class, 'updateContainer']);
     //ADDING PO//
     Route::RESOURCE('adding-po', AddingPoController::class);
+    Route::post('ymir-po-receiving', [AddingPoController::class, 'handleSyncData']);
     //RELEASE ASSET//
     Route::RESOURCE('asset-release', AssetReleaseController::class);
     Route::PUT('release-assets', [AssetReleaseController::class, 'releaseAssets']);
@@ -297,6 +298,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::POST('move-to-asset-transfer', [AssetTransferRequestController::class, 'transferContainerData']);
     Route::POST('update-transfer-request/{transferNumber}', [AssetTransferRequestController::class, 'updateTransfer']);
     Route::DELETE('remove-transfer-item/{transferNumber?}/{id?}', [AssetTransferRequestController::class, 'removedTransferItem']);
+
+    Route::POST('testmorp', [AssetTransferRequestController::class, 'testmorp']);
 
     //ASSET TRANSFER APPROVAL
     Route::RESOURCE('transfer-approver', AssetTransferApprovalController::class);
