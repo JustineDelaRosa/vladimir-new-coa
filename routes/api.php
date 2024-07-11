@@ -31,6 +31,7 @@ use App\Http\Controllers\Masterlist\FixedAssetExportController;
 use App\Http\Controllers\Masterlist\FixedAssetImportController;
 use App\Http\Controllers\Masterlist\MajorCategoryController;
 use App\Http\Controllers\Masterlist\MinorCategoryController;
+use App\Http\Controllers\Masterlist\PrintBarcode\MemoSeriesController;
 use App\Http\Controllers\Masterlist\PrintBarcode\PrintBarCodeController;
 use App\Http\Controllers\Masterlist\Status\AssetStatusController;
 use App\Http\Controllers\Masterlist\Status\CycleCountStatusController;
@@ -308,6 +309,13 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //WAREHOUSE MASTERLIST
     Route::RESOURCE('warehouse', WarehouseController::class);
     Route::PATCH('warehouse/archived-warehouse/{id}', [WarehouseController::class, 'archived']);
+
+    //PRINTING MEMO
+    Route::PUT('memo-printed', [FixedAssetController::class, 'memoPrint']);
+
+    //MEMO SERIES
+    Route::GET('get-memo-series', [MemoSeriesController::class, 'getMemoSeries']);
+//    Route::PATCH('archived-memo-series/{id}', [MemoSeriesController::class, 'archived']);
 
 
     Route::prefix('ymir')->group(function () {

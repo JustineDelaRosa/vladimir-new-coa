@@ -260,6 +260,7 @@ class PrintBarCodeController extends Controller
         $endDate = $request->get('endDate');
         $limit = $request->get('limit');
         $filter = $request->get('isRequest');
+        $printMemo = $request->get('printMemo', 0);
 
         /*//type of request capex should not be printed
         $typeOfRequest = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
@@ -284,6 +285,12 @@ class PrintBarCodeController extends Controller
                     ->where('is_released', 0)
                     ->where('print_count', 0)
                     ->where('can_release', 0);
+            })
+            ->when($printMemo == 1, function ($query) {
+                return $query->where(function ($query) {
+                    $query->where('accountability', 'Personal Issued')
+                        ->where('is_memo_printed', 0);
+                });
             });
 
         if ($startDate) {
@@ -320,6 +327,11 @@ class PrintBarCodeController extends Controller
                 'pr_number' => $asset->pr_number ?? '-',
                 'po_number' => $asset->po_number ?? '-',
                 'rr_number' => $asset->rr_number ?? '-',
+                'warehouse' => [
+                    'id' => $asset->warehouse->id ?? '-',
+                    'warehouse_name' => $asset->warehouse->warehouse_name ?? '-',
+                    'location' => $asset->warehouse->location->location_name ?? '-',
+                ],
                 'warehouse_number' => [
                     'id' => $asset->warehouseNumber->id ?? '-',
                     'warehouse_number' => $asset->warehouseNumber->warehouse_number ?? '-',
@@ -394,19 +406,34 @@ class PrintBarCodeController extends Controller
                 ],
                 'care_of' => $asset->care_of,
                 'company' => [
-                    'id' => $asset->department->company->id ?? '-',
-                    'company_code' => $asset->department->company->company_code ?? '-',
-                    'company_name' => $asset->department->company->company_name ?? '-',
+                    'id' => $asset->company->id ?? '-',
+                    'company_code' => $asset->company->company_code ?? '-',
+                    'company_name' => $asset->company->company_name ?? '-',
+                ],
+                'business_unit' => [
+                    'id' => $asset->businessUnit->id ?? '-',
+                    'business_unit_code' => $asset->businessUnit->business_unit_code ?? '-',
+                    'business_unit_name' => $asset->businessUnit->business_unit_name ?? '-',
                 ],
                 'department' => [
                     'id' => $asset->department->id ?? '-',
                     'department_code' => $asset->department->department_code ?? '-',
                     'department_name' => $asset->department->department_name ?? '-',
                 ],
+                'unit' => [
+                    'id' => $asset->unit->id ?? '-',
+                    'unit_code' => $asset->unit->unit_code ?? '-',
+                    'unit_name' => $asset->unit->unit_name ?? '-',
+                ],
+                'subunit' => [
+                    'id' => $asset->subunit->id ?? '-',
+                    'subunit_code' => $asset->subunit->sub_unit_code ?? '-',
+                    'subunit_name' => $asset->subunit->sub_unit_name ?? '-',
+                ],
                 'charged_department' => [
-                    'id' => $additional_cost->department->id ?? '-',
-                    'charged_department_code' => $additional_cost->department->department_code ?? '-',
-                    'charged_department_name' => $additional_cost->department->department_name ?? '-',
+                    'id' => $asset->department->id ?? '-',
+                    'department_code' => $asset->department->department_code ?? '-',
+                    'department_name' => $asset->department->department_name ?? '-',
                 ],
                 'location' => [
                     'id' => $asset->location->id ?? '-',

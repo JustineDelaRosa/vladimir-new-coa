@@ -110,7 +110,7 @@ trait AssetRequestHandler
             'additional_info' => $request->additional_info ?? null,
             'date_needed' => $request->date_needed ?? null,
             'fixed_asset_id' => $request->fixed_asset_id ?? null,
-            'account_title_id' => $request->account_title_id ?? null,
+//            'account_title_id' => $request->account_title_id ?? null,
             'company_id' => $request->company_id,
             'business_unit_id' => $request->business_unit_id,
             'department_id' => $request->department_id,
@@ -143,7 +143,7 @@ trait AssetRequestHandler
                 'location_id' => $request->location_id,
                 'acquisition_details' => $request->acquisition_details ?? null,
                 'fixed_asset_id' => $request->fixed_asset_id ?? null,
-                'account_title_id' => $request->account_title_id ?? null,
+//                'account_title_id' => $request->account_title_id ?? null,
                 'receiving_warehouse_id' => $request->receiving_warehouse_id,
 //                'uom_id' => $request->uom_id ?? null,
             ]);
