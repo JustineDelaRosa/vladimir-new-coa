@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\AssetApproval;
 use App\Models\AssetTransferRequest;
+use App\Models\PoBatch;
 use Carbon\Carbon;
 use App\Models\Company;
 use App\Models\Formula;
@@ -252,6 +253,12 @@ class FixedAssetRepository
 
     public function searchFixedAsset($search, $status, $page, $per_page = null, $filter = null)
     {
+        $filter = $filter ? array_map('trim', explode(',', $filter)) : [];
+        //check if filter only contains  'With Voucher'
+        if(count($filter) == 1 && $filter[0] == 'With Voucher'){
+            return $this->faWithVoucherView();
+        }
+
         $fixedAssetFields = [
             'id',
             'requester_id',
@@ -367,13 +374,13 @@ class FixedAssetRepository
             ? AdditionalCost::onlyTrashed()->select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
             : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
-        $filter = $filter ? array_map('trim', explode(',', $filter)) : [];
+
 
         $conditions = [
             'To Depreciate' => ['depreciation_method' => null, 'is_released' => 1],
             'Fixed Asset' => ['is_additional_cost' => 0],
             'Additional Cost' => ['is_additional_cost' => 1],
-            'From Request' => ['from_request' => 1],
+            'From Request' => ['from_request' => 1]
         ];
 
         if (!empty($filter)) {
@@ -1065,5 +1072,37 @@ class FixedAssetRepository
             'message' => 'Fixed Assets retrieved successfully.',
             'data' => $this->transformIndex($fixed_assets)
         ], 200);
+    }
+
+    private function faWithVoucherView()
+    {
+        return FixedAsset::whereNotNull('receipt')
+            ->where('receipt', '!=', '-')
+            ->get();
+
+        $poFromRequest = $request->query('po_no');
+        $rrFromRequest = $request->query('rr_no');
+        $poBatches = PoBatch::with('fistoTransaction')->where('po_no', "PO#" . $poFromRequest)->orderBy('request_id')->get();
+
+        $poBatch = $poBatches->first(function ($poBatch) use ($rrFromRequest) {
+            $rr_group = json_decode($poBatch->rr_group);
+            return in_array($rrFromRequest, $rr_group);
+        });
+
+        if ($poBatch) {
+            if ($poBatch->fistoTransaction->voucher_no == null || $poBatch->fistoTransaction->voucher_month == null) {
+                return $this->responseNotFound('No Voucher Found');
+            }
+            $result = [
+                'request_id' => $poBatch->request_id,
+                'voucher_no' => $poBatch->fistoTransaction->voucher_no ?? null,
+                'voucher_date' => $poBatch->fistoTransaction->voucher_month ?? null,
+                'rr_group' => json_decode($poBatch->rr_group)
+            ];
+        } else {
+            return $this->responseNotFound('No Voucher Found');
+        }
+
+        return $result;
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Traits;
 
 use App\Models\AdditionalCost;
@@ -45,8 +46,29 @@ trait NotificationHandler
 
     private function getToRelease($user)
     {
-        $fixeAssetCount = FixedAsset::where('from_request', 1)->whereNotNull('print_count')->where('can_release', 1)->where('is_released', 0)->count();
-        $additionalCostCount = AdditionalCost::where('from_request', 1)->where('can_release', 1)->where('is_released', 0)->count();
+        $fixeAssetCount = FixedAsset::where('from_request', 1)
+            ->whereNotNull('print_count')
+            ->where('can_release', 1)
+            ->where('is_released', 0)
+            ->whereHas('warehouse', function ($query) use ($user) {
+                $query->where('location_id', $user->location_id);
+            })
+            ->where(function ($query) {
+                $query->where('accountability', 'Common')
+                    ->where('memo_series_id', null)
+                    ->orWhere(function ($query) {
+                        $query->where('accountability', 'Personal Issued')
+                            ->whereNotNull('memo_series_id');
+                    });
+            })->count();
+
+        $additionalCostCount = AdditionalCost::where('from_request', 1)
+            ->where('can_release', 1)
+            ->where('is_released', 0)
+            ->whereHas('warehouse', function ($query) use ($user) {
+                $query->where('location_id', $user->location_id);
+            })
+            ->count();
         return $fixeAssetCount + $additionalCostCount;
     }
 
@@ -57,11 +79,12 @@ trait NotificationHandler
 
     private function getToReceive($user)
     {
-        return AssetRequest::where('status', 'Approved')->where('is_fa_approved', 1)->where('synced',1)
+        return AssetRequest::where('status', 'Approved')->where('is_fa_approved', 1)->where('synced', 1)
             ->whereRaw('quantity != quantity_delivered')->distinct('transaction_number')->count();
     }
 
-    private function getFaApproval($user){
+    private function getFaApproval($user)
+    {
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
         $assetApproval = AssetApproval::where('approver_id', $approverId)->where('status', 'For pAproval')->count();
         $forFaApproval = AssetRequest::where('status', 'Approved')->where('is_fa_approved', 0)->distinct('transaction_number')->count();

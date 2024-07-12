@@ -568,37 +568,4 @@ class FixedAssetController extends Controller
 
         return $result;
     }
-
-    public function memoPrint(MemorPrintRequest $request): ?\Illuminate\Http\JsonResponse
-    {
-        $faIds = $request->input('fixed_asset_id', []);
-        $isExecuted = $request->input('isExecuted', false);
-        $memoSeriesId = $request->input('memo_series_id', null);
-
-        if ($isExecuted) {
-            $departmentId = FixedAsset::find($faIds[0])->department_id;
-
-            foreach ($faIds as $id) {
-                $fixedAsset = FixedAsset::find($id);
-
-                if ($fixedAsset->department_id != $departmentId) {
-                    return $this->responseError('Fixed Assets are not in the same department');
-                }
-
-                $fixedAsset->update(['is_memo_printed' => true]);
-            }
-
-            return $this->responseSuccess('Memo Printed Successfully');
-        } else {
-            foreach ($faIds as $id) {
-                $fixedAsset = FixedAsset::find($id);
-                $fixedAsset->update(['is_memo_printed' => false]);
-            }
-
-            $memoSeries = MemoSeries::find($memoSeriesId);
-            $memoSeries->delete();
-
-            return null;
-        }
-    }
 }

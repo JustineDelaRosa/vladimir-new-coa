@@ -280,7 +280,7 @@ class PrintBarCodeController extends Controller
                         });
                 });
             })
-            ->when($filter == 1, function ($query) {
+            ->when($filter == 1 && $printMemo == 0, function ($query) {
                 return $query->where('from_request', 1)
                     ->where('is_released', 0)
                     ->where('print_count', 0)
@@ -289,7 +289,9 @@ class PrintBarCodeController extends Controller
             ->when($printMemo == 1, function ($query) {
                 return $query->where(function ($query) {
                     $query->where('accountability', 'Personal Issued')
-                        ->where('is_memo_printed', 0);
+                        ->where('memo_series_id', null)
+                        ->where('is_released', 0)
+                        ->whereIn('can_release', [0, 1]);
                 });
             });
 
@@ -385,6 +387,11 @@ class PrintBarCodeController extends Controller
                 'status' => $asset->is_active,
                 'quantity' => $asset->quantity,
                 'depreciation_method' => $asset->depreciation_method,
+                'uom' => [
+                    'id' => $asset->uom->id ?? '-',
+                    'uom_code' => $asset->uom->uom_code ?? '-',
+                    'uom_name' => $asset->uom->uom_name ?? '-',
+                ],
                 //                    'salvage_value' => $asset->salvage_value,
                 'acquisition_date' => $asset->acquisition_date,
                 'acquisition_cost' => $asset->acquisition_cost,

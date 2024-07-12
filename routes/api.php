@@ -311,10 +311,11 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::PATCH('warehouse/archived-warehouse/{id}', [WarehouseController::class, 'archived']);
 
     //PRINTING MEMO
-    Route::PUT('memo-printed', [FixedAssetController::class, 'memoPrint']);
+    Route::PUT('memo-print', [MemoSeriesController::class, 'memoPrint']);
+    Route::GET('reprint-memo', [MemoSeriesController::class, 'memoReprint']);
 
     //MEMO SERIES
-    Route::GET('get-memo-series', [MemoSeriesController::class, 'getMemoSeries']);
+//    Route::GET('get-memo-series', [MemoSeriesController::class, 'getMemoSeries']);
 //    Route::PATCH('archived-memo-series/{id}', [MemoSeriesController::class, 'archived']);
 
 

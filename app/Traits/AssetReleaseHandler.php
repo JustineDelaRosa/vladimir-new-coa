@@ -81,17 +81,21 @@ trait AssetReleaseHandler
     {
         $fixedAssetFields = $this->getFixedAssetFields();
         $additionalCostFields = $this->getAdditionalCostFields();
+        $userLocationId = auth('sanctum')->user()->location_id;
 
         $firstQuery = FixedAsset::select($fixedAssetFields)
             ->where('from_request', 1)
             ->where('can_release', 1)
             ->where('is_released', $isReleased)
+            ->whereHas('warehouse', function ($query) use ($userLocationId) {
+                $query->where('location_id', $userLocationId);
+            })
             ->where(function ($query) {
                 $query->where('accountability', 'Common')
-                    ->where('is_memo_printed', 0)
+                    ->where('memo_series_id', null)
                     ->orWhere(function ($query) {
                         $query->where('accountability', 'Personal Issued')
-                            ->where('is_memo_printed', 1);
+                            ->whereNotNull('memo_series_id');
                     });
             });
 
@@ -100,13 +104,8 @@ trait AssetReleaseHandler
             ->where('additional_costs.from_request', 1)
             ->where('additional_costs.can_release', 1)
             ->where('additional_costs.is_released', $isReleased)
-            ->where(function ($query) {
-                $query->where('additional_costs.accountability', 'Common')
-                    ->where('additional_costs.is_memo_printed', 0)
-                    ->orWhere(function ($query) {
-                        $query->where('additional_costs.accountability', 'Personal Issued')
-                            ->where('additional_costs.is_memo_printed', 1);
-                    });
+            ->whereHas('warehouse', function ($query) use ($userLocationId) {
+                $query->where('location_id', $userLocationId);
             });
 
         return $firstQuery->unionAll($secondQuery)->orderBy('created_at', 'desc')->get();

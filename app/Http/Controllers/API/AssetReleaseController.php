@@ -35,10 +35,10 @@ class AssetReleaseController extends Controller
                 ->where('from_request', 1)
                 ->where(function ($query) {
                     $query->where('accountability', 'Common')
-                        ->where('is_memo_printed', 0)
+                        ->where('memo_series_id', null)
                         ->orWhere(function ($query) {
                             $query->where('accountability', 'Personal Issued')
-                                ->where('is_memo_printed', 1);
+                                ->whereNotNull('memo_series_id');
                         });
                 });
 
