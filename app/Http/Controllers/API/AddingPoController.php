@@ -180,9 +180,7 @@ class AddingPoController extends Controller
                             'acquisition_cost' => $unitPrice,
                         ]);
                         $this->createNewAssetRequests($itemRequest, $rr['quantity_receive']);
-                        $rrNumbers[] = [
-                            'rr_number' => $rr['rr_number'],
-                        ];
+                        $rrNumbers[] = $rr['rr_number'];
                         $itemReceivedCount++;
                     }
                     $this->updateRequestStatusFilter($itemRequest);
@@ -190,8 +188,9 @@ class AddingPoController extends Controller
             }
         }
         if (!empty($rrNumbers)) {
+
             Http::withHeaders(['Authorization' => 'Bearer ' . $bearerToken])
-                ->put($apiUrl, ['rr_numbers' => $rrNumbers]);
+                ->put($apiUrl, ['rr_number' => $rrNumbers]);
         }
 
         $data = [

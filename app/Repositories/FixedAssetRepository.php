@@ -950,6 +950,18 @@ class FixedAssetRepository
             'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
             'acquisition_date' => $fixed_asset->formula->acquisition_date ?? '-',
+            'receipt' => $fixed_asset->receipt ?? '-',
+            'uom' => [
+                'id' => $fixed_asset->uom->id ?? '-',
+                'uom_code' => $fixed_asset->uom->uom_code ?? '-',
+                'uom_name' => $fixed_asset->uom->uom_name ?? '-',
+            ],
+            'supplier' => [
+                'id' => $fixed_asset->supplier->id ?? '-',
+                'supplier_code' => $fixed_asset->supplier->supplier_code ?? '-',
+                'supplier_name' => $fixed_asset->supplier->supplier_name ?? '-',
+            ],
+            'quantity' => $fixed_asset->quantity ?? '-',
             'requestor' => [
                 'id' => $fixed_asset->requestor->id ?? '-',
                 'username' => $fixed_asset->requestor->username ?? '-',
@@ -967,9 +979,11 @@ class FixedAssetRepository
             ],
             'capex_number' => $fixed_asset->capex_number ?? '-',
             'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
+            'acquisition_cost' => $fixed_asset->acquisition_cost ?? '-',
             'tag_number' => $fixed_asset->tag_number ?? '-',
             'tag_number_old' => $fixed_asset->tag_number_old ?? '-',
             'asset_description' => $fixed_asset->asset_description ?? '-',
+            'asset_specification' => $fixed_asset->asset_specification ?? '-',
             'accountability' => $fixed_asset->accountability ?? '-',
             'accountable' => $fixed_asset->accountable ?? '-',
             'type_of_request' => [
@@ -1024,8 +1038,9 @@ class FixedAssetRepository
     public function faIndex($movement = null): JsonResponse
     {
         $fixed_assets = FixedAsset::select([
-            'id', 'vladimir_tag_number', 'tag_number', 'tag_number_old', 'asset_description', 'accountability', 'accountable',
-            'from_request', 'is_released', 'formula_id', 'requester_id',
+            'id', 'vladimir_tag_number', 'tag_number', 'tag_number_old', 'asset_description', 'receipt', 'acquisition_cost',
+            'quantity', 'accountability', 'accountable','asset_specification',
+            'from_request', 'is_released', 'formula_id', 'requester_id','uom_id',
             'warehouse_number_id', 'capex_id', 'sub_capex_id', 'type_of_request_id', 'supplier_id',
             'department_id', 'major_category_id', 'minor_category_id', 'asset_status_id',
             'cycle_count_status_id', 'depreciation_status_id', 'movement_status_id',
@@ -1055,13 +1070,21 @@ class FixedAssetRepository
                 'location:id,location_name,location_code',
                 'accountTitle:id,account_title_name,account_title_code'
             ])
-            ->where(function ($query) {
+            ->when($movement != null, function ($query){
                 $query->where('from_request', '!=', 1)
                     ->orWhere(function ($query) {
                         $query->where('from_request', 1)
                             ->where('is_released', 1);
                     });
-            })->get();
+            })
+//            ->where(function ($query) {
+//                $query->where('from_request', '!=', 1)
+//                    ->orWhere(function ($query) {
+//                        $query->where('from_request', 1)
+//                            ->where('is_released', 1);
+//                    });
+//            })
+            ->get();
 
         $fixed_assets = $fixed_assets->map(function ($fixedAsset) {
             $fixedAsset->transfer = $fixedAsset->isStillInTransferApproval() ? 1 : 0;

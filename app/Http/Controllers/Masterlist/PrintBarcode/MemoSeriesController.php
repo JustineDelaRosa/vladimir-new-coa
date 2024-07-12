@@ -84,7 +84,7 @@ class MemoSeriesController extends Controller
 //                    ],
 //                ];
 //            });
-            return $memo;
+//            return $memo;
         });
         return $reprintMemo;
     }
