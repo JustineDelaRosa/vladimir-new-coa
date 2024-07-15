@@ -34,21 +34,25 @@ class SubunitValidation implements Rule
         }
         if ($this->requesting) {
 
-            if(Route::currentRouteNamed('asset-transfer.store')){
-                //departmentUnitApprovers
-                if ($subUnit->transferApprovers->isEmpty()) {
-                    $this->errorMessage = 'No approvers assigned to the selected subunits.';
-                    return false;
-                }
-            }elseif(Route::currentRouteNamed('asset-transfer-container.store')){
-                if ($subUnit->transferApprovers->isEmpty()) {
-                    $this->errorMessage = 'No transfer approvers assigned to the selected subunit.';
-                    return false;
-                }
-            }elseif (Route::currentRouteNamed('asset-transfer.update')) {
-                if ($this->assetTransferRequestId !== null && $subUnit->departmentUnitApprovers->isEmpty()) {
-                    $this->errorMessage = 'No approvers assigned to the selected subunit.';
-                    return false;
+            $routesToApprovers = [
+                'asset-transfer.store' => 'transferApprovers',
+                'asset-transfer-container.store' => 'transferApprovers',
+                'asset-transfer.update' => 'departmentUnitApprovers',
+                'request-container.store' => 'departmentUnitApprovers',
+            ];
+
+            foreach ($routesToApprovers as $route => $approverType) {
+                if (Route::currentRouteNamed($route)) {
+                    $approvers = $subUnit->$approverType;
+                    if ($approverType === 'departmentUnitApprovers' && $route === 'asset-transfer.update' && $this->assetTransferRequestId !== null) {
+                        if ($approvers->isEmpty()) {
+                            $this->errorMessage = 'No approvers assigned to the selected subunit.';
+                            return false;
+                        }
+                    } elseif ($approvers->isEmpty()) {
+                        $this->errorMessage = 'No approvers assigned to the selected subunit.';
+                        return false;
+                    }
                 }
             }
         }
