@@ -133,8 +133,9 @@ class AddingPoController extends Controller
                 ->whereHas('receivingWarehouse', function ($query) use ($userLocationId) {
                     $query->where('location_id', $userLocationId);
                 })->get();
-            if($assetRequest->isEmpty()){
-                return $this->responseUnprocessable('No asset request to sync.');
+            if ($assetRequest->isEmpty()) {
+                continue;
+//                return $this->responseUnprocessable('No asset request found for transaction number ' . $transactionNumber);
             }
             if ($assetRequest) {
                 foreach ($asset['order'] as $order) {
@@ -146,7 +147,7 @@ class AddingPoController extends Controller
 
                     if ($deletedAt != null) {
                         foreach ($assetRequest as $request) {
-                            $replicatedAssetRequest = $assetRequest->replicate();
+                            $replicatedAssetRequest = $request->replicate();
                             $replicatedAssetRequest->quantity = $remaining;
                             $replicatedAssetRequest->quantity_delivered = 0;
                             $replicatedAssetRequest->filter = NULL;
@@ -159,7 +160,7 @@ class AddingPoController extends Controller
                             $cancelledCount++;
                         }
                     }
-                    $itemRequest = $assetRequest->where('reference_number', $referenceNumber)->first();
+                    $itemRequest = AssetRequest::where('reference_number', $referenceNumber)->first();
                     foreach ($order['rr_orders'] as $rr) {
                         $deliveryDate = $rr['delivery_date'];
                         $itemRemaining = $rr['remaining'];
