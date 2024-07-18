@@ -254,126 +254,18 @@ class FixedAssetRepository
     public function searchFixedAsset($search, $status, $page, $per_page = null, $filter = null)
     {
         $filter = $filter ? array_map('trim', explode(',', $filter)) : [];
-        //check if filter only contains  'With Voucher'
-        if(count($filter) == 1 && $filter[0] == 'With Voucher'){
-            return $this->faWithVoucherView();
+        //check if filter only contains 'With Voucher'
+        if (count($filter) == 1 && $filter[0] == 'With Voucher') {
+            return $this->faWithVoucherView($page, $per_page);
         }
 
-        $fixedAssetFields = [
-            'id',
-            'requester_id',
-            'pr_number',
-            'po_number',
-            'rr_number',
-            'warehouse_id',
-            'warehouse_number_id',
-            'capex_id',
-            'sub_capex_id',
-            'vladimir_tag_number',
-            'tag_number',
-            'tag_number_old',
-            'from_request',
-            'asset_description',
-            'type_of_request_id',
-            'asset_specification',
-            'accountability',
-            'accountable',
-            'capitalized',
-            'cellphone_number',
-            'brand',
-            'supplier_id',
-            'major_category_id',
-            'minor_category_id',
-            'voucher',
-            'voucher_date',
-            'receipt',
-            'quantity',
-            'depreciation_method',
-            'acquisition_cost',
-            'asset_status_id',
-            'cycle_count_status_id',
-            'depreciation_status_id',
-            'movement_status_id',
-            'is_old_asset',
-            'is_additional_cost',
-            'is_active',
-            'care_of',
-            'company_id',
-            'business_unit_id',
-            'unit_id',
-            'subunit_id',
-            'department_id',
-            'charged_department',
-            'location_id',
-            'account_id',
-            'remarks',
-            'created_at',
-            'print_count',
-            'last_printed',
-            DB::raw("NULL as add_cost_sequence"),
-        ];
-
-        $additionalCostFields = [
-            'additional_costs.id',
-            'additional_costs.requester_id',
-            'additional_costs.pr_number',
-            'additional_costs.po_number',
-            'additional_costs.rr_number',
-            'additional_costs.warehouse_id',
-            'additional_costs.warehouse_number_id',
-            'fixed_assets.capex_id AS capex_id',
-            'fixed_assets.sub_capex_id AS sub_capex_id',
-            'fixed_assets.vladimir_tag_number AS vladimir_tag_number',
-            'fixed_assets.tag_number AS tag_number',
-            'fixed_assets.tag_number_old AS tag_number_old',
-            'additional_costs.from_request',
-            'additional_costs.asset_description',
-            'additional_costs.type_of_request_id',
-            'additional_costs.asset_specification',
-            'additional_costs.accountability',
-            'additional_costs.accountable',
-            'additional_costs.capitalized',
-            'additional_costs.cellphone_number',
-            'additional_costs.brand',
-            'additional_costs.supplier_id',
-            'additional_costs.major_category_id',
-            'additional_costs.minor_category_id',
-            'additional_costs.voucher',
-            'additional_costs.voucher_date',
-            'additional_costs.receipt',
-            'additional_costs.quantity',
-            'additional_costs.depreciation_method',
-            'additional_costs.acquisition_cost',
-            'additional_costs.asset_status_id',
-            'additional_costs.cycle_count_status_id',
-            'additional_costs.depreciation_status_id',
-            'additional_costs.movement_status_id',
-            'fixed_assets.is_old_asset as is_old_asset',
-            'additional_costs.is_additional_cost',
-            'additional_costs.is_active',
-            'additional_costs.care_of',
-            'additional_costs.company_id',
-            'additional_costs.business_unit_id',
-            'additional_costs.unit_id',
-            'additional_costs.subunit_id',
-            'additional_costs.department_id',
-            'fixed_assets.charged_department as charged_department',
-            'additional_costs.location_id',
-            'additional_costs.account_id',
-            'additional_costs.remarks',
-            'fixed_assets.created_at',
-            'fixed_assets.print_count',
-            'fixed_assets.last_printed',
-            'additional_costs.add_cost_sequence',
-        ];
         $firstQuery = ($status === 'deactivated')
-            ? FixedAsset::onlyTrashed()->select($fixedAssetFields)
-            : FixedAsset::select($fixedAssetFields);
+            ? FixedAsset::onlyTrashed()->select($this->fixedAssetFields())
+            : FixedAsset::select($this->fixedAssetFields());
 
         $secondQuery = ($status === 'deactivated')
-            ? AdditionalCost::onlyTrashed()->select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
-            : AdditionalCost::select($additionalCostFields)->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
-
+            ? AdditionalCost::onlyTrashed()->select($this->additionalCostFields())->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
+            : AdditionalCost::select($this->additionalCostFields())->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
 
         $conditions = [
@@ -1039,8 +931,8 @@ class FixedAssetRepository
     {
         $fixed_assets = FixedAsset::select([
             'id', 'vladimir_tag_number', 'tag_number', 'tag_number_old', 'asset_description', 'receipt', 'acquisition_cost',
-            'quantity', 'accountability', 'accountable','asset_specification',
-            'from_request', 'is_released', 'formula_id', 'requester_id','uom_id',
+            'quantity', 'accountability', 'accountable', 'asset_specification',
+            'from_request', 'is_released', 'formula_id', 'requester_id', 'uom_id',
             'warehouse_number_id', 'capex_id', 'sub_capex_id', 'type_of_request_id', 'supplier_id',
             'department_id', 'major_category_id', 'minor_category_id', 'asset_status_id',
             'cycle_count_status_id', 'depreciation_status_id', 'movement_status_id',
@@ -1070,7 +962,7 @@ class FixedAssetRepository
                 'location:id,location_name,location_code',
                 'accountTitle:id,account_title_name,account_title_code'
             ])
-            ->when($movement != null, function ($query){
+            ->when($movement != null, function ($query) {
                 $query->where('from_request', '!=', 1)
                     ->orWhere(function ($query) {
                         $query->where('from_request', 1)
@@ -1097,14 +989,66 @@ class FixedAssetRepository
         ], 200);
     }
 
-    private function faWithVoucherView()
+    private function faWithVoucherView($page, $perPage)
     {
-        return FixedAsset::whereNotNull('receipt')
+        $fixedAssets = FixedAsset::select($this->fixedAssetFields())
+            ->whereNotNull('po_number')
+            ->where('po_number', '!=', '-')
+            ->whereNotNull('receipt')
             ->where('receipt', '!=', '-')
+            ->where(function ($query) {
+                $query->whereNull('voucher')
+                    ->orWhere('voucher', '=', '-');
+            })
             ->get();
 
-        $poFromRequest = $request->query('po_no');
-        $rrFromRequest = $request->query('rr_no');
+        $additionalCosts = AdditionalCost::select($this->additionalCostFields())
+            ->join('fixed_assets', 'fixed_assets.id', '=', 'additional_costs.fixed_asset_id')
+            ->whereNotNull('additional_costs.po_number')
+            ->where('additional_costs.po_number', '!=', '-')
+            ->whereNotNull('additional_costs.receipt')
+            ->where('additional_costs.receipt', '!=', '-')
+            ->where(function ($query) {
+                $query->whereNull('additional_costs.voucher')
+                    ->orWhere('additional_costs.voucher', '=', '-');
+            })
+            ->get();
+
+        $fixedAssets = $fixedAssets->filter(function ($fixedAsset) {
+            $voucher = $this->getVoucher($fixedAsset->receipt, $fixedAsset->po_number);
+            if ($voucher) {
+                $fixedAsset->voucher = $voucher['voucher_no'];
+                $fixedAsset->voucher_date = $voucher['voucher_date'];
+                return true;
+            }
+            return false;
+        });
+
+        $additionalCosts = $additionalCosts->filter(function ($additionalCost) {
+            $voucher = $this->getVoucher($additionalCost->receipt, $additionalCost->po_number);
+            if ($voucher) {
+                $additionalCost->voucher = $voucher['voucher_no'];
+                $additionalCost->voucher_date = $voucher['voucher_date'];
+                return true;
+            }
+            return false;
+        });
+
+        $combinedResults = $fixedAssets->merge($additionalCosts);
+
+        $paginatedResults = $this->paginateResults($combinedResults, $page, $perPage);
+
+        $paginatedResults->setCollection($paginatedResults->getCollection()->map(function ($item) {
+            return $this->transformSearchFixedAsset($item);
+        }));
+
+        return $paginatedResults;
+    }
+
+    private function getVoucher($receipt, $po_number)
+    {
+        $poFromRequest = $po_number;
+        $rrFromRequest = $receipt;
         $poBatches = PoBatch::with('fistoTransaction')->where('po_no', "PO#" . $poFromRequest)->orderBy('request_id')->get();
 
         $poBatch = $poBatches->first(function ($poBatch) use ($rrFromRequest) {
@@ -1114,18 +1058,125 @@ class FixedAssetRepository
 
         if ($poBatch) {
             if ($poBatch->fistoTransaction->voucher_no == null || $poBatch->fistoTransaction->voucher_month == null) {
-                return $this->responseNotFound('No Voucher Found');
+                return null;
             }
-            $result = [
-                'request_id' => $poBatch->request_id,
-                'voucher_no' => $poBatch->fistoTransaction->voucher_no ?? null,
-                'voucher_date' => $poBatch->fistoTransaction->voucher_month ?? null,
-                'rr_group' => json_decode($poBatch->rr_group)
+            return [
+                'voucher_no' => $poBatch->fistoTransaction->voucher_no,
+                'voucher_date' => $poBatch->fistoTransaction->voucher_month
             ];
         } else {
-            return $this->responseNotFound('No Voucher Found');
+            return null;
         }
+    }
 
-        return $result;
+    private function fixedAssetFields(){
+        return[
+            'id',
+            'requester_id',
+            'pr_number',
+            'po_number',
+            'rr_number',
+            'warehouse_id',
+            'warehouse_number_id',
+            'capex_id',
+            'sub_capex_id',
+            'vladimir_tag_number',
+            'tag_number',
+            'tag_number_old',
+            'from_request',
+            'asset_description',
+            'type_of_request_id',
+            'asset_specification',
+            'accountability',
+            'accountable',
+            'capitalized',
+            'cellphone_number',
+            'brand',
+            'supplier_id',
+            'major_category_id',
+            'minor_category_id',
+            'voucher',
+            'voucher_date',
+            'receipt',
+            'quantity',
+            'depreciation_method',
+            'acquisition_cost',
+            'asset_status_id',
+            'cycle_count_status_id',
+            'depreciation_status_id',
+            'movement_status_id',
+            'is_old_asset',
+            'is_additional_cost',
+            'is_active',
+            'care_of',
+            'company_id',
+            'business_unit_id',
+            'unit_id',
+            'subunit_id',
+            'department_id',
+            'charged_department',
+            'location_id',
+            'account_id',
+            'remarks',
+            'created_at',
+            'print_count',
+            'last_printed',
+            DB::raw("NULL as add_cost_sequence"),
+        ];
+    }
+    private function additionalCostFields(){
+        return[
+            'additional_costs.id',
+            'additional_costs.requester_id',
+            'additional_costs.pr_number',
+            'additional_costs.po_number',
+            'additional_costs.rr_number',
+            'additional_costs.warehouse_id',
+            'additional_costs.warehouse_number_id',
+            'fixed_assets.capex_id AS capex_id',
+            'fixed_assets.sub_capex_id AS sub_capex_id',
+            'fixed_assets.vladimir_tag_number AS vladimir_tag_number',
+            'fixed_assets.tag_number AS tag_number',
+            'fixed_assets.tag_number_old AS tag_number_old',
+            'additional_costs.from_request',
+            'additional_costs.asset_description',
+            'additional_costs.type_of_request_id',
+            'additional_costs.asset_specification',
+            'additional_costs.accountability',
+            'additional_costs.accountable',
+            'additional_costs.capitalized',
+            'additional_costs.cellphone_number',
+            'additional_costs.brand',
+            'additional_costs.supplier_id',
+            'additional_costs.major_category_id',
+            'additional_costs.minor_category_id',
+            'additional_costs.voucher',
+            'additional_costs.voucher_date',
+            'additional_costs.receipt',
+            'additional_costs.quantity',
+            'additional_costs.depreciation_method',
+            'additional_costs.acquisition_cost',
+            'additional_costs.asset_status_id',
+            'additional_costs.cycle_count_status_id',
+            'additional_costs.depreciation_status_id',
+            'additional_costs.movement_status_id',
+            'fixed_assets.is_old_asset as is_old_asset',
+            'additional_costs.is_additional_cost',
+            'additional_costs.is_active',
+            'additional_costs.care_of',
+            'additional_costs.company_id',
+            'additional_costs.business_unit_id',
+            'additional_costs.unit_id',
+            'additional_costs.subunit_id',
+            'additional_costs.department_id',
+            'fixed_assets.charged_department as charged_department',
+            'additional_costs.location_id',
+            'additional_costs.account_id',
+            'additional_costs.remarks',
+            'fixed_assets.created_at',
+            'fixed_assets.print_count',
+            'fixed_assets.last_printed',
+            'additional_costs.add_cost_sequence',
+        ];
     }
 }
