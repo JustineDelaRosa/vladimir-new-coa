@@ -85,8 +85,9 @@ trait RequestShowDataHandler
             'is_removed' => $ar->trashed() ? 1 : 0,
             //check if the requester_id is equal to deleter_id then the requester deleted it else get the role name of the deleter
             'removed_by' => $ar->deleter_id == $ar->requester_id ? "Requestor" : ($ar->deleter ? $ar->deleter->role->role_name : null),
-            'can_edit' => ($ar->status == 'Returned' || $ar->status == 'For Approval of Approver 1') || ($isUserLastApprover) ? 1 : 0,
-            'can_resubmit' => $ar->status == 'Returned' ? 1 : 0,
+            'can_edit' => $ar->is_fa_approved ? 0 : 1,
+            'can_resubmit' => $ar->is_fa_approved ? 0 : 1,
+            'fa_approval' => $ar->status == 'Approved' && !$ar->is_fa_approved ? 1 : 0,
             'asset_approval_id' => $ar->assetApproval->first(function ($approval) {
                 return $approval->status == 'For Approval';
             })->id ?? '',

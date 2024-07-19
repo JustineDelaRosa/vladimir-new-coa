@@ -27,7 +27,7 @@ trait AssetRequestHandler
     public function approverViewing($transactionNumber)
     {
         $transactionNumber = AssetRequest::where('transaction_number', $transactionNumber)->get();
-        if($transactionNumber->isEmpty()){
+        if ($transactionNumber->isEmpty()) {
             return [];
         }
         //get the quantity of the transaction number and sum it
@@ -69,23 +69,28 @@ trait AssetRequestHandler
 
     public function getAssetRequestForApprover($field, $transactionNumber, $referenceNumber = null, $singleResult = true)
     {
-
         //TODO:: CHECK THIS
         $approverCount = AssetApproval::where('transaction_number', $transactionNumber)->whereIN('status', ['For Approval', 'Returned'])
             ->first()->layer ?? 1;
         if ($singleResult) {
             $query = AssetRequest::where($field, $referenceNumber)
+                ->where('is_fa_approved', false)
                 ->whereIn('status', [
                     'For Approval of Approver ' . $approverCount,
-                    'Returned'
+                    'Returned',
+                    'Approved',
+                    'Returned From Ymir'
                 ]);
+//            ->orWhere('filter', 'Waiting to send for PO');
             return $query->first();
         } else {
             $query = AssetRequest::where($field, $transactionNumber)
+                ->where('is_fa_approved', false)
                 ->whereIn('status', [
                     'For Approval of Approver ' . $approverCount,
                     'Approved',
-                    'Returned'
+                    'Returned',
+                    'Returned From Ymir'
                 ]);
             return $query->get();
         }
@@ -190,7 +195,7 @@ trait AssetRequestHandler
         //TODO: Make this last for only 20 mins if there is bug
         if ($totalAfterCount !== $totalBeforeCount) {
             Cache::put('isFileDataUpdated', true, now()->addMinutes(20));
-        }else{
+        } else {
             Cache::put('isFileDataUpdated', false, now()->addMinutes(20));
         }
     }
@@ -210,7 +215,7 @@ trait AssetRequestHandler
         }
     }
 
-    public function transformIndexAssetRequest($assetRequest): array
+    public function transformIndexAssetRequest($assetRequest)
     {
         $deletedQuantity = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
         return [
@@ -219,6 +224,10 @@ trait AssetRequestHandler
             'transaction_number' => $assetRequest->transaction_number,
             'item_count' => $assetRequest->quantity + $deletedQuantity ?? 0,
             'cancel_count' => $deletedQuantity ?? 0,
+            'ordered' => $assetRequest->quantity + $deletedQuantity ?? '-',
+            'delivered' => $assetRequest->quantity_delivered ?? '-',
+            'remaining' => $assetRequest->quantity - $assetRequest->quantity_delivered ?? '-',
+            'cancelled' => (int)$assetRequest->cancelled,
             'date_requested' => $this->getDateRequested($assetRequest->transaction_number),
             'remarks' => $assetRequest->remarks ?? '',
             'status' => $this->getStatus($assetRequest),
@@ -339,7 +348,7 @@ trait AssetRequestHandler
             }
             if ($assetRequest->is_fa_approved == true) {
                 return [
-                    'firstname' => 'Sent to ymir for Receiving',
+                    'firstname' => 'Sent to ymir for PO',
                     'lastname' => '',
                 ];
             }
@@ -388,7 +397,7 @@ trait AssetRequestHandler
                 return 'For Approval of FA';
             }
             if ($assetRequest->is_fa_approved) {
-                return 'Sent to ymir for Receiving';
+                return 'Sent to ymir for PO';
             }
 //            if ($assetRequest->pr_number == null) {
 //                return 'Inputting of PR No.';
@@ -429,7 +438,7 @@ trait AssetRequestHandler
             $steps[] = $approver->approver->user->firstname . ' ' . $approver->approver->user->lastname;
         }
         $steps[] = 'For Approval of FA';
-        $steps[] = 'Sent to ymir for Receiving.';
+        $steps[] = 'Sent to ymir for PO.';
 //        $steps[] = 'Inputting of PO No. and RR No.';
         $steps[] = 'Asset Tagging';
         $steps[] = 'Ready to Pickup';
@@ -710,7 +719,7 @@ trait AssetRequestHandler
     {
         $user = auth('sanctum')->user()->id;
         $approversId = Approvers::where('approver_id', $user)->first()->id ?? null;
-        if($approversId == null){
+        if ($approversId == null) {
             return null;
         }
         $approverId = AssetApproval::where('transaction_number', $transactionNumber)
@@ -771,8 +780,9 @@ trait AssetRequestHandler
     //THIS IS FOR MOVING ASSET CONTAINER TO ASSET REQUEST
     public function createAssetApprovals($items, $requesterId, $assetRequest)
     {
-        $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $items[0]->subunit_id)
-            ->orderBy('layer', 'asc')
+//        return $assetRequest->transaction_number . '-' . $requesterId. '-' . $items[0]->subunit_id;
+         $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $items[0]->subunit_id)
+            ->orderBy('layer')
             ->get();
 
         $layerIds = $departmentUnitApprovers->map(function ($approverObject) {
@@ -780,6 +790,9 @@ trait AssetRequestHandler
         })->toArray();
         $isRequesterApprover = in_array($requesterId, $layerIds);
         $requesterLayer = array_search($requesterId, $layerIds) + 1;
+//        return $layerIds ?? 'none';
+//
+//        return 'none';
 
         foreach ($departmentUnitApprovers as $departmentUnitApprover) {
             $approver_id = $departmentUnitApprover->approver_id;

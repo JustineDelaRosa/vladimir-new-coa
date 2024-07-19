@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AssetRequest\CreateAssetRequestRequest;
 use App\Http\Requests\AssetRequest\UpdateAssetRequestRequest;
 use App\Models\AdditionalCost;
+use App\Models\AssetApproval;
 use App\Models\AssetRequest;
 use App\Models\DepartmentUnitApprovers;
 use App\Models\FixedAsset;
 use App\Models\RequestContainer;
 use App\Models\RoleManagement;
 use App\Models\User;
+use App\Models\YmirPRItem;
+use App\Models\YmirPRTransaction;
 use App\Repositories\ApprovedRequestRepository;
 use App\Traits\AssetRequestHandler;
 use App\Traits\ItemDetailsHandler;
@@ -38,6 +41,8 @@ class AssetRequestController extends Controller
 
     public function index(Request $request)
     {
+
+//        return YmirPRTransaction::get();
         $request->validate([
             'for_monitoring' => 'boolean',
             'filter' => ['nullable', 'string'],
@@ -114,11 +119,26 @@ class AssetRequestController extends Controller
                 if ($status == 'deactivated' && $assetRequestCollection->every->trashed()) {
                     $assetRequest = $assetRequestCollection->first();
                     $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+                    $assetRequest->quantity_delivered = $assetRequestCollection->sum('quantity_delivered');
+                    //add all the quantity of soft deleted asset request
+                    $cancelled = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
+                    $anyRecentlyUpdated = $assetRequestCollection->contains(function ($item) {
+                        return $item->updated_at->diffInMinutes(now()) < 2;
+                    });
+                    $assetRequest->cancelled = $cancelled;
+
                     return $this->transformIndexAssetRequest($assetRequest);
                 } // If status is 'active', check if any item in the group is not trashed id all is trash return null
                 else if ($status == 'active' && !$assetRequestCollection->every->trashed()) {
                     $assetRequest = $assetRequestCollection->first();
                     $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+                    $assetRequest->quantity_delivered = $assetRequestCollection->sum('quantity_delivered');
+                    //add all the quantity of soft deleted asset request
+                    $cancelled = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
+                    $anyRecentlyUpdated = $assetRequestCollection->contains(function ($item) {
+                        return $item->updated_at->diffInMinutes(now()) < 2;
+                    });
+                    $assetRequest->cancelled = $cancelled;
                     return $this->transformIndexAssetRequest($assetRequest);
                 }
             })
@@ -201,11 +221,28 @@ class AssetRequestController extends Controller
 //            return $this->responseUnprocessable('You can\'t resubmit this request.');
         }
     }
+    public function resubmitAssetRequest($transactionNumber): JsonResponse
+    {
+        $isFileDataUpdated = Cache::get('isFileDataUpdated', false);
+        $isDataUpdated = Cache::get('isDataUpdated', false);
+        if ($isDataUpdated || $isFileDataUpdated) {
+            $this->approveRequestRepository->resubmitRequest($transactionNumber);
+            Cache::forget('isDataUpdated');
+            Cache::forget('isFileDataUpdated');
+            return $this->responseSuccess('AssetRequest resubmitted Successfully');
+        } else {
+            return $this->responseUnprocessable('No changes, need to update first.');
+//            return $this->responseUnprocessable('You can\'t resubmit this request.');
+        }
+    }
 
     public function updateRequest(UpdateAssetRequestRequest $request, $referenceNumber)
     {
-        $transactionNumber = AssetRequest::where('reference_number', $referenceNumber)->first()->transaction_number;
+
+        $transactionNumber = AssetRequest::where('reference_number', $referenceNumber)->first()->transaction_number ?? null;
+
         $assetRequest = $this->getAssetRequestForApprover('reference_number', $transactionNumber, $referenceNumber);
+
         if (!$assetRequest) {
             return $this->responseUnprocessable('Asset Request not found.');
         }
@@ -222,7 +259,12 @@ class AssetRequestController extends Controller
 
         //TODO: Make this last for only 20 mins if there is bug
         Cache::put('isDataUpdated', $isDataUpdated, now()->addMinutes(20));
-        $this->approveRequestRepository->isApproverChange($transactionNumber);
+        $this->approveRequestRepository->isApproverChange($transactionNumber, $isDataUpdated);
+
+        if(Cache::get('isDataUpdated') || Cache::get('isFileDataUpdated')){
+            $this->resubmitAssetRequest($transactionNumber);
+        }
+
         return $this->responseSuccess('AssetRequest updated Successfully',
             [
                 'isDataUpdates' => Cache::get('isDataUpdated') || Cache::get('isFileDataUpdated') ? 1 : 0,
@@ -254,17 +296,20 @@ class AssetRequestController extends Controller
         if ($items->isEmpty()) {
             return $this->responseUnprocessable('No data to move');
         }
-        //check if the item inside item have different subunit id
+        //check if the item inside item has different subunit id
         $subunitId = $items[0]->subunit_id;
+        $hasApproverCheck = DepartmentUnitApprovers::where('subunit_id', $subunitId)->exists();
+        if (!$hasApproverCheck) {
+            return $this->responseUnprocessable('No approver found for this subunit');
+        }
         foreach ($items as $item) {
             if ($item->subunit_id != $subunitId) {
                 return $this->responseUnprocessable('Invalid Action, Different Subunit');
             }
         }
-
+        $assetRequest = null;
         foreach ($items as $item) {
             $assetRequest = new AssetRequest();
-
             $assetRequest->status = $item->status;
             $assetRequest->is_addcost = $item->is_addcost;
             $assetRequest->fixed_asset_id = $item->fixed_asset_id;
@@ -313,7 +358,7 @@ class AssetRequestController extends Controller
             $item->forceDelete();
         }
 
-        $this->createAssetApprovals($items, $requesterId, $assetRequest);
+         $this->createAssetApprovals($items, $requesterId, $assetRequest);
 
         return $this->responseSuccess('Successfully requested');
     }

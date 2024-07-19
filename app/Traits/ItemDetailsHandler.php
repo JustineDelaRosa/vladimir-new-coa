@@ -60,8 +60,8 @@ trait ItemDetailsHandler
             'is_removed' => $item->trashed() ? 1 : 0,
             //check if the requester_id is equal to deleter_id then the requester deleted it else get the role name of the deleter
             'removed_by' => $item->deleter_id == $item->requester_id ? "Requestor" : ($item->deleter ? $item->deleter->role->role_name : null),
-            'can_edit' => ($item->status == 'Returned' || $item->status == 'For Approval of Approver 1') || ($isUserLastApprover) ? 1 : 0,
-            'can_resubmit' => $item->status == 'Returned' ? 1 : 0,
+            'can_edit' => $item->is_fa_approved ? 0 : 1,
+            'can_resubmit' => $item->is_fa_approved ? 0 : 1,
             'asset_approval_id' => $item->assetApproval->first(function ($approval) {
                     return $approval->status == 'For Approval';
                 })->id ?? '',

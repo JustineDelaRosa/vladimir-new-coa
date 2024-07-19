@@ -47,6 +47,10 @@ class MemoSeriesController extends Controller
             $fixedAsset = FixedAsset::where('vladimir_tag_number', $vTagNumber)->first();
 
             $fixedAsset->update(['memo_series_id' => $memo->id]);
+
+            if($fixedAsset->print_count > 0){
+                $fixedAsset->update(['can_release' => 1]);
+            }
         }
         return $this->responseSuccess('Memo Printed Successfully', $memo);
     }

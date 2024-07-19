@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\AssetRelease;
 
+use App\Models\AdditionalCost;
+use App\Models\FixedAsset;
 use App\Rules\Base64ImageValidation;
 use App\Rules\NewCoaValidation\BusinessUnitValidation;
 use App\Rules\NewCoaValidation\DepartmentValidation;
@@ -30,7 +32,26 @@ class MultipleReleaseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'warehouse_number_id' => ['bail','required', 'exists:warehouse_numbers,id', 'distinct', 'array'],
+            'warehouse_number_id' => ['bail','required', 'exists:warehouse_numbers,id', 'distinct', 'array',function ($attribute, $value, $fail) {
+                $departmentIds = [];
+
+                foreach ($value as $warehouseId) {
+                    $fixedAssetDepartmentId = FixedAsset::where('warehouse_number_id', $warehouseId)->value('department_id');
+                    if ($fixedAssetDepartmentId !== null) {
+                        $departmentIds[] = $fixedAssetDepartmentId;
+                    }
+
+                    $additionalCostDepartmentId = AdditionalCost::where('warehouse_number_id', $warehouseId)->value('department_id');
+                    if ($additionalCostDepartmentId !== null) {
+                        $departmentIds[] = $additionalCostDepartmentId;
+                    }
+                }
+
+                if (count(array_unique($departmentIds)) > 1) {
+                    $fail('The department of the selected items is not the same.');
+                }
+
+            }],
             'accountability' => ['required', 'string', 'in:Common,Personal Issued'],
             'accountable' => ['required_if:accountability,Personal Issued', 'string'],
             'received_by' => ['required', 'string'],

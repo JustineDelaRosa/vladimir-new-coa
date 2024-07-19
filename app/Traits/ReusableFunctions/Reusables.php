@@ -110,6 +110,11 @@ trait Reusables
                 $model::where($uniqueNumber, $uniqueNumberValue)->update([
                     'filter' => 'Sent to Ymir', // Can be Change
                 ]);
+//                $model::where($uniqueNumber, $uniqueNumberValue)
+//                    ->where('status', 'Approved')
+//                    ->update([
+//                    'pr_number' => $model::generatePrNumber(),
+//                ]);
             }
 
         }

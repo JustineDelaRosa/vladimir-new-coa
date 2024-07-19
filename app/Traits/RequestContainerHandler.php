@@ -103,19 +103,22 @@ trait RequestContainerHandler
                     'account_title_id' => $request->account_title_id,
                 ]);
             }
-        } elseif ($requestContainer->first()->acquisition_details != $request->acquisition_details) {
+        }
+        if ($requestContainer->first()->acquisition_details != $request->acquisition_details) {
             foreach ($requestContainer as $requestContainerItem) {
                 $requestContainerItem->update([
                     'acquisition_details' => $request->acquisition_details,
                 ]);
             }
-        } elseif ($requestContainer->first()->fixed_asset_id != $request->fixed_asset_id && $request->fixed_asset_id != null) {
+        }
+        if ($requestContainer->first()->fixed_asset_id != $request->fixed_asset_id && $request->fixed_asset_id != null) {
             foreach ($requestContainer as $requestContainerItem) {
                 $requestContainerItem->update([
                     'fixed_asset_id' => $request->fixed_asset_id,
                 ]);
             }
-        }elseif ($requestContainer->first()->receiving_warehouse_id != $request->receiving_warehouse_id) {
+        }
+        if ($requestContainer->first()->receiving_warehouse_id != $request->receiving_warehouse_id) {
             foreach ($requestContainer as $requestContainerItem) {
                 $requestContainerItem->update([
                     'receiving_warehouse_id' => $request->receiving_warehouse_id,
