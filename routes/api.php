@@ -272,6 +272,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     //RELEASE ASSET//
     Route::RESOURCE('asset-release', AssetReleaseController::class);
     Route::PUT('release-assets', [AssetReleaseController::class, 'releaseAssets']);
+    Route::PUT('update-release-accountability', [AssetReleaseController::class, 'updateAccountability']);
     //NOTIFICATION COUNT//
     Route::GET('notification-count', [AuthController::class, 'notificationCount']);
 
@@ -321,5 +322,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     Route::prefix('ymir')->group(function () {
         Route::GET('pr-request', [AddingPrController::class, 'requestToPR']);
+        Route::PATCH('pr-return', [AddingPrController::class, 'returnFormYmir']);
     });
 });

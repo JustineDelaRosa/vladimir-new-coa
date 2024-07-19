@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AssetRelease\MultipleReleaseRequest;
+use App\Http\Requests\AssetRelease\UpdateAccountabilityRequest;
 use App\Http\Requests\AssetRelease\UpdateAssetReleaseRequest;
 use App\Models\AdditionalCost;
 use App\Models\AssetRequest;
@@ -50,6 +51,39 @@ class AssetReleaseController extends Controller
         }
     }
 
+    public function updateAccountability(UpdateAccountabilityRequest $request)
+    {
+        $warehouseIds = $request->get('warehouse_number_id');
+        $accountability = $request->get('accountability');
+        $accountable = $request->get('accountable');
+
+        DB::beginTransaction();
+        try {
+            foreach ($warehouseIds as $warehouseId) {
+                $fixedAsset = FixedAsset::where('warehouse_number_id', $warehouseId)->first();
+                $additionalCost = AdditionalCost::where('warehouse_number_id', $warehouseId)->first();
+
+                if (!$fixedAsset && !$additionalCost) {
+                    return $this->responseNotFound('Asset Not Found');
+                }
+
+                if ($accountability === 'Common') {
+                    $this->updateRemoveMemoTag($fixedAsset, $additionalCost);
+                    $this->setNewAccountability($fixedAsset, $additionalCost,$accountability, $accountable);
+                } else {
+                    $this->setNewAccountability($fixedAsset, $additionalCost,$accountability, $accountable);
+                }
+            }
+//            DB::rollBack();
+            DB::commit();
+            return $this->responseSuccess('Accountability Updated');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->responseUnprocessable('An error occurred while updating accountability: ' . $e->getMessage());
+        }
+
+    }
+
     public function show(int $warehouseId)
     {
         $fixed_asset = FixedAsset::where('warehouse_number_id', $warehouseId)->first();
@@ -87,19 +121,37 @@ class AssetReleaseController extends Controller
             $unitId = $request->get('unit_id');
             $subunitId = $request->get('subunit_id');
             $locationId = $request->get('location_id');
-            $accountTitleId = $request->get('account_title_id');
+//            $accountTitleId = $request->get('account_title_id');
 
             $depreciation = DepreciationStatus::where('depreciation_status_name', 'For Depreciation')->first()->id;
             foreach ($warehouseIds as $warehouseId) {
 
-                $fixedAssetQuery = FixedAsset::where('warehouse_number_id', $warehouseId)->where('is_released', 0);
+                $fixedAssetQuery = FixedAsset::where('warehouse_number_id', $warehouseId)
+                    ->where(function ($query) {
+                        $query->where('accountability', 'Common')
+                            ->where('memo_series_id', null)
+                            ->orWhere(function ($query) {
+                                $query->where('accountability', 'Personal Issued')
+                                    ->whereNotNull('memo_series_id');
+                            });
+                    })->where('is_released', 0);
+
                 $fixedAssetCount = (clone $fixedAssetQuery)->count();
 
-                $additionalCostQuery = AdditionalCost::where('warehouse_number_id', $warehouseId)->where('is_released', 0);
+                $additionalCostQuery = AdditionalCost::where('warehouse_number_id', $warehouseId)
+                    ->where(function ($query) {
+                        $query->where('accountability', 'Common')
+                            ->where('memo_series_id', null)
+                            ->orWhere(function ($query) {
+                                $query->where('accountability', 'Personal Issued')
+                                    ->whereNotNull('memo_series_id');
+                            });
+                    })->where('is_released', 0);
+
                 $additionalCostCount = (clone $additionalCostQuery)->count();
 
                 if ($fixedAssetCount == 0 && $additionalCostCount == 0) {
-                    return $this->responseNotFound('Asset Not Found');
+                    return $this->responseNotFound('Asset Not Found, Check eligibility and try again');
                 }
 
                 $processedAsset = null;
@@ -185,4 +237,5 @@ class AssetReleaseController extends Controller
             ]);
         }
     }
+
 }

@@ -1175,4 +1175,33 @@ trait AssetReleaseHandler
 
         return $asset;
     }
+
+    public function updateRemoveMemoTag($fixedAsset, $additionalCost)
+    {
+        if ($fixedAsset !== null) {
+            $fixedAsset->update(['memo_series_id' => null]);
+        }
+        if ($additionalCost !== null) {
+            $additionalCost->update(['memo_series_id' => null]);
+        }
+    }
+
+    public function setNewAccountability($fixedAsset, $additionalCost, $accountability, $accountable)
+    {
+        if ($fixedAsset !== null) {
+            $fixedAsset->update([
+                'accountability' => $accountability,
+                'accountable' => $accountable,
+                'can_release' => 0
+            ]);
+        }
+
+        if ($additionalCost !== null) {
+            $additionalCost->update([
+                'accountability' => $accountability,
+                'accountable' => $accountable,
+                'can_release' => 0
+            ]);
+        }
+    }
 }

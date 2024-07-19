@@ -32,7 +32,7 @@ trait AddingPoHandler
     public function createAssetRequestQuery($toPo)
     {
         $userLocationId = auth('sanctum')->user()->location_id;
-        $query = AssetRequest::query();
+        $query = AssetRequest::query()->withTrashed();
 
         $query->where('status', 'Approved')
             ->where('is_fa_approved', 1)

@@ -72,6 +72,21 @@ class AssetRequest extends Model implements HasMedia
         return $transactionNumber;
     }
 
+    public function generatePRNumber(){
+        $prNumber = null;
+
+        DB::transaction(function () use (&$prNumber) {
+            $lastTransaction = AssetRequest::withTrashed()->orderBy('pr_number', 'desc')
+                ->lockForUpdate()
+                ->first();
+
+            $nextNumber = $lastTransaction ? $lastTransaction->pr_number + 1 : 1;
+            $prNumber = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        });
+
+        return $prNumber;
+    }
+
 
     public function currentApprover(): HasMany
     {
@@ -100,10 +115,10 @@ class AssetRequest extends Model implements HasMedia
         return $query->whereIn('transaction_number', function ($query) use ($toPo) {
             $query->select('transaction_number')
                 ->from('asset_requests')
-                ->whereNull('deleted_at')
-                ->where('synced', $toPo == 1 ? 1 : 0)
+                ->whereNull('deleted_at') // Exclude soft deleted records
+                ->where('synced', 1)
                 ->groupBy('transaction_number')
-                ->havingRaw('SUM(quantity) ' . ($toPo == 1 ? '!=' : '=') . ' SUM(quantity_delivered)');
+                ->havingRaw('SUM(quantity) ' . ($toPo == 1 ? '>' : '=') . ' SUM(quantity_delivered)');
         });
     }
 

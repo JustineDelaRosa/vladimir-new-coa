@@ -28,10 +28,13 @@ class AddingPoController extends Controller
             ->groupBy('transaction_number')->map(function ($assetRequestCollection) {
                 $assetRequest = $assetRequestCollection->first();
                 $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+                $assetRequest->quantity_delivered = $assetRequestCollection->sum('quantity_delivered');
+                //add all the quantity of soft deleted asset request
+                $cancelled = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
                 $anyRecentlyUpdated = $assetRequestCollection->contains(function ($item) {
                     return $item->updated_at->diffInMinutes(now()) < 2;
                 });
-
+                $assetRequest->cancelled = $cancelled;
                 $assetRequest->newly_sync = $anyRecentlyUpdated ? 1 : 0;
                 return $this->transformIndexAssetRequest($assetRequest);
             })->values();
