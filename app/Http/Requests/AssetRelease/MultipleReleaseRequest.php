@@ -32,18 +32,21 @@ class MultipleReleaseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'warehouse_number_id' => ['bail','required', 'exists:warehouse_numbers,id', 'distinct', 'array',function ($attribute, $value, $fail) {
+            'warehouse_number_id' => ['bail', 'required', 'exists:warehouse_numbers,id', 'distinct', 'array', function ($attribute, $value, $fail) {
                 $departmentIds = [];
+                $locationIds = [];
 
                 foreach ($value as $warehouseId) {
-                    $fixedAssetDepartmentId = FixedAsset::where('warehouse_number_id', $warehouseId)->value('department_id');
-                    if ($fixedAssetDepartmentId !== null) {
-                        $departmentIds[] = $fixedAssetDepartmentId;
+                    $fixedAsset = FixedAsset::where('warehouse_number_id', $warehouseId)->first();
+                    if ($fixedAsset) {
+                        $departmentIds[] = $fixedAsset->department_id;
+                        $locationIds[] = $fixedAsset->location_id;
                     }
 
-                    $additionalCostDepartmentId = AdditionalCost::where('warehouse_number_id', $warehouseId)->value('department_id');
-                    if ($additionalCostDepartmentId !== null) {
-                        $departmentIds[] = $additionalCostDepartmentId;
+                    $additionalCost = AdditionalCost::where('warehouse_number_id', $warehouseId)->first();
+                    if ($additionalCost) {
+                        $departmentIds[] = $additionalCost->department_id;
+                        $locationIds[] = $additionalCost->location_id;
                     }
                 }
 
@@ -51,8 +54,28 @@ class MultipleReleaseRequest extends FormRequest
                     $fail('The department of the selected items is not the same.');
                 }
 
+                if (count(array_unique($locationIds)) > 1) {
+                    $fail('The location of the selected items is not the same.');
+                }
             }],
-            'accountability' => ['required', 'string', 'in:Common,Personal Issued'],
+            'accountability' => ['required', 'string', 'in:Common,Personal Issued', function ($attribute, $value, $fail) {
+                $warehouseIds = $this->input('warehouse_number_id');
+                $accountability = [];
+                foreach ($warehouseIds as $warehouseId) {
+                    $fixedAsset = FixedAsset::where('warehouse_number_id', $warehouseId)->first();
+                    if ($fixedAsset) {
+                        $accountability[] = $fixedAsset->accountability;
+                    }
+
+                    $additionalCost = AdditionalCost::where('warehouse_number_id', $warehouseId)->first();
+                    if ($additionalCost) {
+                        $accountability[] = $additionalCost->accountability;
+                    }
+                }
+                if(count(array_unique($accountability)) > 1) {
+                    $fail('The accountability of the selected items is not the same.');
+                }
+            }],
             'accountable' => ['required_if:accountability,Personal Issued', 'string'],
             'received_by' => ['required', 'string'],
 //            'signature' => ['required'],
