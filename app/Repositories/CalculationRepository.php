@@ -73,10 +73,11 @@ class CalculationRepository
         return $end_depreciation->format('Y-m');
     }
 
-    public function getStartDepreciation($release_date): string
+    //TODO: will change and used the voucher date
+    public function getStartDepreciation($release_date): ?string
     {
         $release_date = Carbon::parse($release_date);
-        return $release_date->addMonth(0)->format('Y-m'); //TODO: Monitor this one if there are errors in calculations
+        return $release_date->addMonth(1)->format('Y-m') ?? null;
     }
 
     public function dateValidation($date, $start_depreciation, $end_depreciation): bool
@@ -84,7 +85,7 @@ class CalculationRepository
         $date = Carbon::parse($date);
         $start_depreciation = Carbon::parse($start_depreciation);
         $end_depreciation = Carbon::parse($end_depreciation);
-        if ($date->between($start_depreciation, $end_depreciation)) {
+        if ($date->between($start_depreciation, $end_depreciation) - 1) {
             return true;
         } else {
             return false;
@@ -181,7 +182,7 @@ class CalculationRepository
             }
 
             //get current voucher value
-            if(!is_array($collections)) {
+            if (!is_array($collections)) {
                 $collections = $collections->toArray();
             }
             $index = array_search($attribute, array_keys($collections));
@@ -211,8 +212,7 @@ class CalculationRepository
                 if (Carbon::parse($value)->isAfter($current_date)) {
                     $fail('Not yet fully depreciated');
                 }
-            }
-            elseif ($depreciation_status->depreciation_status_name == 'Running Depreciation') {
+            } elseif ($depreciation_status->depreciation_status_name == 'Running Depreciation') {
                 //check if the value of end depreciation is not yet passed the current date (yyyymm)
                 $current_date = Carbon::now()->format('Y-m');
                 $value = substr_replace($value, '-', 4, 0);
@@ -225,7 +225,8 @@ class CalculationRepository
     }
 
 
-    function checkVoucherDate($items, $value, $fail) {
+    function checkVoucherDate($items, $value, $fail)
+    {
         $year = substr($value, 0, 4);
         $month = substr($value, 4, 2);
         $day = substr($value, 6, 2);
@@ -256,7 +257,6 @@ class CalculationRepository
 //            }
 //        }
 //    }
-
 
 
 //    public function validationForDate($attribute, $value, $fail, $collections = null)
