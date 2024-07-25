@@ -69,7 +69,7 @@ class AssetReleaseController extends Controller
 
                 if ($accountability === 'Common') {
                     $this->updateRemoveMemoTag($fixedAsset, $additionalCost);
-                    $this->setNewAccountability($fixedAsset, $additionalCost,$accountability, $accountable);
+                    $this->setNewAccountability($fixedAsset, $additionalCost,$accountability, $accountable, true);
                 } else {
                     $this->setNewAccountability($fixedAsset, $additionalCost,$accountability, $accountable);
                 }
@@ -139,14 +139,7 @@ class AssetReleaseController extends Controller
                 $fixedAssetCount = (clone $fixedAssetQuery)->count();
 
                 $additionalCostQuery = AdditionalCost::where('warehouse_number_id', $warehouseId)
-                    ->where(function ($query) {
-                        $query->where('accountability', 'Common')
-                            ->where('memo_series_id', null)
-                            ->orWhere(function ($query) {
-                                $query->where('accountability', 'Personal Issued')
-                                    ->whereNotNull('memo_series_id');
-                            });
-                    })->where('is_released', 0);
+                    ->where('is_released', 0);
 
                 $additionalCostCount = (clone $additionalCostQuery)->count();
 

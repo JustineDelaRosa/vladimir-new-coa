@@ -1186,22 +1186,32 @@ trait AssetReleaseHandler
         }
     }
 
-    public function setNewAccountability($fixedAsset, $additionalCost, $accountability, $accountable)
+    public function setNewAccountability($fixedAsset, $additionalCost, $accountability, $accountable, $isCommon = false)
     {
         if ($fixedAsset !== null) {
-            $fixedAsset->update([
+            $updateData = [
                 'accountability' => $accountability,
                 'accountable' => $accountable,
-                'can_release' => 0
-            ]);
+            ];
+
+            if (!$isCommon) {
+                $updateData['can_release'] = 0;
+            }
+
+            $fixedAsset->update($updateData);
         }
 
         if ($additionalCost !== null) {
-            $additionalCost->update([
+            $updateData = [
                 'accountability' => $accountability,
                 'accountable' => $accountable,
-                'can_release' => 0
-            ]);
+            ];
+
+            if (!$isCommon) {
+                $updateData['can_release'] = 0;
+            }
+
+            $additionalCost->update($updateData);
         }
     }
 }
