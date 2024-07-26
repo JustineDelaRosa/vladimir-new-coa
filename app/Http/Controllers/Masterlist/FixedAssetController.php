@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Masterlist;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\FixedAsset\CreateSmallToolsRequest;
 use App\Http\Requests\FixedAsset\FixedAssetRequest;
 use App\Http\Requests\FixedAsset\FixedAssetUpdateRequest;
 use App\Http\Requests\FixedAsset\MemorPrintRequest;
@@ -49,6 +50,7 @@ class FixedAssetController extends Controller
 
     public function index(Request $request)
     {
+//        return FixedAsset::get();
         $movement = $request->get('movement');
         $data = Cache::get('fixed_assets_data');
 
@@ -118,6 +120,7 @@ class FixedAssetController extends Controller
 
     public function show(Request $request, int $id)
     {
+
         $fixed_asset = FixedAsset::withTrashed()->with([
             'formula' => function ($query) {
                 $query->withTrashed();
@@ -526,6 +529,15 @@ class FixedAssetController extends Controller
             return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
         }
 
+        //check if the selected item has a voucher number or not
+        if ($fixed_asset->voucher == null || $fixed_asset->voucher == '-') {
+            $getVoucher = $this->fixedAssetRepository->getVoucher($fixed_asset->receipt, $fixed_asset->po_number);
+            if ($getVoucher) {
+                $fixed_asset->voucher = $getVoucher['voucher_no'];
+                $fixed_asset->voucher_date = $getVoucher['voucher_date'];
+            }
+        }
+
         return response()->json([
             'message' => 'Fixed Asset retrieved successfully.',
             'data' => $this->fixedAssetRepository->transformSingleFixedAsset($fixed_asset)
@@ -567,5 +579,69 @@ class FixedAssetController extends Controller
         }
 
         return $result;
+    }
+
+    public function inclusion(CreateSmallToolsRequest $request)
+    {
+        $referenceNumber = $request->input('reference_number');
+        $newInclusion = $request->input('inclusion');
+
+        // Retrieve all FixedAsset records with the given reference number
+        $fixedAssets = FixedAsset::where('reference_number', $referenceNumber)->get();
+
+        foreach ($fixedAssets as $fixedAsset) {
+            $existingInclusion = $fixedAsset->inclusion;
+
+            // Check if existing inclusion is not an array and decode it
+            if (!is_array($existingInclusion)) {
+                $existingInclusion = json_decode($existingInclusion, true);
+            }
+
+            // Check if existing inclusion is null or empty
+            if (is_null($existingInclusion) || empty($existingInclusion)) {
+                $updatedInclusion = $newInclusion;
+            } else {
+                // Append the new data to the existing inclusion array
+                $updatedInclusion = array_merge($existingInclusion, $newInclusion);
+            }
+
+            // Add an id to each object in the updated inclusion array
+            foreach ($updatedInclusion as $index => &$item) {
+                $item['id'] = $index + 1;
+            }
+
+            // Update the FixedAsset model with the new inclusion data
+            $fixedAsset->update(['inclusion' => $updatedInclusion]);
+        }
+
+        return $this->responseSuccess('Inclusion added successfully.');
+    }
+
+    public function removeInclusionItem(Request $request)
+    {
+        $referenceNumber = $request->input('reference_number');
+        $itemId = $request->input('item_id');
+
+        // Retrieve all FixedAsset records with the given reference number
+        $fixedAssets = FixedAsset::where('reference_number', $referenceNumber)->get();
+
+        foreach ($fixedAssets as $fixedAsset) {
+            $existingInclusion = $fixedAsset->inclusion;
+
+            // Check if existing inclusion is not an array and decode it
+            if (!is_array($existingInclusion)) {
+                $existingInclusion = json_decode($existingInclusion, true);
+            }
+
+            // Remove the specific item from the inclusion array
+            $updatedInclusion = array_filter($existingInclusion, function ($item) use ($itemId) {
+                return $item['id'] !== $itemId;
+            });
+
+            // Update the FixedAsset model with the new inclusion data
+            $fixedAsset->update(['inclusion' => $updatedInclusion]);
+        }
+
+        return $this->responseSuccess('Inclusion item removed successfully.');
     }
 }

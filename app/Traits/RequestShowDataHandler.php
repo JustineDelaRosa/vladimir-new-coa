@@ -91,6 +91,7 @@ trait RequestShowDataHandler
             'asset_approval_id' => $ar->assetApproval->first(function ($approval) {
                 return $approval->status == 'For Approval';
             })->id ?? '',
+            'inclusion' => $ar instanceof AssetRequest ? $ar->getInclusion() : '-',
             'id' => $ar->id,
             'total_remaining' => $totalRemaining,
             'status' => strpos($ar->status, 'For Approval') === 0 ? 'For Approval' : ($ar->is_fa_approved ? 'Approved' : 'For Approval'),

@@ -17,6 +17,7 @@ class CreateFixedAssetsTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('requester_id')->nullable();
             $table->boolean('is_memo_printed')->default(false);
+            $table->json('inclusion')->nullable();
             $table->string('transaction_number')->nullable();
             $table->string('reference_number')->nullable();
             $table->string('pr_number')->nullable();

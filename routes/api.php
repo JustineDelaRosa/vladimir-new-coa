@@ -315,6 +315,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::PUT('memo-print', [MemoSeriesController::class, 'memoPrint']);
     Route::GET('reprint-memo', [MemoSeriesController::class, 'memoReprint']);
 
+    //SMALL TOOLS
+    Route::put('inclusion', [FixedAssetController::class, 'inclusion']);
+
     //MEMO SERIES
 //    Route::GET('get-memo-series', [MemoSeriesController::class, 'getMemoSeries']);
 //    Route::PATCH('archived-memo-series/{id}', [MemoSeriesController::class, 'archived']);

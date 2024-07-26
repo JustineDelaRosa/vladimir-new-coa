@@ -404,7 +404,7 @@ class FixedAssetRepository
                 'id' => $fixed_asset->warehouse->id ?? '-',
                 'warehouse_name' => $fixed_asset->warehouse->warehouse_name ?? '-',
             ],
-            'inclusion' => $fixed_asset->inclusion ?? '-',
+            'inclusion' => $fixed_asset->inclusion ?? null,
             'from_request' => $fixed_asset->from_request ?? '-',
             'can_release' => $fixed_asset->can_release ?? '-',
             'capex' => [
@@ -1046,7 +1046,7 @@ class FixedAssetRepository
         return $paginatedResults;
     }
 
-    private function getVoucher($receipt, $po_number)
+    public function getVoucher($receipt, $po_number)
     {
         $poFromRequest = $po_number;
         $rrFromRequest = $receipt;

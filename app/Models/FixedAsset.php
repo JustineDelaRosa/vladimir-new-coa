@@ -31,6 +31,10 @@ class FixedAsset extends Model implements HasMedia
 
     protected string $default_filters = FixedAssetFilters::class;
 
+    protected $casts = [
+        'inclusion' => 'json',
+    ];
+
     protected static function booted()
     {
         static::created(function () {
@@ -80,7 +84,8 @@ class FixedAsset extends Model implements HasMedia
         $this->attributes['accountable'] = $value;
     }
 
-    public function transferRequest(){
+    public function transferRequest()
+    {
         return $this->hasMany(AssetTransferRequest::class, 'fixed_asset_id', 'id');
     }
 
@@ -185,6 +190,7 @@ class FixedAsset extends Model implements HasMedia
     {
         return $this->belongsTo(WarehouseNumber::class, 'warehouse_number_id', 'id');
     }
+
     public function unit()
     {
         return $this->belongsTo(Unit::class, 'unit_id', 'id');
@@ -199,26 +205,35 @@ class FixedAsset extends Model implements HasMedia
     {
         return $this->belongsTo(BusinessUnit::class, 'business_unit_id', 'id');
     }
-    public function uom(){
+
+    public function uom()
+    {
         return $this->belongsTo(UnitOfMeasure::class, 'uom_id', 'id');
     }
-    public function warehouse(){
+
+    public function warehouse()
+    {
         return $this->belongsTo(Warehouse::class, 'warehouse_id', 'id');
     }
 
-    public function getChargedDepartmentAttribute($value){
+    public function getChargedDepartmentAttribute($value)
+    {
         return $value ? Department::where('id', $value)->first()->department_name : '-';
     }
-    public function getStartDepreciationAttriute($value){
+
+    public function getStartDepreciationAttriute($value)
+    {
         return $value ? date('Y-m-d', strtotime($value)) : '-';
     }
-    public function getEndDepreciationAttriute($value){
+
+    public function getEndDepreciationAttriute($value)
+    {
         return $value ? date('Y-m-d', strtotime($value)) : '-';
     }
 
     public function getDepreciationPerYearAttribute($value)
     {
-        $estUsefulLife =  $this->est_useful_life;
+        $estUsefulLife = $this->est_useful_life;
         $scarpValue = $this->scap_value;
         $acquisitionCost = $this->acquisition_cost;
 
@@ -241,7 +256,9 @@ class FixedAsset extends Model implements HasMedia
         $estUsefulLife = floor($estUsefulLife) * 12 + (($estUsefulLife - floor($estUsefulLife)) * 12);
         return round(($acquisitionCost - $scarpValue) / $estUsefulLife, 2);
     }
-    public function getMonthsDepreciatedAttribute($value){
+
+    public function getMonthsDepreciatedAttribute($value)
+    {
         return $this->start_depreciation ? Carbon::parse($this->start_depreciation)->diffInMonths(Carbon::now()) : 0;
     }
 
@@ -258,7 +275,8 @@ class FixedAsset extends Model implements HasMedia
         return round($accumulated_cost);
     }
 
-    public function getRemainingBookValueAttribute($value){
+    public function getRemainingBookValueAttribute($value)
+    {
         $acquisitionCost = $this->acquisition_cost;
         $accumulatedCost = $this->accumulated_cost;
 
@@ -270,7 +288,8 @@ class FixedAsset extends Model implements HasMedia
         return round($remainingBookValue);
     }
 
-    public function getCreatedAtAttribute($value){
+    public function getCreatedAtAttribute($value)
+    {
         return date('Y-m-d', strtotime($value));
     }
 
