@@ -34,6 +34,13 @@ class AddingPoController extends Controller
                 $anyRecentlyUpdated = $assetRequestCollection->contains(function ($item) {
                     return $item->updated_at->diffInMinutes(now()) < 2;
                 });
+                $poNumber = $assetRequestCollection->pluck('po_number')->filter()->unique()->implode(',');
+                $rrNumber = $assetRequestCollection->pluck('rr_number')->filter()->unique()->implode(',');
+                $rrNumber = collect(explode(',', $rrNumber))->unique()->implode(',');
+
+
+                $assetRequest->po_number = $poNumber;
+                $assetRequest->rr_number = $rrNumber;
                 $assetRequest->cancelled = $cancelled;
                 $assetRequest->newly_sync = $anyRecentlyUpdated ? 1 : 0;
                 return $this->transformIndexAssetRequest($assetRequest);
@@ -124,6 +131,7 @@ class AddingPoController extends Controller
         }
         $itemReceivedCount = 0;
         $cancelledCount = 0;
+        $poData = [];
         $rrNumbers = [];
         foreach ($data as $asset) {
             $transactionNumber = $asset['transaction_no'];
@@ -164,10 +172,23 @@ class AddingPoController extends Controller
                         }
                     }
                     $itemRequest = AssetRequest::where('reference_number', $referenceNumber)->first();
+                    $rrNumberArray = [];
                     foreach ($order['rr_orders'] as $rr) {
                         $deliveryDate = $rr['delivery_date'];
                         $itemRemaining = $rr['remaining'];
                         $rrNumber = $rr['rr_number'];
+
+                        // store the po_number in the array transaction number and reference number
+                        $poData[] = [
+                            'transaction_number' => $transactionNumber,
+                            'reference_number' => $referenceNumber,
+                            'po_number' => $poNo,
+                        ];
+
+                        if (!in_array($rrNumber, $rrNumberArray)) {
+                            $rrNumberArray[] = $rrNumber;
+                        }
+                        $rrNumberString = implode(',', $rrNumberArray);
 
                         if ($rr['sync'] == 1) {
                             continue;
@@ -175,9 +196,9 @@ class AddingPoController extends Controller
 
                         $itemRequest->update([
                             'synced' => 1,
-                            'pr_number' => $prNo,
+//                            'pr_number' => $prNo,
                             'po_number' => $poNo,
-                            'rr_number' => $rrNumber,
+                            'rr_number' => $rrNumberString,
                             'supplier_id' => $supplier,
                             'quantity_delivered' => $itemRequest->quantity_delivered + $rr['quantity_receive'],
                             'acquisition_date' => $deliveryDate,
@@ -187,12 +208,14 @@ class AddingPoController extends Controller
                         $rrNumbers[] = $rr['rr_number'];
                         $itemReceivedCount++;
                     }
+                    $rrNumberArray = [];
                     $this->updateRequestStatusFilter($itemRequest);
                 }
             }
         }
-        if (!empty($rrNumbers)) {
 
+        $this->storePOs($poData);
+        if (!empty($rrNumbers)) {
             Http::withHeaders(['Authorization' => 'Bearer ' . $bearerToken])
                 ->put($apiUrl, ['rr_number' => $rrNumbers]);
         }
@@ -202,6 +225,31 @@ class AddingPoController extends Controller
             'cancelled' => $cancelledCount,
         ];
         return $this->responseSuccess('successfully sync received asset', $data);
+    }
+
+    //TODO: Probably not necessary anymore
+    public function storePOs(array $data){
+        //map the $data and organize the unique po_number with the same transaction number and reference number
+        $poData = collect($data)->groupBy('po_number')->map(function ($poData) {
+            return $poData->groupBy('transaction_number')->map(function ($transactionData) {
+                return $transactionData->groupBy('reference_number')->map(function ($referenceData) {
+                    return $referenceData->pluck('po_number')->first();
+                });
+            });
+        });
+
+        //store the po_number in the asset request
+        foreach ($poData as $poNumber) {
+            foreach ($poNumber as $transactionNumber) {
+                foreach ($transactionNumber as $referenceNumber => $poNo) {
+                    $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
+                        ->where('reference_number', $referenceNumber)
+                        ->update(['po_number' => $poNo]);
+                }
+            }
+        }
+
+        return $this->responseSuccess('PO number stored successfully');
     }
 //    public function handleSyncData(Request $request)
 //    {
