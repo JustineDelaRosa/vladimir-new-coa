@@ -100,6 +100,7 @@ trait RequestShowDataHandler
             'capex_number' => $ar->capex_number ?? '-',
             'pr_number' => $ar->pr_number,
             'po_number' => $ar->po_number,
+            'rr_number' => $ar->rr_number ?? '-',
             'attachment_type' => $ar->attachment_type,
             'is_addcost' => $ar->is_addcost ?? 0,
             'remarks' => $ar->remarks ?? '',

@@ -223,6 +223,8 @@ trait AssetRequestHandler
             'id' => $assetRequest->transaction_number,
             'transaction_number' => $assetRequest->transaction_number,
             'item_count' => $assetRequest->quantity + $deletedQuantity ?? 0,
+            'can_edit' => $assetRequest->is_fa_approved ? 0 : 1,
+            'can_resubmit' => $assetRequest->is_fa_approved ? 0 : 1,
             'cancel_count' => $deletedQuantity ?? 0,
             'ordered' => $assetRequest->quantity + $deletedQuantity ?? '-',
             'delivered' => $assetRequest->quantity_delivered ?? '-',
@@ -453,7 +455,7 @@ trait AssetRequestHandler
         $statusForApproval = $assetRequest->assetApproval->where('status', 'For Approval');
         $highestLayerNumber = $assetRequest->assetApproval()->max('layer');
         $statusForApprovalCount = $statusForApproval->count();
-        $returnStatus = $assetRequest->assetApproval->where('status', 'Returned')->count();
+        $returnStatus = $assetRequest->assetApproval->whereIn('status', ['Returned','Returned From Ymir'])->count();
         $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number);
 
         if ($statusForApprovalCount > 0) {
@@ -469,6 +471,7 @@ trait AssetRequestHandler
             if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) $lastLayer += 4;
             if (($assetRequest->is_claimed == 1 && $assetRequest->filter == "Claimed") || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) $lastLayer += 6;
             if ($this->deletedItemCheck($assetRequest) != null) $lastLayer = -1;
+//            if($assetRequest->filter == "Returned From Ymir") $lastLayer = 1;
         }
         return $lastLayer;
     }
