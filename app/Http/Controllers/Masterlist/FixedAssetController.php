@@ -617,6 +617,27 @@ class FixedAssetController extends Controller
         return $this->responseSuccess('Inclusion added successfully.');
     }
 
+    public function inclusions(Request $request){
+        $referenceNumber = $request->input('reference_number');
+        $newInclusion = $request->input('inclusion');
+
+        // Retrieve all FixedAsset records with the given reference number
+        $fixedAssets = FixedAsset::where('reference_number', $referenceNumber)->get();
+
+        foreach ($fixedAssets as $fixedAsset) {
+            //remove inclusion if it is null
+            $fixedAsset->update(['inclusion' => null]);
+            // Add an id to each object in the updated inclusion array
+            foreach ($newInclusion as $index => &$item) {
+                $item['id'] = $index + 1;
+            }
+            // Update the FixedAsset model with the new inclusion data with id
+            $fixedAsset->update(['inclusion' => $newInclusion]);
+        }
+
+        return $this->responseSuccess('Inclusion added successfully.');
+    }
+
     public function removeInclusionItem(Request $request)
     {
         $referenceNumber = $request->input('reference_number');
