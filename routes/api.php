@@ -317,10 +317,13 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //SMALL TOOLS
     Route::put('inclusion', [FixedAssetController::class, 'inclusion']);
+    Route::put('inclusions', [FixedAssetController::class, 'inclusions']);
 
     //MEMO SERIES
 //    Route::GET('get-memo-series', [MemoSeriesController::class, 'getMemoSeries']);
 //    Route::PATCH('archived-memo-series/{id}', [MemoSeriesController::class, 'archived']);
+
+    Route::GET('post-to-ymir', [AddingPrController::class, 'sendToYmir']);
 
 
     Route::prefix('ymir')->group(function () {

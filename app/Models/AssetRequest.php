@@ -34,6 +34,12 @@ class AssetRequest extends Model implements HasMedia
 
     protected string $default_filters = AssetRequestFilters::class;
 
+    protected $casts = [
+        'po_number' => 'json',
+        'rr_number' => 'json',
+    ];
+
+
 
     public function generateReferenceNumber(): ?string
     {
@@ -238,5 +244,10 @@ class AssetRequest extends Model implements HasMedia
 
     public function receivingWarehouse(){
         return $this->belongsTo(Warehouse::class, 'receiving_warehouse_id', 'id');
+    }
+    public function getInclusion()
+    {
+        $fixedAsset = FixedAsset::where('reference_number', $this->reference_number)->first();
+        return $fixedAsset ? $fixedAsset->inclusion : null;
     }
 }

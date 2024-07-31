@@ -41,7 +41,6 @@ class AssetRequestController extends Controller
 
     public function index(Request $request)
     {
-
 //        return YmirPRTransaction::get();
         $request->validate([
             'for_monitoring' => 'boolean',
@@ -64,13 +63,14 @@ class AssetRequestController extends Controller
         $filter = array_map('trim', $filter);
 
         $conditions = [
-            'Returned' => ['status' => 'Returned'],
+            'Returned' => ['status' => 'Returned', 'filter' => 'Returned From Ymir'],
             'For Approval' => ['status' => ['like', 'For Approval%']],
             'For FA Approval' => ['status' => 'Approved', 'is_fa_approved' => 0],
             'Sent To Ymir' => ['status' => 'Approved', 'filter' => 'Sent to Ymir'],
             'For Tagging' => ['status' => 'Approved', 'filter' => 'Received'], //'filter' => 'Ready to Pickup'
             'For Pickup' => ['status' => 'Approved', 'filter' => 'Ready to Pickup'],
             'Released' => ['is_claimed' => 1],
+
         ];
 
         $assetRequest = AssetRequest::query();
