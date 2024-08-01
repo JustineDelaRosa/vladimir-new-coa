@@ -132,12 +132,14 @@ class AddingPrController extends Controller
     //This is for Ymir
     public function requestToPR(Request $request)
     {
+
 //        $toPr = $request->get('toPr', null);
 //        $filter = $request->input('filter', 'old');
         $transactionNumber = $request->input('transaction_number', null);
         $perPage = $request->input('per_page', null);
         $pagination = $request->input('pagination', null);
         $prNumber = AssetRequest::generatePRNumber();
+
 
 //        $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
 //        $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
@@ -253,6 +255,98 @@ class AddingPrController extends Controller
         return $filteredAndGroupedAssetRequests;
     }
 
+
+//TODO: NOT DONE
+    public function sendToYmir(Request $request)
+    {
+        $assets = $this->requestToPR($request);
+//        return $assets;
+//        $assets = $request->all();
+        $user_id = Auth()->user()->id;
+
+        $date_today = Carbon::now()
+            ->timeZone("Asia/Manila")
+            ->format("Y-m-d H:i");
+
+        $current_year = date("Y");
+        $latest_pr = YmirPRTransaction::where("pr_year_number_id", "like", $current_year . "-V-%")
+            ->orderByRaw("CAST(SUBSTRING_INDEX(pr_year_number_id, '-', -1) AS UNSIGNED) DESC")
+            ->first();
+
+        if ($latest_pr) {
+            $latest_number = explode("-", $latest_pr->pr_year_number_id)[2];
+            $new_number = (int)$latest_number+1;
+        } else {
+            $new_number = 1;
+        }
+//    return $latest_number;
+
+        $latest_pr_number = YmirPRTransaction::max("pr_number") ?? 0;
+        $pr_number = $latest_pr_number + 1;
+
+        foreach ($assets as $sync) {
+            $pr_year_number_id =
+                $current_year .
+                "-V-" .
+                str_pad($new_number, 3, "0", STR_PAD_LEFT);
+
+
+            $purchase_request = new YmirPRTransaction([
+                "pr_year_number_id" => $pr_year_number_id,
+                "pr_number" => $pr_number,
+                "transaction_no" => $sync["transaction_number"],
+                "pr_description" => $sync["pr_description"],
+                "date_needed" => $sync["date_needed"],
+                "user_id" => $user_id,
+                "type_id" => "4",
+                "type_name" => "Assets",
+                "business_unit_id" => $sync["business_unit_id"],
+                "business_unit_name" => $sync["business_unit_name"],
+                "company_id" => $sync["company_id"],
+                "company_name" => $sync["company_name"],
+                "department_id" => $sync["department_id"],
+                "department_name" => $sync["department_name"],
+                "department_unit_id" => $sync["department_unit_id"],
+                "department_unit_name" => $sync["department_unit_name"],
+                "location_id" => $sync["location_id"],
+                "location_name" => $sync["location_name"],
+                "sub_unit_id" => $sync["sub_unit_id"],
+                "sub_unit_name" => $sync["sub_unit_name"],
+                "account_title_id" => $sync["account_title_id"],
+                "account_title_name" => $sync["account_title_name"],
+                "module_name" => "Assets",
+                "transaction_number" => $sync["transaction_number"],
+                "status" => "Approved",
+                "asset" => $sync["asset"] ?? null,
+                "sgp" => $sync["sgp"],
+                "f1" => $sync["f1"],
+                "f2" => $sync["f2"],
+                "layer" => "1",
+                "for_po_only" => $date_today,
+                "vrid" => $sync["vrid"],
+            ]);
+            $purchase_request->save();
+
+            $orders = $sync["order"];
+
+            foreach ($orders as $index => $values) {
+                YmirPRItem::create([
+                    "transaction_id" => $purchase_request->id,
+                    "item_code" => $values["item_code"],
+                    "item_name" => $values["item_name"],
+                    "uom_id" => "6",
+                    "quantity" => $values["quantity"],
+                    "remarks" => $values["remarks"],
+                ]);
+            }
+
+            $new_number++;
+            $pr_number++;
+        }
+        return $this->responseSuccess('PR No. sent to Ymir successfully');
+
+    }
+
     public function returnFormYmir(Request $request)
     {
         $transactionNumber = $request->input('transaction_number');
@@ -300,102 +394,5 @@ class AddingPrController extends Controller
                 $activity->subject_id = $transactionNumber;
             })
             ->log('Returned from Ymir');
-    }
-
-
-//TODO: NOT DONE
-    public function asset_sync(AssetRequest $request)
-    {
-        $assets = $request->all();
-        $user_id = Auth()->user()->id;
-
-        $date_today = Carbon::now()
-            ->timeZone("Asia/Manila")
-            ->format("Y-m-d H:i");
-
-        $current_year = date("Y");
-        $latest_pr = YmirPRTransaction::where(
-            "pr_year_number_id",
-            "like",
-            $current_year . "-%"
-        )
-            ->orderBy("pr_year_number_id", "desc")
-            ->first();
-
-        if ($latest_pr) {
-            $latest_number = intval(
-                explode("-", $latest_pr->pr_year_number_id)[1]
-            );
-            $new_number = $latest_number + 1;
-        } else {
-            $new_number = 1;
-        }
-
-        $latest_pr_number = YmirPRTransaction::max("pr_number") ?? 0;
-        $pr_number = $latest_pr_number + 1;
-
-        foreach ($assets as $sync) {
-            $pr_year_number_id =
-                $current_year .
-                "-" .
-                str_pad($new_number, 3, "0", STR_PAD_LEFT);
-
-            $type_id = Type::where("name", "Assets")
-                ->get()
-                ->first();
-
-            $purchase_request = new YmirPRTransaction([
-                "pr_year_number_id" => $pr_year_number_id,
-                "pr_number" => $pr_number,
-                "transaction_no" => $sync["transaction_number"],
-                "pr_description" => $sync["pr_description"],
-                "date_needed" => $sync["date_needed"],
-                "user_id" => $user_id,
-                "type_id" => $type_id->id,
-                "type_name" => $type_id->name,
-                "business_unit_id" => $sync["business_unit_id"],
-                "business_unit_name" => $sync["business_unit_name"],
-                "company_id" => $sync["company_id"],
-                "company_name" => $sync["company_name"],
-                "department_id" => $sync["department_id"],
-                "department_name" => $sync["department_name"],
-                "department_unit_id" => $sync["department_unit_id"],
-                "department_unit_name" => $sync["department_unit_name"],
-                "location_id" => $sync["location_id"],
-                "location_name" => $sync["location_name"],
-                "sub_unit_id" => $sync["sub_unit_id"],
-                "sub_unit_name" => $sync["sub_unit_name"],
-                "account_title_id" => $sync["account_title_id"],
-                "account_title_name" => $sync["account_title_name"],
-                "module_name" => "Assets",
-                "transaction_number" => $sync["transaction_number"],
-                "status" => "Approved",
-                "asset" => $sync["asset"],
-                "sgp" => $sync["sgp"],
-                "f1" => $sync["f1"],
-                "f2" => $sync["f2"],
-                "layer" => "1",
-                "for_po_only" => $date_today,
-                "vrid" => $sync["vrid"],
-            ]);
-            $purchase_request->save();
-
-            $orders = $sync["order"];
-
-            foreach ($orders as $index => $values) {
-                YmirPRItem::create([
-                    "transaction_id" => $purchase_request->id,
-                    "item_code" => $values["item_code"],
-                    "item_name" => $values["item_name"],
-                    "uom_id" => "6",
-                    "quantity" => $values["quantity"],
-                    "remarks" => $values["remarks"],
-                ]);
-            }
-
-            $new_number++;
-            $pr_number++;
-        }
-
     }
 }

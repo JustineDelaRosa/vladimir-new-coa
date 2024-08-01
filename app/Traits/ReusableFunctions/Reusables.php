@@ -17,7 +17,7 @@ trait Reusables
     public function isUserFa(): bool
     {
         $user = auth('sanctum')->user()->id;
-        $faRoleIds = RoleManagement::whereIn('role_name', ['Fixed Assets','Fixed Asset', 'Fixed Asset Associate'])->pluck('id');
+        $faRoleIds = RoleManagement::whereIn('role_name', ['Fixed Assets', 'Fixed Asset', 'Fixed Asset Associate'])->pluck('id');
         $user = User::where('id', $user)->whereIn('role_id', $faRoleIds)->exists();
         return $user ? 1 : 0;
     }
