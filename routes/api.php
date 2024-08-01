@@ -316,8 +316,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::GET('reprint-memo', [MemoSeriesController::class, 'memoReprint']);
 
     //SMALL TOOLS
-    Route::put('inclusion', [FixedAssetController::class, 'inclusion']);
-    Route::put('inclusions', [FixedAssetController::class, 'inclusions']);
+    Route::put('inclusion', [FixedAssetController::class, 'inclusions']);
+    Route::patch('remove-inclusions', [FixedAssetController::class, 'removeInclusionItem']);
 
     //MEMO SERIES
 //    Route::GET('get-memo-series', [MemoSeriesController::class, 'getMemoSeries']);
