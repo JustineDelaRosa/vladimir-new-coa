@@ -210,7 +210,7 @@ class AuthController extends Controller
             'Admin', 'Super Admin',
             'Fixed Asset Associate', 'Po-receiving',
             'Purchase Request', 'Approver',
-            'Warehouse', 'Fixed Assets',
+            'Warehouse', 'Fixed Assets', 'Fixed Asset',
             'ERP', 'Requester-approver', 'Fixed Asset Associate'
         ];
         $response = [
@@ -240,6 +240,7 @@ class AuthController extends Controller
             'Approver' => 'getToApproveCount',
             'Warehouse' => ['getToRelease', 'getToReceive'],
             'Fixed Assets' => ['getFaApproval', 'getToTagCount'],
+            'Fixed Asset' => ['getFaApproval', 'getToTagCount'],
             'ERP' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
             'Requester-approver' => ['getToApproveCount'],
         ];
