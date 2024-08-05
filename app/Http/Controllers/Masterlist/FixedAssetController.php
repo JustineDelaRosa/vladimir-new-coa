@@ -581,48 +581,20 @@ class FixedAssetController extends Controller
         return $result;
     }
 
-    public function inclusion(CreateSmallToolsRequest $request)
+    public function inclusions(Request $request)
     {
         $referenceNumber = $request->input('reference_number');
+        $vTagNumber = $request->input('vladimir_tag_number', null);
         $newInclusion = $request->input('inclusion');
 
         // Retrieve all FixedAsset records with the given reference number
-        $fixedAssets = FixedAsset::where('reference_number', $referenceNumber)->get();
+        $fixedAssetsQuery = FixedAsset::where('reference_number', $referenceNumber);
 
-        foreach ($fixedAssets as $fixedAsset) {
-            $existingInclusion = $fixedAsset->inclusion;
-
-            // Check if existing inclusion is not an array and decode it
-            if (!is_array($existingInclusion)) {
-                $existingInclusion = json_decode($existingInclusion, true);
-            }
-
-            // Check if existing inclusion is null or empty
-            if (is_null($existingInclusion) || empty($existingInclusion)) {
-                $updatedInclusion = $newInclusion;
-            } else {
-                // Append the new data to the existing inclusion array
-                $updatedInclusion = array_merge($existingInclusion, $newInclusion);
-            }
-
-            // Add an id to each object in the updated inclusion array
-            foreach ($updatedInclusion as $index => &$item) {
-                $item['id'] = $index + 1;
-            }
-
-            // Update the FixedAsset model with the new inclusion data
-            $fixedAsset->update(['inclusion' => $updatedInclusion]);
+        if ($vTagNumber !== null) {
+            $fixedAssetsQuery->where('vladimir_tag_number', $vTagNumber);
         }
 
-        return $this->responseSuccess('Inclusion added successfully.');
-    }
-
-    public function inclusions(Request $request){
-        $referenceNumber = $request->input('reference_number');
-        $newInclusion = $request->input('inclusion');
-
-        // Retrieve all FixedAsset records with the given reference number
-        $fixedAssets = FixedAsset::where('reference_number', $referenceNumber)->get();
+        $fixedAssets = $fixedAssetsQuery->get();
 
         foreach ($fixedAssets as $fixedAsset) {
             //remove inclusion if it is null
@@ -641,27 +613,20 @@ class FixedAssetController extends Controller
     public function removeInclusionItem(Request $request)
     {
         $referenceNumber = $request->input('reference_number');
-        $itemId = $request->input('item_id');
+        $vTagNumber = $request->input('vladimir_tag_number', null);
 
         // Retrieve all FixedAsset records with the given reference number
-        $fixedAssets = FixedAsset::where('reference_number', $referenceNumber)->get();
+        $fixedAssetsQuery = FixedAsset::where('reference_number', $referenceNumber);
 
-        foreach ($fixedAssets as $fixedAsset) {
-            $existingInclusion = $fixedAsset->inclusion;
-
-            // Check if existing inclusion is not an array and decode it
-            if (!is_array($existingInclusion)) {
-                $existingInclusion = json_decode($existingInclusion, true);
-            }
-
-            // Remove the specific item from the inclusion array
-            $updatedInclusion = array_filter($existingInclusion, function ($item) use ($itemId) {
-                return $item['id'] !== $itemId;
-            });
-
-            // Update the FixedAsset model with the new inclusion data
-            $fixedAsset->update(['inclusion' => $updatedInclusion]);
+        if ($vTagNumber !== null) {
+            $fixedAssetsQuery->where('vladimir_tag_number', $vTagNumber);
         }
+
+        $fixedAssets = $fixedAssetsQuery->get();
+
+        $fixedAssets->each(function ($fixedAsset) {
+            $fixedAsset->update(['inclusion' => null]);
+        });
 
         return $this->responseSuccess('Inclusion item removed successfully.');
     }

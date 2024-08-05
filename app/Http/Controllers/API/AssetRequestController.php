@@ -293,6 +293,7 @@ class AssetRequestController extends Controller
 
         // Get the items from Request-container
         $items = RequestContainer::where('requester_id', $requesterId)->get();
+//        return $items;
         if ($items->isEmpty()) {
             return $this->responseUnprocessable('No data to move');
         }
