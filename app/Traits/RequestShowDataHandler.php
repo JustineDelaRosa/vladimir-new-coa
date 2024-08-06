@@ -81,11 +81,15 @@ trait RequestShowDataHandler
         $isUserLastApprover = $approver ? $isUserLastApprover == $approver->layer : false;
         $totalRemaining = $totalOrdered - $totalDelivered;
 
+        //check if in fixed asset if one of the fixed asset is released based on reference number
+        $isReleased = FixedAsset::where('reference_number', $ar->reference_number)->where('is_released', 1)->count() > 0;
+
         return [
             'is_removed' => $ar->trashed() ? 1 : 0,
             //check if the requester_id is equal to deleter_id then the requester deleted it else get the role name of the deleter
             'removed_by' => $ar->deleter_id == $ar->requester_id ? "Requestor" : ($ar->deleter ? $ar->deleter->role->role_name : null),
             'can_edit' => $ar->is_fa_approved ? 0 : 1,
+            'can_add' => $isReleased ? 0 : 1,
             'can_resubmit' => $ar->is_fa_approved ? 0 : 1,
             'fa_approval' => $ar->status == 'Approved' && !$ar->is_fa_approved ? 1 : 0,
             'asset_approval_id' => $ar->assetApproval->first(function ($approval) {
