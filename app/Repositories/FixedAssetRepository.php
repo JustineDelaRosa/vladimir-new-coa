@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\AssetApproval;
 use App\Models\AssetTransferRequest;
 use App\Models\PoBatch;
+use App\Models\TypeOfRequest;
 use Carbon\Carbon;
 use App\Models\Company;
 use App\Models\Formula;
@@ -60,7 +61,8 @@ class FixedAssetRepository
             'release_date' => $request['release_date'] ?? Null,
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation(
-                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+//                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
                 )
@@ -69,7 +71,8 @@ class FixedAssetRepository
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
             'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
-                ? $this->calculationRepository->getStartDepreciation($request['release_date'])
+                ? $this->calculationRepository->getStartDepreciation($request['voucher_date'])
+//                $this->calculationRepository->getStartDepreciation($request['release_date'])
                 : null
         ];
     }
@@ -195,7 +198,8 @@ class FixedAssetRepository
             'release_date' => $request['release_date'] ?? Null,
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation(
-                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
+//                    $this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
                 )
@@ -204,7 +208,8 @@ class FixedAssetRepository
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
             'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
-                ? $this->calculationRepository->getStartDepreciation($request['release_date'])
+                ? $this->calculationRepository->getStartDepreciation($request['voucher_date'])
+//                $this->calculationRepository->getStartDepreciation($request['release_date'])
                 : null
         ];
     }
@@ -221,7 +226,8 @@ class FixedAssetRepository
             $depstatus = DepreciationStatus::where('id', $request['depreciation_status_id'])->first();
             if ($depstatus->depreciation_status_name == 'Fully Depreciated' && isset($request['release_date'])) {
                 $end_depreciation = $this->calculationRepository->getEndDepreciation(
-                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
+//                    $this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
                 );
@@ -267,12 +273,13 @@ class FixedAssetRepository
             ? AdditionalCost::onlyTrashed()->select($this->additionalCostFields())->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
             : AdditionalCost::select($this->additionalCostFields())->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
 
-
+        $smallToolsId = TypeOfRequest::where('type_of_request_name', 'Small Tools')->first()->id;
         $conditions = [
             'To Depreciate' => ['depreciation_method' => null, 'is_released' => 1],
             'Fixed Asset' => ['is_additional_cost' => 0],
             'Additional Cost' => ['is_additional_cost' => 1],
-            'From Request' => ['from_request' => 1]
+            'From Request' => ['from_request' => 1],
+            'Small Tools' => ['type_of_request_id' => $smallToolsId],
         ];
 
         if (!empty($filter)) {
@@ -384,8 +391,11 @@ class FixedAssetRepository
         return [
             'total_cost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost, $fixed_asset->acquisition_cost),
             'total_adcost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost),
+            'can_add' => $fixed_asset->is_released ? 1 : 0,
             'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
+            'transaction_number' => $fixed_asset->transaction_number,
+            'reference_number' => $fixed_asset->reference_number,
             'requestor' => [
                 'id' => $fixed_asset->requestor->id ?? '-',
                 'username' => $fixed_asset->requestor->username ?? '-',
@@ -1070,8 +1080,9 @@ class FixedAssetRepository
         }
     }
 
-    private function fixedAssetFields(){
-        return[
+    private function fixedAssetFields()
+    {
+        return [
             'id',
             'requester_id',
             'pr_number',
@@ -1125,8 +1136,10 @@ class FixedAssetRepository
             DB::raw("NULL as add_cost_sequence"),
         ];
     }
-    private function additionalCostFields(){
-        return[
+
+    private function additionalCostFields()
+    {
+        return [
             'additional_costs.id',
             'additional_costs.requester_id',
             'additional_costs.pr_number',
