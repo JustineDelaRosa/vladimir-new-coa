@@ -50,7 +50,8 @@ class AdditionalCostRepository
             'release_date' => $request['release_date'] ?? Null,
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation(
-                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+//                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
                 )
@@ -59,7 +60,8 @@ class AdditionalCostRepository
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
             'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
-                ? $this->calculationRepository->getStartDepreciation($request['release_date'])
+                ?$this->calculationRepository->getStartDepreciation($request['voucher_date'])
+//                $this->calculationRepository->getStartDepreciation($request['release_date'])
                 : null
         ];
     }
@@ -172,7 +174,8 @@ class AdditionalCostRepository
             'release_date' => $request['release_date'] ?? Null,
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation(
-                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+//                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL'
                         ? $depreciationMethod
@@ -183,7 +186,8 @@ class AdditionalCostRepository
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
             'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
-                ? $this->calculationRepository->getStartDepreciation($request['release_date'])
+                ? $this->calculationRepository->getStartDepreciation($request['voucher_date'])
+//                $this->calculationRepository->getStartDepreciation($request['release_date'])
                 : null
         ];
     }
@@ -200,7 +204,8 @@ class AdditionalCostRepository
             $depstatus = DepreciationStatus::where('id', $request['depreciation_status_id'])->first();
             if ($depstatus->depreciation_status_name == 'Fully Depreciated' && isset($request['release_date'])) {
                 $end_depreciation = $this->calculationRepository->getEndDepreciation(
-                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+//                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
                 );
