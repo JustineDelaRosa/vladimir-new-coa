@@ -57,7 +57,7 @@ class CalculationRepository
         return round($remaining_book_value);
     }
 
-    public function getEndDepreciation($start_depreciation, $est_useful_life, $depreciation_method): string
+    public function getEndDepreciation($start_depreciation, $est_useful_life, $depreciation_method): ?string
     {
         $start_depreciation = Carbon::parse($start_depreciation);
 
@@ -70,22 +70,22 @@ class CalculationRepository
             $end_depreciation = $start_depreciation->addYears($years_added)->addMonths($months_added)->subMonth(1);
         }
 
-        return $end_depreciation->format('Y-m');
+        return $end_depreciation->format('Y-m') ?? null;
     }
 
     //TODO: will change and used the voucher date
-    public function getStartDepreciation($release_date): ?string
+    public function getStartDepreciation($voucher_date = null): ?string //$release_date
     {
-        $release_date = Carbon::parse($release_date);
-        return $release_date->addMonth(1)->format('Y-m') ?? null;
+        $voucher_date = Carbon::parse($voucher_date);
+        return $voucher_date->addMonth(1)->format('Y-m') ?? null;
     }
 
     public function dateValidation($date, $start_depreciation, $end_depreciation): bool
     {
         $date = Carbon::parse($date);
-        $start_depreciation = Carbon::parse($start_depreciation);
+        $start_depreciation = Carbon::parse($start_depreciation)->subMonth();
         $end_depreciation = Carbon::parse($end_depreciation);
-        if ($date->between($start_depreciation, $end_depreciation) - 1) {
+        if ($date->between($start_depreciation, $end_depreciation)) {
             return true;
         } else {
             return false;
