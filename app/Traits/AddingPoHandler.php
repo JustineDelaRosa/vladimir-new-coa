@@ -36,7 +36,7 @@ trait AddingPoHandler
 
         $query->where('status', 'Approved')
             ->where('is_fa_approved', 1)
-            ->whereHas('receivingWarehouse', function ($query) use($userLocationId) {
+            ->whereHas('receivingWarehouse', function ($query) use ($userLocationId) {
                 $query->where('location_id', $userLocationId);
             })
             ->whereNull('deleted_at');
@@ -45,7 +45,15 @@ trait AddingPoHandler
             $query->whereHasTransactionNumberSynced($toPo);
         }
 
-        $query->orderBy('created_at', 'desc')
+
+        $query->whereExists(function ($subQuery) {
+            $subQuery->select(DB::raw(1))
+                ->from('fixed_assets')
+                ->whereColumn('fixed_assets.transaction_number', 'asset_requests.transaction_number')
+                ->groupBy('fixed_assets.transaction_number')
+                ->havingRaw('SUM(fixed_assets.quantity) != (SELECT SUM(asset_requests.quantity) FROM asset_requests WHERE asset_requests.transaction_number = fixed_assets.transaction_number AND asset_requests.deleted_at IS NULL)');
+        })
+            ->orderBy('created_at', 'desc')
             ->useFilters();
 
         return $query;
@@ -185,7 +193,7 @@ trait AddingPoHandler
 
         // If a filter status was determined, update all items in the request
         if ($filterStatus) {
-            $allItemInRequest->each(function($item) use ($filterStatus) {
+            $allItemInRequest->each(function ($item) use ($filterStatus) {
                 $item->update(['filter' => $filterStatus]);
             });
         }
@@ -403,7 +411,7 @@ trait AddingPoHandler
         }
 
         return $this->responseSuccess(
-             'Remaining quantity removed successfully!',
+            'Remaining quantity removed successfully!',
             ['total_remaining' => $remaining ?? 0]
         );
     }
@@ -484,7 +492,7 @@ trait AddingPoHandler
             $this->deleteAssetRequestPo($assetRequest, $remarks);
             $remainingCount = $this->calculateRemainingQuantity($assetRequest->transaction_number);
 
-            if($remainingCount == 0){
+            if ($remainingCount == 0) {
                 $this->updateFilterStatus($assetRequest->transaction_number);
             }
 
