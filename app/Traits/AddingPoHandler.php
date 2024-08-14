@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\Models\AccountingEntries;
 use App\Models\AdditionalCost;
 use App\Models\AssetRequest;
 use App\Models\FixedAsset;
@@ -29,7 +30,7 @@ trait AddingPoHandler
         $this->vladimirTagGeneratorRepository = new VladimirTagGeneratorRepository();
     }
 
-    public function createAssetRequestQuery($toPo)
+    public function createAssetRequestQuery($toPo, $filter = null)
     {
         $userLocationId = auth('sanctum')->user()->location_id;
         $query = AssetRequest::query()->withTrashed();
@@ -40,22 +41,11 @@ trait AddingPoHandler
                 $query->where('location_id', $userLocationId);
             })
             ->whereNull('deleted_at');
-
         if ($toPo !== null) {
             $query->whereHasTransactionNumberSynced($toPo);
         }
-
-
-        $query->whereExists(function ($subQuery) {
-            $subQuery->select(DB::raw(1))
-                ->from('fixed_assets')
-                ->whereColumn('fixed_assets.transaction_number', 'asset_requests.transaction_number')
-                ->groupBy('fixed_assets.transaction_number')
-                ->havingRaw('SUM(fixed_assets.quantity) != (SELECT SUM(asset_requests.quantity) FROM asset_requests WHERE asset_requests.transaction_number = fixed_assets.transaction_number AND asset_requests.deleted_at IS NULL)');
-        })
-            ->orderBy('created_at', 'desc')
+        $query->orderBy('created_at', 'desc')
             ->useFilters();
-
         return $query;
     }
 
@@ -285,7 +275,7 @@ trait AddingPoHandler
                 'unit_id' => $asset->unit_id,
                 'subunit_id' => $asset->subunit_id,
                 'location_id' => $asset->location_id,
-                'account_id' => $asset->account_title_id,
+                'account_id' => AccountingEntries::where('acc_entry_type', 'Asset')->first()->id,
                 'remarks' => $asset->remarks,
                 'movement_status_id' => MovementStatus::where('movement_status_name', 'New')->first()->id,
                 'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id,
@@ -341,7 +331,7 @@ trait AddingPoHandler
                 'unit_id' => $asset->unit_id,
                 'subunit_id' => $asset->subunit_id,
                 'location_id' => $asset->location_id,
-                'account_id' => $asset->account_title_id,
+                'account_id' => AccountingEntries::where('acc_entry_type', 'Asset')->first()->id,
                 'remarks' => $asset->remarks,
                 'movement_status_id' => MovementStatus::where('movement_status_name', 'New')->first()->id,
                 'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id,
