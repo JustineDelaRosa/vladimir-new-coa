@@ -146,6 +146,8 @@ class AddingPrController extends Controller
 
 
         $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
+            ->where('status', 'Approved')
+            ->where('is_fa_approved', false)
             ->useFilters()
             ->orderBy('created_at', 'desc')
             ->get()
@@ -177,7 +179,7 @@ class AddingPrController extends Controller
                         'reference_number' => $item->pr_number,
                         'item_code' => $item->reference_number,
                         'item_name' => $item->asset_description,
-                        'remarks' => $item->asset_specification, //TODO:check
+                        'remarks' => $item->remarks ?? null, //TODO:check
                         'quantity' => $item->quantity,
 //                        'created_at' => $item->created_at,
                         //                        'additional_info' => $item->additional_info,
