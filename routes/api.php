@@ -11,8 +11,10 @@ use App\Http\Controllers\API\AssetApprovalLogger\AssetApprovalLoggerController;
 use App\Http\Controllers\API\AssetMovement\Transfer\AssetTransferApprovalController;
 use App\Http\Controllers\API\AssetMovement\Transfer\AssetTransferContainerController;
 use App\Http\Controllers\API\AssetMovement\Transfer\AssetTransferRequestController;
+use App\Http\Controllers\API\AssetMovement\TransferController;
 use App\Http\Controllers\API\AssetReleaseController;
 use App\Http\Controllers\API\AssetRequestController;
+use App\Http\Controllers\API\ReceiveReceiptSummaryController;
 use App\Http\Controllers\API\DepartmentUnitApproversController;
 use App\Http\Controllers\API\RequestContainerController;
 use App\Http\Controllers\Auth\AuthController;
@@ -324,7 +326,11 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 //    Route::PATCH('archived-memo-series/{id}', [MemoSeriesController::class, 'archived']);
 
     Route::GET('post-to-ymir', [AddingPrController::class, 'sendToYmir']);
+    Route::RESOURCE('test-transfer', TransferController::class);
 
+    //CANCEL RR NUMBER
+    Route::RESOURCE('rr-summary', ReceiveReceiptSummaryController::class);
+    Route::PATCH('cancel-rr/{rrNumber}', [ReceiveReceiptSummaryController::class, 'cancelledRR']);
 
     Route::prefix('ymir')->group(function () {
         Route::GET('pr-request', [AddingPrController::class, 'requestToPR']);
