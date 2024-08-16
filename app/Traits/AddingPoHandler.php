@@ -30,7 +30,7 @@ trait AddingPoHandler
         $this->vladimirTagGeneratorRepository = new VladimirTagGeneratorRepository();
     }
 
-    public function createAssetRequestQuery($toPo, $filter = null)
+    public function createAssetRequestQuery($toPo, $from = null, $to = null)
     {
         $userLocationId = auth('sanctum')->user()->location_id;
         $query = AssetRequest::query()->withTrashed();
@@ -39,6 +39,10 @@ trait AddingPoHandler
             ->where('is_fa_approved', 1)
             ->whereHas('receivingWarehouse', function ($query) use ($userLocationId) {
                 $query->where('location_id', $userLocationId);
+            })
+            ->when($from && $to, function ($query) use ($to, $from) {
+                $query->whereDate('received_at', '>=', $from)
+                    ->whereDate('received_at', '<=', $to);
             })
             ->whereNull('deleted_at');
         if ($toPo !== null) {
@@ -225,10 +229,18 @@ trait AddingPoHandler
     private function addToFixedAssets($asset, $isAddCost)
     {
         if ($isAddCost == 1) {
+
+            $accountingEntries = AccountingEntries::create([
+                'initial_debit' => 279,
+                'initial_credit' => $asset->account_title_id,
+                'depreciation_debit' => 535,
+                'depreciation_credit' => 321,
+            ]);
             $formula = Formula::create([
                 'depreciation_method' => $asset->depreciation_method,
                 'acquisition_date' => $asset->acquisition_date,
                 'acquisition_cost' => $asset->acquisition_cost,
+                'depreciable_basis' => $asset->acquisition_cost - $asset->scrap_value ?? 0,
                 'scrap_value' => 0,
                 'months_depreciated' => 0,
             ]);
@@ -257,6 +269,8 @@ trait AddingPoHandler
                 'type_of_request_id' => $asset->type_of_request_id,
 //                'charged_department' => $asset->department_id,
                 'asset_specification' => $asset->asset_specification,
+                'major_category_id' => $asset->major_category_id,
+                'minor_category_id' => $asset->minor_category_id,
                 'supplier_id' => $asset->supplier_id,
                 'accountability' => $asset->accountability,
                 'accountable' => $asset->accountable ?? '-',
@@ -275,7 +289,7 @@ trait AddingPoHandler
                 'unit_id' => $asset->unit_id,
                 'subunit_id' => $asset->subunit_id,
                 'location_id' => $asset->location_id,
-                'account_id' => AccountingEntries::where('acc_entry_type', 'Asset')->first()->id,
+                'account_id' => $accountingEntries->id,
                 'remarks' => $asset->remarks,
                 'movement_status_id' => MovementStatus::where('movement_status_name', 'New')->first()->id,
                 'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id,
@@ -283,10 +297,17 @@ trait AddingPoHandler
             ]);
 
         } else {
+            $accountingEntries = AccountingEntries::create([
+                'initial_debit' => 279,
+                'initial_credit' => $asset->account_title_id,
+                'depreciation_debit' => 535,
+                'depreciation_credit' => 321,
+            ]);
             $formula = Formula::create([
                 'depreciation_method' => $asset->depreciation_method,
                 'acquisition_date' => $asset->acquisition_date,
                 'acquisition_cost' => $asset->acquisition_cost,
+                'depreciable_basis' => $asset->acquisition_cost - $asset->scrap_value ?? 0,
                 'scrap_value' => 0,
                 'months_depreciated' => 0,
             ]);
@@ -315,6 +336,8 @@ trait AddingPoHandler
                 'asset_specification' => $asset->asset_specification,
                 'supplier_id' => $asset->supplier_id,
                 'accountability' => $asset->accountability,
+                'major_category_id' => $asset->major_category_id,
+                'minor_category_id' => $asset->minor_category_id,
                 'accountable' => $asset->accountable ?? '-',
                 'cellphone_number' => $asset->cellphone_number ?? '-',
                 'brand' => $asset->brand,
@@ -331,7 +354,7 @@ trait AddingPoHandler
                 'unit_id' => $asset->unit_id,
                 'subunit_id' => $asset->subunit_id,
                 'location_id' => $asset->location_id,
-                'account_id' => AccountingEntries::where('acc_entry_type', 'Asset')->first()->id,
+                'account_id' => $accountingEntries->id,
                 'remarks' => $asset->remarks,
                 'movement_status_id' => MovementStatus::where('movement_status_name', 'New')->first()->id,
                 'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id,
