@@ -15,7 +15,7 @@ class CreateAccountingEntriesTable extends Migration
     {
         Schema::create('accounting_entries', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('acc_entry_type');
+//            $table->string('acc_entry_type');
             $table->string('initial_debit');
             $table->string('initial_credit');
             $table->string('depreciation_debit');

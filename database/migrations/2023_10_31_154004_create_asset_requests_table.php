@@ -176,7 +176,7 @@ class CreateAssetRequestsTable extends Migration
             $table->foreign('uom_id')
                 ->references('id')
                 ->on('unit_of_measures');
-
+            $table->timestamp('received_at')->nullable();
             $table->timestamps();
         });
     }
