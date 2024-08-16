@@ -79,8 +79,13 @@ trait NotificationHandler
 
     private function getToReceive($user)
     {
-        return AssetRequest::where('status', 'Approved')->where('is_fa_approved', 1)->where('synced', 1)
-            ->whereRaw('quantity != quantity_delivered')->distinct('transaction_number')->count();
+        return AssetRequest::select('transaction_number')
+            ->where('status', 'Approved')
+            ->where('is_fa_approved', 1)
+            ->groupBy('transaction_number')
+            ->havingRaw('SUM(synced) = COUNT(*)')
+            ->havingRaw('SUM(quantity) != SUM(quantity_delivered)')
+            ->count();
     }
 
     private function getFaApproval($user)

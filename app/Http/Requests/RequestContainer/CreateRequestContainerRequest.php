@@ -88,6 +88,8 @@ class CreateRequestContainerRequest extends BaseRequest
             'specification_form' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
             'other_attachments' => 'nullable|required-if:type_of_request_id,2|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
+            'major_category_id' => 'nullable|exists:major_categories,id',
+            'minor_category_id' => 'nullable|exists:minor_categories,id',
             'company_id' => 'nullable|exists:companies,id',
             'business_unit_id' => ['nullable', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
             'department_id' => ['nullable', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],

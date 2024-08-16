@@ -41,6 +41,8 @@ class AssetRequestController extends Controller
 
     public function index(Request $request)
     {
+//        return AssetRequest::with('fixedAssetTransactionNumber')->get();
+
 //        return YmirPRTransaction::get();
         $request->validate([
             'for_monitoring' => 'boolean',
@@ -320,6 +322,8 @@ class AssetRequestController extends Controller
             $assetRequest->additional_info = $item->additional_info;
             $assetRequest->acquisition_details = $item->acquisition_details;
             $assetRequest->accountability = $item->accountability;
+            $assetRequest->major_category_id = $item->major_category_id;
+            $assetRequest->minor_category_id = $item->minor_category_id;
             $assetRequest->uom_id = $item->uom_id;
             $assetRequest->company_id = $item->company_id;
             $assetRequest->business_unit_id = $item->business_unit_id;

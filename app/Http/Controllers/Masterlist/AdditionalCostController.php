@@ -239,32 +239,33 @@ class AdditionalCostController extends Controller
         $custom_end_depreciation = $validator->validated()['date'];
 
         //FOR INFORMATION
-        $depreciation_method =  $properties->depreciation_method;
-        $est_useful_life = $additionalCost->majorCategory->est_useful_life;
-        $acquisition_date = $properties->acquisition_date;
-        $acquisition_cost = $properties->acquisition_cost;
-        $scrap_value = $properties->scrap_value;
+        $depreciation_method =  $properties->depreciation_method ?? null;
+        $est_useful_life = $additionalCost->majorCategory->est_useful_life ?? 0;
+        $acquisition_date = $properties->acquisition_date ?? null;
+        $acquisition_cost = $properties->acquisition_cost ?? null;
+        $scrap_value = $properties->scrap_value ?? null;
+
 
         //calculation variables
         $custom_age = $this->calculationRepository->getMonthDifference($properties->start_depreciation, $custom_end_depreciation);
-        $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $est_useful_life);
-        $yearly_depreciation = $this->calculationRepository->getYearlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $est_useful_life);
-        $accumulated_cost = $this->calculationRepository->getAccumulatedCost($monthly_depreciation, $custom_age, $properties->depreciable_basis);
-        $remaining_book_value = $this->calculationRepository->getRemainingBookValue($properties->acquisition_cost, $accumulated_cost);
+        $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $est_useful_life) ?? 0;
+        $yearly_depreciation = $this->calculationRepository->getYearlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $est_useful_life) ?? 0;
+        $accumulated_cost = $this->calculationRepository->getAccumulatedCost($monthly_depreciation, $custom_age, $properties->depreciable_basis) ?? 0;
+        $remaining_book_value = $this->calculationRepository->getRemainingBookValue($properties->acquisition_cost, $accumulated_cost) ?? 0;
 
         if ($depreciation_method === 'One Time') {
             $age = 0.08333333333333;
-            $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $age);
+            $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $age) ?? 0;
         }
 
         return [
             'onetime' => [
-                'depreciation_method' => $depreciation_method,
-                'depreciable_basis' => $properties->depreciable_basis,
-                'start_depreciation' => $properties->start_depreciation,
-                'end_depreciation' => $properties->end_depreciation,
-                'depreciated' => $monthly_depreciation,
-                'depreciation_per_month' => $monthly_depreciation,
+                'depreciation_method' => $depreciation_method ?? '-',
+                'depreciable_basis' => $properties->depreciable_basis ?? 0,
+                'start_depreciation' => $properties->start_depreciation ?? '-',
+                'end_depreciation' => $properties->end_depreciation ?? '-',
+                'depreciated' => $monthly_depreciation ?? 0,
+                'depreciation_per_month' => $monthly_depreciation ?? 0,
                 'depreciation_per_year' => 0,
                 'accumulated_cost' => 0,
                 'remaining_book_value' => 0,
@@ -273,21 +274,61 @@ class AdditionalCostController extends Controller
                 'acquisition_cost' => $acquisition_cost,
                 'est_useful_life' => 'One Time',
                 'months_depreciated' => $custom_age,
+                'initial_debit' => [
+                    'id' => $additionalCost->accountTitle->initialDebit->id ?? '-',
+                    'account_title_code' => $additionalCost->accountTitle->initialDebit->account_title_code ?? '-',
+                    'account_title_name' => $additionalCost->accountTitle->initialDebit->account_title_name ?? '-',
+                ],
+                'initial_credit' => [
+                    'id' => $additionalCost->accountTitle->initialCredit->id ?? '-',
+                    'account_title_code' => $additionalCost->accountTitle->initialCredit->account_title_code ?? '-',
+                    'account_title_name' => $additionalCost->accountTitle->initialCredit->account_title_name ?? '-',
+                ],
+                'depreciation_debit' => [
+                    'id' => $additionalCost->accountTitle->depreciationDebit->id ?? '-',
+                    'account_title_code' => $additionalCost->accountTitle->depreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $additionalCost->accountTitle->depreciationDebit->account_title_name ?? '-',
+                ],
+                'depreciation_credit' => [
+                    'id' => $additionalCost->accountTitle->depreciationCredit->id ?? '-',
+                    'account_title_code' => $additionalCost->accountTitle->depreciationCredit->account_title_code ?? '-',
+                    'account_title_name' => $additionalCost->accountTitle->depreciationCredit->account_title_name ?? '-',
+                ],
             ],
             'default' => [
-                'depreciation_method' => $depreciation_method,
-                'depreciable_basis' => $properties->depreciable_basis,
-                'est_useful_life' => $est_useful_life,
-                'months_depreciated' => $custom_age,
+                'depreciation_method' => $depreciation_method ?? '-',
+                'depreciable_basis' => $properties->depreciable_basis ?? 0,
+                'est_useful_life' => $est_useful_life ?? 0,
+                'months_depreciated' => $custom_age ?? 0,
                 'scrap_value' => $scrap_value,
-                'start_depreciation' => $properties->start_depreciation,
-                'end_depreciation' => $properties->end_depreciation,
-                'depreciation_per_month' => $monthly_depreciation,
-                'depreciation_per_year' => $yearly_depreciation,
-                'accumulated_cost' => $accumulated_cost,
-                'remaining_book_value' => $remaining_book_value,
+                'start_depreciation' => $properties->start_depreciation ?? '-',
+                'end_depreciation' => $properties->end_depreciation ?? '-',
+                'depreciation_per_month' => $monthly_depreciation ?? 0,
+                'depreciation_per_year' => $yearly_depreciation ?? 0,
+                'accumulated_cost' => $accumulated_cost ?? 0,
+                'remaining_book_value' => $remaining_book_value ?? 0,
                 'acquisition_date' => $acquisition_date,
                 'acquisition_cost' => $acquisition_cost,
+                'initial_debit' => [
+                    'id' => $additionalCost->accountTitle->initialDebit->id ?? '-',
+                    'account_title_code' => $additionalCost->accountTitle->initialDebit->account_title_code ?? '-',
+                    'account_title_name' => $additionalCost->accountTitle->initialDebit->account_title_name ?? '-',
+                ],
+                'initial_credit' => [
+                    'id' => $additionalCost->accountTitle->initialCredit->id ?? '-',
+                    'account_title_code' => $additionalCost->accountTitle->initialCredit->account_title_code ?? '-',
+                    'account_title_name' => $additionalCost->accountTitle->initialCredit->account_title_name ?? '-',
+                ],
+                'depreciation_debit' => [
+                    'id' => $additionalCost->accountTitle->depreciationDebit->id ?? '-',
+                    'account_title_code' => $additionalCost->accountTitle->depreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $additionalCost->accountTitle->depreciationDebit->account_title_name ?? '-',
+                ],
+                'depreciation_credit' => [
+                    'id' => $additionalCost->accountTitle->depreciationCredit->id ?? '-',
+                    'account_title_code' => $additionalCost->accountTitle->depreciationCredit->account_title_code ?? '-',
+                    'account_title_name' => $additionalCost->accountTitle->depreciationCredit->account_title_name ?? '-',
+                ],
             ]
         ];
     }

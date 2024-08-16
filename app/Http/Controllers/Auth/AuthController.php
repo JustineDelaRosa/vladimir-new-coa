@@ -62,7 +62,7 @@ class AuthController extends Controller
             'user' => $user,
             'token' => $token,
         ];
-        $this->fixedAssetData();
+//        $this->fixedAssetData();
 
         $cookie = cookie('authcookie', $token);
         return response()->json([

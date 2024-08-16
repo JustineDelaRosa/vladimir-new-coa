@@ -2,8 +2,10 @@
 
 namespace App\Repositories;
 
+use App\Models\AccountingEntries;
 use App\Models\AssetApproval;
 use App\Models\AssetTransferRequest;
+use App\Models\MinorCategory;
 use App\Models\PoBatch;
 use App\Models\TypeOfRequest;
 use Carbon\Carbon;
@@ -61,8 +63,8 @@ class FixedAssetRepository
             'release_date' => $request['release_date'] ?? Null,
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation(
-//                    $this->calculationRepository->getStartDepreciation($request['release_date']),
-                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
+                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+//                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
                 )
@@ -71,14 +73,20 @@ class FixedAssetRepository
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
             'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
-                ? $this->calculationRepository->getStartDepreciation($request['voucher_date'])
-//                $this->calculationRepository->getStartDepreciation($request['release_date'])
+//                ? $this->calculationRepository->getStartDepreciation($request['voucher_date'])
+                ? $this->calculationRepository->getStartDepreciation($request['release_date'])
                 : null
         ];
     }
 
     private function prepareFixedAssetDataForStore($request, $vladimirTagNumber, $businessUnitQuery): array
     {
+        $accountingEntry = AccountingEntries::create([
+            'initial_debit' => 279,
+            'initial_credit' => MinorCategory::where('id', $request['minor_category_id'])->first()->accountTitle->id,
+            'depreciation_debit' => 535,
+            'depreciation_credit' => 321,
+        ]);
         return [
             'capex_id' => isset($request['sub_capex_id']) ? SubCapex::find($request['sub_capex_id'])->capex_id : null,
             'sub_capex_id' => $request['sub_capex_id'] ?? null,
@@ -119,7 +127,7 @@ class FixedAssetRepository
             'unit_id' => $request['unit_id'],
             'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
-            'account_id' => $request['account_title_id'],
+            'account_id' => $accountingEntry->id,
             'uom_id' => $request['uom_id'] ?? null,
         ];
     }
@@ -142,6 +150,12 @@ class FixedAssetRepository
 
     private function prepareFixedAssetDataForUpdate($request, $businessUnitQuery): array
     {
+        $accountingEntry = AccountingEntries::create([
+            'initial_debit' => 279,
+            'initial_credit' => MinorCategory::where('id', $request['minor_category_id'])->first()->accountTitle->id,
+            'depreciation_debit' => 535,
+            'depreciation_credit' => 321,
+        ]);
         return [
             'po_number' => $request['po_number'],
             'capex_id' => isset($request['sub_capex_id']) ? SubCapex::find($request['sub_capex_id'])->capex_id : null,
@@ -179,7 +193,7 @@ class FixedAssetRepository
             'unit_id' => $request['unit_id'],
             'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
-            'account_id' => $request['account_title_id'],
+            'account_id' => $accountingEntry->id,
             'uom_id' => $request['uom_id'] ?? null,
         ];
     }
@@ -198,8 +212,8 @@ class FixedAssetRepository
             'release_date' => $request['release_date'] ?? Null,
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation(
-                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
-//                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+//                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
+                    $this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
                 )
@@ -208,8 +222,8 @@ class FixedAssetRepository
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
             'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
-                ? $this->calculationRepository->getStartDepreciation($request['voucher_date'])
-//                $this->calculationRepository->getStartDepreciation($request['release_date'])
+//                ? $this->calculationRepository->getStartDepreciation($request['voucher_date'])
+                ? $this->calculationRepository->getStartDepreciation($request['release_date'])
                 : null
         ];
     }
@@ -226,8 +240,8 @@ class FixedAssetRepository
             $depstatus = DepreciationStatus::where('id', $request['depreciation_status_id'])->first();
             if ($depstatus->depreciation_status_name == 'Fully Depreciated' && isset($request['release_date'])) {
                 $end_depreciation = $this->calculationRepository->getEndDepreciation(
-                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
-//                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+//                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
+                    $this->calculationRepository->getStartDepreciation($request['release_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
                 );
@@ -298,6 +312,8 @@ class FixedAssetRepository
                 'accountable',
                 'brand',
                 'depreciation_method',
+                'transaction_number',
+                'reference_number',
             ];
 
             $mainAttributesAdditionalCost = [
@@ -327,7 +343,7 @@ class FixedAssetRepository
                 'movementStatus' => ['movement_status_name'],
                 'location' => ['location_name'],
                 'company' => ['company_name'],
-                'accountTitle' => ['account_title_name'],
+                'accountTitle.initialCredit' => ['account_title_name'],
             ];
 
             foreach ($relationAttributes as $relation => $attributes) {
@@ -347,7 +363,7 @@ class FixedAssetRepository
         }
 
 
-        $results = $firstQuery->unionAll($secondQuery)->orderBy('vladimir_tag_number', 'asc')->get();
+        $results = $firstQuery->unionAll($secondQuery)->orderBy('asset_description')->get();
 
         $results = $this->paginateResults($results, $page, $per_page);
 
@@ -538,9 +554,29 @@ class FixedAssetRepository
                 'location_name' => $fixed_asset->location->location_name ?? '-',
             ],
             'account_title' => [
-                'id' => $fixed_asset->accountTitle->id ?? '-',
-                'account_title_code' => $fixed_asset->accountTitle->account_title_code ?? '-',
-                'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
+                'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+            ],
+            'initial_debit' => [
+                'id' => $fixed_asset->accountTitle->initialDebit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialDebit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialDebit->account_title_name ?? '-',
+            ],
+            'initial_credit' => [
+                'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+            ],
+            'depreciation_debit' => [
+                'id' => $fixed_asset->accountTitle->depreciationDebit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationDebit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationDebit->account_title_name ?? '-',
+            ],
+            'depreciation_credit' => [
+                'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
             ],
             'remarks' => $fixed_asset->remarks,
             'print_count' => $fixed_asset->print_count,
@@ -677,9 +713,29 @@ class FixedAssetRepository
                         'location_name' => $additional_cost->location->location_name ?? '-',
                     ],
                     'account_title' => [
-                        'id' => $additional_cost->accountTitle->id ?? '-',
-                        'account_title_code' => $additional_cost->accountTitle->account_title_code ?? '-',
-                        'account_title_name' => $additional_cost->accountTitle->account_title_name ?? '-',
+                        'id' => $additional_cost->accountTitle->initialCredit->id ?? '-',
+                        'account_title_code' => $additional_cost->accountTitle->initialCredit->account_title_code ?? '-',
+                        'account_title_name' => $additional_cost->accountTitle->initialCredit->account_title_name ?? '-',
+                    ],
+                    'initial_debit' => [
+                        'id' => $additional_cost->accountTitle->initialDebit->id ?? '-',
+                        'account_title_code' => $additional_cost->accountTitle->initialDebit->account_title_code ?? '-',
+                        'account_title_name' => $additional_cost->accountTitle->initialDebit->account_title_name ?? '-',
+                    ],
+                    'initial_credit' => [
+                        'id' => $additional_cost->accountTitle->initialCredit->id ?? '-',
+                        'account_title_code' => $additional_cost->accountTitle->initialCredit->account_title_code ?? '-',
+                        'account_title_name' => $additional_cost->accountTitle->initialCredit->account_title_name ?? '-',
+                    ],
+                    'depreciation_debit' => [
+                        'id' => $additional_cost->accountTitle->depreciationDebit->id ?? '-',
+                        'account_title_code' => $additional_cost->accountTitle->depreciationDebit->account_title_code ?? '-',
+                        'account_title_name' => $additional_cost->accountTitle->depreciationDebit->account_title_name ?? '-',
+                    ],
+                    'depreciation_credit' => [
+                        'id' => $additional_cost->accountTitle->depreciationCredit->id ?? '-',
+                        'account_title_code' => $additional_cost->accountTitle->depreciationCredit->account_title_code ?? '-',
+                        'account_title_name' => $additional_cost->accountTitle->depreciationCredit->account_title_name ?? '-',
                     ],
                     'remarks' => $additional_cost->remarks ?? '-',
                 ];
@@ -824,9 +880,29 @@ class FixedAssetRepository
                 'location_name' => $fixed_asset->location->location_name ?? '-',
             ],
             'account_title' => [
-                'id' => $fixed_asset->accountTitle->id ?? '-',
-                'account_title_code' => $fixed_asset->accountTitle->account_title_code ?? '-',
-                'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
+                'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+            ],
+            'initial_debit' => [
+                'id' => $fixed_asset->accountTitle->initialDebit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialDebit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialDebit->account_title_name ?? '-',
+            ],
+            'initial_credit' => [
+                'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+            ],
+            'depreciation_debit' => [
+                'id' => $fixed_asset->accountTitle->depreciationDebit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationDebit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationDebit->account_title_name ?? '-',
+            ],
+            'depreciation_credit' => [
+                'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
             ],
             'remarks' => $fixed_asset->remarks ?? '-',
             'print_count' => $fixed_asset->print_count,
@@ -929,9 +1005,29 @@ class FixedAssetRepository
                 'location_name' => $fixed_asset->location->location_name ?? '-',
             ],
             'account_title' => [
-                'id' => $fixed_asset->accountTitle->id ?? '-',
-                'account_title_code' => $fixed_asset->accountTitle->account_title_code ?? '-',
-                'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
+                'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+            ],
+            'initial_debit' => [
+                'id' => $fixed_asset->accountTitle->initialDebit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialDebit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialDebit->account_title_name ?? '-',
+            ],
+            'initial_credit' => [
+                'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+            ],
+            'depreciation_debit' => [
+                'id' => $fixed_asset->accountTitle->depreciationDebit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationDebit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationDebit->account_title_name ?? '-',
+            ],
+            'depreciation_credit' => [
+                'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
             ],
             'created_at' => $fixed_asset->created_at,
         ];
@@ -1080,7 +1176,7 @@ class FixedAssetRepository
         }
     }
 
-    private function fixedAssetFields()
+    private function fixedAssetFields(): array
     {
         return [
             'id',
@@ -1092,6 +1188,8 @@ class FixedAssetRepository
             'warehouse_number_id',
             'capex_id',
             'sub_capex_id',
+            'transaction_number',
+            'reference_number',
             'vladimir_tag_number',
             'tag_number',
             'tag_number_old',
@@ -1137,7 +1235,7 @@ class FixedAssetRepository
         ];
     }
 
-    private function additionalCostFields()
+    private function additionalCostFields(): array
     {
         return [
             'additional_costs.id',
@@ -1149,6 +1247,8 @@ class FixedAssetRepository
             'additional_costs.warehouse_number_id',
             'fixed_assets.capex_id AS capex_id',
             'fixed_assets.sub_capex_id AS sub_capex_id',
+            'additional_costs.transaction_number',
+            'additional_costs.reference_number',
             'fixed_assets.vladimir_tag_number AS vladimir_tag_number',
             'fixed_assets.tag_number AS tag_number',
             'fixed_assets.tag_number_old AS tag_number_old',

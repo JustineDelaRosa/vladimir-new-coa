@@ -28,13 +28,10 @@ class UnitApproverBaseController extends Controller
         return FormRequest::class;
     }
 
-
-
     public function index(Request $request)
     {
         return $this->formSettingIndex($request, new $this->model);
     }
-
 
     public function store()
     {
@@ -42,7 +39,6 @@ class UnitApproverBaseController extends Controller
         $request = app($formRequestClass);
         return $this->formSettingStore($request, new $this->model);
     }
-
 
     public function destroy($subUnitId)
     {

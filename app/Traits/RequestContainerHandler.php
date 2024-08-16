@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Models\AccountTitle;
+use App\Models\MinorCategory;
 use App\Models\RequestContainer;
 use Essa\APIToolKit\Api\ApiResponse;
 
@@ -23,13 +24,12 @@ trait RequestContainerHandler
             $maxLayer = $departmentUnitApprovers->max('layer');
             $isLastApprover = $maxLayer == $requesterLayer;
         }
-
         return [$isRequesterApprover, $isLastApprover, $requesterLayer];
     }
 
     private function createRequestContainer($request, $isRequesterApprover, $isLastApprover, $requesterLayer, $requesterId)
     {
-        $assetClearing = AccountTitle::where('account_title_name', 'Asset Clearing')->first()->id;
+        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountTitle->id;
         return RequestContainer::create([
             'status' => $isLastApprover
                 ? 'Approved'
@@ -42,7 +42,7 @@ trait RequestContainerHandler
             'fixed_asset_id' => $request->fixed_asset_id ?? null,
             'type_of_request_id' => $request->type_of_request_id,
             'attachment_type' => $request->attachment_type,
-            'account_title_id' => $assetClearing,
+            'account_title_id' => $accountTitleID ?? null,
             'accountability' => $request->accountability,
             'accountable' => $request->accountable ?? null,
             'additional_info' => $request->additional_info ?? null,
@@ -53,6 +53,8 @@ trait RequestContainerHandler
             'brand' => $request->brand ?? null,
             'quantity' => $request->quantity,
             'date_needed' => $request->date_needed,
+            'major_category_id' => $request->major_category_id,
+            'minor_category_id' => $request->minor_category_id,
             'company_id' => $request->company_id,
             'business_unit_id' => $request->business_unit_id,
             'department_id' => $request->department_id,

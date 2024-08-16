@@ -7,6 +7,7 @@ use App\Models\Approvers;
 use App\Models\AssetRequest;
 use App\Models\AssetApproval;
 use App\Models\FixedAsset;
+use App\Models\MinorCategory;
 use App\Models\RoleManagement;
 use App\Models\User;
 use App\Traits\AddingPoHandler;
@@ -99,6 +100,7 @@ trait AssetRequestHandler
 
     public function updateAssetRequest($assetRequest, $request, $save = true)
     {
+        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountTitle->id;
         // Make changes to the $assetRequest object but don't save them
         $assetRequest->fill([
             'type_of_request_id' => $request->type_of_request_id,
@@ -116,12 +118,15 @@ trait AssetRequestHandler
             'date_needed' => $request->date_needed ?? null,
             'fixed_asset_id' => $request->fixed_asset_id ?? null,
 //            'account_title_id' => $request->account_title_id ?? null,
+            'major_category_id' => $request->major_category_id,
+            'minor_category_id' => $request->minor_category_id,
             'company_id' => $request->company_id,
             'business_unit_id' => $request->business_unit_id,
             'department_id' => $request->department_id,
             'unit_id' => $request->unit_id,
             'subunit_id' => $request->subunit_id,
             'location_id' => $request->location_id,
+            'account_title_id' => $accountTitleID,
             'uom_id' => $request->uom_id ?? null,
             'receiving_warehouse_id' => $request->receiving_warehouse_id,
         ]);
@@ -237,6 +242,7 @@ trait AssetRequestHandler
             'po_number' => $assetRequest->po_number ?? '-',
             'rr_number' => $assetRequest->rr_number ?? '-',
             'is_addcost' => $assetRequest->is_addcost ?? 0,
+//            'dated_delivered' => $assetRequest->getLastestDeliveryDate() ?? '-',
 //            'fixed_asset' => [
 //                'id' => $ar->fixedAsset->id ?? '-',
 //                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
@@ -247,9 +253,10 @@ trait AssetRequestHandler
                 'warehouse_name' => $assetRequest->receivingWarehouse->warehouse_name ?? '-',
             ],
             'deleted_at' => $assetRequest->deleted_at,
-            'created_at' => $this->getDateRequested($assetRequest->transaction_number),
+//            'created_at' => $this->getDateRequested($assetRequest->transaction_number),
+            'created_at' => $assetRequest->getLatestDeliveryDate(),
             'approver_count' => $assetRequest->assetApproval->count(),
-            'process_count' => $this->getProcessCount($assetRequest),
+            'process_count' => $this->getProcessCount($assetRequest) ?? 0,
             'current_approver' => $this->getCurrentApprover($assetRequest),
             'requestor' => $this->getRequestor($assetRequest),
             'history' => Activity::whereSubjectType(AssetRequest::class)
@@ -455,7 +462,7 @@ trait AssetRequestHandler
         $statusForApproval = $assetRequest->assetApproval->where('status', 'For Approval');
         $highestLayerNumber = $assetRequest->assetApproval()->max('layer');
         $statusForApprovalCount = $statusForApproval->count();
-        $returnStatus = $assetRequest->assetApproval->whereIn('status', ['Returned','Returned From Ymir'])->count();
+        $returnStatus = $assetRequest->assetApproval->whereIn('status', ['Returned', 'Returned From Ymir'])->count();
         $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number);
 
         if ($statusForApprovalCount > 0) {
@@ -784,7 +791,7 @@ trait AssetRequestHandler
     public function createAssetApprovals($items, $requesterId, $assetRequest)
     {
 //        return $assetRequest->transaction_number . '-' . $requesterId. '-' . $items[0]->subunit_id;
-         $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $items[0]->subunit_id)
+        $departmentUnitApprovers = DepartmentUnitApprovers::with('approver')->where('subunit_id', $items[0]->subunit_id)
             ->orderBy('layer')
             ->get();
 

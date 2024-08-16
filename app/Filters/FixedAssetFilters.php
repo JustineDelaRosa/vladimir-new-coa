@@ -14,7 +14,10 @@ class FixedAssetFilters extends QueryFilters
         'fixed_assets.accountability',
         'fixed_assets.accountable',
         'fixed_assets.brand',
-        'fixed_assets.depreciation_method'
+        'fixed_assets.depreciation_method',
+        'fixed_assets.transaction_number',
+        'fixed_assets.reference_number',
+        'fixed_assets.receipt',
     ];
 
     protected array $columnSearch = [
@@ -25,7 +28,10 @@ class FixedAssetFilters extends QueryFilters
         'fixed_assets.accountability',
         'fixed_assets.accountable',
         'fixed_assets.brand',
-        'fixed_assets.depreciation_method'
+        'fixed_assets.depreciation_method',
+        'fixed_assets.transaction_number',
+        'fixed_assets.reference_number',
+        'fixed_assets.receipt',
     ];
 
     protected array $relationSearch = [
@@ -43,6 +49,6 @@ class FixedAssetFilters extends QueryFilters
         'unit' => ['unit_code','unit_name'],
         'subunit' => ['sub_unit_code','sub_unit_name'],
         'location' => ['location_code','location_name'],
-        'accountTitle' => ['account_title_code','account_title_name'],
+        'accountTitle.initialCredit' => ['account_title_code','account_title_name'],
     ];
 }

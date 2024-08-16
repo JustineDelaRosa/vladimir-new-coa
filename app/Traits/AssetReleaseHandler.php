@@ -5,6 +5,7 @@ namespace App\Traits;
 use App\Models\AdditionalCost;
 use App\Models\AssetRequest;
 use App\Models\FixedAsset;
+use App\Repositories\CalculationRepository;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,12 @@ use Illuminate\Support\Str;
 
 trait AssetReleaseHandler
 {
+
+    protected CalculationRepository $calculationRepository;
+    public function __construct(CalculationRepository $calculationRepository)
+    {
+        $this->calculationRepository = $calculationRepository;
+    }
     public function assetReleaseActivityLog($AssetToRelease, $isClaimed = false)
     {
         $user = auth('sanctum')->user();
@@ -399,9 +406,29 @@ trait AssetReleaseHandler
                 'location_name' => $fixed_asset->location->location_name ?? '-',
             ],
             'account_title' => [
-                'id' => $fixed_asset->accountTitle->id ?? '-',
-                'account_title_code' => $fixed_asset->accountTitle->account_title_code ?? '-',
-                'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
+                'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+            ],
+            'initial_debit' => [
+                'id' => $fixed_asset->accountTitle->initialDebit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialDebit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialDebit->account_title_name ?? '-',
+            ],
+            'initial_credit' => [
+                'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+            ],
+            'depreciation_debit' => [
+                'id' => $fixed_asset->accountTitle->depreciationDebit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationDebit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationDebit->account_title_name ?? '-',
+            ],
+            'depreciation_credit' => [
+                'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
             ],
             'remarks' => $fixed_asset->remarks,
             'print_count' => $fixed_asset->print_count,
@@ -572,9 +599,29 @@ trait AssetReleaseHandler
                         'location_name' => $additional_cost->location->location_name ?? '-',
                     ],
                     'account_title' => [
-                        'id' => $additional_cost->accountTitle->id ?? '-',
-                        'account_title_code' => $additional_cost->accountTitle->account_title_code ?? '-',
-                        'account_title_name' => $additional_cost->accountTitle->account_title_name ?? '-',
+                        'id' => $additional_cost->accountTitle->initialCredit->id ?? '-',
+                        'account_title_code' => $additional_cost->accountTitle->initialCredit->account_title_code ?? '-',
+                        'account_title_name' => $additional_cost->accountTitle->initialCredit->account_title_name ?? '-',
+                    ],
+                    'initial_debit' => [
+                        'id' => $additional_cost->accountTitle->initialDebit->id ?? '-',
+                        'account_title_code' => $additional_cost->accountTitle->initialDebit->account_title_code ?? '-',
+                        'account_title_name' => $additional_cost->accountTitle->initialDebit->account_title_name ?? '-',
+                    ],
+                    'initial_credit' => [
+                        'id' => $additional_cost->accountTitle->initialCredit->id ?? '-',
+                        'account_title_code' => $additional_cost->accountTitle->initialCredit->account_title_code ?? '-',
+                        'account_title_name' => $additional_cost->accountTitle->initialCredit->account_title_name ?? '-',
+                    ],
+                    'depreciation_debit' => [
+                        'id' => $additional_cost->accountTitle->depreciationDebit->id ?? '-',
+                        'account_title_code' => $additional_cost->accountTitle->depreciationDebit->account_title_code ?? '-',
+                        'account_title_name' => $additional_cost->accountTitle->depreciationDebit->account_title_name ?? '-',
+                    ],
+                    'depreciation_credit' => [
+                        'id' => $additional_cost->accountTitle->depreciationCredit->id ?? '-',
+                        'account_title_code' => $additional_cost->accountTitle->depreciationCredit->account_title_code ?? '-',
+                        'account_title_name' => $additional_cost->accountTitle->depreciationCredit->account_title_name ?? '-',
                     ],
                     'remarks' => $additional_cost->remarks ?? '-',
                 ];
@@ -720,9 +767,29 @@ trait AssetReleaseHandler
                 'location_name' => $fixed_asset->location->location_name ?? '-',
             ],
             'account_title' => [
-                'id' => $fixed_asset->accountTitle->id ?? '-',
-                'account_title_code' => $fixed_asset->accountTitle->account_title_code ?? '-',
-                'account_title_name' => $fixed_asset->accountTitle->account_title_name ?? '-',
+                'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+            ],
+            'initial_debit' => [
+                'id' => $fixed_asset->accountTitle->initialDebit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialDebit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialDebit->account_title_name ?? '-',
+            ],
+            'initial_credit' => [
+                'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+            ],
+            'depreciation_debit' => [
+                'id' => $fixed_asset->accountTitle->depreciationDebit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationDebit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationDebit->account_title_name ?? '-',
+            ],
+            'depreciation_credit' => [
+                'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
             ],
             'remarks' => $fixed_asset->remarks ?? '-',
             'print_count' => $fixed_asset->print_count,
@@ -1168,7 +1235,11 @@ trait AssetReleaseHandler
         (clone $assetQuery)->update($updateData);
 
         $formula = $asset->formula;
-        $formula->update(['release_date' => now()->format('Y-m-d')]);
+        $formula->update([
+            'release_date' => now()->format('Y-m-d'),
+            'start_depreciation' => $this->calculationRepository->getStartDepreciation(now()->format('Y-m-d')),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation(now()->format('Y-m-d'), 5, 'STL'), //TODO: temporary est useful life
+        ]);
         $asset->refresh();
         $this->assetReleaseActivityLog($asset);
         $this->assetReleaseActivityLog($asset, true);

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Exception;
 use App\Filters\LocationFilters;
 use Illuminate\Database\Eloquent\Builder;
@@ -249,5 +250,48 @@ class AssetRequest extends Model implements HasMedia
     {
         $fixedAsset = FixedAsset::where('reference_number', $this->reference_number)->first();
         return $fixedAsset ? $fixedAsset->inclusion : null;
+    }
+
+//    public function getRRReceived(){
+//        $fixedAssets = FixedAsset::where('reference_number', $this->reference_number)->get();
+//        $dateCounts = $fixedAssets->groupBy(function($item) {
+//            return Carbon::parse($item->created_at)->format('Y-m-d');
+//        })->map(function($group) {
+//            return $group->count();
+//        });
+//
+//        return $dateCounts->map(function($count, $date) {
+//            return "$date - $count";
+//        })->values()->toArray() ?? null;
+//    }
+//
+//    public function getUnitCost(){
+//        $fixedAssets = FixedAsset::where('reference_number', $this->reference_number)->get();
+//        $unitCosts = $fixedAssets->groupBy(function($item) {
+//            return $item->formula->acquisition_cost;
+//        })->map(function($group) {
+//            return $group->count();
+//        });
+//
+//        return $unitCosts->map(function($count, $unitCost) {
+//            return "$unitCost - $count";
+//        })->values()->toArray() ?? null;
+//
+//    }
+    public function getRRReceived(){
+        $fixedAssets = FixedAsset::where('reference_number', $this->reference_number)->get();
+        return $fixedAssets->map(function($item) {
+            return [
+                'vladimir_tag' => $item->vladimir_tag_number,
+                'date_delivered' => Carbon::parse($item->created_at)->format('d-m-Y'),
+                'unit_cost' => $item->formula->acquisition_cost,
+            ];
+        })->toArray() ?? null;
+    }
+
+    public function getLatestDeliveryDate(){
+        $fixedAssets = FixedAsset::where('transaction_number', $this->transaction_number)->get();
+        $latestDate = $fixedAssets->max('created_at');
+        return $latestDate;
     }
 }

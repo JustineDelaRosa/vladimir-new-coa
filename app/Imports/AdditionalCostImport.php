@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Models\AccountingEntries;
 use App\Models\AccountTitle;
 use App\Models\BusinessUnit;
 use App\Models\Company;
@@ -17,6 +18,7 @@ use App\Models\Status\DepreciationStatus;
 use App\Models\Status\MovementStatus;
 use App\Models\SubUnit;
 use App\Models\TypeOfRequest;
+use App\Models\Unit;
 use App\Repositories\AdditionalCostRepository;
 use App\Repositories\CalculationRepository;
 use App\Rules\ImportValidation\ValidAccountCode;
@@ -155,6 +157,14 @@ class AdditionalCostImport extends DefaultValueBinder implements
         if ($majorCategoryId == null || $minorCategoryId == null) {
             throw new Exception('Unable to create FixedAsset due to missing Major/Minor category ID.');
         }
+
+        $accountingEntry = AccountingEntries::create([
+            'initial_debit' => 279,
+            'initial_credit' => MinorCategory::where('id', $minorCategoryId)->first()->accountTitle->id,
+            'depreciation_debit' => 535,
+            'depreciation_credit' => 321,
+        ]);
+
         $fixedAssetId = FixedAsset::where('vladimir_tag_number', $collection['vladimir_tag_number'])->first()->id;
         $formula->additionalCost()->create([
             'fixed_asset_id' => $fixedAssetId,
@@ -186,10 +196,10 @@ class AdditionalCostImport extends DefaultValueBinder implements
             'company_id' => Company::where('company_code', $collection['company_code'])->first()->id,
             'business_unit_id' => BusinessUnit::where('business_unit_code', $collection['business_unit_code'])->first()->id,
             'department_id' => Department::where('department_code', $collection['department_code'])->first()->id,
-            'unit_id' => \App\Models\Unit::where('unit_code', $collection['unit_code'])->first()->id,
+            'unit_id' => Unit::where('unit_code', $collection['unit_code'])->first()->id,
             'subunit_id' => SubUnit::where('sub_unit_code', $collection['subunit_code'])->first()->id,
             'location_id' => Location::where('location_code', $collection['location_code'])->first()->id,
-            'account_id' => AccountTitle::where('account_title_code', $collection['account_code'])->first()->id,
+            'account_id' => $accountingEntry,
         ]);
     }
 

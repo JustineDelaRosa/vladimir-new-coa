@@ -452,19 +452,19 @@ class FixedAssetController extends Controller
         $end_depreciation = $fixedAsset->formula->end_depreciation;
         $custom_end_depreciation = $validator->validated()['date'];
         //FOR INFORMATION
-        $depreciation_method = $properties->depreciation_method;
-        $est_useful_life = $fixedAsset->majorCategory->est_useful_life;
-        $acquisition_date = $properties->acquisition_date;
-        $acquisition_cost = $properties->acquisition_cost;
-        $scrap_value = $properties->scrap_value;
+        $depreciation_method = $properties->depreciation_method ?? null;
+        $est_useful_life = $fixedAsset->majorCategory->est_useful_life ?? 0;
+        $acquisition_date = $properties->acquisition_date ?? null;
+        $acquisition_cost = $properties->acquisition_cost ?? null;
+        $scrap_value = $properties->scrap_value ?? null;
 
 
         //calculation variables
-        $custom_age = $this->calculationRepository->getMonthDifference($properties->start_depreciation, $custom_end_depreciation);
-        $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $est_useful_life);
-        $yearly_depreciation = $this->calculationRepository->getYearlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $est_useful_life);
-        $accumulated_cost = $this->calculationRepository->getAccumulatedCost($monthly_depreciation, $custom_age, $properties->depreciable_basis);
-        $remaining_book_value = $this->calculationRepository->getRemainingBookValue($properties->acquisition_cost, $accumulated_cost);
+        $custom_age = $this->calculationRepository->getMonthDifference($properties->start_depreciation, $custom_end_depreciation) ?? null;
+        $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $est_useful_life) ?? null;
+        $yearly_depreciation = $this->calculationRepository->getYearlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $est_useful_life) ?? null;
+        $accumulated_cost = $this->calculationRepository->getAccumulatedCost($monthly_depreciation, $custom_age, $properties->depreciable_basis) ?? null;
+        $remaining_book_value = $this->calculationRepository->getRemainingBookValue($properties->acquisition_cost, $accumulated_cost) ?? null;
 
         if ($depreciation_method === 'One Time') {
             $age = 0.083333333333333;
@@ -487,21 +487,61 @@ class FixedAssetController extends Controller
                 'acquisition_cost' => $acquisition_cost,
                 'est_useful_life' => 'One Time',
                 'months_depreciated' => $custom_age,
+                'initial_debit' => [
+                    'id' => $fixedAsset->accountTitle->initialDebit->id ?? '-',
+                    'account_title_code' => $fixedAsset->accountTitle->initialDebit->account_title_code ?? '-',
+                    'account_title_name' => $fixedAsset->accountTitle->initialDebit->account_title_name ?? '-',
+                ],
+                'initial_credit' => [
+                    'id' => $fixedAsset->accountTitle->initialCredit->id ?? '-',
+                    'account_title_code' => $fixedAsset->accountTitle->initialCredit->account_title_code ?? '-',
+                    'account_title_name' => $fixedAsset->accountTitle->initialCredit->account_title_name ?? '-',
+                ],
+                'depreciation_debit' => $fixedAsset->depreciation_method !== null ? [
+                    'id' => $fixedAsset->accountTitle->depreciationDebit->id ?? '-',
+                    'account_title_code' => $fixedAsset->accountTitle->depreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $fixedAsset->accountTitle->depreciationDebit->account_title_name ?? '-',
+                ] : null,
+                'depreciation_credit' => $fixedAsset->depreciation_method !== null ? [
+                    'id' => $fixedAsset->accountTitle->depreciationCredit->id ?? '-',
+                    'account_title_code' => $fixedAsset->accountTitle->depreciationCredit->account_title_code ?? '-',
+                    'account_title_name' => $fixedAsset->accountTitle->depreciationCredit->account_title_name ?? '-',
+                ] : null,
             ],
             'default' => [
-                'depreciation_method' => $depreciation_method,
-                'depreciable_basis' => $properties->depreciable_basis,
-                'est_useful_life' => $est_useful_life,
-                'months_depreciated' => $custom_age,
-                'scrap_value' => $scrap_value,
-                'start_depreciation' => $properties->start_depreciation,
-                'end_depreciation' => $properties->end_depreciation,
-                'depreciation_per_month' => $monthly_depreciation,
-                'depreciation_per_year' => $yearly_depreciation,
-                'accumulated_cost' => $accumulated_cost,
-                'remaining_book_value' => $remaining_book_value,
-                'acquisition_date' => $acquisition_date,
-                'acquisition_cost' => $acquisition_cost,
+                'depreciation_method' => $depreciation_method ?? '-',
+                'depreciable_basis' => $properties->depreciable_basis ?? 0,
+                'est_useful_life' => $est_useful_life ?? '-',
+                'months_depreciated' => $custom_age ?? '-',
+                'scrap_value' => $scrap_value ?? '-',
+                'start_depreciation' => $properties->start_depreciation ?? '-',
+                'end_depreciation' => $properties->end_depreciation ?? '-',
+                'depreciation_per_month' => $monthly_depreciation ?? '-',
+                'depreciation_per_year' => $yearly_depreciation ?? '-',
+                'accumulated_cost' => $accumulated_cost ?? '-',
+                'remaining_book_value' => $remaining_book_value ?? '-',
+                'acquisition_date' => $acquisition_date ?? '-',
+                'acquisition_cost' => $acquisition_cost ?? '-',
+                'initial_debit' => [
+                    'id' => $fixedAsset->accountTitle->initialDebit->id ?? '-',
+                    'account_title_code' => $fixedAsset->accountTitle->initialDebit->account_title_code ?? '-',
+                    'account_title_name' => $fixedAsset->accountTitle->initialDebit->account_title_name ?? '-',
+                ],
+                'initial_credit' => [
+                    'id' => $fixedAsset->accountTitle->initialCredit->id ?? '-',
+                    'account_title_code' => $fixedAsset->accountTitle->initialCredit->account_title_code ?? '-',
+                    'account_title_name' => $fixedAsset->accountTitle->initialCredit->account_title_name ?? '-',
+                ],
+                'depreciation_debit' => $fixedAsset->depreciation_method !== null ? [
+                    'id' => $fixedAsset->accountTitle->depreciationDebit->id ?? '-',
+                    'account_title_code' => $fixedAsset->accountTitle->depreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $fixedAsset->accountTitle->depreciationDebit->account_title_name ?? '-',
+                ] : null,
+                'depreciation_credit' => $fixedAsset->depreciation_method !== null ? [
+                    'id' => $fixedAsset->accountTitle->depreciationCredit->id ?? '-',
+                    'account_title_code' => $fixedAsset->accountTitle->depreciationCredit->account_title_code ?? '-',
+                    'account_title_name' => $fixedAsset->accountTitle->depreciationCredit->account_title_name ?? '-',
+                ] : null,
             ]
         ];
     }

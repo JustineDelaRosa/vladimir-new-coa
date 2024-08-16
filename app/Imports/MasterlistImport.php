@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Models\AccountingEntries;
 use App\Models\AccountTitle;
 use App\Models\BusinessUnit;
 use App\Models\Capex;
@@ -202,7 +203,12 @@ class MasterlistImport extends DefaultValueBinder implements
         if ($majorCategoryId == null || $minorCategoryId == null) {
             throw new Exception('Unable to create FixedAsset due to missing Major/Minor category ID.');
         }
-
+        $accountingEntry = AccountingEntries::create([
+            'initial_debit' => 279,
+            'initial_credit' => MinorCategory::where('id', $minorCategoryId)->first()->accountTitle->id,
+            'depreciation_debit' => 535,
+            'depreciation_credit' => 321,
+        ]);
 
         $formula->fixedAsset()->create([
             'capex_id' => Capex::where('capex', $collection['capex'])->first()->id ?? null,
@@ -240,7 +246,7 @@ class MasterlistImport extends DefaultValueBinder implements
             'unit_id' => Unit::where('unit_code', $collection['unit_code'])->first()->id,
             'subunit_id' => SubUnit::where('sub_unit_code', $collection['subunit_code'])->first()->id,
             'location_id' => Location::where('location_code', $collection['location_code'])->first()->id,
-            'account_id' => AccountTitle::where('account_title_code', $collection['account_code'])->first()->id,
+            'account_id' => $accountingEntry,
         ]);
 //        dd($formula->fixedAsset());
     }

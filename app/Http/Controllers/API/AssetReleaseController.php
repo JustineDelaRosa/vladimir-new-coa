@@ -123,6 +123,7 @@ class AssetReleaseController extends Controller
             $locationId = $request->get('location_id');
 //            $accountTitleId = $request->get('account_title_id');
 
+            //todo: will change to Running Depreciation
             $depreciation = DepreciationStatus::where('depreciation_status_name', 'For Depreciation')->first()->id;
             foreach ($warehouseIds as $warehouseId) {
 

@@ -20,16 +20,16 @@ class CalculationRepository
     public function getMonthlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life): float
     {
         //if acquisition cost and scrap value are equal to zero, return zero
-        if ($acquisition_cost == 0 && $scrap_value == 0) {
+        if ($acquisition_cost == 0 && $scrap_value == 0 || ($est_useful_life == 0)) {
             return 0;
         }
         $est_useful_life = floor($est_useful_life) * 12 + (($est_useful_life - floor($est_useful_life)) * 12);
-        return round(($acquisition_cost - $scrap_value) / $est_useful_life, 2);
+        return round(($acquisition_cost - $scrap_value) / $est_useful_life, 2) ;
     }
 
     public function getYearlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life): float
     {
-        if ($acquisition_cost == 0 && $scrap_value == 0) {
+        if ($acquisition_cost == 0 && $scrap_value == 0 || ($est_useful_life == 0)) {
             return 0;
         }
         $est_useful_life = floor($est_useful_life) + (($est_useful_life - floor($est_useful_life)) * 12) / 12;
@@ -44,7 +44,7 @@ class CalculationRepository
         if ($accumulated_cost > $depreciable_basis) {
             return $depreciable_basis;
         }
-        return round($accumulated_cost);
+        return round($accumulated_cost,2);
     }
 
     public function getRemainingBookValue($acquisition_cost, float $accumulated_cost): float
@@ -74,10 +74,10 @@ class CalculationRepository
     }
 
     //TODO: will change and used the voucher date
-    public function getStartDepreciation($voucher_date = null): ?string //$release_date
+    public function getStartDepreciation($release_date = null): ?string //$release_date
     {
-        $voucher_date = Carbon::parse($voucher_date);
-        return $voucher_date->addMonth(1)->format('Y-m') ?? null;
+        $release_date = Carbon::parse($release_date);
+        return $release_date->addMonth(1)->format('Y-m') ?? null;
     }
 
     public function dateValidation($date, $start_depreciation, $end_depreciation): bool

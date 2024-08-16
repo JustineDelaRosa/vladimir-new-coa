@@ -96,6 +96,7 @@ trait RequestShowDataHandler
                 return $approval->status == 'For Approval';
             })->id ?? '',
             'inclusion' => $ar instanceof AssetRequest ? $ar->getInclusion() : '-',
+            'rr_received' => $ar instanceof AssetRequest ? $ar->getRRReceived() : '-',
             'id' => $ar->id,
             'total_remaining' => $totalRemaining,
             'status' => strpos($ar->status, 'For Approval') === 0 ? 'For Approval' : ($ar->is_fa_approved ? 'Approved' : 'For Approval'),
@@ -117,6 +118,14 @@ trait RequestShowDataHandler
             'cellphone_number' => $ar->cellphone_number ?? '-',
             'brand' => $ar->brand ?? '-',
             'date_needed' => $ar->date_needed ?? '-',
+            'major_category' => [
+                'id' => $ar->majorCategory->id ?? '-',
+                'major_category_name' => $ar->majorCategory->major_category_name ?? '-',
+            ],
+            'minor_category' => [
+                'id' => $ar->minorCategory->id ?? '-',
+                'minor_category_name' => $ar->minorCategory->minor_category_name ?? '-',
+            ],
             'quantity' => $ar->quantity + $deletedQuantity ?? '-',
             'ordered' => $ar->quantity + $deletedQuantity ?? '-',
             'delivered' => $ar->quantity_delivered ?? '-',

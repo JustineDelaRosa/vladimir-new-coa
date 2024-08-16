@@ -111,8 +111,12 @@ class AdditionalCost extends Model implements HasMedia
     }
     public function accountTitle()
     {
-        return $this->belongsTo(AccountTitle::class, 'account_id', 'id');
+        return $this->belongsTo(AccountingEntries::class, 'account_id', 'id');
     }
+//    public function accountTitle()
+//    {
+//        return $this->belongsTo(AccountTitle::class, 'account_id', 'id');
+//    }
     public function assetStatus()
     {
         return $this->belongsTo(AssetStatus::class, 'asset_status_id', 'id');
