@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Models\Approvers;
 use App\Models\AssetRequest;
+use App\Models\FixedAsset;
 use App\Traits\RequestShowDataHandler;
 use Illuminate\Http\Request;
 use App\Traits\AddingPoHandler;
@@ -23,8 +24,11 @@ class AddingPoController extends Controller
     {
         $toPo = $request->get('toPo', null);
         $perPage = $request->input('per_page', null);
+        $from = $request->get('from', null);
+        $to = $request->get('to', null);
 
-        $assetRequest = $this->createAssetRequestQuery($toPo)->get()
+
+        $assetRequest = $this->createAssetRequestQuery($toPo, $from, $to)->get()
             ->groupBy('transaction_number')->map(function ($assetRequestCollection) {
                 $assetRequest = $assetRequestCollection->first();
                 $assetRequest->quantity = $assetRequestCollection->sum('quantity');
@@ -121,6 +125,7 @@ class AddingPoController extends Controller
         $userLocationId = auth('sanctum')->user()->location_id;
         $data = $request->get('result');
 
+
         $apiUrl = config('ymir-api.ymir_put_api_url');
         $bearerToken = config('ymir-api.ymir_put_api_token');
         if ($data == null) {
@@ -129,11 +134,13 @@ class AddingPoController extends Controller
         if (is_null($apiUrl) || is_null($bearerToken)) {
             return $this->responseUnprocessable('API URL or Bearer Token is not configured properly.');
         }
+
         $itemReceivedCount = 0;
         $cancelledCount = 0;
         $poData = [];
         $rrNumbers = [];
         foreach ($data as $asset) {
+
             $transactionNumber = $asset['transaction_no'];
             $poNo = $asset['po_number'];
             $prNo = $asset['pr_number'];
@@ -144,6 +151,7 @@ class AddingPoController extends Controller
                 ->whereHas('receivingWarehouse', function ($query) use ($userLocationId) {
                     $query->where('location_id', $userLocationId);
                 })->get();
+//            return $assetRequest;
             if ($assetRequest->isEmpty()) {
                 continue;
 //                return $this->responseUnprocessable('No asset request found for transaction number ' . $transactionNumber);
@@ -203,6 +211,7 @@ class AddingPoController extends Controller
                             'quantity_delivered' => $itemRequest->quantity_delivered + $rr['quantity_receive'],
                             'acquisition_date' => $deliveryDate,
                             'acquisition_cost' => $unitPrice,
+                            'received_at' => now(),
                         ]);
                         $this->createNewAssetRequests($itemRequest, $rr['quantity_receive']);
                         $rrNumbers[] = $rr['rr_number'];
@@ -228,7 +237,8 @@ class AddingPoController extends Controller
     }
 
     //TODO: Probably not necessary anymore
-    public function storePOs(array $data){
+    public function storePOs(array $data)
+    {
         //map the $data and organize the unique po_number with the same transaction number and reference number
         $poData = collect($data)->groupBy('po_number')->map(function ($poData) {
             return $poData->groupBy('transaction_number')->map(function ($transactionData) {
