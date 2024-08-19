@@ -20,7 +20,7 @@ class CreateFixedAssetsTable extends Migration
             $table->json('inclusion')->nullable();
             $table->string('transaction_number')->nullable();
             $table->string('reference_number')->nullable();
-            $table->string('pr_number')->nullable();
+            $table->integer('pr_number')->nullable();
             $table->string('po_number')->nullable();
             $table->string('rr_number')->nullable();
 //            $table->string('wh_number')->nullable();
