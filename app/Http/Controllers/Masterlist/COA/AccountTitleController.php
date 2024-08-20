@@ -41,8 +41,8 @@ class AccountTitleController extends Controller
      */
     public function store(Request $request)
     {
-        $accountTitleData = $request->input('result.account_titles');
-        if (empty($request->all()) || empty($request->input('result.account_titles'))) {
+        $accountTitleData = $request->input('result');
+        if (empty($request->all()) || empty($request->input('result'))) {
 //            return response()->json(['message' => 'Data not Ready']);
             return $this->responseUnprocessable('Data not Ready');
         }
@@ -51,7 +51,7 @@ class AccountTitleController extends Controller
             $sync_id = $accountTitles['id'];
             $code = $accountTitles['code'];
             $name = $accountTitles['name'];
-            $is_active = $accountTitles['status'];
+            $is_active = $accountTitles['deleted_at'];
 
             $accountTitle = AccountTitle::where('sync_id', $sync_id)->first();
             if ($accountTitle) {
@@ -67,7 +67,7 @@ class AccountTitleController extends Controller
                 [
                     'account_title_code' => $code,
                     'account_title_name' => $name,
-                    'is_active' => $is_active
+                    'is_active' => $is_active == NULL ? 1 : 0,
                 ],
             );
         }
