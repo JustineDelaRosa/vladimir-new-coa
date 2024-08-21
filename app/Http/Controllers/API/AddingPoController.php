@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Models\Approvers;
 use App\Models\AssetRequest;
 use App\Models\FixedAsset;
+use App\Models\YmirPRTransaction;
 use App\Traits\RequestShowDataHandler;
 use Illuminate\Http\Request;
 use App\Traits\AddingPoHandler;
@@ -162,7 +163,7 @@ class AddingPoController extends Controller
                     $unitPrice = $order['unit_price'];
                     $referenceNumber = $order['item_code'];
                     $remaining = $order['remaining'];
-
+                    $inclusion = $order['remarks'];
 
                     if ($deletedAt != null) {
                         foreach ($assetRequest as $request) {
@@ -179,9 +180,14 @@ class AddingPoController extends Controller
                             $cancelledCount++;
                         }
                     }
-                    $itemRequest = AssetRequest::where('reference_number', $referenceNumber)->first();
+                    $itemRequest = AssetRequest::where('transaction_number', $transactionNumber)
+                        ->where('reference_number', $referenceNumber)
+                        ->where('pr_number', $prNo)
+                        ->first();
+
                     $rrNumberArray = [];
                     foreach ($order['rr_orders'] as $rr) {
+
                         $deliveryDate = $rr['delivery_date'];
                         $itemRemaining = $rr['remaining'];
                         $rrNumber = $rr['rr_number'];
@@ -213,7 +219,7 @@ class AddingPoController extends Controller
                             'acquisition_cost' => $unitPrice,
                             'received_at' => now(),
                         ]);
-                        $this->createNewAssetRequests($itemRequest, $rr['quantity_receive']);
+                        $this->createNewAssetRequests($itemRequest, $rr['quantity_receive'], $inclusion);
                         $rrNumbers[] = $rr['rr_number'];
                         $itemReceivedCount++;
                     }
@@ -223,7 +229,7 @@ class AddingPoController extends Controller
             }
         }
 
-        $this->storePOs($poData);
+//        $this->storePOs($poData);
         if (!empty($rrNumbers)) {
             Http::withHeaders(['Authorization' => 'Bearer ' . $bearerToken])
                 ->put($apiUrl, ['rr_number' => $rrNumbers]);
