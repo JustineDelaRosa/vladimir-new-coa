@@ -213,22 +213,27 @@ trait AddingPoHandler
         }
     }
 
-    private function createNewAssetRequests($assetRequest, $quantityDelivered)
+    private function createNewAssetRequests($assetRequest, $quantityDelivered, $inclusion = null)
     {
+
         if ($assetRequest->quantity > 1) {
             foreach (range(1, $quantityDelivered) as $index) {
-                $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost);
+                $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost, $inclusion);
             }
         } else {
-            $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost);
+            $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost, $inclusion);
         }
 
     }
 
 
-    private function addToFixedAssets($asset, $isAddCost)
+    private function addToFixedAssets($asset, $isAddCost, $inclusion = null)
     {
+        $rrNumbers = $asset->rr_number;
+        $rrNumbersArr = explode(',', $rrNumbers);
+        $rrNumber = end($rrNumbersArr);
         if ($isAddCost == 1) {
+
 
             $accountingEntries = AccountingEntries::create([
                 'initial_debit' => 279,
@@ -256,8 +261,9 @@ trait AddingPoHandler
                 'uom_id' => $asset->uom_id,
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
-                'receipt' => $asset->rr_number,
-                'rr_number' => $asset->rr_number,
+                'inclusion' => $inclusion,
+                'receipt' => $rrNumber,
+                'rr_number' => $rrNumber,
                 'warehouse_id' => $asset->receiving_warehouse_id,
                 'warehouse_number_id' => $warehouseNumber->id,
                 'fixed_asset_id' => $asset->fixed_asset_id,
@@ -323,8 +329,9 @@ trait AddingPoHandler
                 'uom_id' => $asset->uom_id,
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
-                'rr_number' => $asset->rr_number,
-                'receipt' => $asset->rr_number,
+                'rr_number' => $rrNumber,
+                'receipt' => $rrNumber,
+                'inclusion' => $inclusion,
                 'capex_number' => $asset->capex_number,
                 'warehouse_id' => $asset->receiving_warehouse_id,
                 'warehouse_number_id' => $warehouseNumber->id,
@@ -364,7 +371,7 @@ trait AddingPoHandler
         }
     }
 
-    public function deleteAssetRequestPo($assetRequest, $remarks)
+    public function deleteAssetRequestPo($assetRequest, $remarks = null)
     {
         if ($assetRequest instanceof \Illuminate\Database\Eloquent\Collection) {
             $this->activityLogPo($assetRequest->first(), $assetRequest->first()->po_number, $assetRequest->first()->rr_number, 0, false, true);
