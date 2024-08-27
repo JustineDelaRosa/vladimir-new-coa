@@ -469,6 +469,7 @@ class FixedAssetController extends Controller
         if ($depreciation_method === 'One Time') {
             $age = 0.083333333333333;
             $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $age);
+            $accumulated_cost = $this->calculationRepository->getAccumulatedCost($monthly_depreciation, $custom_age, $properties->depreciable_basis) ?? null;
         }
 
         return [
@@ -480,8 +481,8 @@ class FixedAssetController extends Controller
                 'depreciated' => $monthly_depreciation,
                 'depreciation_per_month' => $monthly_depreciation,
                 'depreciation_per_year' => 0,
-                'accumulated_cost' => 0,
-                'remaining_book_value' => 0,
+                'accumulated_cost' =>  $accumulated_cost ?? '-',
+                'remaining_book_value' => $remaining_book_value ?? '-',
                 'scrap_value' => $scrap_value,
                 'acquisition_date' => $acquisition_date,
                 'acquisition_cost' => $acquisition_cost,
