@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateDepartmentLocationTable extends Migration
+class CreateSubunitLocationTable extends Migration
 {
     /**
      * Run the migrations.
@@ -36,6 +36,6 @@ class CreateDepartmentLocationTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('department_location');
+        Schema::dropIfExists('subunit_location');
     }
 }
