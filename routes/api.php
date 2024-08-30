@@ -273,7 +273,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('ymir-po-receiving', [AddingPoController::class, 'handleSyncData']);
     //RELEASE ASSET//
     Route::RESOURCE('asset-release', AssetReleaseController::class);
-    Route::PUT('release-assets', [AssetReleaseController::class, 'releaseAssets']);
+    Route::PUT('release-asset', [AssetReleaseController::class, 'releaseAssets']);
     Route::PUT('update-release-accountability', [AssetReleaseController::class, 'updateAccountability']);
     //NOTIFICATION COUNT//
     Route::GET('notification-count', [AuthController::class, 'notificationCount']);
@@ -328,12 +328,14 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::GET('post-to-ymir', [AddingPrController::class, 'sendToYmir']);
     Route::RESOURCE('test-transfer', TransferController::class);
 
+    Route::POST('addcost-test', [AdditionalCostController::class,'syncData']);
+
     //CANCEL RR NUMBER
     Route::RESOURCE('rr-summary', ReceiveReceiptSummaryController::class);
     Route::PATCH('cancel-rr/{rrNumber}', [ReceiveReceiptSummaryController::class, 'cancelledRR']);
 
     Route::prefix('ymir')->group(function () {
         Route::GET('pr-request', [AddingPrController::class, 'requestToPR']);
-        Route::PATCH('pr-return', [AddingPrController::class, 'returnFormYmir']);
+        Route::PATCH('pr-return', [AddingPrController::class, 'returnFromYmir']);
     });
 });
