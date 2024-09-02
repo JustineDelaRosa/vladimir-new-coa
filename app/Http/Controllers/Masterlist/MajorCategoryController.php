@@ -267,7 +267,7 @@ class MajorCategoryController extends Controller
                 $checkMinorCategory = MinorCategory::where('major_category_id', $id)->exists();
                 if ($checkMinorCategory) {
 //                    return response()->json(['message' => 'Unable to Archived!, Archived Minor Category First'], 409);
-                    return $this->responseConflictError('Unable to Archived!, Archived Minor Category First');
+                    return $this->responseUnprocessable('Unable to Archived!, Archived Minor Category First');
                 }
                 if (MajorCategory::where('id', $id)->exists()) {
                     $updateStatus = $MajorCategory->where('id', $id)->update(['is_active' => false]);

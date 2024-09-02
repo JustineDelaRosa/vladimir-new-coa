@@ -35,7 +35,7 @@ class MinorCategoryRequest extends FormRequest
     {
         if ($this->isMethod('post')) {
             return [
-                'account_title_sync_id'=>'required|exists:account_titles,sync_id,is_active,1',
+                'account_title_id'=>'required|exists:account_titles,sync_id,is_active,1',
                 'major_category_id' => ['required','exists:major_categories,id,deleted_at,NULL'],
                 //if minor category name and major category id has duplicate
                 'minor_category_name' => ['required',new UniqueMajorMinorAccTitle()],
@@ -47,7 +47,7 @@ class MinorCategoryRequest extends FormRequest
             return [
 //                'major_category_id' => 'required|exists:major_categories,id,deleted_at,NULL',
             //based on the id of the minor category, if the minor category name and major category id has duplicate
-                    'account_title_sync_id'=>'required|exists:account_titles,sync_id,is_active,1',
+                    'account_title_id'=>'required|exists:account_titles,sync_id,is_active,1',
                     'minor_category_name' => ['required',new UniqueMajorMinorAccTitle($id)],
             ];
         }

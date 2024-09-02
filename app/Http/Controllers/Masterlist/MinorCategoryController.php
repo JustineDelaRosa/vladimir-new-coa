@@ -64,7 +64,7 @@ class MinorCategoryController extends Controller
     public function store(MinorCategoryRequest $request)
     {
         // $division_id = $request->division_id;
-        $account_title_sync_id = $request->account_title_sync_id;
+        $account_title_sync_id = $request->account_title_id;
         $major_cat_id = $request->major_category_id;
         $minor_cat_name = ucwords(strtolower($request->minor_category_name));
         // $minor_category_name_check = str_replace(' ', '', $minor_cat_name);
@@ -94,7 +94,7 @@ class MinorCategoryController extends Controller
         }
 
 
-        $create = MinorCategory::create([
+        MinorCategory::create([
             'account_title_sync_id' => $account_title_sync_id,
             'major_category_id' => $major_cat_id,
             'minor_category_name' => $minor_cat_name,
@@ -163,7 +163,7 @@ class MinorCategoryController extends Controller
     public function update(MinorCategoryRequest $request, $id)
     {
         $minor_category_name = ucwords(strtolower($request->minor_category_name));
-        $account_title_sync_id = $request->account_title_sync_id;
+        $account_title_sync_id = $request->account_title_id;
         // $minor_category_name_check = str_replace(' ', '', $minor_category_name);
 
 
