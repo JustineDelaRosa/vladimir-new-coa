@@ -11,6 +11,7 @@ use App\Models\YmirPRTransaction;
 use App\Traits\AddingPRHandler;
 use App\Traits\RequestShowDataHandler;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Traits\AssetRequestHandler;
@@ -138,16 +139,14 @@ class AddingPrController extends Controller
         $transactionNumber = $request->input('transaction_number', null);
         $perPage = $request->input('per_page', null);
         $pagination = $request->input('pagination', null);
-        $prNumber = AssetRequest::generatePRNumber();
-
+        $prNumber = (new \App\Models\AssetRequest)->generatePRNumber();
 
 //        $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
 //        $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
 
-
         $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
             ->where('status', 'Approved')
-            ->where('is_fa_approved', false)
+            ->where('is_fa_approved', 0)
             ->useFilters()
             ->orderBy('created_at', 'desc')
             ->get()
@@ -198,7 +197,7 @@ class AddingPrController extends Controller
                 })->toArray();
                 return [
                     'vrid' => $assetRequest->requester_id, //vladimir requester ID\
-                    'pr_description'=> $assetRequest->acquisition_details,
+                    'pr_description' => $assetRequest->acquisition_details,
                     'pr_number' => $assetRequest->pr_number,
                     'transaction_number' => $assetRequest->transaction_number,
                     "type_id" => "4",
@@ -278,7 +277,7 @@ class AddingPrController extends Controller
 
         if ($latest_pr) {
             $latest_number = explode("-", $latest_pr->pr_year_number_id)[2];
-            $new_number = (int)$latest_number+1;
+            $new_number = (int)$latest_number + 1;
         } else {
             $new_number = 1;
         }
@@ -350,7 +349,7 @@ class AddingPrController extends Controller
 
     }
 
-    public function returnFormYmir(Request $request)
+    public function returnFromYmir(Request $request)
     {
         $transactionNumber = $request->input('transaction_number');
         $remarks = $request->input('remarks');

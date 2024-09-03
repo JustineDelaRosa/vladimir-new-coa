@@ -329,6 +329,7 @@ trait AddingPoHandler
                 'uom_id' => $asset->uom_id,
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
+                'vladimir_tag_number' => $this->vladimirTagGeneratorRepository->vladimirTagGenerator(),
                 'rr_number' => $rrNumber,
                 'receipt' => $rrNumber,
                 'inclusion' => $inclusion,
@@ -366,8 +367,8 @@ trait AddingPoHandler
                 'movement_status_id' => MovementStatus::where('movement_status_name', 'New')->first()->id,
                 'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id,
             ]);
-            $fixedAsset->vladimir_tag_number = $this->vladimirTagGeneratorRepository->vladimirTagGenerator();
-            $fixedAsset->save();
+//            $fixedAsset->vladimir_tag_number = $this->vladimirTagGeneratorRepository->vladimirTagGenerator();
+//            $fixedAsset->save();
         }
     }
 
