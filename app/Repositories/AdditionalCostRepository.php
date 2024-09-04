@@ -26,6 +26,7 @@ class AdditionalCostRepository
 
     public function storeAdditionalCost($request, $businessUnitQuery)
     {
+
         $majorCategory = $this->getMajorCategory($request['major_category_id']);
         $this->checkDepreciationStatus($request, $majorCategory);
 
@@ -52,7 +53,7 @@ class AdditionalCostRepository
             'release_date' => $request['release_date'] ?? Null,
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation(
-                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+                    $this->calculationRepository->getStartDepreciation($request['depreciation_method'], $request['release_date'] ),
 //                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
@@ -62,7 +63,7 @@ class AdditionalCostRepository
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
             'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
-                ?                $this->calculationRepository->getStartDepreciation($request['release_date'])
+                ? $this->calculationRepository->getStartDepreciation($request['depreciation_method'], $request['release_date'] )
 //                $this->calculationRepository->getStartDepreciation($request['voucher_date'])
                 : null
         ];
@@ -71,10 +72,10 @@ class AdditionalCostRepository
     private function prepareAdditionalCostDataForStore($request, $businessUnitQuery): array
     {
         $accountingEntry = AccountingEntries::create([
-            'initial_debit' => 279,
+            'initial_debit' => 1,
             'initial_credit' => MinorCategory::where('id', $request['minor_category_id'])->first()->accountTitle->id,
-            'depreciation_debit' => 535,
-            'depreciation_credit' => 321,
+            'depreciation_debit' => 2,
+            'depreciation_credit' => 3,
         ]);
         return [
             'fixed_asset_id' => $request['fixed_asset_id'],
@@ -119,7 +120,7 @@ class AdditionalCostRepository
         $this->checkDepreciationStatus($request, $majorCategory);
 
         $additionalCost = AdditionalCost::find($id);
-        $additionalCostData = $this->prepareAdditionalCostDataForUpdate($request, $businessUnitQuery);
+        $additionalCostData = $this->prepareAdditionalCostDataForUpdate($request, $businessUnitQuery, $id);
         $additionalCost->update($additionalCostData);
 
         $formulaData = $this->prepareFormulaDataForUpdate($request, $majorCategory);
@@ -128,13 +129,15 @@ class AdditionalCostRepository
         return $additionalCost;
     }
 
-    private function prepareAdditionalCostDataForUpdate($request, $businessUnitQuery): array
+    private function prepareAdditionalCostDataForUpdate($request, $businessUnitQuery, $id): array
     {
-        $accountingEntry = AccountingEntries::create([
-            'initial_debit' => 279,
+        $accountTitleId = AdditionalCost::find($id)->account_id;
+        $accountingEntry = AccountingEntries::find($accountTitleId);
+        $accountingEntry->update([
+            'initial_debit' => 1,
             'initial_credit' => MinorCategory::where('id', $request['minor_category_id'])->first()->accountTitle->id,
-            'depreciation_debit' => 535,
-            'depreciation_credit' => 321,
+            'depreciation_debit' => 4,
+            'depreciation_credit' => 6,
         ]);
         return [
             'asset_description' => $request['asset_description'],
@@ -188,7 +191,7 @@ class AdditionalCostRepository
             'release_date' => $request['release_date'] ?? Null,
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation(
-                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+                    $this->calculationRepository->getStartDepreciation($request['depreciation_method'], $request['release_date']),
 //                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL'
@@ -200,7 +203,7 @@ class AdditionalCostRepository
             'depreciation_per_month' => $request['depreciation_per_month'] ?? 0,
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
             'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
-                ?$this->calculationRepository->getStartDepreciation($request['release_date'])
+                ? $this->calculationRepository->getStartDepreciation($request['depreciation_method'], $request['release_date'])
                 : null
         ];
     }
@@ -217,11 +220,12 @@ class AdditionalCostRepository
             $depstatus = DepreciationStatus::where('id', $request['depreciation_status_id'])->first();
             if ($depstatus->depreciation_status_name == 'Fully Depreciated' && isset($request['release_date'])) {
                 $end_depreciation = $this->calculationRepository->getEndDepreciation(
-                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+                    $this->calculationRepository->getStartDepreciation($request['release_date'], $request['depreciation_method']),
 //                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
                 );
+
                 if ($end_depreciation >= Carbon::now()) {
                     return 'Not yet fully depreciated';
                 }
@@ -456,7 +460,7 @@ class AdditionalCostRepository
                 'voucher_date' => $additional_cost->fixedAsset->voucher_date ?? '-',
                 'receipt' => $additional_cost->fixedAsset->receipt,
                 'quantity' => $additional_cost->fixedAsset->quantity,
-                'depreciation_method' => $additional_cost->fixedAsset->depreciation_method?? '-',
+                'depreciation_method' => $additional_cost->fixedAsset->depreciation_method ?? '-',
                 //                    'salvage_value' => $additional_cost->fixedAsset->salvage_value,
                 'acquisition_date' => $additional_cost->fixedAsset->acquisition_date,
                 'acquisition_cost' => $additional_cost->fixedAsset->acquisition_cost,

@@ -4,19 +4,28 @@ namespace App\Http\Controllers\Masterlist;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AdditionalCost\AdditionalCostRequest;
+use App\Http\Requests\AdditionalCost\AdditionalCostSyncRequest;
 use App\Imports\AdditionalCostImport;
 use App\Imports\MasterlistImport;
+use App\Models\AccountingEntries;
+use App\Models\AccountTitle;
 use App\Models\AdditionalCost;
 use App\Models\BusinessUnit;
 use App\Models\Department;
 use App\Models\FixedAsset;
 use App\Models\Formula;
+use App\Models\MajorCategory;
 use App\Models\MinorCategory;
+use App\Models\Status\AssetStatus;
+use App\Models\Status\CycleCountStatus;
 use App\Models\Status\DepreciationStatus;
+use App\Models\Status\MovementStatus;
 use App\Models\TypeOfRequest;
+use App\Models\UnitOfMeasure;
 use App\Repositories\AdditionalCostRepository;
 use App\Repositories\CalculationRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -196,7 +205,7 @@ class AdditionalCostController extends Controller
     function validateRequest(Request $request)
     {
         return Validator::make($request->all(), [
-            'date' => 'required|date_format:Y-m',
+            'date' => 'required|date_format:Y-m-d',
         ],
             [
                 'date.required' => 'Date is required.',
@@ -239,7 +248,7 @@ class AdditionalCostController extends Controller
         $custom_end_depreciation = $validator->validated()['date'];
 
         //FOR INFORMATION
-        $depreciation_method =  $properties->depreciation_method ?? null;
+        $depreciation_method = $properties->depreciation_method ?? null;
         $est_useful_life = $additionalCost->majorCategory->est_useful_life ?? 0;
         $acquisition_date = $properties->acquisition_date ?? null;
         $acquisition_cost = $properties->acquisition_cost ?? null;
@@ -371,5 +380,58 @@ class AdditionalCostController extends Controller
     {
         $path = storage_path('app/sample/additionalCost.xlsx');
         return response()->download($path);
+    }
+
+    public function syncData(AdditionalCostSyncRequest $request)
+    {
+        DB::beginTransaction();
+        try {
+            $test = [];
+            $additionalCosts = $request->assetTag;
+            foreach ($additionalCosts as $additionalCost) {
+                $fixedAssetId = FixedAsset::where('vladimir_tag_number', $additionalCost['assetTag'])->first()->id;
+                $businessUnitQuery = BusinessUnit::where('id', $additionalCost['business_unit_id'])->first();
+                $majorCategory = MajorCategory::whereRaw('LOWER(major_category_name) = ?', [strtolower($additionalCost['major_category_name'])])->first();
+                $majorCategoryId = $majorCategory->id;
+                $minorCategory = MinorCategory::whereRaw('LOWER(minor_category_name) = ?', [strtolower($additionalCost['minor_category_name'])])->first();
+                $minorCategoryId = $minorCategory->id;
+                $depreciationMethod = $additionalCost['unit_price'] < 10000 ? 'One Time' : 'STL';
+                $depreciationStatusId = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
+                $typeOfRequestId = TypeOfRequest::where('type_of_request_name', 'Asset')->first()->id;
+                $assetStatus = AssetStatus::where('asset_status_name', 'Good')->first()->id;
+                $cycleCountStatus = CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id;
+                $movementStatus = MovementStatus::where('movement_status_name', 'New Item')->first()->id;
+                $uomId = UnitOfMeasure::whereRaw('LOWER(uom_name) = ?', [strtolower($additionalCost['uom'])])->first()->id;
+
+
+                $additionalCost['type_of_request_id'] = $typeOfRequestId;
+                $additionalCost['uom_id'] = $uomId;
+                $additionalCost['fixed_asset_id'] = $fixedAssetId;
+                $additionalCost['major_category_id'] = $majorCategoryId;
+                $additionalCost['asset_status_id'] = $assetStatus;
+                $additionalCost['cycle_count_status_id'] = $cycleCountStatus;
+                $additionalCost['movement_status_id'] = $movementStatus;
+                $additionalCost['minor_category_id'] = $minorCategoryId;
+                $additionalCost['asset_description'] = $additionalCost['itemDescription'];
+                $additionalCost['asset_specification'] = $additionalCost['itemDescription'];
+                $additionalCost['accountability'] = 'Common';
+                $additionalCost['quantity'] = $additionalCost['servedQuantity'];
+                $additionalCost['depreciation_method'] = $depreciationMethod;
+                $additionalCost['depreciation_status_id'] = $depreciationStatusId;
+                $additionalCost['acquisition_date'] = date('Y-m-d', strtotime($additionalCost['acquisitionDate']));
+                $additionalCost['acquisition_cost'] = $additionalCost['unit_price'];
+                $additionalCost['depreciable_basis'] = $additionalCost['unit_price'];
+                $additionalCost['months_depreciated'] = $this->calculationRepository->getMonthDifference($additionalCost['acquisitionDate'], date('Y-m-d'));
+
+                $additionalCost = $this->additionalCostRepository->storeAdditionalCost($additionalCost, $businessUnitQuery);
+                $test[] = $additionalCost;
+            }
+            DB::commit();
+            return $test;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $e->getMessage();
+        }
+
     }
 }
