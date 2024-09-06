@@ -83,20 +83,20 @@ Route::GET('getIP', [PrinterIpController::class, 'getClientIP']);
 //Route::POST('auth/logout', [AuthController::class, 'Logout'])->middleware('auth:sanctum');
 //Route::GET('notification-count', [AuthController::class, 'notificationCount'])->middleware('auth:sanctum');
 
-Route::group(['middleware' => ['auth:sanctum','role']], function () {  //,'role'
+Route::group(['middleware' => ['auth:sanctum']], function () {
 
     //ROLE MANAGEMENT
     Route::POST('setup/role', [SetupController::class, 'createRole']);
     Route::RESOURCE('role-management', RoleManagementController::class);
-    Route::PUT('role-management/archived-role-management/{id}', [RoleManagementController::class, 'archived'])->name('archived-role-management');
+    Route::PUT('role-management/archived-role-management/{id}', [RoleManagementController::class, 'archived']);
     Route::GET('search/role-management', [RoleManagementController::class, 'search']);
 
     //SETUP//
     Route::POST('setup/module', [SetupController::class, 'createModule']);
     Route::GET('setup/GET-modules', [SetupController::class, 'getModule']);
-    Route::PUT('setup/GET-modules/archived-modules/{id}', [SetupController::class, 'archived'])->name('archived-modules');
-    Route::GET('setup/getById/{id}', [SetupController::class, 'getModuleId'])->name('getById');
-    Route::PUT('setup/update-modules/{id}', [SetupController::class, 'updateModule'])->name('update-modules');
+    Route::PUT('setup/GET-modules/archived-modules/{id}', [SetupController::class, 'archived']);
+    Route::GET('setup/getById/{id}', [SetupController::class, 'getModuleId']);
+    Route::PUT('setup/update-modules/{id}', [SetupController::class, 'updateModule']);
 
     //COMPANY//
     Route::RESOURCE('company', CompanyController::class);
@@ -114,7 +114,7 @@ Route::group(['middleware' => ['auth:sanctum','role']], function () {  //,'role'
 
     //SUB UNIT//
     Route::RESOURCE('sub-unit', SubUnitController::class);
-    Route::PATCH('archived-sub-unit/{id}', [SubUnitController::class, 'archived'])->name('archived-sub-unit');
+    Route::PATCH('archived-sub-unit/{id}', [SubUnitController::class, 'archived']);
 
     //LOCATION//
     Route::RESOURCE('location', LocationController::class);
@@ -123,7 +123,7 @@ Route::group(['middleware' => ['auth:sanctum','role']], function () {  //,'role'
     //ACCOUNT TITLE//
     Route::RESOURCE('account-title', AccountTitleController::class);
     Route::GET('account-titles/search', [AccountTitleController::class, 'search']);
-    Route::PATCH('account-title/archived-account-title/{id}', [AccountTitleController::class, 'archived'])->name('archived-account-title');
+    Route::PATCH('account-title/archived-account-title/{id}', [AccountTitleController::class, 'archived']);
 
     //SUPPLIER//
     Route::RESOURCE('supplier', SupplierController::class);
@@ -132,14 +132,14 @@ Route::group(['middleware' => ['auth:sanctum','role']], function () {  //,'role'
     Route::RESOURCE('uom', UnitOfMeasureController::class);
 
     ///AUTH//
-    Route::PUT('auth/reset/{id}', [AuthController::class, 'resetPassword'])->name('reset-password');
+    Route::PUT('auth/reset/{id}', [AuthController::class, 'resetPassword']);
     Route::POST('auth/change_password', [AuthController::class, 'changedPassword']);
     Route::POST('auth/logout', [AuthController::class, 'Logout']);
 
     //USER//
     Route::RESOURCE('user', UserController::class);
     Route::GET('users/search', [UserController::class, 'search']);
-    Route::PUT('user/archived-user/{id}', [UserController::class, 'archived'])->name('archived-user');
+    Route::PUT('user/archived-user/{id}', [UserController::class, 'archived']);
     Route::GET('test', [UserController::class, 'test']);
 
     //ServiceProvider
@@ -149,12 +149,12 @@ Route::group(['middleware' => ['auth:sanctum','role']], function () {  //,'role'
 
     //MAJOR CATEGORY//
     Route::RESOURCE('major-category', MajorCategoryController::class);
-    Route::PUT('major-category/archived-major-category/{id}', [MajorCategoryController::class, 'archived'])->name('archived-major-category');
+    Route::PUT('major-category/archived-major-category/{id}', [MajorCategoryController::class, 'archived']);
     Route::GET('major-categories/search', [MajorCategoryController::class, 'search']);
 
     //MINOR CATEGORY//
     Route::RESOURCE('minor-category', MinorCategoryController::class);
-    Route::PUT('minor-category/archived-minor-category/{id}', [MinorCategoryController::class, 'archived'])->name('archived-minor-category');
+    Route::PUT('minor-category/archived-minor-category/{id}', [MinorCategoryController::class, 'archived']);
     Route::GET('minor-categories/search', [MinorCategoryController::class, 'search']);
 
 //    Route::RESOURCE('category-list', CategoryListController::class);
@@ -163,22 +163,22 @@ Route::group(['middleware' => ['auth:sanctum','role']], function () {  //,'role'
     //    Route::PUT('category-list/add-update-minorcategory/{id}', [CategoryListController::class, 'UpdateMinorCategory']);
 
     Route::RESOURCE('supplier', SupplierController::class);
-    Route::PUT('supplier/archived-supplier/{id}', [SupplierController::class, 'archived'])->name('archived-supplier');
+    Route::PUT('supplier/archived-supplier/{id}', [SupplierController::class, 'archived']);
     Route::GET('suppliers/search', [SupplierController::class, 'search']);
 
     //DIVISION//
     Route::RESOURCE('division', DivisionController::class);
-    Route::PUT('division/archived-division/{id}', [DivisionController::class, 'archived'])->name('archived-division');
+    Route::PUT('division/archived-division/{id}', [DivisionController::class, 'archived']);
     Route::GET('divisions/search', [DivisionController::class, 'search']);
 
     //CAPEX//
     Route::RESOURCE('capex', CapexController::class);
-    Route::PATCH('capex/archived-capex/{id}', [CapexController::class, 'archived'])->name('archived-capex');
-    Route::POST('sub_capex/{id}', [CapexController::class, 'storeSubCapex'])->name('sub_capex');
+    Route::PATCH('capex/archived-capex/{id}', [CapexController::class, 'archived']);
+    Route::POST('sub_capex/{id}', [CapexController::class, 'storeSubCapex']);
     Route::GET('capex-export', [CapexController::class, 'capexExport']);
     //SUB CAPEX//
     Route::RESOURCE('sub-capex', SubCapexController::class);
-    Route::PATCH('sub-capex/archived-sub-capex/{id}', [SubCapexController::class, 'archived'])->name('archived-sub-capex');
+    Route::PATCH('sub-capex/archived-sub-capex/{id}', [SubCapexController::class, 'archived']);
 
     //MASTERLIST IMPORT//
     Route::POST('import-masterlist', [FixedAssetImportController::class, 'masterlistImport']);
@@ -189,20 +189,20 @@ Route::group(['middleware' => ['auth:sanctum','role']], function () {  //,'role'
 
     //FIXED ASSET//
     Route::RESOURCE('fixed-asset', FixedAssetController::class);
-    Route::PATCH('fixed-asset/archived-fixed-asset/{id}', [FixedAssetController::class, 'archived'])->name('archived-fixed-asset');
-    Route::GET('fixed-asset-search', [FixedAssetController::class, 'search'])->name('fixed-asset-search');
+    Route::PATCH('fixed-asset/archived-fixed-asset/{id}', [FixedAssetController::class, 'archived']);
+    Route::GET('fixed-asset-search', [FixedAssetController::class, 'search']);
     Route::GET('fixed-assets/search-asset-tag', [FixedAssetController::class, 'searchAssetTag']);
     //ADDITIONAL COST//
     Route::RESOURCE('additional-cost', AdditionalCostController::class);
-    Route::POST('add-cost-depreciation/{id}', [AdditionalCostController::class, 'assetDepreciation'])->name('add-cost-depreciation');
-    Route::PATCH('add-cost/archived-add-cost/{id}', [AdditionalCostController::class, 'archived'])->name('archived-add-cost');
+    Route::POST('add-cost-depreciation/{id}', [AdditionalCostController::class, 'assetDepreciation']);
+    Route::PATCH('add-cost/archived-add-cost/{id}', [AdditionalCostController::class, 'archived']);
     Route::POST('import-add-cost', [AdditionalCostController::class, 'additionalCostImport']);
     //FISTO VOUCHER
     Route::GET('fisto-voucher', [FixedAssetController::class, 'getVoucher']);
 
     //CUSTOM ASSET DEPRECIATION CALCULATION//
-    Route::POST('asset-depreciation/{id}', [FixedAssetController::class, 'assetDepreciation'])->name('asset-depreciation');
-    Route::GET('show-fixed-asset/{tagNumber}', [FixedAssetController::class, 'showTagNumber'])->name('show-fixed-asset');
+    Route::POST('asset-depreciation/{id}', [FixedAssetController::class, 'assetDepreciation']);
+    Route::GET('show-fixed-asset/{tagNumber}', [FixedAssetController::class, 'showTagNumber']);
 
     //BARCODE//
     Route::POST('fixed-asset/barcode', [PrintBarCodeController::class, 'printBarcode']);
@@ -210,46 +210,46 @@ Route::group(['middleware' => ['auth:sanctum','role']], function () {  //,'role'
 
     //TYPE OF REQUEST//
     Route::RESOURCE('type-of-request', TypeOfRequestController::class);
-    Route::PATCH('type-of-request/archived-tor/{id}', [TypeOfRequestController::class, 'archived'])->name('archived-tor');
+    Route::PATCH('type-of-request/archived-tor/{id}', [TypeOfRequestController::class, 'archived']);
 
     //PRINT IP//
     Route::RESOURCE('printer-ip', PrinterIpController::class);
-    Route::PATCH('activateIp/{id}', [PrinterIpController::class, 'activateIP'])->name('activateIp');
+    Route::PATCH('activateIp/{id}', [PrinterIpController::class, 'activateIP']);
     //    Route::GET('getIP', [PrinterIpController::class, 'getClientIP']);
 
     //STATUSES//
     //ASSET STATUS
     Route::RESOURCE('asset-status', AssetStatusController::class);
-    Route::PATCH('asset-status/archived-asset-status/{id}', [AssetStatusController::class, 'archived'])->name('archived-asset-status');
+    Route::PATCH('asset-status/archived-asset-status/{id}', [AssetStatusController::class, 'archived']);
     //CYCLE COUNT STATUS
     Route::RESOURCE('cycle-count-status', CycleCountStatusController::class);
-    Route::PATCH('cycle-count-status/archived-cycle-count-status/{id}', [CycleCountStatusController::class, 'archived'])->name('archived-cycle-count-status');
+    Route::PATCH('cycle-count-status/archived-cycle-count-status/{id}', [CycleCountStatusController::class, 'archived']);
     //DEPRECIATION STATUS
     Route::RESOURCE('depreciation-status', DepreciationStatusController::class);
-    Route::PATCH('depreciation-status/archived-depreciation-status/{id}', [DepreciationStatusController::class, 'archived'])->name('archived-depreciation-status');
+    Route::PATCH('depreciation-status/archived-depreciation-status/{id}', [DepreciationStatusController::class, 'archived']);
     //MOVEMENT STATUS
     Route::RESOURCE('movement-status', MovementStatusController::class);
-    Route::PATCH('movement-status/archived-movement-status/{id}', [MovementStatusController::class, 'archived'])->name('archived-movement-status');
+    Route::PATCH('movement-status/archived-movement-status/{id}', [MovementStatusController::class, 'archived']);
 
     //APPROVER SETTING//
     Route::RESOURCE('approver-setting', ApproverSettingController::class);
     Route::GET('setup-approver', [ApproverSettingController::class, 'approverSetting']);
-    Route::PATCH('approver-setting/archived-approver-setting/{id}', [ApproverSettingController::class, 'archived'])->name('archived-approver-setting');
+    Route::PATCH('approver-setting/archived-approver-setting/{id}', [ApproverSettingController::class, 'archived']);
 
     //ASSIGNING APPROVER//
     //    Route::RESOURCE('assign-approver', AssignApproverController::class);
     //    Route::GET('requester-view', [AssignApproverController::class, 'requesterView']);
     //Route::PUT('arrange-layer/{id}', [AssignApproverController::class, 'arrangeLayer']);
-    Route::PUT('arrange-layer/{id}', [DepartmentUnitApproversController::class, 'arrangeLayer'])->name('arrange-layer');
+    Route::PUT('arrange-layer/{id}', [DepartmentUnitApproversController::class, 'arrangeLayer']);
 
     //ASSET REQUEST//
     Route::RESOURCE('asset-request', AssetRequestController::class);
-    Route::POST('update-request/{referenceNumber}', [AssetRequestController::class, 'updateRequest'])->name('update-request');
-    Route::DELETE('delete-request/{transactionNumber}/{referenceNumber?}', [AssetRequestController::class, 'removeRequestItem'])->name('delete-request');
+    Route::POST('update-request/{referenceNumber}', [AssetRequestController::class, 'updateRequest']);
+    Route::DELETE('delete-request/{transactionNumber}/{referenceNumber?}', [AssetRequestController::class, 'removeRequestItem']);
     Route::PATCH('resubmit-request', [AssetRequestController::class, 'resubmitRequest']);
     Route::POST('move-to-asset-request', [AssetRequestController::class, 'moveData']);
-    Route::GET('show-by-id/{id}', [AssetRequestController::class, 'showById'])->name('show-by-id');
-    Route::GET('per-request/{transaction_number}', [AssetRequestController::class, 'getPerRequest'])->name('per-request');
+    Route::GET('show-by-id/{id}', [AssetRequestController::class, 'showById']);
+    Route::GET('per-request/{transaction_number}', [AssetRequestController::class, 'getPerRequest']);
     //ASSET APPROVAL//
     Route::RESOURCE('asset-approval', AssetApprovalController::class);
     // Route::GET('asset-approvals/{transactionNumber}', [AssetApprovalController::class, 'showtest']);
@@ -260,15 +260,15 @@ Route::group(['middleware' => ['auth:sanctum','role']], function () {  //,'role'
     Route::RESOURCE('approval-logs', AssetApprovalLoggerController::class);
     //DEPARTMENT UNIT APPROVER LAYER SETUP//
     Route::RESOURCE('department-unit-approvers', DepartmentUnitApproversController::class);
-    Route::PUT('arrange-layer/{id}', [DepartmentUnitApproversController::class, 'arrangeLayer'])->name('arrange-layer');
+    Route::PUT('arrange-layer/{id}', [DepartmentUnitApproversController::class, 'arrangeLayer']);
     //ADDING PR//
     Route::RESOURCE('adding-pr', AddingPrController::class);
-    Route::PUT('remove-pr/{transactionNumber}', [AddingPrController::class, 'removePR'])->name('remove-pr');
+    Route::PUT('remove-pr/{transactionNumber}', [AddingPrController::class, 'removePR']);
     //REQUEST CONTAINER//
     Route::RESOURCE('request-container', RequestContainerController::class);
     // ->middleware('normalizeInput');
-    Route::DELETE('remove-container-item/{id?}', [RequestContainerController::class, 'removeAll'])->name('remove-container-item');
-    Route::POST('update-container/{id}', [RequestContainerController::class, 'updateContainer'])->name('update-container');
+    Route::DELETE('remove-container-item/{id?}', [RequestContainerController::class, 'removeAll']);
+    Route::POST('update-container/{id}', [RequestContainerController::class, 'updateContainer']);
     //ADDING PO//
     Route::RESOURCE('adding-po', AddingPoController::class);
     Route::post('ymir-po-receiving', [AddingPoController::class, 'handleSyncData']);
@@ -283,26 +283,26 @@ Route::group(['middleware' => ['auth:sanctum','role']], function () {  //,'role'
 
     //AssetTransferApprover
     Route::RESOURCE('asset-transfer-approver', AssetTransferApproverController::class);
-    Route::PUT('update-transfer-approver/{id}', [AssetTransferApproverController::class, 'arrangeLayer'])->name('update-transfer-approver');
+    Route::PUT('update-transfer-approver/{id}', [AssetTransferApproverController::class, 'arrangeLayer']);
 
     Route::RESOURCE('asset-pullout-approver', AssetPullOutApproverController::class);
-    Route::PUT('update-pullout-approver/{id}', [AssetPullOutApproverController::class, 'arrangeLayer'])->name('update-pullout-approver');
+    Route::PUT('update-pullout-approver/{id}', [AssetPullOutApproverController::class, 'arrangeLayer']);
 
     Route::RESOURCE('asset-disposal-approver', AssetDisposalApproverController::class);
-    Route::PUT('update-disposal-approver/{id}', [AssetDisposalApproverController::class, 'arrangeLayer'])->name('update-disposal-approver');
+    Route::PUT('update-disposal-approver/{id}', [AssetDisposalApproverController::class, 'arrangeLayer']);
 
     //ASSET TRANSFER
     //    Route::RESOURCE('asset-transfer', AssetTransferController::class);
 
     //ASSET TRANSFER CONTAINER
     Route::RESOURCE('asset-transfer-container', AssetTransferContainerController::class)->except(['destroy']);
-    Route::DELETE('asset-transfer-container/{id?}', [AssetTransferContainerController::class, 'destroy'])->name('asset-transfer-container-destroy');
+    Route::DELETE('asset-transfer-container/{id?}', [AssetTransferContainerController::class, 'destroy']);
 
     //ASSET TRANSFER
     Route::RESOURCE('asset-transfer', AssetTransferRequestController::class);
     Route::POST('move-to-asset-transfer', [AssetTransferRequestController::class, 'transferContainerData']);
-    Route::POST('update-transfer-request/{transferNumber}', [AssetTransferRequestController::class, 'updateTransfer'])->name('update-transfer-request');
-    Route::DELETE('remove-transfer-item/{transferNumber?}/{id?}', [AssetTransferRequestController::class, 'removedTransferItem'])->name('remove-transfer-item');
+    Route::POST('update-transfer-request/{transferNumber}', [AssetTransferRequestController::class, 'updateTransfer']);
+    Route::DELETE('remove-transfer-item/{transferNumber?}/{id?}', [AssetTransferRequestController::class, 'removedTransferItem']);
 
     Route::POST('testmorp', [AssetTransferRequestController::class, 'testmorp']);
 
@@ -312,7 +312,7 @@ Route::group(['middleware' => ['auth:sanctum','role']], function () {  //,'role'
 
     //WAREHOUSE MASTERLIST
     Route::RESOURCE('warehouse', WarehouseController::class);
-    Route::PATCH('warehouse/archived-warehouse/{id}', [WarehouseController::class, 'archived'])->name('archived-warehouse');
+    Route::PATCH('warehouse/archived-warehouse/{id}', [WarehouseController::class, 'archived']);
 
     //PRINTING MEMO
     Route::PUT('memo-print', [MemoSeriesController::class, 'memoPrint']);
@@ -333,10 +333,10 @@ Route::group(['middleware' => ['auth:sanctum','role']], function () {  //,'role'
 
     //CANCEL RR NUMBER
     Route::RESOURCE('rr-summary', ReceiveReceiptSummaryController::class);
-    Route::PATCH('cancel-rr/{rrNumber}', [ReceiveReceiptSummaryController::class, 'cancelledRR'])->name('cancel-rr');
+    Route::PATCH('cancel-rr/{rrNumber}', [ReceiveReceiptSummaryController::class, 'cancelledRR']);
 
 
-    Route::GET('depreciation_history/{vTagNumber}', [DepreciationHistoryController::class, 'showHistory'])->name('depreciation_history');
+    Route::GET('depreciation_history/{vTagNumber}', [DepreciationHistoryController::class, 'showHistory']);
 
     Route::prefix('ymir')->group(function () {
         Route::GET('pr-request', [AddingPrController::class, 'requestToPR']);
