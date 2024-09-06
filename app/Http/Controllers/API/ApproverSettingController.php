@@ -33,7 +33,6 @@ class ApproverSettingController extends Controller
             ->dynamicPaginate();
 
 
-
         $ApproversQuery->transform(function ($item) {
             return [
                 'id' => $item->id,

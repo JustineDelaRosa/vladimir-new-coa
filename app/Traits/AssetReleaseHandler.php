@@ -5,6 +5,7 @@ namespace App\Traits;
 use App\Models\AdditionalCost;
 use App\Models\AssetRequest;
 use App\Models\FixedAsset;
+use App\Models\YmirPRTransaction;
 use App\Repositories\CalculationRepository;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -15,10 +16,12 @@ trait AssetReleaseHandler
 {
 
     protected CalculationRepository $calculationRepository;
+
     public function __construct(CalculationRepository $calculationRepository)
     {
         $this->calculationRepository = $calculationRepository;
     }
+
     public function assetReleaseActivityLog($AssetToRelease, $isClaimed = false)
     {
         $user = auth('sanctum')->user();
@@ -632,10 +635,17 @@ trait AssetReleaseHandler
     public function transformSearchFixedAsset($fixed_asset): array
     {
         $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? count($fixed_asset->additionalCost) : 0;
+        try {
+            $YmirPRNumber = YmirPRTransaction::where('pr_number', $fixed_asset->pr_number)->first()->pr_year_number_id ?? null;
+        } catch (\Exception $e) {
+            $YmirPRNumber = $fixed_asset->pr_number;
+        }
+
         return [
             //'totalCost' => $this->calculationRepository->getTotalCost($fixed_asset->acquisition_cost, $fixed_asset->additionalCost),
             'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
+            'ymir_pr_number' => $YmirPRNumber ?: '-',
             'requestor' => [
                 'id' => $fixed_asset->requestor->id ?? '-',
                 'username' => $fixed_asset->requestor->username ?? '-',
@@ -1232,13 +1242,19 @@ trait AssetReleaseHandler
 //            $updateData['account_id'] = $accountTitleId;
 //        }
 
-        (clone $assetQuery)->update($updateData);
+        $acquisitionCost = $asset->acquisition_cost;
+        $depreciationMethod = $acquisitionCost < 10000 ? 'One Time' : 'Straight Line';
+        $updateData['depreciation_method'] = $depreciationMethod;
 
+        (clone $assetQuery)->update($updateData);
         $formula = $asset->formula;
+        //check the acquisition cost if below 10,000 One Time else Straight Line
+
         $formula->update([
             'release_date' => now()->format('Y-m-d'),
-            'start_depreciation' => $this->calculationRepository->getStartDepreciation(now()->format('Y-m-d')),
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation(now()->format('Y-m-d'), 5, 'STL'), //TODO: temporary est useful life
+            'start_depreciation' => $this->calculationRepository->getStartDepreciation($depreciationMethod, now()->format('Y-m-d')),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation(now()->format('Y-m-d'), $asset->majorCategory->est_useful_life, $depreciationMethod), //TODO: temporary est useful life
+            'depreciation_method' => $depreciationMethod,
         ]);
         $asset->refresh();
         $this->assetReleaseActivityLog($asset);

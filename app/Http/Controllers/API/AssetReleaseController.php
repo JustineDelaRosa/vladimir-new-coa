@@ -124,7 +124,8 @@ class AssetReleaseController extends Controller
 //            $accountTitleId = $request->get('account_title_id');
 
             //todo: will change to Running Depreciation
-            $depreciation = DepreciationStatus::where('depreciation_status_name', 'For Depreciation')->first()->id;
+//            $depreciation = DepreciationStatus::where('depreciation_status_name', 'For Depreciation')->first()->id;
+            $depreciation = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
             foreach ($warehouseIds as $warehouseId) {
 
                 $fixedAssetQuery = FixedAsset::where('warehouse_number_id', $warehouseId)
@@ -167,8 +168,13 @@ class AssetReleaseController extends Controller
                     if ($unreleasedFixedAssets == 0 && $unreleasedAdditionalCosts == 0) {
                         AssetRequest::where('transaction_number', $transactionNumber)->update([
                             'is_claimed' => 1,
-                            'filter' => 'Claimed'
+//                            'filter' => 'Claimed'
                         ]);
+                        AssetRequest::where('transaction_number', $transactionNumber)
+                            ->whereColumn('quantity', 'quantity_delivered')
+                            ->update([
+                                'filter' => 'Claimed'
+                            ]);
                     }
                 }
             }

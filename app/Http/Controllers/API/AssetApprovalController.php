@@ -149,6 +149,11 @@ class AssetApprovalController extends Controller
         $remarks = $request->remarks;
         $action = ucwords($request->action);
 
+//        $hasPR = AssetRequest::where('transaction_number', $transactionNumber)->value('pr_number');
+//        if(!$hasPR){
+//            return $this->responseUnprocessable('Pr generation failed, please try again');
+//        }
+//        return $this->responseSuccess('Successfully Approved');
         return $this->requestAction($action, $transactionNumber, 'transaction_number', new AssetRequest(), new AssetApproval(), $remarks);
 
 //        switch ($action) {
