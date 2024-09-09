@@ -10,6 +10,7 @@ use App\Models\FixedAsset;
 use App\Models\MinorCategory;
 use App\Models\RoleManagement;
 use App\Models\User;
+use App\Models\YmirPRTransaction;
 use App\Traits\AddingPoHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
@@ -223,11 +224,17 @@ trait AssetRequestHandler
     public function transformIndexAssetRequest($assetRequest)
     {
         $deletedQuantity = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
+        try {
+            $YmirPRNumber = YmirPRTransaction::where('pr_number', $assetRequest->pr_number)->first()->pr_year_number_id ?? null;
+        } catch (\Exception $e) {
+            $YmirPRNumber = $assetRequest->pr_number;
+        }
         return [
             'is_newly_sync' => $assetRequest->newly_sync,
             'id' => $assetRequest->transaction_number,
             'transaction_number' => $assetRequest->transaction_number,
             'item_count' => $assetRequest->quantity + $deletedQuantity ?? 0,
+            'ymir_pr_number'=>$YmirPRNumber ?: '-',
             'can_edit' => $assetRequest->is_fa_approved ? 0 : 1,
             'can_resubmit' => $assetRequest->is_fa_approved ? 0 : 1,
             'cancel_count' => $deletedQuantity ?? 0,
@@ -253,8 +260,8 @@ trait AssetRequestHandler
                 'warehouse_name' => $assetRequest->receivingWarehouse->warehouse_name ?? '-',
             ],
             'deleted_at' => $assetRequest->deleted_at,
-//            'created_at' => $this->getDateRequested($assetRequest->transaction_number),
-            'created_at' => $assetRequest->getLatestDeliveryDate(),
+            'created_at' => $this->getDateRequested($assetRequest->transaction_number),
+            'date_received' => $assetRequest->getLatestDeliveryDate(),
             'approver_count' => $assetRequest->assetApproval->count(),
             'process_count' => $this->getProcessCount($assetRequest) ?? 0,
             'current_approver' => $this->getCurrentApprover($assetRequest),
@@ -405,7 +412,7 @@ trait AssetRequestHandler
             if (!$assetRequest->is_fa_approved) {
                 return 'For Approval of FA';
             }
-            if ($assetRequest->is_fa_approved) {
+            if ($assetRequest->is_fa_approved && $assetRequest->filter == 'Sent to Ymir') {
                 return 'Sent to ymir for PO';
             }
 //            if ($assetRequest->pr_number == null) {
@@ -458,6 +465,8 @@ trait AssetRequestHandler
 
     private function getProcessCount($assetRequest)
     {
+//        return 5;
+
         // return $this->calculateRemainingQuantity($assetRequest->transaction_number);
         $statusForApproval = $assetRequest->assetApproval->where('status', 'For Approval');
         $highestLayerNumber = $assetRequest->assetApproval()->max('layer');
@@ -474,9 +483,11 @@ trait AssetRequestHandler
 //            dd($assetRequest->pr_number);
             if ($assetRequest->is_fa_approved == false) $lastLayer++;
             if ($assetRequest->is_fa_approved == true) $lastLayer += 2;
-            if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Received") $lastLayer += 3;
-            if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) $lastLayer += 4;
-            if (($assetRequest->is_claimed == 1 && $assetRequest->filter == "Claimed") || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) $lastLayer += 6;
+            if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Received") $lastLayer ++;
+            if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) $lastLayer +=2;
+            if (($assetRequest->is_claimed == 1 && $assetRequest->filter == "Claimed") ||
+                ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) $lastLayer +=3;
+
             if ($this->deletedItemCheck($assetRequest) != null) $lastLayer = -1;
 //            if($assetRequest->filter == "Returned From Ymir") $lastLayer = 1;
         }

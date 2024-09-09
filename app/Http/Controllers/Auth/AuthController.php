@@ -38,6 +38,7 @@ class AuthController extends Controller
         if (!$user) {
             return response()->json(['message' => 'The Username or Password is Incorrect!'], 404);
         }
+
         $pass_decrypt = Crypt::decryptString($user->password);
         //if Username and password match
         // if ($username == $pass_decrypt) {

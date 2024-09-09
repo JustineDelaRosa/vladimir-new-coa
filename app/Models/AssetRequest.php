@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Essa\APIToolKit\Api\ApiResponse;
 use Exception;
 use App\Filters\LocationFilters;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,7 +27,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class AssetRequest extends Model implements HasMedia
 {
-    use HasFactory, Filterable, InteractsWithMedia, SoftDeletes;
+    use HasFactory, Filterable, InteractsWithMedia, SoftDeletes, ApiResponse;
 
     //, SoftDeletes
 
@@ -39,7 +40,6 @@ class AssetRequest extends Model implements HasMedia
         'po_number' => 'json',
         'rr_number' => 'json',
     ];
-
 
 
     public function generateReferenceNumber(): ?string
@@ -79,19 +79,33 @@ class AssetRequest extends Model implements HasMedia
         return $transactionNumber;
     }
 
-    public function generatePRNumber(){
+    /**
+     * @throws Exception
+     */
+    public function generatePRNumber()
+    {
         $prNumber = null;
+        $attempts = 0;
 
-        DB::transaction(function () use (&$prNumber) {
-            $lastTransaction = AssetRequest::withTrashed()->orderBy('pr_number', 'desc')
-                ->lockForUpdate()
-                ->first();
+        while ($attempts < 3) {
+            DB::transaction(function () use (&$prNumber) {
+                $lastTransaction = YmirPRTransaction::orderBy('pr_number', 'desc')
+                    ->first();
 
-            $nextNumber = $lastTransaction ? $lastTransaction->pr_number + 1 : 1;
-            $prNumber = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-        });
+                //AssetRequest
 
-        return $prNumber;
+                $prNumber = $lastTransaction ? $lastTransaction->pr_number + 1 : 1;
+            });
+
+            // Check in the database if this $prNumber already exists
+            $checkPrNumber = AssetRequest::where('pr_number', $prNumber)->first();
+            if (!$checkPrNumber) {
+                return $prNumber;
+            }
+
+            $attempts++;
+        }
+        return $this->responseNotFound('PR generation failed, please try again');
     }
 
 
@@ -133,6 +147,7 @@ class AssetRequest extends Model implements HasMedia
     {
         return $this->hasMany(AssetApproval::class, 'transaction_number', 'transaction_number');
     }
+
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class, 'unit_id', 'id');
@@ -227,25 +242,32 @@ class AssetRequest extends Model implements HasMedia
     {
         return $this->belongsTo(BusinessUnit::class, 'business_unit_id', 'id');
     }
+
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
-    public function fixedAsset():BelongsTo
+
+    public function fixedAsset(): BelongsTo
     {
         return $this->belongsTo(FixedAsset::class, 'fixed_asset_id', 'id');
     }
+
     public function deleter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deleter_id', 'id');
     }
-    public function uom(){
+
+    public function uom()
+    {
         return $this->belongsTo(UnitOfMeasure::class, 'uom_id', 'id');
     }
 
-    public function receivingWarehouse(){
+    public function receivingWarehouse()
+    {
         return $this->belongsTo(Warehouse::class, 'receiving_warehouse_id', 'id');
     }
+
     public function getInclusion()
     {
         $fixedAsset = FixedAsset::where('reference_number', $this->reference_number)->first();
@@ -278,20 +300,29 @@ class AssetRequest extends Model implements HasMedia
 //        })->values()->toArray() ?? null;
 //
 //    }
-    public function getRRReceived(){
-        $fixedAssets = FixedAsset::where('reference_number', $this->reference_number)->get();
-        return $fixedAssets->map(function($item) {
+    public function getRRReceived()
+    {
+        $fixedAssets = FixedAsset::withTrashed()->where('reference_number', $this->reference_number)->get();
+        $mappedAssets = $fixedAssets->map(function ($item) {
             return [
                 'vladimir_tag' => $item->vladimir_tag_number,
                 'date_delivered' => Carbon::parse($item->created_at)->format('d-m-Y'),
                 'unit_cost' => $item->formula->acquisition_cost,
+                'rr_number' => $item->receipt,
+                'is_cancelled' => $item->trashed(),
             ];
-        })->toArray() ?? null;
+        })->toArray();
+
+        usort($mappedAssets, function ($a, $b) {
+            return $a['is_cancelled'] <=> $b['is_cancelled'];
+        });
+
+        return $mappedAssets;
     }
 
-    public function getLatestDeliveryDate(){
+    public function getLatestDeliveryDate()
+    {
         $fixedAssets = FixedAsset::where('transaction_number', $this->transaction_number)->get();
-        $latestDate = $fixedAssets->max('created_at');
-        return $latestDate;
+        return $fixedAssets->max('created_at');
     }
 }

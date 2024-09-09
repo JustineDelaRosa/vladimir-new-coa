@@ -31,7 +31,7 @@ class AssetTransferRequestController extends Controller
     public function index(Request $request)
     {
 //        return $this->approverChanged(12, new AssetTransferRequest(), new TransferApproval(), new AssetTransferApprover(), 'transfer_number');
-
+//return $request->all();
         $request->validate([
             'for_monitoring' => 'boolean',
             'filter' => ['nullable', 'string'],
