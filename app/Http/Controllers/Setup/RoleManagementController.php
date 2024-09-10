@@ -131,7 +131,7 @@ class RoleManagementController extends Controller
                 return $this->responseSuccess('No Changes');
             } else {
                 //                return response()->json(['message' => 'Unable to Archive, Role already in used!'],409);
-                return $this->responseConflictError('Unable to Archive, Role already in used!');
+                return $this->responseUnprocessable('Unable to Archive, Role already in used!');
             }
         }
 

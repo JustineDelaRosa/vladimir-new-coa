@@ -12,8 +12,10 @@ use Illuminate\Http\Request;
 
 class UnitApproverBaseController extends Controller
 {
-    use ApiResponse,FormSettingHandler;
+    use ApiResponse, FormSettingHandler;
+
     protected $model;
+
     public function __construct($model)
     {
         $this->model = $model;
@@ -23,6 +25,7 @@ class UnitApproverBaseController extends Controller
     {
         return FormRequest::class;
     }
+
     protected function getUpdateFormRequest()
     {
         return FormRequest::class;
@@ -45,7 +48,7 @@ class UnitApproverBaseController extends Controller
         return $this->formSettingDestroy(new $this->model, $subUnitId);
     }
 
-    public function arrangeLayer( $id)
+    public function arrangeLayer($id)
     {
         $formRequestClass = $this->getUpdateFormRequest();
         $request = app($formRequestClass);

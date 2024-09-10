@@ -33,15 +33,15 @@ class SupplierController extends Controller
 
     public function store(Request $request)
     {
-        $supplierData = $request->input('result.suppliers');
-        if (empty($request->all()) || empty($request->input('result.suppliers'))) {
+        $supplierData = $request->input('result');
+        if (empty($request->all()) || empty($request->input('result'))) {
             return $this->responseUnprocessable('Data not Ready');
         }
         foreach ($supplierData as $suppliers) {
             $sync_id = $suppliers['id'];
             $supplier_code = $suppliers['code'];
             $supplier_name = $suppliers['name'];
-            $is_active = $suppliers['status'];
+            $is_active = $suppliers['deleted_at'];
 
             $sync = Supplier::updateOrCreate(
                 [
@@ -50,7 +50,7 @@ class SupplierController extends Controller
                 [
                     'supplier_code' => $supplier_code,
                     'supplier_name' => $supplier_name,
-                    'is_active' => $is_active
+                    'is_active' => $is_active == NULL ? 1 : 0,
                 ],
             );
         }

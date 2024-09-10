@@ -8,7 +8,9 @@ use App\Models\FixedAsset;
 use App\Models\RoleManagement;
 use App\Models\User;
 use Essa\APIToolKit\Api\ApiResponse;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Http;
 
 trait Reusables
 {
@@ -95,6 +97,21 @@ trait Reusables
         $fixedAssets = $model::where($uniqueNumber, $uniqueNumberValue)->get();
         $isFaApproved = $fixedAssets->where('is_fa_approved', 0)->where('status', 'Approved')->first();
         if ($isFaApproved) {
+
+            /*$transN = $model::where($uniqueNumber, $uniqueNumberValue)->first()->transaction_number;
+            $item_to_sent = $this->requestToPR($transN);
+            $apiUrl = config('ymir-api.ymir_put_rr_api_url');
+            $bearerToken = config('ymir-api.ymir_put_rr_api_token');
+
+            if (is_null($apiUrl) || is_null($bearerToken)) {
+                // Handle the error appropriately, e.g., log the error or throw an exception
+                throw new \Exception('API URL or Bearer Token is not set.');
+            }
+            $item_to_sent_array = json_decode(json_encode($item_to_sent), true);
+
+            Http::withHeaders(['Authorization' => 'Bearer ' . $bearerToken])
+                ->post($apiUrl, $item_to_sent_array);*/
+
             $model::where($uniqueNumber, $uniqueNumberValue)->update([
                 'is_fa_approved' => true,
             ]);
@@ -110,6 +127,8 @@ trait Reusables
                 $model::where($uniqueNumber, $uniqueNumberValue)->update([
                     'filter' => 'Sent to Ymir', // Can be Change
                 ]);
+
+
 //                $model::where($uniqueNumber, $uniqueNumberValue)
 //                    ->where('status', 'Approved')
 //                    ->update([
@@ -240,5 +259,133 @@ trait Reusables
 //            $page,
 //            ['path' => $request->url(), 'query' => $request->query()]
 //        );
+//    }
+
+
+//    public function requestToPR($transactionNumber)
+//    {
+//
+//
+////        $toPr = $request->get('toPr', null);
+////        $filter = $request->input('filter', 'old');
+////        $transactionNumber = $request->input('transaction_number', null);
+////        $perPage = $request->input('per_page', null);
+////        $pagination = $request->input('pagination', null);
+//        $prNumber = (new \App\Models\AssetRequest)->generatePRNumber();
+//
+////        $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
+////        $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
+//
+//        $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
+//            ->where('status', 'Approved')
+//            ->where('is_fa_approved', 0)
+//            ->useFilters()
+//            ->orderBy('created_at', 'desc')
+//            ->get()
+//            ->each(function ($assetRequest) use ($prNumber) {
+//                // Check if the asset request already has a PR number
+//                if (is_null($assetRequest->pr_number)) {
+//                    $assetRequest->update([
+//                        'pr_number' => $prNumber,
+//                    ]);
+//                }
+//            });
+//
+//        $filteredAndGroupedAssetRequests = $assetRequests->fresh()
+//            ->where('status', 'Approved')
+//            ->where('is_fa_approved', false)
+////            ->whereNotNull('pr_number')
+//            ->whereNull('deleted_at')
+////            ->useFilters()
+////            ->orderBy('created_at', 'desc')
+////            ->get()
+//            ->groupBy('transaction_number')
+//            ->map(function ($assetRequestCollection) {
+//                $latestDateNeeded = $assetRequestCollection->max('date_needed');
+//                $assetRequest = $assetRequestCollection->first();
+//                $assetRequest->date_needed = $latestDateNeeded;
+//                $listOfItems = $assetRequestCollection->map(function ($item) {
+//                    return [
+////                        'item_id' => $item->id,
+//                        'reference_number' => $item->pr_number,
+//                        'item_code' => $item->reference_number,
+//                        'item_name' => $item->asset_description,
+//                        'remarks' => $item->remarks ?? null, //TODO:check
+//                        'quantity' => $item->quantity,
+////                        'created_at' => $item->created_at,
+//                        //                        'additional_info' => $item->additional_info,
+////                        'accountability' => $item->accountability,
+////                        'accountable' => $item->accountable == '-' ? null : $item->accountable,
+////                        'cell_number' => $item->cell_number,
+////                        'brand' => $item->brand,
+////                        'remarks' => $item->remarks,
+//
+//                        'date_needed' => $item->date_needed,
+//                        'uom_id' => $item->uom->sync_id,
+//                        'uom_code' => $item->uom->uom_code,
+//                        'uom_name' => $item->uom->uom_name,
+//                        // Add more fields as needed
+//                    ];
+//                })->toArray();
+//                return [
+//                    'vrid' => $assetRequest->requester_id, //vladimir requester ID\
+//                    'pr_description' => $assetRequest->acquisition_details,
+//                    'pr_number' => $assetRequest->pr_number,
+//                    'transaction_number' => $assetRequest->transaction_number,
+//                    "type_id" => "4",
+//                    "type_name" => "Asset",
+//                    'r_warehouse_id' => $assetRequest->receivingWarehouse->id,
+//                    'r_warehouse_name' => $assetRequest->receivingWarehouse->warehouse_name,
+//
+//                    'company_id' => $assetRequest->company->sync_id,
+////                    'company_code' => $assetRequest->company->company_code,
+//                    'company_name' => $assetRequest->company->company_name,
+//
+//                    'business_unit_id' => $assetRequest->businessUnit->sync_id,
+////                    'business_unit_code' => $assetRequest->businessUnit->business_unit_code,
+//                    'business_unit_name' => $assetRequest->businessUnit->business_unit_name,
+//
+//                    'department_id' => $assetRequest->department->sync_id,
+////                    'department_code' => $assetRequest->department->department_code,
+//                    'department_name' => $assetRequest->department->department_name,
+//
+//                    'department_unit_id' => $assetRequest->unit->sync_id,
+////                    'department_unit_code' => $assetRequest->unit->unit_code,
+//                    'department_unit_name' => $assetRequest->unit->unit_name,
+//
+//                    'sub_unit_id' => $assetRequest->subunit->sync_id,
+////                    'subunit_code' => $assetRequest->subunit->sub_unit_code,
+//                    'sub_unit_name' => $assetRequest->subunit->sub_unit_name,
+//
+//                    'location_id' => $assetRequest->location->sync_id,
+////                    'location_code' => $assetRequest->location->location_code,
+//                    'location_name' => $assetRequest->location->location_name,
+//
+//                    'account_title_id' => $assetRequest->accountTitle->sync_id,
+////                    'account_title_code' => $assetRequest->accountTitle->account_title_code,
+//                    'account_title_name' => $assetRequest->accountTitle->account_title_name,
+//                    'description' => $assetRequest->acquisition_details,
+//                    'created_at' => $assetRequest->created_at,
+//                    'date_needed' => $assetRequest->date_needed,
+//                    'module_name' => 'Asset',
+//                    'sgp' => null,
+//                    'f1' => null,
+//                    'f2' => null,
+//                    'order' => $listOfItems
+//                ];
+//            })
+//            ->values();
+//
+//
+////        if ($perPage !== null && $pagination == null) {
+////            $page = $request->input('page', 1);
+////            $offset = $page * $perPage - $perPage;
+////            $filteredAndGroupedAssetRequests = new LengthAwarePaginator($filteredAndGroupedAssetRequests->slice($offset, $perPage)->values(), $filteredAndGroupedAssetRequests->count(), $perPage, $page, [
+////                'path' => $request->url(),
+////                'query' => $request->query(),
+////            ]);
+////        }
+//
+//        return $filteredAndGroupedAssetRequests;
 //    }
 }
