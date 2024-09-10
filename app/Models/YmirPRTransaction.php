@@ -9,8 +9,10 @@ class YmirPRTransaction extends Model
 {
     use HasFactory;
 
-    protected $connection = 'vladimir_ymir_db';
+    protected $connection = 'ymir_db';
     protected $table = 'pr_transactions';
+//    protected $connection = 'vladimir_ymir_db';
+//    protected $table = 'pr_transactions';
 
     protected $guarded = [];
 }
