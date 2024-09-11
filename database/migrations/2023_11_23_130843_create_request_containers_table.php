@@ -20,6 +20,7 @@ class CreateRequestContainersTable extends Migration
             $table->string('capex_number')->nullable();
             $table->string('status')->default('For Approval of Approver 1');
             $table->boolean('is_addcost')->default(0);
+            $table->string('item_status');
             $table->unsignedInteger('fixed_asset_id')->nullable();
             $table->string('additional_info')->nullable();
             $table->string('acquisition_details');

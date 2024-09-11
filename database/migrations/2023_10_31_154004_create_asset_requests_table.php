@@ -19,6 +19,7 @@ class CreateAssetRequestsTable extends Migration
             $table->unsignedInteger('requester_id')->nullable();
             $table->string('status')->default('For Approval of Approver 1');
             $table->boolean('synced')->default(0);
+            $table->string('item_status');
             $table->string('transaction_number')->index()->nullable();
             $table->string('reference_number')->nullable();
             $table->unsignedInteger('receiving_warehouse_id');
