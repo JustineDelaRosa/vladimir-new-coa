@@ -7,6 +7,7 @@ use App\Models\AssetApproval;
 use App\Models\AssetRequest;
 use App\Models\DepartmentUnitApprovers;
 use App\Models\FixedAsset;
+use App\Models\YmirPRTransaction;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -84,6 +85,11 @@ trait RequestShowDataHandler
         //check if in fixed asset if one of the fixed asset is released based on reference number
         $isReleased = FixedAsset::where('reference_number', $ar->reference_number)->where('is_released', 1)->count() > 0;
 
+        try {
+            $YmirPRNumber = YmirPRTransaction::where('pr_number', $ar->pr_number)->first()->pr_year_number_id ?? null;
+        } catch (\Exception $e) {
+            $YmirPRNumber = $ar->pr_number;
+        }
         return [
             'is_removed' => $ar->trashed() ? 1 : 0,
             //check if the requester_id is equal to deleter_id then the requester deleted it else get the role name of the deleter
@@ -91,6 +97,7 @@ trait RequestShowDataHandler
             'can_edit' => $ar->is_fa_approved ? 0 : 1,
             'can_add' => $isReleased ? 0 : 1,
             'can_resubmit' => $ar->is_fa_approved ? 0 : 1,
+            'item_status' => $ar->item_status ?? '-',
             'fa_approval' => $ar->status == 'Approved' && !$ar->is_fa_approved ? 1 : 0,
             'asset_approval_id' => $ar->assetApproval->first(function ($approval) {
                 return $approval->status == 'For Approval';
@@ -104,6 +111,7 @@ trait RequestShowDataHandler
             'reference_number' => $ar->reference_number,
             'capex_number' => $ar->capex_number ?? '-',
             'pr_number' => $ar->pr_number,
+            'ymir_pr_number'=>$YmirPRNumber ?: '-',
             'po_number' => $ar->po_number,
             'rr_number' => $ar->rr_number ?? '-',
             'attachment_type' => $ar->attachment_type,
