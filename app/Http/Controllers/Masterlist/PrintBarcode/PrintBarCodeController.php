@@ -291,6 +291,7 @@ class PrintBarCodeController extends Controller
                     $query->where('accountability', 'Personal Issued')
                         ->where('memo_series_id', null)
                         ->where('is_released', 0)
+                        ->where('asset_condition', 'New')
                         ->whereIn('can_release', [0, 1]);
                 });
             });

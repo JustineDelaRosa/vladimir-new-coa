@@ -58,6 +58,10 @@ trait NotificationHandler
                     ->where('memo_series_id', null)
                     ->orWhere(function ($query) {
                         $query->where('accountability', 'Personal Issued')
+                            ->where('asset_condition', '!=', 'New');
+                    })->orWhere(function ($query) {
+                        $query->where('accountability', 'Personal Issued')
+                            ->where('asset_condition', 'New')
                             ->whereNotNull('memo_series_id');
                     });
             })->count();
@@ -83,7 +87,7 @@ trait NotificationHandler
             ->where('status', 'Approved')
             ->where('is_fa_approved', 1)
             ->groupBy('transaction_number')
-            ->havingRaw('SUM(synced) = COUNT(*)')
+            ->havingRaw('SUM(synced) >= 1')
             ->havingRaw('SUM(quantity) != SUM(quantity_delivered)')
             ->count();
     }

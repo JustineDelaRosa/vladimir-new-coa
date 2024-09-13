@@ -39,6 +39,10 @@ class AssetReleaseController extends Controller
                         ->where('memo_series_id', null)
                         ->orWhere(function ($query) {
                             $query->where('accountability', 'Personal Issued')
+                                ->where('asset_condition', '!=', 'New');
+                        })->orWhere(function ($query) {
+                            $query->where('accountability', 'Personal Issued')
+                                ->where('asset_condition', 'New')
                                 ->whereNotNull('memo_series_id');
                         });
                 });
@@ -69,9 +73,9 @@ class AssetReleaseController extends Controller
 
                 if ($accountability === 'Common') {
                     $this->updateRemoveMemoTag($fixedAsset, $additionalCost);
-                    $this->setNewAccountability($fixedAsset, $additionalCost,$accountability, $accountable, true);
+                    $this->setNewAccountability($fixedAsset, $additionalCost, $accountability, $accountable, true);
                 } else {
-                    $this->setNewAccountability($fixedAsset, $additionalCost,$accountability, $accountable);
+                    $this->setNewAccountability($fixedAsset, $additionalCost, $accountability, $accountable);
                 }
             }
 //            DB::rollBack();
