@@ -79,7 +79,8 @@ class RequestContainerController extends Controller
 
 //            return $request->all();
             list($isRequesterApprover, $isLastApprover, $requesterLayer) = $this->checkIfRequesterIsApprover($requesterId, $departmentUnitApprovers);
-//            return $isRequesterApprover;
+//            return $departmentUnitApprovers;
+
             $this->checkDifferentCOA($request);
 
             $assetRequest = $this->createRequestContainer($request, $isRequesterApprover, $isLastApprover, $requesterLayer, $requesterId);
@@ -92,7 +93,8 @@ class RequestContainerController extends Controller
             return $this->responseCreated('Request Container Created', $assetRequest);
         } catch (Exception $e) {
             DB::rollback();
-            return $this->responseUnprocessable('Something went wrong. Please try again later.' . $e->getMessage());
+//            return $e->getMessage();
+            return $this->responseUnprocessable('Something went wrong. Please try again later.');
         }
     }
 
@@ -168,6 +170,7 @@ class RequestContainerController extends Controller
             'quantity' => $request->quantity ?? 1,
             'uom_id' => $request->uom_id,
             'date_needed' => $request->date_needed,
+            'item_status' => $request->item_status,
         ]);
 
         if ($requestContainer) {

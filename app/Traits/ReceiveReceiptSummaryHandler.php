@@ -46,7 +46,7 @@ trait ReceiveReceiptSummaryHandler
                 'po_number' => $fixed_asset->first()->po_number,
                 'vladimir_tag_number' => $fixed_asset->pluck('vladimir_tag_number')->all(),
                 'item_count' => $fixed_asset->count(),
-                'remarks' => $status == 'deactivated' ? AssetRequest::where('pr_number', $fixed_asset->first()->pr_number)->first()->remarks : null,
+                'remarks' => $status == 'deactivated' ? AssetRequest::where('pr_number', $fixed_asset->first()->pr_number)->first()->remarks ?? '-' : '-',
             ];
         })->values();
 

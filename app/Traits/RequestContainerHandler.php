@@ -29,7 +29,7 @@ trait RequestContainerHandler
 
     private function createRequestContainer($request, $isRequesterApprover, $isLastApprover, $requesterLayer, $requesterId)
     {
-        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountTitle->id;
+        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountTitle->id ?? "null";
         return RequestContainer::create([
             'status' => $isLastApprover
                 ? 'Approved'
@@ -40,6 +40,7 @@ trait RequestContainerHandler
             'capex_number' => $request->capex_number,
             'is_addcost' => (bool)$request->fixed_asset_id,
             'fixed_asset_id' => $request->fixed_asset_id ?? null,
+            'item_status' => $request->item_status,
             'type_of_request_id' => $request->type_of_request_id,
             'attachment_type' => $request->attachment_type,
             'account_title_id' => $accountTitleID ?? null,

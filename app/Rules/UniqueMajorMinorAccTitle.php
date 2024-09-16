@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class UniqueMajorMinorAccTitle implements Rule
 {
-    private $ignoreId;
+    private ?int $ignoreId;
 
     /**
      * Create a new rule instance.
@@ -32,7 +32,7 @@ class UniqueMajorMinorAccTitle implements Rule
             ->where([
                 'major_category_id' => request('major_category_id'),
                 'minor_category_name' => request('minor_category_name'),
-                'account_title_sync_id' => request('account_title_sync_id')
+//                'accounting_entries_id' => request('accounting_entries_id'),
             ]);
 
         if ($this->ignoreId !== null) {
