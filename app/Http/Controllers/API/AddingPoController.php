@@ -243,30 +243,32 @@ class AddingPoController extends Controller
     }
 
     //TODO: Probably not necessary anymore
-    public function storePOs(array $data)
-    {
-        //map the $data and organize the unique po_number with the same transaction number and reference number
-        $poData = collect($data)->groupBy('po_number')->map(function ($poData) {
-            return $poData->groupBy('transaction_number')->map(function ($transactionData) {
-                return $transactionData->groupBy('reference_number')->map(function ($referenceData) {
-                    return $referenceData->pluck('po_number')->first();
-                });
-            });
-        });
+//    public function storePOs(array $data)
+//    {
+//        //map the $data and organize the unique po_number with the same transaction number and reference number
+//        $poData = collect($data)->groupBy('po_number')->map(function ($poData) {
+//            return $poData->groupBy('transaction_number')->map(function ($transactionData) {
+//                return $transactionData->groupBy('reference_number')->map(function ($referenceData) {
+//                    return $referenceData->pluck('po_number')->first();
+//                });
+//            });
+//        });
+//
+//        //store the po_number in the asset request
+//        foreach ($poData as $poNumber) {
+//            foreach ($poNumber as $transactionNumber) {
+//                foreach ($transactionNumber as $referenceNumber => $poNo) {
+//                    $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
+//                        ->where('reference_number', $referenceNumber)
+//                        ->update(['po_number' => $poNo]);
+//                }
+//            }
+//        }
+//
+//        return $this->responseSuccess('PO number stored successfully');
+//    }
 
-        //store the po_number in the asset request
-        foreach ($poData as $poNumber) {
-            foreach ($poNumber as $transactionNumber) {
-                foreach ($transactionNumber as $referenceNumber => $poNo) {
-                    $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)
-                        ->where('reference_number', $referenceNumber)
-                        ->update(['po_number' => $poNo]);
-                }
-            }
-        }
 
-        return $this->responseSuccess('PO number stored successfully');
-    }
 //    public function handleSyncData(Request $request)
 //    {
 //        $userLocationId = auth('sanctum')->user()->location_id;

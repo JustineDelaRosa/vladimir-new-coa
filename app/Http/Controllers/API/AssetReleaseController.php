@@ -138,6 +138,10 @@ class AssetReleaseController extends Controller
                             ->where('memo_series_id', null)
                             ->orWhere(function ($query) {
                                 $query->where('accountability', 'Personal Issued')
+                                    ->where('asset_condition', '!=', 'New');
+                            })->orWhere(function ($query) {
+                                $query->where('accountability', 'Personal Issued')
+                                    ->where('asset_condition', 'New')
                                     ->whereNotNull('memo_series_id');
                             });
                     })->where('is_released', 0);

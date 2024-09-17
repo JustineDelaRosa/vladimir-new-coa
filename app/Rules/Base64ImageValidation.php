@@ -6,14 +6,10 @@ use Illuminate\Contracts\Validation\Rule;
 
 class Base64ImageValidation implements Rule
 {
-    /**
-     * Create a new rule instance.
-     *
-     * @return void
-     */
-    public function __construct()
+    protected $accountability;
+    public function __construct($accountability = null)
     {
-        //
+        $this->accountability = $accountability;
     }
 
     /**
@@ -30,7 +26,7 @@ class Base64ImageValidation implements Rule
             $data = substr($value, strpos($value, ',') + 1);
             $type = strtolower($type[1]); // jpg, png, gif
 
-            if (!in_array($type, ['jpg', 'jpeg', 'png', 'gif'])) {
+            if (!in_array($type, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'svg'])) {
                 return false;
             }
 
@@ -40,9 +36,11 @@ class Base64ImageValidation implements Rule
             }
 
             return true;
-        }
 
-        return false;
+        } else if ($value == null && $this->accountability == 'Common') {
+            return true;
+        }
+        return true;
     }
 
     /**

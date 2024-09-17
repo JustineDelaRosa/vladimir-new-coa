@@ -223,6 +223,7 @@ class AssetRequestController extends Controller
 //            return $this->responseUnprocessable('You can\'t resubmit this request.');
         }
     }
+
     public function resubmitAssetRequest($transactionNumber): JsonResponse
     {
         $isFileDataUpdated = Cache::get('isFileDataUpdated', false);
@@ -263,7 +264,7 @@ class AssetRequestController extends Controller
         Cache::put('isDataUpdated', $isDataUpdated, now()->addMinutes(20));
         $this->approveRequestRepository->isApproverChange($transactionNumber, $isDataUpdated);
 
-        if(Cache::get('isDataUpdated') || Cache::get('isFileDataUpdated')){
+        if (Cache::get('isDataUpdated') || Cache::get('isFileDataUpdated')) {
             $this->resubmitAssetRequest($transactionNumber);
         }
 
@@ -287,86 +288,52 @@ class AssetRequestController extends Controller
         }
     }
 
+
     public function moveData()
     {
-        // Get the requester id from the request
         $requesterId = auth('sanctum')->user()->id;
         $transactionNumber = AssetRequest::generateTransactionNumber();
 
-        // Get the items from Request-container
         $items = RequestContainer::where('requester_id', $requesterId)->get();
-//        return $items;
         if ($items->isEmpty()) {
             return $this->responseUnprocessable('No data to move');
         }
-        //check if the item inside item has different subunit id
-        $subunitId = $items[0]->subunit_id;
-        $hasApproverCheck = DepartmentUnitApprovers::where('subunit_id', $subunitId)->exists();
-        if (!$hasApproverCheck) {
+
+        $subunitId = $items->first()->subunit_id;
+        if (!DepartmentUnitApprovers::where('subunit_id', $subunitId)->exists()) {
             return $this->responseUnprocessable('No approver found for this subunit');
         }
-        foreach ($items as $item) {
-            if ($item->subunit_id != $subunitId) {
-                return $this->responseUnprocessable('Invalid Action, Different Subunit');
-            }
-        }
-        $assetRequest = null;
-        foreach ($items as $item) {
-            $assetRequest = new AssetRequest();
-            $assetRequest->status = $item->status;
-            $assetRequest->is_addcost = $item->is_addcost;
-            $assetRequest->fixed_asset_id = $item->fixed_asset_id;
-            $assetRequest->requester_id = $item->requester_id;
-            $assetRequest->type_of_request_id = $item->type_of_request_id;
-            $assetRequest->attachment_type = $item->attachment_type;
-            $assetRequest->additional_info = $item->additional_info;
-            $assetRequest->acquisition_details = $item->acquisition_details;
-            $assetRequest->accountability = $item->accountability;
-            $assetRequest->major_category_id = $item->major_category_id;
-            $assetRequest->minor_category_id = $item->minor_category_id;
-            $assetRequest->uom_id = $item->uom_id;
-            $assetRequest->company_id = $item->company_id;
-            $assetRequest->business_unit_id = $item->business_unit_id;
-            $assetRequest->department_id = $item->department_id;
-            $assetRequest->unit_id = $item->unit_id;
-            $assetRequest->subunit_id = $item->subunit_id;
-            $assetRequest->location_id = $item->location_id;
-            $assetRequest->account_title_id = $item->account_title_id;
-            $assetRequest->accountable = $item->accountable;
-            $assetRequest->asset_description = $item->asset_description;
-            $assetRequest->asset_specification = $item->asset_specification;
-            $assetRequest->cellphone_number = $item->cellphone_number;
-            $assetRequest->brand = $item->brand;
-            $assetRequest->quantity = $item->quantity;
-            $assetRequest->date_needed = $item->date_needed;
-            $assetRequest->receiving_warehouse_id = $item->receiving_warehouse_id;
 
-            // Add transaction number and reference number
+        if ($items->pluck('subunit_id')->unique()->count() > 1) {
+            return $this->responseUnprocessable('Invalid Action, Different Subunit');
+        }
+
+        $assetRequests = $items->map(function ($item) use ($transactionNumber) {
+            $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
+            $assetRequest = new AssetRequest($item->only([
+                'status', 'is_addcost','item_status', 'fixed_asset_id', 'requester_id', 'type_of_request_id', 'attachment_type',
+                'additional_info', 'acquisition_details', 'accountability', 'major_category_id', 'minor_category_id',
+                'uom_id', 'company_id', 'business_unit_id', 'department_id', 'unit_id', 'subunit_id', 'location_id',
+                'account_title_id', 'accountable', 'asset_description', 'asset_specification', 'cellphone_number', 'brand',
+                'quantity', 'date_needed', 'receiving_warehouse_id'
+            ]));
             $assetRequest->transaction_number = $transactionNumber;
             $assetRequest->reference_number = $assetRequest->generateReferenceNumber();
-
             $assetRequest->save();
-            // $assetRequest->reference_number = str_pad($assetRequest->id, 4, '0', STR_PAD_LEFT);
-            // $assetRequest->save();
-
-            // Get the media from RequestContainer and put it in AssetRequest
-            $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
 
             foreach ($fileKeys as $fileKey) {
-                $media = $item->getMedia($fileKey);
-                foreach ($media as $file) {
-                    $file->copy($assetRequest, $fileKey);
-                }
+                $item->getMedia($fileKey)->each->copy($assetRequest, $fileKey);
             }
 
-            // Delete the item from RequestContainer
             $item->forceDelete();
-        }
+            return $assetRequest;
+        });
 
-         $this->createAssetApprovals($items, $requesterId, $assetRequest);
+        $this->createAssetApprovals($items, $requesterId, $assetRequests->last());
 
         return $this->responseSuccess('Successfully requested');
     }
+
 
     public function showById($id)
     {
@@ -513,4 +480,88 @@ class AssetRequestController extends Controller
 
             return $this->responseCreated('AssetRequest created successfully');
         }*/
+
+
+    //OLD MOVE DATA
+
+    //    public function moveData()
+//    {
+//        // Get the requester id from the request
+//        $requesterId = auth('sanctum')->user()->id;
+//        $transactionNumber = AssetRequest::generateTransactionNumber();
+//
+//        // Get the items from Request-container
+//        $items = RequestContainer::where('requester_id', $requesterId)->get();
+////        return $items;
+//        if ($items->isEmpty()) {
+//            return $this->responseUnprocessable('No data to move');
+//        }
+//        //check if the item inside item has different subunit id
+//        $subunitId = $items[0]->subunit_id;
+//        $hasApproverCheck = DepartmentUnitApprovers::where('subunit_id', $subunitId)->exists();
+//        if (!$hasApproverCheck) {
+//            return $this->responseUnprocessable('No approver found for this subunit');
+//        }
+//        foreach ($items as $item) {
+//            if ($item->subunit_id != $subunitId) {
+//                return $this->responseUnprocessable('Invalid Action, Different Subunit');
+//            }
+//        }
+//        $assetRequest = null;
+//        foreach ($items as $item) {
+//            $assetRequest = new AssetRequest();
+//            $assetRequest->status = $item->status;
+//            $assetRequest->is_addcost = $item->is_addcost;
+//            $assetRequest->fixed_asset_id = $item->fixed_asset_id;
+//            $assetRequest->requester_id = $item->requester_id;
+//            $assetRequest->type_of_request_id = $item->type_of_request_id;
+//            $assetRequest->attachment_type = $item->attachment_type;
+//            $assetRequest->additional_info = $item->additional_info;
+//            $assetRequest->acquisition_details = $item->acquisition_details;
+//            $assetRequest->accountability = $item->accountability;
+//            $assetRequest->major_category_id = $item->major_category_id;
+//            $assetRequest->minor_category_id = $item->minor_category_id;
+//            $assetRequest->uom_id = $item->uom_id;
+//            $assetRequest->company_id = $item->company_id;
+//            $assetRequest->business_unit_id = $item->business_unit_id;
+//            $assetRequest->department_id = $item->department_id;
+//            $assetRequest->unit_id = $item->unit_id;
+//            $assetRequest->subunit_id = $item->subunit_id;
+//            $assetRequest->location_id = $item->location_id;
+//            $assetRequest->account_title_id = $item->account_title_id;
+//            $assetRequest->accountable = $item->accountable;
+//            $assetRequest->asset_description = $item->asset_description;
+//            $assetRequest->asset_specification = $item->asset_specification;
+//            $assetRequest->cellphone_number = $item->cellphone_number;
+//            $assetRequest->brand = $item->brand;
+//            $assetRequest->quantity = $item->quantity;
+//            $assetRequest->date_needed = $item->date_needed;
+//            $assetRequest->receiving_warehouse_id = $item->receiving_warehouse_id;
+//
+//            // Add transaction number and reference number
+//            $assetRequest->transaction_number = $transactionNumber;
+//            $assetRequest->reference_number = $assetRequest->generateReferenceNumber();
+//
+//            $assetRequest->save();
+//            // $assetRequest->reference_number = str_pad($assetRequest->id, 4, '0', STR_PAD_LEFT);
+//            // $assetRequest->save();
+//
+//            // Get the media from RequestContainer and put it in AssetRequest
+//            $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
+//
+//            foreach ($fileKeys as $fileKey) {
+//                $media = $item->getMedia($fileKey);
+//                foreach ($media as $file) {
+//                    $file->copy($assetRequest, $fileKey);
+//                }
+//            }
+//
+//            // Delete the item from RequestContainer
+//            $item->forceDelete();
+//        }
+//
+//         $this->createAssetApprovals($items, $requesterId, $assetRequest);
+//
+//        return $this->responseSuccess('Successfully requested');
+//    }
 }

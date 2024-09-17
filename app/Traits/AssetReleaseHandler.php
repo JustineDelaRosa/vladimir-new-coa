@@ -278,6 +278,7 @@ trait AssetReleaseHandler
                 'lastname' => $fixed_asset->requestor->lastname ?? '-',
                 'employee_id' => $fixed_asset->requestor->employee_id ?? '-',
             ],
+            'item_status' => $fixed_asset->asset_condition,
             'pr_number' => $fixed_asset->pr_number ?? '-',
             'po_number' => $fixed_asset->po_number ?? '-',
             'rr_number' => $fixed_asset->rr_number ?? '-',

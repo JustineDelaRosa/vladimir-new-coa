@@ -397,4 +397,112 @@ class AddingPrController extends Controller
             })
             ->log('Returned from Ymir');
     }
+
+    public function prReport(Request $request)
+    {
+        $perPage = $request->get('per_page');
+        $from = $request->input('from');
+        $to = $request->input('to');
+
+        $from = $from ? Carbon::parse($from)->startOfDay() : null;
+        $to = $to ?  Carbon::parse($to)->endOfDay() : null;
+        $export = $request->input('export');
+
+        $assetRequests = AssetRequest::where('status', 'Approved')
+            ->whereNotNull('pr_number')
+            ->when($from && $to, function ($query) use ($from, $to) {
+                return $query->whereBetween('created_at', [$from, $to]);
+            })
+            ->useFilters()
+            ->orderBy('created_at', 'desc');
+
+        if ($export) {
+            $assetRequests = $assetRequests->get()->transform(function ($assetRequest) {
+                try {
+                     $YmirPRNumber = YmirPRTransaction::where('pr_number', $assetRequest->pr_number)->first()->pr_year_number_id ?? null;
+                } catch (\Exception $e) {
+                    $YmirPRNumber = $assetRequest->first()->pr_number;
+                }
+                return [
+                    'ymir_pr_number' => $YmirPRNumber ?: '-',
+                    'pr_number' => $assetRequest->pr_number,
+                    'item_status' => $assetRequest->item_status,
+                    'status' => $assetRequest->status == 'Approved' ? ($assetRequest->is_fa_approved ? $assetRequest->filter : 'For Approval of FA') : $assetRequest->status,
+                    'asset_description' => $assetRequest->asset_description,
+                    'asset_specification' => $assetRequest->asset_specification,
+                    'brand' => $assetRequest->brand ?? '-',
+                    'quantity' => $assetRequest->quantity,
+                    'transaction_number' => $assetRequest->transaction_number,
+                    'acquisition_details' => $assetRequest->acquisition_details,
+                    'company_code' => $assetRequest->company->company_code,
+                    'company' => $assetRequest->company->company_name,
+                    'business_unit_code' => $assetRequest->businessUnit->business_unit_code,
+                    'business_unit' => $assetRequest->businessUnit->business_unit_name,
+                    'department_code' => $assetRequest->department->department_code,
+                    'department' => $assetRequest->department->department_name,
+                    'unit_code' => $assetRequest->unit->unit_code,
+                    'unit' => $assetRequest->unit->unit_name,
+                    'subunit_code' => $assetRequest->subunit->sub_unit_code,
+                    'subunit' => $assetRequest->subunit->sub_unit_name,
+                    'location_code' => $assetRequest->location->location_code,
+                    'location' => $assetRequest->location->location_name,
+                    'account_title_code' => $assetRequest->accountTitle->account_title_code,
+                    'account_title' => $assetRequest->accountTitle->account_title_name,
+                    'date_needed' => $assetRequest->date_needed,
+                    'created_at' => $assetRequest->created_at,
+                ];
+            });
+        } else {
+            $assetRequests = $assetRequests->get()->groupBy('pr_number')->map(function ($assetRequestCollection) {
+                try {
+                    $YmirPRNumber = YmirPRTransaction::where('pr_number', $assetRequestCollection->first()->pr_number)->first()->pr_year_number_id ?? null;
+                } catch (\Exception $e) {
+                    $YmirPRNumber = $assetRequestCollection->first()->pr_number;
+                }
+
+                return [
+                    'status' => $assetRequestCollection->first()->status == 'Approved' ? ($assetRequestCollection->first()->is_fa_approved ? $assetRequestCollection->first()->filter : 'For Approval of FA') : $assetRequestCollection->status,
+                    'ymir_pr_number' => $YmirPRNumber ?: '-',
+                    'pr_number' => $assetRequestCollection->first()->pr_number,
+                    'pr_description' => $assetRequestCollection->first()->acquisition_details,
+                    'date_needed' => $assetRequestCollection->first()->date_needed,
+                    'company' => $assetRequestCollection->first()->company->company_name,
+                    'company_code' => $assetRequestCollection->first()->company->company_code,
+                    'business_unit' => $assetRequestCollection->first()->businessUnit->business_unit_name,
+                    'business_unit_code' => $assetRequestCollection->first()->businessUnit->business_unit_code,
+                    'department' => $assetRequestCollection->first()->department->department_name,
+                    'department_code' => $assetRequestCollection->first()->department->department_code,
+                    'unit' => $assetRequestCollection->first()->unit->unit_name,
+                    'unit_code' => $assetRequestCollection->first()->unit->unit_code,
+                    'subunit' => $assetRequestCollection->first()->subunit->sub_unit_name,
+                    'subunit_code' => $assetRequestCollection->first()->subunit->sub_unit_code,
+                    'location' => $assetRequestCollection->first()->location->location_name,
+                    'location_code' => $assetRequestCollection->first()->location->location_code,
+                    'account_title' => $assetRequestCollection->first()->accountTitle->account_title_name,
+                    'account_title_code' => $assetRequestCollection->first()->accountTitle->account_title_code,
+                    'items' => $assetRequestCollection->map(function ($item) {
+                        return [
+                            'asset_description' => $item->asset_description,
+                            'asset_specification' => $item->asset_specification,
+                            'brand' => $item->brand,
+                            'quantity' => $item->quantity,
+                            'date_needed' => $item->date_needed,
+                        ];
+                    }),
+                ];
+            })->values();
+
+            if ($perPage !== null) {
+                $page = $request->input('page', 1);
+                $offset = $page * $perPage - $perPage;
+                $assetRequests = new LengthAwarePaginator($assetRequests->slice($offset, $perPage)->values(), $assetRequests->count(), $perPage, $page, [
+                    'path' => $request->url(),
+                    'query' => $request->query(),
+                ]);
+            }
+        }
+
+        return $assetRequests;
+    }
+
 }
