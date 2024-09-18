@@ -47,6 +47,7 @@ class CreateRequestContainerRequest extends BaseRequest
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
             'capex_number' => 'nullable',
             'is_addcost' => 'nullable|boolean',
+            'item_status' => 'nullable  |in:New,Replacement,Additional',
             'fixed_asset_id' => [
                 'required-if:is_addcost,true',
                 Rule::exists('fixed_assets', 'id'),

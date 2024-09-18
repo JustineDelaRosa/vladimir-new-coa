@@ -24,6 +24,7 @@ use App\Models\PoBatch;
 use App\Models\Status\DepreciationStatus;
 use App\Models\SubCapex;
 use App\Models\TypeOfRequest;
+use App\Models\YmirPRTransaction;
 use App\Repositories\CalculationRepository;
 use App\Repositories\FixedAssetRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
@@ -50,7 +51,7 @@ class FixedAssetController extends Controller
 
     public function index(Request $request)
     {
-//        return FixedAsset::get();
+
         $movement = $request->get('movement');
         $data = Cache::get('fixed_assets_data');
 
@@ -410,7 +411,7 @@ class FixedAssetController extends Controller
     function validateRequest(Request $request)
     {
         return Validator::make($request->all(), [
-            'date' => 'required|date_format:Y-m',
+            'date' => 'required|date_format:Y-m-d',
         ],
             [
                 'date.required' => 'Date is required.',
@@ -475,6 +476,7 @@ class FixedAssetController extends Controller
         return [
             'onetime' => [
                 'depreciation_method' => $depreciation_method,
+                'has_history' => $fixedAsset->depreciationHistory->isNotEmpty(),
                 'depreciable_basis' => $properties->depreciable_basis,
                 'start_depreciation' => $properties->start_depreciation,
                 'end_depreciation' => $properties->end_depreciation,
@@ -511,6 +513,7 @@ class FixedAssetController extends Controller
             ],
             'default' => [
                 'depreciation_method' => $depreciation_method ?? '-',
+                'has_history' => $fixedAsset->depreciationHistory->isNotEmpty(),
                 'depreciable_basis' => $properties->depreciable_basis ?? 0,
                 'est_useful_life' => $est_useful_life ?? '-',
                 'months_depreciated' => $custom_age ?? '-',
@@ -570,14 +573,14 @@ class FixedAssetController extends Controller
             return response()->json(['error' => 'Fixed Asset Route Not Found'], 404);
         }
 
-        //check if the selected item has a voucher number or not
-        if ($fixed_asset->voucher == null || $fixed_asset->voucher == '-') {
-            $getVoucher = $this->fixedAssetRepository->getVoucher($fixed_asset->receipt, $fixed_asset->po_number);
-            if ($getVoucher) {
-                $fixed_asset->voucher = $getVoucher['voucher_no'];
-                $fixed_asset->voucher_date = $getVoucher['voucher_date'];
-            }
-        }
+//        //check if the selected item has a voucher number or not
+//        if ($fixed_asset->voucher == null || $fixed_asset->voucher == '-') {
+//            $getVoucher = $this->fixedAssetRepository->getVoucher($fixed_asset->receipt, $fixed_asset->po_number);
+//            if ($getVoucher) {
+//                $fixed_asset->voucher = $getVoucher['voucher_no'];
+//                $fixed_asset->voucher_date = $getVoucher['voucher_date'];
+//            }
+//        }
 
         return response()->json([
             'message' => 'Fixed Asset retrieved successfully.',
@@ -670,5 +673,13 @@ class FixedAssetController extends Controller
         });
 
         return $this->responseSuccess('Inclusion item removed successfully.');
+    }
+
+    public function  setMonthlyDepreciation(Request $request)
+    {
+        //set monthly depreciation globally each month
+        $runningDepreciationStatusId = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
+        $fixed_assets = FixedAsset::with('formula')->where('depreciation_status_id', $runningDepreciationStatusId)->get();
+
     }
 }

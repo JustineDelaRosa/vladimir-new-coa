@@ -63,7 +63,7 @@ class FixedAssetRepository
             'release_date' => $request['release_date'] ?? Null,
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation(
-                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+                    $this->calculationRepository->getStartDepreciation($request['depreciation_method'], $request['release_date']),
 //                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
@@ -74,19 +74,14 @@ class FixedAssetRepository
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
             'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
 //                ? $this->calculationRepository->getStartDepreciation($request['voucher_date'])
-                ? $this->calculationRepository->getStartDepreciation($request['release_date'])
+                ? $this->calculationRepository->getStartDepreciation($request['depreciation_method'], $request['release_date'])
                 : null
         ];
     }
 
     private function prepareFixedAssetDataForStore($request, $vladimirTagNumber, $businessUnitQuery): array
     {
-        $accountingEntry = AccountingEntries::create([
-            'initial_debit' => 279,
-            'initial_credit' => MinorCategory::where('id', $request['minor_category_id'])->first()->accountTitle->id,
-            'depreciation_debit' => 535,
-            'depreciation_credit' => 321,
-        ]);
+        $accountingEntry = MinorCategory::where('id', $request['minor_category_id'])->first()->accounting_entries_id;
         return [
             'capex_id' => isset($request['sub_capex_id']) ? SubCapex::find($request['sub_capex_id'])->capex_id : null,
             'sub_capex_id' => $request['sub_capex_id'] ?? null,
@@ -127,7 +122,7 @@ class FixedAssetRepository
             'unit_id' => $request['unit_id'],
             'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
-            'account_id' => $accountingEntry->id,
+            'account_id' => $accountingEntry,
             'uom_id' => $request['uom_id'] ?? null,
         ];
     }
@@ -139,7 +134,7 @@ class FixedAssetRepository
         $this->checkDepreciationStatus($request, $majorCategory);
 
         $fixedAsset = FixedAsset::find($id);
-        $fixedAssetData = $this->prepareFixedAssetDataForUpdate($request, $businessUnitQuery);
+        $fixedAssetData = $this->prepareFixedAssetDataForUpdate($request, $businessUnitQuery, $id);
         $fixedAsset->update($fixedAssetData);
 
         $formulaData = $this->prepareFormulaDataForUpdate($request, $majorCategory);
@@ -148,14 +143,9 @@ class FixedAssetRepository
         return $fixedAsset;
     }
 
-    private function prepareFixedAssetDataForUpdate($request, $businessUnitQuery): array
+    private function prepareFixedAssetDataForUpdate($request, $businessUnitQuery, $id): array
     {
-        $accountingEntry = AccountingEntries::create([
-            'initial_debit' => 279,
-            'initial_credit' => MinorCategory::where('id', $request['minor_category_id'])->first()->accountTitle->id,
-            'depreciation_debit' => 535,
-            'depreciation_credit' => 321,
-        ]);
+        $accountingEntry = MinorCategory::where('id', $request['minor_category_id'])->first()->accounting_entries_id;
         return [
             'po_number' => $request['po_number'],
             'capex_id' => isset($request['sub_capex_id']) ? SubCapex::find($request['sub_capex_id'])->capex_id : null,
@@ -193,7 +183,7 @@ class FixedAssetRepository
             'unit_id' => $request['unit_id'],
             'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
-            'account_id' => $accountingEntry->id,
+            'account_id' => $accountingEntry,
             'uom_id' => $request['uom_id'] ?? null,
         ];
     }
@@ -213,7 +203,7 @@ class FixedAssetRepository
             'end_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
                 ? $this->calculationRepository->getEndDepreciation(
 //                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
-                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+                    $this->calculationRepository->getStartDepreciation($request['depreciation_method'], $request['release_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
                 )
@@ -223,7 +213,7 @@ class FixedAssetRepository
             'remaining_book_value' => $request['remaining_book_value'] ?? 0,
             'start_depreciation' => isset($request['release_date']) && $majorCategory->est_useful_life != 0.0
 //                ? $this->calculationRepository->getStartDepreciation($request['voucher_date'])
-                ? $this->calculationRepository->getStartDepreciation($request['release_date'])
+                ? $this->calculationRepository->getStartDepreciation($request['depreciation_method'], $request['release_date'])
                 : null
         ];
     }
@@ -241,7 +231,7 @@ class FixedAssetRepository
             if ($depstatus->depreciation_status_name == 'Fully Depreciated' && isset($request['release_date'])) {
                 $end_depreciation = $this->calculationRepository->getEndDepreciation(
 //                    $this->calculationRepository->getStartDepreciation($request['voucher_date']),
-                    $this->calculationRepository->getStartDepreciation($request['release_date']),
+                    $this->calculationRepository->getStartDepreciation($request['depreciation_method'], $request['release_date']),
                     $majorCategory->est_useful_life,
                     $depreciationMethod == 'STL' ? $depreciationMethod : ucwords(strtolower($depreciationMethod))
                 );
@@ -1067,7 +1057,6 @@ class FixedAssetRepository
                 'unit:id,unit_name,unit_code',
                 'subunit:id,sub_unit_name,sub_unit_code',
                 'location:id,location_name,location_code',
-                'accountTitle:id,account_title_name,account_title_code'
             ])
             ->when($movement != null, function ($query) {
                 $query->where('from_request', '!=', 1)

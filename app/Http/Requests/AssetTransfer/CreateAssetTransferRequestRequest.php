@@ -32,6 +32,7 @@ class CreateAssetTransferRequestRequest extends FormRequest
     {
         return [
             'assets' => 'required|array',
+            'receiver_id' => 'required|exists:users,id',
             'assets.*.fixed_asset_id' => ['required', 'exists:fixed_assets,id', function ($attribute, $value, $fail) {
 
                 // Get all fixed_asset_id values
@@ -66,6 +67,8 @@ class CreateAssetTransferRequestRequest extends FormRequest
     function messages()
     {
         return [
+            'receiver_id.required' => 'Receiver is required',
+            'receiver_id.exists' => 'Receiver does not exist',
             'assetTransfer.*.fixed_asset_id.required' => 'Fixed Asset is required',
             'assetTransfer.*.fixed_asset_id.exists' => 'Fixed Asset does not exist',
             'assetTransfer.*.company_id.required' => 'Company is required',
