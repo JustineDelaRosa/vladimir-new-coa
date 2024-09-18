@@ -83,6 +83,14 @@ trait NotificationHandler
 
     private function getToReceive($user)
     {
+//        dd(AssetRequest::select('transaction_number')
+//            ->where('status', 'Approved')
+//            ->where('is_fa_approved', 1)
+//            ->groupBy('transaction_number')
+//            ->havingRaw('SUM(synced) >= 1')
+//            ->havingRaw('SUM(quantity) != SUM(quantity_delivered)')
+//            ->get()->toArray());
+
         return AssetRequest::select('transaction_number')
             ->where('status', 'Approved')
             ->where('is_fa_approved', 1)

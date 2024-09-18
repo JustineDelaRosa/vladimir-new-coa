@@ -453,6 +453,26 @@ class PrintBarCodeController extends Controller
                     'account_title_code' => $asset->accountTitle->account_title_code ?? '-',
                     'account_title_name' => $asset->accountTitle->account_title_name ?? '-',
                 ],
+                'initial_debit' => [
+                    'id' => $asset->accountTitle->initialDebit->id ?? '-',
+                    'account_title_code' => $asset->accountTitle->initialDebit->account_title_code ?? '-',
+                    'account_title_name' => $asset->accountTitle->initialDebit->account_title_name ?? '-',
+                ],
+                'initial_credit' => [
+                    'id' => $asset->accountTitle->initialCredit->id ?? '-',
+                    'account_title_code' => $asset->accountTitle->initialCredit->account_title_code ?? '-',
+                    'account_title_name' => $asset->accountTitle->initialCredit->account_title_name ?? '-',
+                ],
+                'depreciation_debit' => [
+                    'id' => $asset->accountTitle->depreciationDebit->id ?? '-',
+                    'account_title_code' => $asset->accountTitle->depreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $asset->accountTitle->depreciationDebit->account_title_name ?? '-',
+                ],
+                'depreciation_credit' => [
+                    'id' => $asset->accountTitle->depreciationCredit->id ?? '-',
+                    'account_title_code' => $asset->accountTitle->depreciationCredit->account_title_code ?? '-',
+                    'account_title_name' => $asset->accountTitle->depreciationCredit->account_title_name ?? '-',
+                ],
                 'remarks' => $asset->remarks,
                 'print_count' => $asset->print_count,
                 'last_printed' => $asset->last_printed,

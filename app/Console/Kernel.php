@@ -10,14 +10,18 @@ class Kernel extends ConsoleKernel
     /**
      * Define the application's command schedule.
      *
-     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
+     * @param \Illuminate\Console\Scheduling\Schedule $schedule
      * @return void
      */
     protected function schedule(Schedule $schedule)
     {
 //        $schedule->command('sanctum:prune-expired --hours=1')->daily()->appendOutputTo('storage/logs/sanctum.log');
 //        $schedule->command('sanctum:prune-expired', ['--minutes' => 1])->everyMinute()->appendOutputTo('storage/logs/sanctum.log');
-        $schedule->command('sanctum:prune-expired --hours=1')->hourly()->appendOutputTo('storage/logs/sanctum.log');
+//        $schedule->command('sanctum:prune-expired --hours=1')->hourly()->appendOutputTo('storage/logs/sanctum.log');
+        $schedule->command('depreciation:set-monthly')->dailyAt('00:00');
+        $schedule->command('telescope:clear')->everyThreeHours();
+//        $schedule->command('depreciation:set-monthly')->everyMinute();
+//        $schedule->command('optimize:clear')->daily()->appendOutputTo('storage/logs/optimize.log');
     }
 
     /**
@@ -27,7 +31,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }

@@ -49,7 +49,7 @@ trait RequestShowDataHandler
         return $this->response($ar);
     }
 
-    private function response($ar): array
+    private function response($ar)
     {
         $letterOfRequestMedia = $ar->getMedia('letter_of_request')->first(); //change from firsty() to all()
         $quotationMedia = $ar->getMedia('quotation')->first();
@@ -85,6 +85,10 @@ trait RequestShowDataHandler
         //check if in fixed asset if one of the fixed asset is released based on reference number
         $isReleased = FixedAsset::where('reference_number', $ar->reference_number)->where('is_released', 1)->count() > 0;
 
+        //check if all the item with the same transaction number is deleted
+        $isAllDeleted = AssetRequest::withTrashed()->where('transaction_number', $ar->transaction_number)->count() == AssetRequest::onlyTrashed()->where('transaction_number', $ar->transaction_number)->count();
+        $requestStatus = strpos($ar->status, 'For Approval') === 0 ? $ar->status : ($ar->is_fa_approved ? $ar->filter : ($isAllDeleted ? 'Cancelled' : $ar->status));
+
         try {
             $YmirPRNumber = YmirPRTransaction::where('pr_number', $ar->pr_number)->first()->pr_year_number_id ?? null;
         } catch (\Exception $e) {
@@ -106,7 +110,7 @@ trait RequestShowDataHandler
             'rr_received' => $ar instanceof AssetRequest ? $ar->getRRReceived() : '-',
             'id' => $ar->id,
             'total_remaining' => $totalRemaining,
-            'status' => strpos($ar->status, 'For Approval') === 0 ? 'For Approval' : ($ar->is_fa_approved ? 'Approved' : 'For Approval'),
+            'status' =>$requestStatus,
             'transaction_number' => $ar->transaction_number,
             'reference_number' => $ar->reference_number,
             'capex_number' => $ar->capex_number ?? '-',
@@ -200,6 +204,26 @@ trait RequestShowDataHandler
                 'id' => $ar->accountTitle->id ?? '-',
                 'account_title_code' => $ar->accountTitle->account_title_code ?? '-',
                 'account_title_name' => $ar->accountTitle->account_title_name ?? '-',
+            ],
+            'initial_debit' => [
+                'id' => $ar->minorCategory->accountingEntries->initialDebit->id ?? '-',
+                'account_title_code' => $ar->minorCategory->accountingEntries->initialDebit->account_title_code ?? '-',
+                'account_title_name' => $ar->minorCategory->accountingEntries->initialDebit->account_title_name ?? '-',
+            ],
+            'initial_credit' => [
+                'id' => $ar->minorCategory->accountingEntries->initialCredit->id ?? '-',
+                'account_title_code' => $ar->minorCategory->accountingEntries->initialCredit->account_title_code ?? '-',
+                'account_title_name' => $ar->minorCategory->accountingEntries->initialCredit->account_title_name ?? '-',
+            ],
+            'depreciation_debit' => [
+                'id' => $ar->minorCategory->accountingEntries->depreciationDebit->id ?? '-',
+                'account_title_code' => $ar->minorCategory->accountingEntries->depreciationDebit->account_title_code ?? '-',
+                'account_title_name' => $ar->minorCategory->accountingEntries->depreciationDebit->account_title_name ?? '-',
+            ],
+            'depreciation_credit' => [
+                'id' => $ar->minorCategory->accountingEntries->depreciationCredit->id ?? '-',
+                'account_title_code' => $ar->minorCategory->accountingEntries->depreciationCredit->account_title_code ?? '-',
+                'account_title_name' => $ar->minorCategory->accountingEntries->depreciationCredit->account_title_name ?? '-',
             ],
             'supplier' => [
                 'id' => $ar->supplier->id ?? '-',

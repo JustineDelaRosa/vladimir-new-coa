@@ -203,12 +203,7 @@ class MasterlistImport extends DefaultValueBinder implements
         if ($majorCategoryId == null || $minorCategoryId == null) {
             throw new Exception('Unable to create FixedAsset due to missing Major/Minor category ID.');
         }
-        $accountingEntry = AccountingEntries::create([
-            'initial_debit' => 279,
-            'initial_credit' => MinorCategory::where('id', $minorCategoryId)->first()->accountTitle->id,
-            'depreciation_debit' => 535,
-            'depreciation_credit' => 321,
-        ]);
+        $accountingEntry = MinorCategory::where('id', $minorCategoryId)->first()->accounting_entries_id;
 
         $formula->fixedAsset()->create([
             'capex_id' => Capex::where('capex', $collection['capex'])->first()->id ?? null,

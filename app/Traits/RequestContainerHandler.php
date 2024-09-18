@@ -29,7 +29,8 @@ trait RequestContainerHandler
 
     private function createRequestContainer($request, $isRequesterApprover, $isLastApprover, $requesterLayer, $requesterId)
     {
-        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountTitle->id ?? "null";
+        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountingEntries->initialCredit->id ?? "null";
+//        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountTitle->id ?? "null";
         return RequestContainer::create([
             'status' => $isLastApprover
                 ? 'Approved'
