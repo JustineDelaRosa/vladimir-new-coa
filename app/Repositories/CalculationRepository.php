@@ -24,7 +24,7 @@ class CalculationRepository
             return 0;
         }
         $est_useful_life = floor($est_useful_life) * 12 + (($est_useful_life - floor($est_useful_life)) * 12);
-        return round(($acquisition_cost - $scrap_value) / $est_useful_life, 2) ;
+        return round(($acquisition_cost - $scrap_value) / $est_useful_life, 2);
     }
 
     public function getYearlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life): float
@@ -38,13 +38,12 @@ class CalculationRepository
 
     public function getAccumulatedCost($monthly_depreciation, float $custom_age, $depreciable_basis)
     {
-
         $accumulated_cost = $monthly_depreciation * $custom_age;
         //if the accumulated cost is greater than the depreciable basis, return the depreciable basis
         if ($accumulated_cost > $depreciable_basis) {
             return $depreciable_basis;
         }
-        return round($accumulated_cost,2);
+        return round($accumulated_cost, 2);
     }
 
     public function getRemainingBookValue($acquisition_cost, float $accumulated_cost): float
@@ -70,14 +69,19 @@ class CalculationRepository
             $end_depreciation = $start_depreciation->addYears($years_added)->addMonths($months_added)->subMonth(1);
         }
 
-        return $end_depreciation->format('Y-m') ?? null;
+        return $end_depreciation->format('Y-m-d') ?? null;
     }
 
     //TODO: will change and used the voucher date
-    public function getStartDepreciation($release_date = null): ?string //$release_date
+    public function getStartDepreciation($method, $release_date = null): ?string //$release_date
     {
-        $release_date = Carbon::parse($release_date);
-        return $release_date->addMonth(1)->format('Y-m') ?? null;
+        if ($method == 'One Time') {
+            $release_date = Carbon::parse($release_date);
+            return $release_date->addMonth()->format('Y-m-d') ?? null;
+        } else {
+            $release_date = Carbon::parse($release_date);
+            return $release_date->addMonth(1)->format('Y-m-d') ?? null;
+        }
     }
 
     public function dateValidation($date, $start_depreciation, $end_depreciation): bool
