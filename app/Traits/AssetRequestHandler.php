@@ -101,7 +101,7 @@ trait AssetRequestHandler
 
     public function updateAssetRequest($assetRequest, $request, $save = true)
     {
-        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountTitle->id;
+        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountingEntries->id;
         // Make changes to the $assetRequest object but don't save them
         $assetRequest->fill([
             'type_of_request_id' => $request->type_of_request_id,
@@ -235,7 +235,7 @@ trait AssetRequestHandler
             'id' => $assetRequest->transaction_number,
             'transaction_number' => $assetRequest->transaction_number,
             'item_count' => $assetRequest->quantity + $deletedQuantity ?? 0,
-            'ymir_pr_number'=>$YmirPRNumber ?: '-',
+            'ymir_pr_number' => $YmirPRNumber ?: '-',
             'can_edit' => $assetRequest->is_fa_approved ? 0 : 1,
             'can_resubmit' => $assetRequest->is_fa_approved ? 0 : 1,
             'cancel_count' => $deletedQuantity ?? 0,
@@ -307,17 +307,9 @@ trait AssetRequestHandler
         return $assetRequest->assetApproval->filter(function ($approval) {
             return $approval->status == 'For Approval';
         })->map(function ($approval) {
-            return [
-                'id' => $approval->approver->user->id,
-                'username' => $approval->approver->user->username,
-                'employee_id' => $approval->approver->user->employee_id,
-                'firstname' => $approval->approver->user->firstname,
-                'lastname' => $approval->approver->user->lastname,
-                'department' => $approval->approver->user->department->department_name ?? '-',
-                'subunit' => $approval->approver->user->subUnit->sub_unit_name ?? '-',
-                'layer' => $approval->layer ?? '',
-            ];
-        })->values()->first() ?? $this->getAfterApprovedStep($assetRequest);
+            return $approval->approver->user->firstname .' '. $approval->approver->user->lastname;
+        })->values()->first() ?? '';
+//        $this->getAfterApprovedStep($assetRequest)
     }
 
     private function getRequestor($assetRequest)
@@ -358,47 +350,26 @@ trait AssetRequestHandler
         if ($approvers) {
             //check if null pr number
             if ($assetRequest->is_fa_approved == false) {
-                return [
-                    'firstname' => 'For Approval of FA',
-                    'lastname' => '',
-                ];
+                return 'For Approval of FA';
             }
             if ($assetRequest->is_fa_approved == true) {
-                return [
-                    'firstname' => 'Sent to ymir for PO',
-                    'lastname' => '',
-                ];
+                return 'Sent to ymir for PO';
             }
 
             if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Received") {
-                return [
-                    'firstname' => 'Asset Tagging',
-                    'lastname' => '',
-                ];
+                return 'Asset Tagging';
             }
             if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) {
-                return [
-                    'firstname' => 'Ready to Pickup',
-                    'lastname' => '',
-                ];
+                return 'Ready to Pickup';
             }
             if (($assetRequest->is_claimed == 1 && $assetRequest->filter == "Claimed") || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) {
-                return [
-                    'firstname' => 'Claimed',
-                    'lastname' => '',
-                ];
+                return 'Claimed';
             }
             if ($assetRequest->deleted_at != null) {
-                return [
-                    'firstname' => 'Deleted',
-                    'lastname' => '',
-                ];
+                return 'Deleted';
             }
         } else {
-            return [
-                'firstname' => $this->deletedItemCheck($assetRequest),
-                'lastname' => '',
-            ];
+            return $this->deletedItemCheck($assetRequest);
         }
         return 'Something went wrong';
     }
@@ -484,10 +455,10 @@ trait AssetRequestHandler
 //            dd($assetRequest->pr_number);
             if ($assetRequest->is_fa_approved == false) $lastLayer++;
             if ($assetRequest->is_fa_approved == true) $lastLayer += 2;
-            if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Received") $lastLayer ++;
-            if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) $lastLayer +=2;
+            if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Received") $lastLayer++;
+            if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) $lastLayer += 2;
             if (($assetRequest->is_claimed == 1 && $assetRequest->filter == "Claimed") ||
-                ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) $lastLayer +=3;
+                ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) $lastLayer += 3;
 
             if ($this->deletedItemCheck($assetRequest) != null) $lastLayer = -1;
 //            if($assetRequest->filter == "Returned From Ymir") $lastLayer = 1;
