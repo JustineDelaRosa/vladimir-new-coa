@@ -16,6 +16,7 @@ trait RequestShowDataHandler
 {
 
     use ApiResponse;
+
     private function responseData($data)
     {
         if ($data instanceof Collection) {
@@ -87,7 +88,7 @@ trait RequestShowDataHandler
 
         //check if all the item with the same transaction number is deleted
         $isAllDeleted = AssetRequest::withTrashed()->where('transaction_number', $ar->transaction_number)->count() == AssetRequest::onlyTrashed()->where('transaction_number', $ar->transaction_number)->count();
-        $requestStatus = strpos($ar->status, 'For Approval') === 0 ? $ar->status : ($ar->is_fa_approved ? $ar->filter : ($isAllDeleted ? 'Cancelled' : $ar->status));
+        $requestStatus = strpos($ar->status, 'For Approval') === 0 ? $ar->status : ($ar->is_fa_approved ? ($ar->filter == 'Sent to Ymir' ? 'Sent to ymir for PO' : $ar->filter) : ($isAllDeleted ? 'Cancelled' : $ar->status));
 
         try {
             $YmirPRNumber = YmirPRTransaction::where('pr_number', $ar->pr_number)->first()->pr_year_number_id ?? null;
@@ -104,18 +105,18 @@ trait RequestShowDataHandler
             'item_status' => $ar->item_status ?? '-',
             'fa_approval' => $ar->status == 'Approved' && !$ar->is_fa_approved ? 1 : 0,
             'asset_approval_id' => $ar->assetApproval->first(function ($approval) {
-                return $approval->status == 'For Approval';
-            })->id ?? '',
+                    return $approval->status == 'For Approval';
+                })->id ?? '',
             'inclusion' => $ar instanceof AssetRequest ? $ar->getInclusion() : '-',
             'rr_received' => $ar instanceof AssetRequest ? $ar->getRRReceived() : '-',
             'id' => $ar->id,
             'total_remaining' => $totalRemaining,
-            'status' =>$requestStatus,
+            'status' => $requestStatus,
             'transaction_number' => $ar->transaction_number,
             'reference_number' => $ar->reference_number,
             'capex_number' => $ar->capex_number ?? '-',
             'pr_number' => $ar->pr_number,
-            'ymir_pr_number'=>$YmirPRNumber ?: '-',
+            'ymir_pr_number' => $YmirPRNumber ?: '-',
             'po_number' => $ar->po_number,
             'rr_number' => $ar->rr_number ?? '-',
             'attachment_type' => $ar->attachment_type,
@@ -151,7 +152,7 @@ trait RequestShowDataHandler
             'fixed_asset' => $ar->fixedAsset ? $this->transformSingleFixedAssetShowData($ar->fixedAsset) : '-',
             'warehouse' => [
                 'id' => $ar->receivingWarehouse->id ?? '-',
-                'warehouse_name' => $ar->receivingWarehouse->warehouse_name?? '-',
+                'warehouse_name' => $ar->receivingWarehouse->warehouse_name ?? '-',
             ],
             'requestor' => [
                 'id' => $ar->requestor->id,
