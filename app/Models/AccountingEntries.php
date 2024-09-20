@@ -13,22 +13,22 @@ class AccountingEntries extends Model
 
     public function initialDebit()
     {
-        return $this->belongsTo(AccountTitle::class, 'initial_debit', 'id');
+        return $this->belongsTo(AccountTitle::class, 'initial_debit', 'sync_id');
     }
 
     public function initialCredit()
     {
-        return $this->belongsTo(AccountTitle::class, 'initial_credit', 'id');
+        return $this->belongsTo(AccountTitle::class, 'initial_credit', 'sync_id');
     }
 
     public function depreciationDebit()
     {
-        return $this->belongsTo(AccountTitle::class, 'depreciation_debit', 'id');
+        return $this->belongsTo(AccountTitle::class, 'depreciation_debit', 'sync_id');
     }
 
     public function depreciationCredit()
     {
-        return $this->belongsTo(AccountTitle::class, 'depreciation_credit', 'id');
+        return $this->belongsTo(AccountTitle::class, 'depreciation_credit', 'sync_id');
     }
 
 }
