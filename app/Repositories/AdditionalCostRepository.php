@@ -71,12 +71,8 @@ class AdditionalCostRepository
 
     private function prepareAdditionalCostDataForStore($request, $businessUnitQuery): array
     {
-        $accountingEntry = AccountingEntries::create([
-            'initial_debit' => 1,
-            'initial_credit' => MinorCategory::where('id', $request['minor_category_id'])->first()->accountTitle->id,
-            'depreciation_debit' => 2,
-            'depreciation_credit' => 3,
-        ]);
+        $accountingEntry = MinorCategory::where('id', $request['minor_category_id'])->first()->accounting_entries_id;
+
         return [
             'fixed_asset_id' => $request['fixed_asset_id'],
             'add_cost_sequence' => $this->getAddCostSequence($request['fixed_asset_id']) ?? '-',
@@ -109,7 +105,7 @@ class AdditionalCostRepository
             'unit_id' => $request['unit_id'],
             'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
-            'account_id' => $accountingEntry->id,
+            'account_id' => $accountingEntry,
             'uom_id' => $request['uom_id'] ?? null,
         ];
     }
@@ -131,14 +127,7 @@ class AdditionalCostRepository
 
     private function prepareAdditionalCostDataForUpdate($request, $businessUnitQuery, $id): array
     {
-        $accountTitleId = AdditionalCost::find($id)->account_id;
-        $accountingEntry = AccountingEntries::find($accountTitleId);
-        $accountingEntry->update([
-            'initial_debit' => 1,
-            'initial_credit' => MinorCategory::where('id', $request['minor_category_id'])->first()->accountTitle->id,
-            'depreciation_debit' => 4,
-            'depreciation_credit' => 6,
-        ]);
+        $accountingEntry = MinorCategory::where('id', $request['minor_category_id'])->first()->accounting_entries_id;
         return [
             'asset_description' => $request['asset_description'],
             'type_of_request_id' => $request['type_of_request_id'],
@@ -170,7 +159,7 @@ class AdditionalCostRepository
             'unit_id' => $request['unit_id'],
             'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
-            'account_id' => $accountingEntry->id,
+            'account_id' => $accountingEntry,
             'uom_id' => $request['uom_id'] ?? null,
         ];
     }

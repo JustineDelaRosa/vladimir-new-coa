@@ -158,12 +158,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             throw new Exception('Unable to create FixedAsset due to missing Major/Minor category ID.');
         }
 
-        $accountingEntry = AccountingEntries::create([
-            'initial_debit' => 279,
-            'initial_credit' => MinorCategory::where('id', $minorCategoryId)->first()->accountTitle->id,
-            'depreciation_debit' => 535,
-            'depreciation_credit' => 321,
-        ]);
+        $accountingEntry = MinorCategory::where('id', $minorCategoryId)->first()->accounting_entries_id;
 
         $fixedAssetId = FixedAsset::where('vladimir_tag_number', $collection['vladimir_tag_number'])->first()->id;
         $formula->additionalCost()->create([
