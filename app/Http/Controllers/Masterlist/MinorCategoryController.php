@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Masterlist;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MinorCategory\MinorCategoryRequest;
+use App\Models\AccountingEntries;
 use App\Models\FixedAsset;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
@@ -15,11 +16,7 @@ class MinorCategoryController extends Controller
 
     use ApiResponse;
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
+
     public function index(Request $request)
     {
         $majorCategoryStatus = $request->status ?? 'active';
@@ -34,11 +31,35 @@ class MinorCategoryController extends Controller
         $minorCategory->transform(function ($minorCategory) {
             return [
                 'id' => $minorCategory->id,
-                'account_title' => [
-                    'id' => $minorCategory->accountTitle->id ?? '-',
-                    'sync_id' => $minorCategory->accountTitle->sync_id ?? '-',
-                    'account_title_code' => $minorCategory->accountTitle->account_title_code ?? '-',
-                    'account_title_name' => $minorCategory->accountTitle->account_title_name ?? '-',
+//                'account_title' => [
+//                    'id' => $minorCategory->accountTitle->id ?? '-',
+//                    'sync_id' => $minorCategory->accountTitle->sync_id ?? '-',
+//                    'account_title_code' => $minorCategory->accountTitle->account_title_code ?? '-',
+//                    'account_title_name' => $minorCategory->accountTitle->account_title_name ?? '-',
+//                ],
+                'initial_debit' => [
+                    'id' => $minorCategory->accountingEntries->initialDebit->id ?? '-',
+                    'sync_id' => $minorCategory->accountingEntries->initialDebit->id ?? '-',
+                    'account_title_code' => $minorCategory->accountingEntries->initialDebit->account_title_code ?? '-',
+                    'account_title_name' => $minorCategory->accountingEntries->initialDebit->account_title_name ?? '-',
+                ],
+                'initial_credit' => [
+                    'id' => $minorCategory->accountingEntries->initialCredit->id ?? '-',
+                    'sync_id' => $minorCategory->accountingEntries->initialCredit->id ?? '-',
+                    'account_title_code' => $minorCategory->accountingEntries->initialCredit->account_title_code ?? '-',
+                    'account_title_name' => $minorCategory->accountingEntries->initialCredit->account_title_name ?? '-',
+                ],
+                'depreciation_debit' => [
+                    'id' => $minorCategory->accountingEntries->depreciationDebit->id ?? '-',
+                    'sync_id' => $minorCategory->accountingEntries->depreciationDebit->sync_id ?? '-',
+                    'account_title_code' => $minorCategory->accountingEntries->depreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $minorCategory->accountingEntries->depreciationDebit->account_title_name ?? '-',
+                ],
+                'depreciation_credit' => [
+                    'id' => $minorCategory->accountingEntries->depreciationCredit->id ?? '-',
+                    'sync_id' => $minorCategory->accountingEntries->depreciationCredit->sync_id ?? '-',
+                    'account_title_code' => $minorCategory->accountingEntries->depreciationCredit->account_title_code ?? '-',
+                    'account_title_name' => $minorCategory->accountingEntries->depreciationCredit->account_title_name ?? '-',
                 ],
                 'major_category' => [
                     'id' => $minorCategory->majorCategory->id,
@@ -55,16 +76,14 @@ class MinorCategoryController extends Controller
         return $minorCategory;
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function store(MinorCategoryRequest $request)
     {
         // $division_id = $request->division_id;
         $account_title_sync_id = $request->account_title_id;
+        $initial_debit_id = $request->initial_debit_id;
+        $initial_credit_id = $request->initial_credit_id;
+        $depreciation_debit_id = $request->depreciation_debit_id;
+        $depreciation_credit_id = $request->depreciation_credit_id;
         $major_cat_id = $request->major_category_id;
         $minor_cat_name = ucwords(strtolower($request->minor_category_name));
         // $minor_category_name_check = str_replace(' ', '', $minor_cat_name);
@@ -93,13 +112,20 @@ class MinorCategoryController extends Controller
             return $this->responseUnprocessableEntity('The minor category name has already been taken.');
         }
 
+        $accountingEntries = AccountingEntries::create([
+            'initial_debit' => $initial_debit_id,
+            'initial_credit' => $initial_credit_id,
+            'depreciation_debit' => $depreciation_debit_id,
+            'depreciation_credit' => $depreciation_credit_id
+        ]);
 
         MinorCategory::create([
-            'account_title_sync_id' => $account_title_sync_id,
+            'accounting_entries_id' => $accountingEntries->id,
             'major_category_id' => $major_cat_id,
             'minor_category_name' => $minor_cat_name,
             'is_active' => 1
         ]);
+
 
 //        return response()->json([
 //            'message' => 'Successfully Created',
@@ -131,11 +157,35 @@ class MinorCategoryController extends Controller
         return response()->json([
             'data' => [
                 'id' => $minorCategory->id,
-                'account_title' => [
-                    'id' => $minorCategory->accountTitle->id,
-                    'sync_id' => $minorCategory->accountTitle->sync_id,
-                    'account_title_code' => $minorCategory->accountTitle->account_title_code,
-                    'account_title_name' => $minorCategory->accountTitle->account_title_name,
+//                'account_title' => [
+//                    'id' => $minorCategory->accountTitle->id,
+//                    'sync_id' => $minorCategory->accountTitle->sync_id,
+//                    'account_title_code' => $minorCategory->accountTitle->account_title_code,
+//                    'account_title_name' => $minorCategory->accountTitle->account_title_name,
+//                ],
+                'initial_debit' => [
+                    'id' => $minorCategory->accountingEntries->initialDebit->id ?? '-',
+                    'sync_id' => $minorCategory->accountingEntries->initialDebit->id ?? '-',
+                    'account_title_code' => $minorCategory->accountingEntries->initialDebit->account_title_code ?? '-',
+                    'account_title_name' => $minorCategory->accountingEntries->initialDebit->account_title_name ?? '-',
+                ],
+                'initial_credit' => [
+                    'id' => $minorCategory->accountingEntries->initialCredit->id ?? '-',
+                    'sync_id' => $minorCategory->accountingEntries->initialCredit->id ?? '-',
+                    'account_title_code' => $minorCategory->accountingEntries->initialCredit->account_title_code ?? '-',
+                    'account_title_name' => $minorCategory->accountingEntries->initialCredit->account_title_name ?? '-',
+                ],
+                'depreciation_debit' => [
+                    'id' => $minorCategory->accountingEntries->depreciationDebit->id ?? '-',
+                    'sync_id' => $minorCategory->accountingEntries->depreciationDebit->sync_id ?? '-',
+                    'account_title_code' => $minorCategory->accountingEntries->depreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $minorCategory->accountingEntries->depreciationDebit->account_title_name ?? '-',
+                ],
+                'depreciation_credit' => [
+                    'id' => $minorCategory->accountingEntries->depreciationCredit->id ?? '-',
+                    'sync_id' => $minorCategory->accountingEntries->depreciationCredit->sync_id ?? '-',
+                    'account_title_code' => $minorCategory->accountingEntries->depreciationCredit->account_title_code ?? '-',
+                    'account_title_name' => $minorCategory->accountingEntries->depreciationCredit->account_title_name ?? '-',
                 ],
                 'major_category' => [
                     'id' => $minorCategory->majorCategory->id,
@@ -162,32 +212,49 @@ class MinorCategoryController extends Controller
      */
     public function update(MinorCategoryRequest $request, $id)
     {
+        $initial_debit_id = $request->initial_debit_id;
+        $initial_credit_id = $request->initial_credit_id;
+        $depreciation_debit_id = $request->depreciation_debit_id;
+        $depreciation_credit_id = $request->depreciation_credit_id;
         $minor_category_name = ucwords(strtolower($request->minor_category_name));
         $account_title_sync_id = $request->account_title_id;
-        // $minor_category_name_check = str_replace(' ', '', $minor_category_name);
+
+        $minorCategory = MinorCategory::find($id);
+        if (!$minorCategory) {
+            return $this->responseNotFound('Minor Category Route Not Found');
+        }
+
+        $accountingEntries = AccountingEntries::find($minorCategory->accounting_entries_id);
+        if (!$accountingEntries) {
+            return $this->responseNotFound('Accounting Entries Not Found');
+        }
+
+        $isMinorCategoryDirty = $minorCategory->minor_category_name != $minor_category_name ||
+            $minorCategory->account_title_sync_id != $account_title_sync_id;
+
+        $isAccountingEntriesDirty = (int)$accountingEntries->initial_debit !== $initial_debit_id ||
+            (int)$accountingEntries->initial_credit !== $initial_credit_id ||
+            (int)$accountingEntries->depreciation_debit !== $depreciation_debit_id ||
+            (int)$accountingEntries->depreciation_credit !== $depreciation_credit_id;
 
 
-        if (MinorCategory::where('id', $id)
-            ->where(['minor_category_name' => $minor_category_name, 'account_title_sync_id' => $account_title_sync_id])
-            ->exists()
-        ) {
-//            return response()->json(['message' => 'No Changes'], 200);
-
+        if (!$isMinorCategoryDirty && !$isAccountingEntriesDirty) {
             return $this->responseSuccess('No Changes');
         }
 
-        if (MinorCategory::where('id', $id)->exists()) {
-            $update = MinorCategory::where('id', $id)
-                ->update([
-                    'account_title_sync_id' => $account_title_sync_id,
-                    'minor_category_name' => $minor_category_name,
-                ]);
-//            return response()->json(['message' => 'Successfully Updated!'], 200);
-            return $this->responseSuccess('Successfully Updated!');
-        } else {
-//            return response()->json(['error' => 'Minor Category Route Not Found'], 404);
-            return $this->responseNotFound('Minor Category Route Not Found');
-        }
+        $accountingEntries->update([
+            'initial_debit' => $initial_debit_id,
+            'initial_credit' => $initial_credit_id,
+            'depreciation_debit' => $depreciation_debit_id,
+            'depreciation_credit' => $depreciation_credit_id
+        ]);
+
+        $minorCategory->update([
+            'account_title_sync_id' => $account_title_sync_id,
+            'minor_category_name' => $minor_category_name,
+        ]);
+
+        return $this->responseSuccess('Successfully Updated!');
     }
 
 
@@ -277,11 +344,35 @@ class MinorCategoryController extends Controller
         $MinorCategory->getCollection()->transform(function ($item) {
             return [
                 'id' => $item->id,
-                'account_title' => [
-                    'id' => $item->accountTitle->id,
-                    'sync_id' => $item->accountTitle->sync_id,
-                    'account_title_code' => $item->accountTitle->account_title_code,
-                    'account_title_name' => $item->accountTitle->account_title_name,
+//                'account_title' => [
+//                    'id' => $item->accountTitle->id,
+//                    'sync_id' => $item->accountTitle->sync_id,
+//                    'account_title_code' => $item->accountTitle->account_title_code,
+//                    'account_title_name' => $item->accountTitle->account_title_name,
+//                ],
+                'initial_debit' => [
+                    'id' => $minorCategory->accountingEntries->initialDebit->id ?? '-',
+                    'sync_id' => $minorCategory->accountingEntries->initialDebit->id ?? '-',
+                    'account_title_code' => $minorCategory->accountingEntries->initialDebit->account_title_code ?? '-',
+                    'account_title_name' => $minorCategory->accountingEntries->initialDebit->account_title_name ?? '-',
+                ],
+                'initial_credit' => [
+                    'id' => $minorCategory->accountingEntries->initialCredit->id ?? '-',
+                    'sync_id' => $minorCategory->accountingEntries->initialCredit->id ?? '-',
+                    'account_title_code' => $minorCategory->accountingEntries->initialCredit->account_title_code ?? '-',
+                    'account_title_name' => $minorCategory->accountingEntries->initialCredit->account_title_name ?? '-',
+                ],
+                'depreciation_debit' => [
+                    'id' => $minorCategory->accountingEntries->depreciationDebit->id ?? '-',
+                    'sync_id' => $minorCategory->accountingEntries->depreciationDebit->sync_id ?? '-',
+                    'account_title_code' => $minorCategory->accountingEntries->depreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $minorCategory->accountingEntries->depreciationDebit->account_title_name ?? '-',
+                ],
+                'depreciation_credit' => [
+                    'id' => $minorCategory->accountingEntries->depreciationCredit->id ?? '-',
+                    'sync_id' => $minorCategory->accountingEntries->depreciationCredit->sync_id ?? '-',
+                    'account_title_code' => $minorCategory->accountingEntries->depreciationCredit->account_title_code ?? '-',
+                    'account_title_name' => $minorCategory->accountingEntries->depreciationCredit->account_title_name ?? '-',
                 ],
                 'major_category' => [
                     'id' => $item->majorCategory->id,

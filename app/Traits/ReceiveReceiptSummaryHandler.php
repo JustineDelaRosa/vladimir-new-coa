@@ -40,6 +40,7 @@ trait ReceiveReceiptSummaryHandler
                 })->contains(0) ? 0 : 1,
                 'transaction_number' => $fixed_asset->first()->transaction_number,
                 'reference_number' => array_values($fixed_asset->pluck('reference_number')->unique()->all()),
+                'status' => $fixed_asset->first()->trashed() ? 'cancelled' : 'active',
                 'ymir_pr_number'=>$YmirPRNumber ?: '-',
                 'pr_number' => $fixed_asset->first()->pr_number,
                 'rr_number' => $fixed_asset->first()->receipt,

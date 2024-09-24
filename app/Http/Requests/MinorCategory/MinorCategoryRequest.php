@@ -35,20 +35,28 @@ class MinorCategoryRequest extends FormRequest
     {
         if ($this->isMethod('post')) {
             return [
-                'account_title_id'=>'required|exists:account_titles,sync_id,is_active,1',
-                'major_category_id' => ['required','exists:major_categories,id,deleted_at,NULL'],
+//                'account_title_id'=>'required|exists:account_titles,sync_id,is_active,1',
+                'major_category_id' => ['required', 'exists:major_categories,id,deleted_at,NULL'],
+                'initial_debit_id' => ['required', 'exists:account_titles,sync_id,is_active,1'],
+                'initial_credit_id' => ['required', 'exists:account_titles,sync_id,is_active,1'],
+                'depreciation_debit_id' => ['required', 'exists:account_titles,sync_id,is_active,1'],
+                'depreciation_credit_id' => ['required', 'exists:account_titles,sync_id,is_active,1'],
                 //if minor category name and major category id has duplicate
-                'minor_category_name' => ['required',new UniqueMajorMinorAccTitle()],
+                'minor_category_name' => ['required', new UniqueMajorMinorAccTitle()],
             ];
         }
 
-        if ($this->isMethod('put') &&  ($this->route()->parameter('minor_category'))) {
+        if ($this->isMethod('put') && ($this->route()->parameter('minor_category'))) {
             $id = $this->route()->parameter('minor_category');
             return [
 //                'major_category_id' => 'required|exists:major_categories,id,deleted_at,NULL',
-            //based on the id of the minor category, if the minor category name and major category id has duplicate
-                    'account_title_id'=>'required|exists:account_titles,sync_id,is_active,1',
-                    'minor_category_name' => ['required',new UniqueMajorMinorAccTitle($id)],
+                //based on the id of the minor category, if the minor category name and major category id has duplicate
+//                'account_title_id' => 'required|exists:account_titles,sync_id,is_active,1',
+                'initial_debit_id' => ['required', 'exists:account_titles,sync_id,is_active,1'],
+                'initial_credit_id' => ['required', 'exists:account_titles,sync_id,is_active,1'],
+                'depreciation_debit_id' => ['required', 'exists:account_titles,sync_id,is_active,1'],
+                'depreciation_credit_id' => ['required', 'exists:account_titles,sync_id,is_active,1'],
+                'minor_category_name' => ['required', new UniqueMajorMinorAccTitle($id)],
             ];
         }
 
@@ -69,8 +77,16 @@ class MinorCategoryRequest extends FormRequest
     function messages()
     {
         return [
-            'account_title_sync_id.required'=>'Account Title is required',
-            'account_title_sync_id.exists'=>'Account Title does not exist',
+//            'account_title_sync_id.required' => 'Account Title is required',
+//            'account_title_sync_id.exists' => 'Account Title does not exist',
+            'initial_debit_id.required' => 'Initial Debit is required',
+            'initial_debit_id.exists' => 'Initial Debit does not exist',
+            'initial_credit_id.required' => 'Initial Credit is required',
+            'initial_credit_id.exists' => 'Initial Credit does not exist',
+            'depreciation_debit_id.required' => 'Depreciation Debit is required',
+            'depreciation_debit_id.exists' => 'Depreciation Debit does not exist',
+            'depreciation_credit_id.required' => 'Depreciation Credit is required',
+            'depreciation_credit_id.exists' => 'Depreciation Credit does not exist',
             'major_category_id.required' => 'Major Category is required',
             'major_category_id.exists' => 'Major Category does not exist',
             'minor_category_name.required' => 'Minor Category Name is required',

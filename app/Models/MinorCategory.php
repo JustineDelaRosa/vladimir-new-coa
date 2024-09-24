@@ -11,10 +11,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class MinorCategory extends Model
 {
     use HasFactory, SoftDeletes, Filterable;
+
     protected $fillable = [
         'major_category_id',
         'minor_category_name',
-        'account_title_sync_id',
+        'accounting_entries_id',
         'is_active',
     ];
     protected $hidden = [
@@ -38,8 +39,16 @@ class MinorCategory extends Model
     {
         return $this->hasMany(FixedAsset::class, 'minor_category_id', 'id');
     }
-    public function accountTitle()
+
+    public function accountingEntries()
+    {
+        return $this->belongsTo(AccountingEntries::class, 'accounting_entries_id', 'id');
+    }
+
+
+    public function accountTitle(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(AccountTitle::class, 'account_title_sync_id', 'sync_id');
     }
+
 }

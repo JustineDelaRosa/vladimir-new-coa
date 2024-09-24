@@ -44,6 +44,11 @@ class FixedAssetExportRepository
             ->leftjoin('sub_capexes', 'fixed_assets.sub_capex_id', '=', 'sub_capexes.id')
             ->leftJoin('major_categories', 'fixed_assets.major_category_id', '=', 'major_categories.id')
             ->leftJoin('minor_categories', 'fixed_assets.minor_category_id', '=', 'minor_categories.id')
+            ->leftJoin('accounting_entries', 'fixed_assets.account_id', '=', 'accounting_entries.id')
+            ->leftJoin('account_titles as initial_debit', 'accounting_entries.initial_debit', '=', 'initial_debit.id')
+            ->leftJoin('account_titles as initial_credit', 'accounting_entries.initial_credit', '=', 'initial_credit.id')
+            ->leftJoin('account_titles as depreciation_debit', 'accounting_entries.depreciation_debit', '=', 'depreciation_debit.id')
+            ->leftJoin('account_titles as depreciation_credit', 'accounting_entries.depreciation_credit', '=', 'depreciation_credit.id')
             ->leftJoin('divisions', 'departments.division_id', '=', 'divisions.id')
             ->leftJoin('asset_statuses', 'fixed_assets.asset_status_id', '=', 'asset_statuses.id')
             ->leftJoin('cycle_count_statuses', 'fixed_assets.cycle_count_status_id', '=', 'cycle_count_statuses.id')
@@ -83,7 +88,11 @@ class FixedAssetExportRepository
                     ->orWhere('departments.department_name', 'LIKE', "%{$search}%")
                     ->orWhere('units.unit_name', 'LIKE', "%{$search}%")
                     ->orWhere('sub_units.sub_unit_name', 'LIKE', "%{$search}%")
-                    ->orWhere('account_titles.account_title_name', 'LIKE', "%{$search}%");
+                    ->orWhere('initial_debit.account_title_name', 'LIKE', "%{$search}%")
+                    ->orWhere('initial_credit.account_title_name', 'LIKE', "%{$search}%")
+                    ->orWhere('depreciation_debit.account_title_name', 'LIKE', "%{$search}%")
+                    ->orWhere('depreciation_credit.account_title_name', 'LIKE', "%{$search}%");
+//                    ->orWhere('account_titles.account_title_name', 'LIKE', "%{$search}%");
             });
         }
 
@@ -143,8 +152,18 @@ class FixedAssetExportRepository
             'sub_units.sub_unit_name as sub_unit_name',
             'locations.location_code as location_code',
             'locations.location_name as location_name',
-            'account_titles.account_title_code as account_title_code',
-            'account_titles.account_title_name as account_title_name',
+            'minor_categories.accounting_entries_id as accounting_entries_id',
+//            'account_titles.account_title_code as account_title_code',
+//            'account_titles.account_title_name as account_title_name',
+            'initial_debit.account_title_name as initial_debit_name',
+            'initial_debit.account_title_code as initial_debit_code',
+            'initial_credit.account_title_name as initial_credit_name',
+            'initial_credit.account_title_code as initial_credit_code',
+            'depreciation_debit.account_title_name as depreciation_debit_name',
+            'depreciation_debit.account_title_code as depreciation_debit_code',
+            'depreciation_credit.account_title_name as depreciation_credit_name',
+            'depreciation_credit.account_title_code as depreciation_credit_code',
+
             DB::raw('NULL as add_cost_sequence'),
             'formulas.depreciation_method',
             'formulas.scrap_value',
@@ -160,7 +179,6 @@ class FixedAssetExportRepository
             'formulas.start_depreciation',
 //                'fixed_assets.created_at'
         );
-
         return $fixedAsset;
     }
 
@@ -182,6 +200,11 @@ class FixedAssetExportRepository
             ->leftJoin('sub_capexes', 'fixed_assets.sub_capex_id', '=', 'sub_capexes.id')
             ->leftJoin('major_categories', 'fixed_assets.major_category_id', '=', 'major_categories.id')
             ->leftJoin('minor_categories', 'fixed_assets.minor_category_id', '=', 'minor_categories.id')
+            ->leftJoin('accounting_entries', 'fixed_assets.account_id', '=', 'accounting_entries.id')
+            ->leftJoin('account_titles as initial_debit', 'accounting_entries.initial_debit', '=', 'initial_debit.id')
+            ->leftJoin('account_titles as initial_credit', 'accounting_entries.initial_credit', '=', 'account_titles.id')
+            ->leftJoin('account_titles as depreciation_debit', 'accounting_entries.depreciation_debit', '=', 'account_titles.id')
+            ->leftJoin('account_titles as depreciation_credit', 'accounting_entries.depreciation_credit', '=', 'account_titles.id')
             ->leftJoin('divisions', 'departments.division_id', '=', 'divisions.id')
             ->leftJoin('asset_statuses', 'fixed_assets.asset_status_id', '=', 'asset_statuses.id')
             ->leftJoin('cycle_count_statuses', 'fixed_assets.cycle_count_status_id', '=', 'cycle_count_statuses.id')
@@ -221,7 +244,11 @@ class FixedAssetExportRepository
                     ->orWhere('departments.department_name', 'LIKE', "%{$search}%")
                     ->orWhere('units.unit_name', 'LIKE', "%{$search}%")
                     ->orWhere('sub_units.sub_unit_name', 'LIKE', "%{$search}%")
-                    ->orWhere('account_titles.account_title_name', 'LIKE', "%{$search}%");
+                    ->orWhere('initial_debit.account_title_name', 'LIKE', "%{$search}%")
+                    ->orWhere('initial_credit.account_title_name', 'LIKE', "%{$search}%")
+                    ->orWhere('depreciation_debit.account_title_name', 'LIKE', "%{$search}%")
+                    ->orWhere('depreciation_credit.account_title_name', 'LIKE', "%{$search}%");
+//                    ->orWhere('account_titles.account_title_name', 'LIKE', "%{$search}%");
             });
         }
 
@@ -281,8 +308,19 @@ class FixedAssetExportRepository
             'sub_units.sub_unit_name as sub_unit_name',
             'locations.location_code as location_code',
             'locations.location_name as location_name',
-            'account_titles.account_title_code as account_title_code',
-            'account_titles.account_title_name as account_title_name',
+            'minor_categories.accounting_entries_id as accounting_entries_id',
+
+//            'account_titles.account_title_code as account_title_code',
+//            'account_titles.account_title_name as account_title_name',
+            'initial_debit.account_title_name as initial_debit_name',
+            'initial_debit.account_title_code as initial_debit_code',
+            'initial_credit.account_title_name as initial_credit_name',
+            'initial_credit.account_title_code as initial_credit_code',
+            'depreciation_debit.account_title_name as depreciation_debit_name',
+            'depreciation_debit.account_title_code as depreciation_debit_code',
+            'depreciation_credit.account_title_name as depreciation_credit_name',
+            'depreciation_credit.account_title_code as depreciation_credit_code',
+
             'additional_costs.add_cost_sequence',
             'formulas.depreciation_method',
             'formulas.scrap_value',
@@ -298,8 +336,6 @@ class FixedAssetExportRepository
             'formulas.start_depreciation',
 //            'fixed_assets.created_at'
         );
-
         return $additionalCost;
     }
-
 }

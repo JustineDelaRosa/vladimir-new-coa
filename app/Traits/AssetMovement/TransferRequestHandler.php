@@ -59,7 +59,6 @@ trait TransferRequestHandler
         return [
             'transfer_number' => $transferRequest->transfer_number,
             'description' => $transferRequest->description,
-
             'quantity' => $transferRequest->quantity,
             'current_approver' => $this->getCurrentApprover($transferRequest),
             'process_count' => $this->getProcessCount($transferRequest),
