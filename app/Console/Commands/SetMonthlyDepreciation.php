@@ -50,12 +50,12 @@ class SetMonthlyDepreciation extends Command
             }
 
             if ($startDepreciationDate->equalTo($endDepreciationDate)) {
-                return $startDepreciationDate->isToday();
+                return $startDepreciationDate->isSameMonth(now());
             }
 
-            return $startDepreciationDate->lessThan(now()->addMonth())
-                && $startDepreciationDate->format('d') == now()->addMonth()->format('d')
-                && $endDepreciationDate->greaterThanOrEqualTo(now()->addMonth());
+
+            return $startDepreciationDate->lessThanOrEqualTo(now()->startOfMonth())
+                && $endDepreciationDate->greaterThanOrEqualTo(now()->startOfMonth());
 
         })->values();
 
@@ -74,7 +74,7 @@ class SetMonthlyDepreciation extends Command
 
             DepreciationHistory::create([
                 'fixed_asset_id' => $fixed_asset->id,
-                'depreciated_date' => now()->addMonth()->format('Y-m-d'),
+                'depreciated_date' => now()->addMonth()->format('Y-m'),
 //                now()->addMonth(15)->format('Y-m-d')
                 'depreciated_amount_per_month' => $isOneTime ? $fixed_asset->acquisition_cost : $monthlyDepreciation,
                 'accumulated_depreciation' => $isOneTime ? $fixed_asset->acquisition_cost : $accumulatedDepreciation,
