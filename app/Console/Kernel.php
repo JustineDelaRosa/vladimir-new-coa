@@ -18,7 +18,7 @@ class Kernel extends ConsoleKernel
 //        $schedule->command('sanctum:prune-expired --hours=1')->daily()->appendOutputTo('storage/logs/sanctum.log');
 //        $schedule->command('sanctum:prune-expired', ['--minutes' => 1])->everyMinute()->appendOutputTo('storage/logs/sanctum.log');
 //        $schedule->command('sanctum:prune-expired --hours=1')->hourly()->appendOutputTo('storage/logs/sanctum.log');
-        $schedule->command('depreciation:set-monthly')->dailyAt('00:00');
+        $schedule->command('depreciation:set-monthly')->monthly();
         $schedule->command('telescope:clear')->everyThreeHours();
 //        $schedule->command('depreciation:set-monthly')->everyMinute();
 //        $schedule->command('optimize:clear')->daily()->appendOutputTo('storage/logs/optimize.log');
