@@ -409,6 +409,7 @@ class FixedAssetRepository
                 'last_name' => $fixed_asset->requestor->last_name ?? '-',
                 'employee_id' => $fixed_asset->requestor->employee_id ?? '-',
             ],
+            'is_released' => $fixed_asset->is_released,
             'pr_number' => $fixed_asset->pr_number ?? '-',
             'po_number' => $fixed_asset->po_number ?? '-',
             'rr_number' => $fixed_asset->rr_number ?? '-',
@@ -481,9 +482,9 @@ class FixedAssetRepository
             'scrap_value' => $fixed_asset->formula->scrap_value ?? '-',
             'depreciable_basis' => $fixed_asset->formula->depreciable_basis ?? '-',
             'accumulated_cost' => $fixed_asset->formula->accumulated_cost ?? '-',
-            'asset_status' => [
+            'asset_status' =>[
                 'id' => $fixed_asset->assetStatus->id ?? '-',
-                'asset_status_name' => $fixed_asset->assetStatus->asset_status_name ?? '-',
+                'asset_status_name' =>$fixed_asset->is_released ? $fixed_asset->assetStatus->asset_status_name : 'For Releasing',
             ],
             'cycle_count_status' => [
                 'id' => $fixed_asset->cycleCountStatus->id ?? '-',
@@ -735,6 +736,7 @@ class FixedAssetRepository
 
     public function transformSearchFixedAsset($fixed_asset): array
     {
+
         $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? count($fixed_asset->additionalCost) : 0;
         return [
             //'totalCost' => $this->calculationRepository->getTotalCost($fixed_asset->acquisition_cost, $fixed_asset->additionalCost),
@@ -747,6 +749,7 @@ class FixedAssetRepository
                 'last_name' => $fixed_asset->requestor->last_name ?? '-',
                 'employee_id' => $fixed_asset->requestor->employee_id ?? '-',
             ],
+
             'pr_number' => $fixed_asset->pr_number ?? '-',
             'po_number' => $fixed_asset->po_number ?? '-',
             'rr_number' => $fixed_asset->rr_number ?? '-',
@@ -760,6 +763,7 @@ class FixedAssetRepository
             ],
             'from_request' => $fixed_asset->from_request ?? '-',
             'can_release' => $fixed_asset->can_release ?? '-',
+            'is_released' => $fixed_asset->is_released,
             'capex' => [
                 'id' => $fixed_asset->capex->id ?? '-',
                 'capex' => $fixed_asset->capex->capex ?? '-',
@@ -817,9 +821,9 @@ class FixedAssetRepository
             //                    'salvage_value' => $fixed_asset->salvage_value,
             'acquisition_date' => $fixed_asset->acquisition_date ?? '-',
             'acquisition_cost' => $fixed_asset->acquisition_cost ?? '-',
-            'asset_status' => [
+            'asset_status' =>[
                 'id' => $fixed_asset->assetStatus->id ?? '-',
-                'asset_status_name' => $fixed_asset->assetStatus->asset_status_name ?? '-',
+                'asset_status_name' =>$fixed_asset->is_released ? $fixed_asset->assetStatus->asset_status_name : 'For Releasing',
             ],
             'cycle_count_status' => [
                 'id' => $fixed_asset->cycleCountStatus->id ?? '-',
@@ -903,11 +907,18 @@ class FixedAssetRepository
         ];
     }
 
-    public function transformIndex($fixed_asset): Collection
+    public function transformIndex($fixed_asset, $ymir): Collection
     {
-        return collect($fixed_asset)->map(function ($asset) {
-            return $this->tranformForIndex($asset);
-        });
+
+        if ($ymir) {
+            return collect($fixed_asset)->map(function ($asset) {
+                return $this->ymirFixedAsset($asset);
+            });
+        } else {
+            return collect($fixed_asset)->map(function ($asset) {
+                return $this->tranformForIndex($asset);
+            });
+        }
     }
 
     public function tranformForIndex($fixed_asset)
@@ -1023,8 +1034,130 @@ class FixedAssetRepository
         ];
     }
 
+    public function ymirFixedAsset($fixed_asset)
+    {
+        return [
+            'id' => $fixed_asset->id,
+            'acquisition_date' => $fixed_asset->formula->acquisition_date ?? '-',
+            'receipt' => $fixed_asset->receipt ?? '-',
+            'uom' => [
+                'id' => $fixed_asset->uom->id ?? '-',
+                'sync_id' => $fixed_asset->uom->sync_id ?? '-',
+                'uom_code' => $fixed_asset->uom->uom_code ?? '-',
+                'uom_name' => $fixed_asset->uom->uom_name ?? '-',
+            ],
+            'supplier' => [
+                'id' => $fixed_asset->supplier->id ?? '-',
+                'sync_id' => $fixed_asset->supplier->sync_id ?? '-',
+                'supplier_code' => $fixed_asset->supplier->supplier_code ?? '-',
+                'supplier_name' => $fixed_asset->supplier->supplier_name ?? '-',
+            ],
+            'quantity' => $fixed_asset->quantity ?? '-',
+            'requestor' => [
+                'id' => $fixed_asset->requestor->id ?? '-',
+                'username' => $fixed_asset->requestor->username ?? '-',
+                'first_name' => $fixed_asset->requestor->first_name ?? '-',
+                'last_name' => $fixed_asset->requestor->last_name ?? '-',
+                'employee_id' => $fixed_asset->requestor->employee_id ?? '-',
+            ],
+            'warehouse_number' => [
+                'id' => $fixed_asset->warehouseNumber->id ?? '-',
+                'warehouse_number' => $fixed_asset->warehouseNumber->warehouse_number ?? '-',
+            ],
+            'warehouse' => [
+                'id' => $fixed_asset->warehouse->id ?? '-',
+                'warehouse_name' => $fixed_asset->warehouse->warehouse_name ?? '-',
+            ],
+            'capex_number' => $fixed_asset->capex_number ?? '-',
+            'vladimir_tag_number' => $fixed_asset->vladimir_tag_number,
+            'acquisition_cost' => $fixed_asset->acquisition_cost ?? '-',
+            'tag_number' => $fixed_asset->tag_number ?? '-',
+            'tag_number_old' => $fixed_asset->tag_number_old ?? '-',
+            'asset_description' => $fixed_asset->asset_description ?? '-',
+            'asset_specification' => $fixed_asset->asset_specification ?? '-',
+            'accountability' => $fixed_asset->accountability ?? '-',
+            'accountable' => $fixed_asset->accountable ?? '-',
+            'type_of_request' => [
+                'id' => $fixed_asset->typeOfRequest->id ?? '-',
+                'type_of_request_name' => $fixed_asset->typeOfRequest->type_of_request_name ?? '-',
+            ],
+            'company' => [
+                'id' => $fixed_asset->company->id ?? '-',
+                'sync_id' => $fixed_asset->company->sync_id ?? '-',
+                'company_code' => $fixed_asset->company->company_code ?? '-',
+                'company_name' => $fixed_asset->company->company_name ?? '-',
+            ],
+            'business_unit' => [
+                'id' => $fixed_asset->businessUnit->id ?? '-',
+                'sync_id' => $fixed_asset->businessUnit->sync_id ?? '-',
+                'business_unit_code' => $fixed_asset->businessUnit->business_unit_code ?? '-',
+                'business_unit_name' => $fixed_asset->businessUnit->business_unit_name ?? '-',
+            ],
+            'department' => [
+                'id' => $fixed_asset->department->id ?? '-',
+                'sync_id' => $fixed_asset->department->sync_id ?? '-',
+                'department_code' => $fixed_asset->department->department_code ?? '-',
+                'department_name' => $fixed_asset->department->department_name ?? '-',
+            ],
+            'unit' => [
+                'id' => $fixed_asset->unit->id ?? '-',
+                'sync_id' => $fixed_asset->unit->sync_id ?? '-',
+                'unit_code' => $fixed_asset->unit->unit_code ?? '-',
+                'unit_name' => $fixed_asset->unit->unit_name ?? '-',
+            ],
+            'subunit' => [
+                'id' => $fixed_asset->subunit->id ?? '-',
+                'sync_id' => $fixed_asset->subunit->sync_id ?? '-',
+                'subunit_code' => $fixed_asset->subunit->sub_unit_code ?? '-',
+                'subunit_name' => $fixed_asset->subunit->sub_unit_name ?? '-',
+            ],
+//            'charged_department' => [
+//                'id' => $fixed_asset->department->id ?? '-',
+//                'department_code' => $fixed_asset->department->department_code ?? '-',
+//                'department_name' => $fixed_asset->department->department_name ?? '-',
+//            ],
+            'location' => [
+                'id' => $fixed_asset->location->id ?? '-',
+                'sync_id' => $fixed_asset->location->sync_id ?? '-',
+                'location_code' => $fixed_asset->location->location_code ?? '-',
+                'location_name' => $fixed_asset->location->location_name ?? '-',
+            ],
+//            'account_title' => [
+//                'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+//                'sync_id'=> $fixed_asset->accountTitle->initialCredit->sync_id ?? '-',
+//                'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+//                'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+//            ],
+            'initial_debit' => [
+                'id' => $fixed_asset->accountTitle->initialDebit->id ?? '-',
+                'sync_id' => $fixed_asset->accountTitle->initialDebit->sync_id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialDebit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialDebit->account_title_name ?? '-',
+            ],
+            'initial_credit' => [
+                'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+                'sync_id' => $fixed_asset->accountTitle->initialCredit->sync_id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+            ],
+            'depreciation_debit' => [
+                'id' => $fixed_asset->accountTitle->depreciationDebit->id ?? '-',
+                'sync_id' => $fixed_asset->accountTitle->depreciationDebit->sync_id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationDebit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationDebit->account_title_name ?? '-',
+            ],
+            'depreciation_credit' => [
+                'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
+                'sync_id' => $fixed_asset->accountTitle->depreciationCredit->sync_id ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
+            ],
+            'created_at' => $fixed_asset->created_at,
+        ];
+    }
 
-    public function faIndex($movement = null): JsonResponse
+
+    public function faIndex($ymir, $movement = null): JsonResponse
     {
         $fixed_assets = FixedAsset::select([
             'id', 'vladimir_tag_number', 'tag_number', 'tag_number_old', 'asset_description', 'receipt', 'acquisition_cost',
@@ -1064,6 +1197,10 @@ class FixedAssetRepository
                         $query->where('from_request', 1)
                             ->where('is_released', 1);
                     });
+            })->when($ymir == true, function ($query) {
+                $query->where('from_request', 1)
+                    ->whereNotNull('depreciation_method')
+                    ->where('is_released', 1);
             })
 //            ->where(function ($query) {
 //                $query->where('from_request', '!=', 1)
@@ -1081,7 +1218,7 @@ class FixedAssetRepository
 
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
-            'data' => $this->transformIndex($fixed_assets)
+            'data' => $this->transformIndex($fixed_assets, $ymir)
         ], 200);
     }
 
@@ -1183,6 +1320,8 @@ class FixedAssetRepository
             'tag_number',
             'tag_number_old',
             'from_request',
+            'can_release',
+            'is_released',
             'asset_description',
             'type_of_request_id',
             'asset_specification',
@@ -1242,6 +1381,8 @@ class FixedAssetRepository
             'fixed_assets.tag_number AS tag_number',
             'fixed_assets.tag_number_old AS tag_number_old',
             'additional_costs.from_request',
+            'additional_costs.can_release',
+            'additional_costs.is_released',
             'additional_costs.asset_description',
             'additional_costs.type_of_request_id',
             'additional_costs.asset_specification',
