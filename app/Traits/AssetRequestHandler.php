@@ -279,7 +279,8 @@ trait AssetRequestHandler
                         'remarks' => $activityLog->properties['remarks'] ?? null,
                         'received_by' => $activityLog->properties['received_by'] ?? null,
                         'asset_description' => $activityLog->properties['description'] ?? null,
-                        'vladimir_tag_number' => $activityLog->properties['vladimir_tag'] ?? null,
+                        'vladimir_tag_number' => $activityLog->properties['vladimir_tag_number'] ?? null,
+                        'pr_number' => $activityLog->properties['pr_number'] ?? null,
                     ];
                 }),
 
