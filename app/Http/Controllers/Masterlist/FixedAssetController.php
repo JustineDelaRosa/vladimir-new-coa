@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Masterlist;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AccountingEntries\CreateAccountingEntriesRequest;
 use App\Http\Requests\FixedAsset\CreateSmallToolsRequest;
 use App\Http\Requests\FixedAsset\FixedAssetRequest;
 use App\Http\Requests\FixedAsset\FixedAssetUpdateRequest;
 use App\Http\Requests\FixedAsset\MemorPrintRequest;
 use App\Imports\MasterlistImport;
+use App\Models\AccountingEntries;
 use App\Models\AccountTitle;
 use App\Models\AdditionalCost;
 use App\Models\BusinessUnit;
@@ -51,11 +53,12 @@ class FixedAssetController extends Controller
 
     public function index(Request $request)
     {
-
         $movement = $request->get('movement');
+        $ymir = $request->get('ymir', false);
         $data = Cache::get('fixed_assets_data');
 
-        return $this->fixedAssetRepository->faIndex($movement);
+
+        return $this->fixedAssetRepository->faIndex($ymir, $movement);
 //        if ($data) {
 ////            return $this->fixedAssetRepository->faIndex();
 //            return Crypt::decrypt($data);
@@ -411,7 +414,7 @@ class FixedAssetController extends Controller
     function validateRequest(Request $request)
     {
         return Validator::make($request->all(), [
-            'date' => 'required|date_format:Y-m-d',
+            'date' => 'required|date_format:Y-m',
         ],
             [
                 'date.required' => 'Date is required.',
@@ -483,7 +486,7 @@ class FixedAssetController extends Controller
                 'depreciated' => $monthly_depreciation,
                 'depreciation_per_month' => $monthly_depreciation,
                 'depreciation_per_year' => 0,
-                'accumulated_cost' =>  $accumulated_cost ?? '-',
+                'accumulated_cost' => $accumulated_cost ?? '-',
                 'remaining_book_value' => $remaining_book_value ?? '-',
                 'scrap_value' => $scrap_value,
                 'acquisition_date' => $acquisition_date,
@@ -544,7 +547,7 @@ class FixedAssetController extends Controller
                 'depreciation_credit' => $fixedAsset->depreciation_method !== null ? [
                     'id' => $fixedAsset->accountTitle->depreciationCredit->id ?? '-',
                     'account_title_code' => $fixedAsset->accountTitle->depreciationCredit->account_title_code ?? '-',
-                    'account_title_name' => $fixedAsset->accountTitle->depreciationCredit->account_title_name ?? '-',
+                    'account_title_name' => $fixedAsset->accountTitle->depreciationCredit->accounst_title_name ?? '-',
                 ] : null,
             ]
         ];
@@ -675,11 +678,61 @@ class FixedAssetController extends Controller
         return $this->responseSuccess('Inclusion item removed successfully.');
     }
 
-    public function  setMonthlyDepreciation(Request $request)
+    public function setMonthlyDepreciation(Request $request)
     {
         //set monthly depreciation globally each month
         $runningDepreciationStatusId = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
         $fixed_assets = FixedAsset::with('formula')->where('depreciation_status_id', $runningDepreciationStatusId)->get();
 
+    }
+
+    public function accountingEntriesInput(CreateAccountingEntriesRequest $request, $vTagNumber)
+    {
+        $initialDebit = $request->input('initial_debit_id');
+        $initialCredit = $request->input('initial_credit_id');
+        $depreciationDebit = $request->input('depreciation_debit_id');
+        $depreciationCredit = $request->input('depreciation_credit_id');
+
+        $fixedAsset = FixedAsset::where('vladimir_tag_number', $vTagNumber)
+            ->where('is_released', true)
+            ->first();
+        if (!$fixedAsset) {
+            return $this->responseUnprocessable('Fixed Asset not yet released.');
+        }
+
+
+        $accountingEntries = AccountingEntries::create([
+            'initial_debit' => $initialDebit,
+            'initial_credit' => $initialCredit,
+            'depreciation_debit' => $depreciationDebit,
+            'depreciation_credit' => $depreciationCredit,
+        ]);
+
+        if ($accountingEntries) {
+            $fixedAsset = FixedAsset::where('vladimir_tag_number', $vTagNumber)->first();
+            $fixedAsset->update(['account_id' => $accountingEntries->id]);
+
+            // Call depreciateAsset method
+            $this->depreciateAsset($vTagNumber);
+        }
+        return $this->responseSuccess('Fixed Asset will now be depreciating.');
+    }
+
+    public function depreciateAsset($vTagNumber)
+    {
+        $fixedAsset = FixedAsset::where('vladimir_tag_number', $vTagNumber)->first();
+        $depreciationStatusId = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
+        $acquisitionCost = $fixedAsset->acquisition_cost;
+        $depreciationMethod = $acquisitionCost < 10000 ? 'One Time' : 'STL';
+        $fixedAsset->update([
+            'depreciation_method' => $depreciationMethod,
+            'depreciation_status_id' => $depreciationStatusId
+        ]);
+        $formula = $fixedAsset->formula;
+        $formula->update([
+            'start_depreciation' => $this->calculationRepository->getStartDepreciation($depreciationMethod, $formula->release_date),
+            'end_depreciation' => $this->calculationRepository->getEndDepreciation(now()->format('Y-m'), $fixedAsset->majorCategory->est_useful_life, $depreciationMethod),
+            'depreciation_method' => $depreciationMethod,
+        ]);
     }
 }
