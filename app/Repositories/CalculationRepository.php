@@ -69,7 +69,7 @@ class CalculationRepository
             $end_depreciation = $start_depreciation->addYears($years_added)->addMonths($months_added)->subMonth(1);
         }
 
-        return $end_depreciation->format('Y-m-d') ?? null;
+        return $end_depreciation->format('Y-m') ?? null;
     }
 
     //TODO: will change and used the voucher date
@@ -77,10 +77,10 @@ class CalculationRepository
     {
         if ($method == 'One Time') {
             $release_date = Carbon::parse($release_date);
-            return $release_date->addMonth()->format('Y-m-d') ?? null;
+            return $release_date->addMonth()->format('Y-m') ?? null;
         } else {
             $release_date = Carbon::parse($release_date);
-            return $release_date->addMonth(1)->format('Y-m-d') ?? null;
+            return $release_date->addMonth(1)->format('Y-m') ?? null;
         }
     }
 
