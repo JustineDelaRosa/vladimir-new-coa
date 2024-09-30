@@ -221,6 +221,11 @@ class FixedAsset extends Model implements HasMedia
         return $this->belongsTo(Warehouse::class, 'warehouse_id', 'id');
     }
 
+    public function depreciationHistory()
+    {
+        return $this->hasMany(DepreciationHistory::class, 'fixed_asset_id', 'id');
+    }
+
     public function getChargedDepartmentAttribute($value)
     {
         return $value ? Department::where('id', $value)->first()->department_name : '-';
