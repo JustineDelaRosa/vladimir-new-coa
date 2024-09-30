@@ -16,7 +16,7 @@ class CreateMinorCategoriesTable extends Migration
         Schema::create('minor_categories', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('major_category_id');
-            $table->unsignedInteger('account_title_sync_id');
+            $table->unsignedInteger('accounting_entries_id');
             $table->string('minor_category_name');
             $table->boolean('is_active');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
@@ -26,9 +26,9 @@ class CreateMinorCategoriesTable extends Migration
                 ->references('id')
                 ->on('major_categories')
                 ->onDelete('cascade');
-            $table->foreign('account_title_sync_id')
-                ->references('sync_id')
-                ->on('account_titles')
+            $table->foreign('accounting_entries_id')
+                ->references('id')
+                ->on('accounting_entries')
                 ->onDelete('cascade');
             $table->unique(['major_category_id', 'minor_category_name', 'account_title_sync_id'], 'major_minor_account_unique');
         });
