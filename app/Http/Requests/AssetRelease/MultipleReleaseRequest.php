@@ -35,23 +35,29 @@ class MultipleReleaseRequest extends FormRequest
             'warehouse_number_id' => ['bail', 'required', 'exists:warehouse_numbers,id', 'distinct', 'array', function ($attribute, $value, $fail) {
                 $departmentIds = [];
                 $locationIds = [];
+                $subunitIds = [];
 
                 foreach ($value as $warehouseId) {
                     $fixedAsset = FixedAsset::where('warehouse_number_id', $warehouseId)->first();
                     if ($fixedAsset) {
                         $departmentIds[] = $fixedAsset->department_id;
                         $locationIds[] = $fixedAsset->location_id;
+                        $subunitIds[] = $fixedAsset->subunit_id;
                     }
 
                     $additionalCost = AdditionalCost::where('warehouse_number_id', $warehouseId)->first();
                     if ($additionalCost) {
                         $departmentIds[] = $additionalCost->department_id;
                         $locationIds[] = $additionalCost->location_id;
+                        $subunitIds[] = $additionalCost->subunit_id;
                     }
                 }
 
                 if (count(array_unique($departmentIds)) > 1) {
                     $fail('The department of the selected items is not the same.');
+                }
+                if(count(array_unique($subunitIds)) > 1) {
+                    $fail('The subunit of the selected items is not the same.');
                 }
 
                 if (count(array_unique($locationIds)) > 1) {
