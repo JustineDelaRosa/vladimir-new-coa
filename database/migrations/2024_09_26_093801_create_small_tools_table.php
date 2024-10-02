@@ -15,9 +15,10 @@ class CreateSmallToolsTable extends Migration
     {
         Schema::create('small_tools', function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('sync_id');
+            $table->unsignedInteger('sync_id')->unique()->index();;
             $table->string('small_tool_code');
             $table->string('small_tool_name');
+            $table->unsignedInteger('uom_id');
             $table->boolean('is_active')->default(1);
             $table->timestamps();
         });
