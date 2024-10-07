@@ -155,6 +155,7 @@ class RequestContainerController extends Controller
             'capex_number' => $request->capex_number,
             'attachment_type' => $request->attachment_type,
             'company_id' => $request->company_id,
+            'small_tool_id' => $request->small_tool_id ?? null,
             'business_unit_id' => $request->business_unit_id,
             'department_id' => $request->department_id,
             'unit_id' => $request->unit_id,

@@ -42,6 +42,7 @@ trait RequestContainerHandler
             'is_addcost' => (bool)$request->fixed_asset_id,
             'fixed_asset_id' => $request->fixed_asset_id ?? null,
             'item_status' => $request->item_status,
+            'small_tool_id' => $request->small_tool_id ?? null,
             'type_of_request_id' => $request->type_of_request_id,
             'attachment_type' => $request->attachment_type,
             'account_title_id' => $accountTitleID ?? null,

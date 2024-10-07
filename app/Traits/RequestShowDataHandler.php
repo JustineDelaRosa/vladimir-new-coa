@@ -131,6 +131,11 @@ trait RequestShowDataHandler
             'cellphone_number' => $ar->cellphone_number ?? '-',
             'brand' => $ar->brand ?? '-',
             'date_needed' => $ar->date_needed ?? '-',
+            'small_tool' => [
+                'id' => $ar->smallTool->id ?? '-',
+                'small_tool_name' => $ar->smallTool->small_tool_name ?? '-',
+                'items' => $ar->smallTool->item ?? '-',
+            ],
             'major_category' => [
                 'id' => $ar->majorCategory->id ?? '-',
                 'major_category_name' => $ar->majorCategory->major_category_name ?? '-',

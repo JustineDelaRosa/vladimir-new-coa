@@ -38,6 +38,10 @@ class UpdateAssetRequestRequest extends FormRequest
                 'required',
                 Rule::exists('type_of_requests', 'id')
             ],
+            'small_tool_id' => [
+                'required_if:type_of_request_id,' . TypeOfRequest::where('type_of_request_name', 'Small Tools')->first()->id,
+                'exists:small_tools,id',
+            ],
             'capex_number' => 'nullable',
             'date_needed' => 'required|date',
             'is_addcost' => 'nullable|in:0,1',

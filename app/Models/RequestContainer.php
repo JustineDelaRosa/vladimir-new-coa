@@ -68,7 +68,7 @@ class RequestContainer extends Model implements HasMedia
     public function currentApprover()
     {
         //pass who is the current approver of this asset request from asset approval table with status For Approval
-        return $this->hasMany(AssetApproval::class , 'asset_request_id' , 'id')->where('status' , 'For Approval');
+        return $this->hasMany(AssetApproval::class, 'asset_request_id', 'id')->where('status', 'For Approval');
     }
 
 //    public function approver()
@@ -86,11 +86,14 @@ class RequestContainer extends Model implements HasMedia
         return $this->belongsTo(Unit::class, 'unit_id', 'id');
     }
 
-    public function subunit(){
-        return $this->belongsTo(Subunit::class , 'subunit_id' , 'id');
+    public function subunit()
+    {
+        return $this->belongsTo(Subunit::class, 'subunit_id', 'id');
     }
-    public function businessUnit(){
-        return $this->belongsTo(BusinessUnit::class , 'business_unit_id' , 'id');
+
+    public function businessUnit()
+    {
+        return $this->belongsTo(BusinessUnit::class, 'business_unit_id', 'id');
     }
 
     public function typeOfRequest()
@@ -153,41 +156,54 @@ class RequestContainer extends Model implements HasMedia
         return $this->belongsTo(Company::class, 'company_id', 'id');
     }
 
-    public function department(){
-        return $this->belongsTo(Department::class , 'department_id' , 'id');
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id', 'id');
     }
 
-    public function location(){
+    public function location()
+    {
         return $this->belongsTo(Location::class, 'location_id', 'id');
     }
-    public function accountTitle(){
+
+    public function accountTitle()
+    {
         return $this->belongsTo(AccountTitle::class, 'account_title_id', 'id');
     }
 
-    public function uom(){
+    public function uom()
+    {
         return $this->belongsTo(UnitOfMeasure::class, 'uom_id', 'id');
     }
 
+    public function smallTool()
+    {
+        return $this->belongsTo(SmallTools::class, 'small_tool_id', 'id');
+    }
+
     //move all the data of requestor from request container table then pass it to asset request table then delete the request container
-    public function moveAssetRequest($requestorId){
+    public function moveAssetRequest($requestorId)
+    {
         //move all item that has matching requestor id
-        $assetRequest = RequestContainer::where('requester_id' , $requestorId)->get();
+        $assetRequest = RequestContainer::where('requester_id', $requestorId)->get();
     }
 
 
 
     //pass all the column of request container table to the asset request table then delete the request container
     // based it on transaction number
-    public function moveToAssetRequest($transactionNumber){
+    public function moveToAssetRequest($transactionNumber)
+    {
 
     }
 
-    public function fixedAsset():BelongsTo
+    public function fixedAsset(): BelongsTo
     {
         return $this->belongsTo(FixedAsset::class, 'fixed_asset_id', 'id');
     }
 
-    public function receivingWarehouse(){
+    public function receivingWarehouse()
+    {
         return $this->belongsTo(Warehouse::class, 'receiving_warehouse_id', 'id');
     }
 }
