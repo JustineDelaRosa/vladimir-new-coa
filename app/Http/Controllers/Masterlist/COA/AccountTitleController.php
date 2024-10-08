@@ -19,8 +19,8 @@ class AccountTitleController extends Controller
      */
     public function index(Request $request)
     {
-        $userStatus = $request->status ?? 'activated';
-        $isActiveStatus = ($userStatus === 'deactivated') ? 0 : 1;
+        $accountTitleStatus = $request->status ?? 'activated';
+        $isActiveStatus = ($accountTitleStatus === 'deactivated') ? 0 : 1;
         $forRequest = $request->query('for_request',false);
 
         $accountTitle = AccountTitle::where('is_active', $isActiveStatus)
