@@ -146,7 +146,7 @@ class AddingPrController extends Controller
 
         $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
             ->where('status', 'Approved')
-            ->where('is_fa_approved', 0)
+            ->where('is_fa_approved', 1)
             ->useFilters()
             ->orderBy('created_at', 'desc')
             ->get()
@@ -161,7 +161,7 @@ class AddingPrController extends Controller
 
         $filteredAndGroupedAssetRequests = $assetRequests->fresh()
             ->where('status', 'Approved')
-            ->where('is_fa_approved', false)
+            ->where('is_fa_approved', true)
 //            ->whereNotNull('pr_number')
             ->whereNull('deleted_at')
 //            ->useFilters()
@@ -229,9 +229,9 @@ class AddingPrController extends Controller
 //                    'location_code' => $assetRequest->location->location_code,
                     'location_name' => $assetRequest->location->location_name,
 
-                    'account_title_id' => $assetRequest->accountTitle->sync_id,
+                    'account_title_id' => $assetRequest->minorCategory->accountingEntries->initialCredit->sync_id,
 //                    'account_title_code' => $assetRequest->accountTitle->account_title_code,
-                    'account_title_name' => $assetRequest->accountTitle->account_title_name,
+                    'account_title_name' => $assetRequest->minorCategory->accountingEntries->initialCredit->account_title_name,
                     'description' => $assetRequest->acquisition_details,
                     'created_at' => $assetRequest->created_at,
                     'date_needed' => $assetRequest->date_needed,
@@ -352,49 +352,54 @@ class AddingPrController extends Controller
     public function returnFromYmir(Request $request)
     {
         $transactionNumber = $request->input('transaction_number');
-        $remarks = $request->input('remarks');
+        $prNumber = $request->input('pr_number');
+        $reason = $request->input('reason');
 
-        if (!$this->validateAssetRequestAndApproval($transactionNumber)) {
+        if (!$this->validateAssetRequestAndApproval($transactionNumber, $prNumber)) {
             return $this->responseUnprocessable('Asset Request not found.');
         }
 
-        $this->updateAssetRequestAndApproval($transactionNumber, $remarks);
-        $this->logActivityForTransaction($transactionNumber);
+        $this->updateAssetRequestAndApproval($transactionNumber,$prNumber, $reason);
+        $this->logActivityForTransaction($transactionNumber, $prNumber, $reason);
 
         return $this->responseSuccess('Asset Request returned successfully');
     }
 
-    protected function validateAssetRequestAndApproval($transactionNumber): bool
+    protected function validateAssetRequestAndApproval($transactionNumber, $prNumber): bool
     {
-        $assetRequestsExists = AssetRequest::where('transaction_number', $transactionNumber)->exists();
+        $assetRequestsExists = AssetRequest::where('transaction_number', $transactionNumber)->where('pr_number', $prNumber)->exists();
         $assetApprovalExists = AssetApproval::where('transaction_number', $transactionNumber)->exists();
 
         return $assetRequestsExists && $assetApprovalExists;
     }
 
-    protected function updateAssetRequestAndApproval($transactionNumber, $remarks)
+    protected function updateAssetRequestAndApproval($transactionNumber,$prNumber, $reason)
     {
         AssetRequest::where('transaction_number', $transactionNumber)
+            ->where('pr_number', $prNumber)
             ->update([
                 'pr_number' => null,
                 'filter' => 'Returned From Ymir',
                 'status' => 'Returned From Ymir',
                 'is_fa_approved' => false,
-                'remarks' => $remarks ?? null
+                'remarks' => $reason ?? null
             ]);
 
         AssetApproval::where('transaction_number', $transactionNumber)
             ->update(['status' => 'Returned From Ymir']);
     }
 
-    protected function logActivityForTransaction($transactionNumber)
+    protected function logActivityForTransaction($transactionNumber, $prNumber, $reason = null)
     {
         $assetRequest = new AssetRequest(); // Consider if a new instance is needed or if an existing instance should be used.
         activity()
             ->performedOn($assetRequest)
+            ->withProperties(['transaction_number' => $transactionNumber, 'pr_number' => $prNumber, 'Remarks' => $reason])
+            ->inLog('PR Returned')
             ->tap(function ($activity) use ($transactionNumber) {
                 $activity->subject_id = $transactionNumber;
             })
+
             ->log('Returned from Ymir');
     }
 
@@ -405,7 +410,7 @@ class AddingPrController extends Controller
         $to = $request->input('to');
 
         $from = $from ? Carbon::parse($from)->startOfDay() : null;
-        $to = $to ?  Carbon::parse($to)->endOfDay() : null;
+        $to = $to ? Carbon::parse($to)->endOfDay() : null;
         $export = $request->input('export');
 
         $assetRequests = AssetRequest::where('status', 'Approved')
@@ -419,7 +424,7 @@ class AddingPrController extends Controller
         if ($export) {
             $assetRequests = $assetRequests->get()->transform(function ($assetRequest) {
                 try {
-                     $YmirPRNumber = YmirPRTransaction::where('pr_number', $assetRequest->pr_number)->first()->pr_year_number_id ?? null;
+                    $YmirPRNumber = YmirPRTransaction::where('pr_number', $assetRequest->pr_number)->first()->pr_year_number_id ?? null;
                 } catch (\Exception $e) {
                     $YmirPRNumber = $assetRequest->first()->pr_number;
                 }
