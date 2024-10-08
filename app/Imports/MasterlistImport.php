@@ -21,6 +21,7 @@ use App\Models\SubCapex;
 use App\Models\SubUnit;
 use App\Models\TypeOfRequest;
 use App\Models\Unit;
+use App\Models\UnitOfMeasure;
 use App\Repositories\CalculationRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
 use App\Rules\ImportValidation\ValidAccountCode;
@@ -226,6 +227,7 @@ class MasterlistImport extends DefaultValueBinder implements
             //check for unnecessary spaces and trim them to one space only
             'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
             'quantity' => $collection['quantity'],
+            'uom_id' => UnitOfMeasure::where('uom_name', $collection['unit_of_measure'])->first()->id ?? 6,
             'depreciation_method' => $collection['depreciation_method'] == 'STL' ? strtoupper($collection['depreciation_method']) : ucwords(strtolower($collection['depreciation_method'])),
             'acquisition_date' => $collection['acquisition_date'],
             'acquisition_cost' => $collection['acquisition_cost'],
@@ -401,7 +403,7 @@ class MasterlistImport extends DefaultValueBinder implements
                     $fail('Minor Category does not exist');
                 }
             }],
-
+            '*.unit_of_measure' => 'required|exists:unit_of_measures,uom_name',
             '*.voucher' => ['required', function ($attribute, $value, $fail) {
 //                if ($value == '-') {
 ////                    $fail('Voucher is required');
@@ -587,6 +589,7 @@ class MasterlistImport extends DefaultValueBinder implements
             '*.location_code.exists' => 'Location code does not exist',
             '*.account_code.required' => 'Account code is required',
             '*.account_code.exists' => 'Account code does not exist',
+            '*.unit_of_measure.required' => 'Unit of measure is required',
         ];
 
     }
