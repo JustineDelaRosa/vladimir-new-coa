@@ -72,7 +72,6 @@ class AssetRequestController extends Controller
             'For Tagging' => ['status' => 'Approved', 'filter' => 'Received'], //'filter' => 'Ready to Pickup'
             'For Pickup' => ['status' => 'Approved', 'filter' => 'Ready to Pickup'],
             'Released' => ['is_claimed' => 1],
-
         ];
 
         $assetRequest = AssetRequest::query();
@@ -311,7 +310,7 @@ class AssetRequestController extends Controller
         $assetRequests = $items->map(function ($item) use ($transactionNumber) {
             $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
             $assetRequest = new AssetRequest($item->only([
-                'status', 'is_addcost','item_status', 'fixed_asset_id', 'requester_id', 'type_of_request_id', 'attachment_type',
+                'status', 'is_addcost','item_status','small_tool_id', 'fixed_asset_id', 'requester_id', 'type_of_request_id', 'attachment_type',
                 'additional_info', 'acquisition_details', 'accountability', 'major_category_id', 'minor_category_id',
                 'uom_id', 'company_id', 'business_unit_id', 'department_id', 'unit_id', 'subunit_id', 'location_id',
                 'account_title_id', 'accountable', 'asset_description', 'asset_specification', 'cellphone_number', 'brand',

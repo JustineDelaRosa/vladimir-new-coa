@@ -82,29 +82,19 @@ class AssetRequest extends Model implements HasMedia
     /**
      * @throws Exception
      */
-    public function generatePRNumber()
+    public function generatePRNumber(): ?string
     {
-        $prNumber = null;
-        $attempts = 0;
-
-        while ($attempts < 3) {
-            DB::transaction(function () use (&$prNumber) {
-                $lastTransaction = YmirPRTransaction::orderBy('pr_number', 'desc')
-                    ->first();
-
-                //AssetRequest
-
-                $prNumber = $lastTransaction ? $lastTransaction->pr_number + 1 : 1;
+        for ($attempts = 0; $attempts < 3; $attempts++) {
+            $prNumber = DB::transaction(function () {
+                $lastTransaction = YmirPRTransaction::orderBy('pr_number', 'desc')->first();
+                return $lastTransaction ? $lastTransaction->pr_number + 1 : 1;
             });
 
-            // Check in the database if this $prNumber already exists
-            $checkPrNumber = AssetRequest::where('pr_number', $prNumber)->first();
-            if (!$checkPrNumber) {
+            if (!AssetRequest::where('pr_number', $prNumber)->exists()) {
                 return $prNumber;
             }
-
-            $attempts++;
         }
+
         return $this->responseNotFound('PR generation failed, please try again');
     }
 
@@ -266,6 +256,11 @@ class AssetRequest extends Model implements HasMedia
     public function receivingWarehouse()
     {
         return $this->belongsTo(Warehouse::class, 'receiving_warehouse_id', 'id');
+    }
+
+    public function smallTool()
+    {
+        return $this->belongsTo(SmallTools::class, 'small_tool_id', 'id');
     }
 
     public function getInclusion()

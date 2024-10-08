@@ -110,6 +110,7 @@ trait AssetRequestHandler
             'capex_number' => $request->capex_number,
             'accountability' => $request->accountability,
             'accountable' => $request->accountable ?? null,
+            'small_tool_id' => $request->small_tool_id ?? null,
             'asset_description' => $request->asset_description,
             'asset_specification' => $request->asset_specification ?? null,
             'cellphone_number' => $request->cellphone_number ?? null,
@@ -510,6 +511,11 @@ trait AssetRequestHandler
             'fixed_asset' => [
                 'id' => $ar->fixedAsset->id ?? '-',
                 'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
+            ],
+            'small_tool' => [
+                'id' => $assetRequest->smallTool->id ?? '-',
+                'small_tool_name' => $assetRequest->smallTool->small_tool_name ?? '-',
+                'items' => $assetRequest->smallTool->item ?? '-',
             ],
             'asset_specification' => $assetRequest->asset_specification ?? '-',
             'cellphone_number' => $assetRequest->cellphone_number ?? '-',
