@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Setup;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ApiTokenRequest\CreateApiTokenRequest;
 use App\Models\ApiToken;
+use App\Models\YmirPRTransaction;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -16,6 +17,9 @@ class ApiTokenController extends Controller
 
     public function index(Request $request)
     {
+
+//        return YmirPRTransaction::get();
+
         $status = $request->input('status', 'active');
         $isActiveStatus = ($status === 'deactivated') ? 0 : 1;
 
