@@ -7,6 +7,8 @@ use App\Models\AdditionalCost;
 use App\Models\AssetRequest;
 use App\Models\FixedAsset;
 use App\Models\Formula;
+use App\Models\MajorCategory;
+use App\Models\MinorCategory;
 use App\Models\Status\AssetStatus;
 use App\Models\Status\CycleCountStatus;
 use App\Models\Status\MovementStatus;
@@ -180,7 +182,7 @@ trait AddingPoHandler
         // Determine the filter status based on the counts
         $filterStatus = null;
         if ($fixedAssetCount == $totalQuantity) {
-            $filterStatus = 'Received';
+            $filterStatus = 'Asset Tagging';
         } elseif ($additionalCostCount == $totalQuantity) {
             $filterStatus = 'Ready to Pickup';
         }
@@ -232,15 +234,9 @@ trait AddingPoHandler
         $rrNumbers = $asset->rr_number;
         $rrNumbersArr = explode(',', $rrNumbers);
         $rrNumber = end($rrNumbersArr);
+        $accountingEntries = MinorCategory::where('id', $asset->minor_category_id)->first()->accounting_entries_id;
         if ($isAddCost == 1) {
 
-
-            $accountingEntries = AccountingEntries::create([
-                'initial_debit' => 279,
-                'initial_credit' => $asset->account_title_id,
-                'depreciation_debit' => 535,
-                'depreciation_credit' => 321,
-            ]);
             $formula = Formula::create([
                 'depreciation_method' => $asset->depreciation_method,
                 'acquisition_date' => $asset->acquisition_date,
@@ -273,6 +269,7 @@ trait AddingPoHandler
                 'transaction_number' => $asset->transaction_number,
                 'asset_description' => $asset->asset_description,
                 'type_of_request_id' => $asset->type_of_request_id,
+                'small_tool_id' => $asset->small_tool_id,
 //                'charged_department' => $asset->department_id,
                 'asset_specification' => $asset->asset_specification,
                 'major_category_id' => $asset->major_category_id,
@@ -295,7 +292,7 @@ trait AddingPoHandler
                 'unit_id' => $asset->unit_id,
                 'subunit_id' => $asset->subunit_id,
                 'location_id' => $asset->location_id,
-                'account_id' => $accountingEntries->id,
+                'account_id' => $accountingEntries,
                 'remarks' => $asset->remarks,
                 'movement_status_id' => MovementStatus::where('movement_status_name', 'New')->first()->id,
                 'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id,
@@ -303,12 +300,6 @@ trait AddingPoHandler
             ]);
 
         } else {
-            $accountingEntries = AccountingEntries::create([
-                'initial_debit' => 279,
-                'initial_credit' => $asset->account_title_id,
-                'depreciation_debit' => 535,
-                'depreciation_credit' => 321,
-            ]);
             $formula = Formula::create([
                 'depreciation_method' => $asset->depreciation_method,
                 'acquisition_date' => $asset->acquisition_date,
@@ -326,6 +317,7 @@ trait AddingPoHandler
             $fixedAsset = $formula->fixedAsset()->create([
                 'requester_id' => $asset->requester_id,
                 'reference_number' => $asset->reference_number,
+                'asset_condition' => $asset->item_status,
                 'uom_id' => $asset->uom_id,
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
@@ -340,6 +332,7 @@ trait AddingPoHandler
                 'transaction_number' => $asset->transaction_number,
                 'asset_description' => $asset->asset_description,
                 'type_of_request_id' => $asset->type_of_request_id,
+                'small_tool_id' => $asset->small_tool_id,
                 'charged_department' => $asset->department_id,
                 'asset_specification' => $asset->asset_specification,
                 'supplier_id' => $asset->supplier_id,
@@ -362,7 +355,7 @@ trait AddingPoHandler
                 'unit_id' => $asset->unit_id,
                 'subunit_id' => $asset->subunit_id,
                 'location_id' => $asset->location_id,
-                'account_id' => $accountingEntries->id,
+                'account_id' => $accountingEntries,
                 'remarks' => $asset->remarks,
                 'movement_status_id' => MovementStatus::where('movement_status_name', 'New')->first()->id,
                 'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id,

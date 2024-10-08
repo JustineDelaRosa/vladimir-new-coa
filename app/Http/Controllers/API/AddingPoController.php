@@ -136,6 +136,8 @@ class AddingPoController extends Controller
             return $this->responseUnprocessable('API URL or Bearer Token is not configured properly.');
         }
 
+//        return $this->receivingLog($data);
+
         $itemReceivedCount = 0;
         $cancelledCount = 0;
         $poData = [];
@@ -164,6 +166,8 @@ class AddingPoController extends Controller
                     $referenceNumber = $order['item_code'];
                     $remaining = $order['remaining'];
                     $inclusion = $order['remarks'];
+                    $itemName = $order['item_name'];
+                    $quantityDelivered = $order['quantity_delivered'];
 
                     if ($deletedAt != null) {
                         foreach ($assetRequest as $request) {
@@ -221,6 +225,8 @@ class AddingPoController extends Controller
                         ]);
                         $this->createNewAssetRequests($itemRequest, $rr['quantity_receive'], $inclusion);
                         $rrNumbers[] = $rr['rr_number'];
+
+                        $this->receivingLog($itemName, $rr['quantity_receive'], $transactionNumber);
                         $itemReceivedCount++;
                     }
                     $rrNumberArray = [];
@@ -228,6 +234,7 @@ class AddingPoController extends Controller
                 }
             }
         }
+
 
 //        $this->storePOs($poData);
         if (!empty($rrNumbers)) {
@@ -240,6 +247,20 @@ class AddingPoController extends Controller
             'cancelled' => $cancelledCount,
         ];
         return $this->responseSuccess('successfully sync received asset', $data);
+    }
+
+
+    public function receivingLog($itemName, $quantityDelivered, $transactionNumber)
+    {
+        $assetRequests = new AssetRequest();
+        activity()
+            ->performedOn($assetRequests)
+            ->inLog('Item Received')
+            ->withProperties(['asset_description' => $itemName, 'quantity_delivered' => $quantityDelivered])
+            ->tap(function ($activity) use ($transactionNumber) {
+                $activity->subject_id = $transactionNumber;
+            })
+            ->log('Item Received');
     }
 
     //TODO: Probably not necessary anymore
