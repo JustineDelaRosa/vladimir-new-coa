@@ -16,6 +16,7 @@ class CreateAssetRequestsTable extends Migration
         Schema::create('asset_requests', function (Blueprint $table) {
             //REQUEST FORM
             $table->increments('id');
+            $table->integer('ymir_id')->nullable();
             $table->unsignedInteger('requester_id')->nullable();
             $table->string('status')->default('For Approval of Approver 1');
             $table->boolean('synced')->default(0);
@@ -24,6 +25,7 @@ class CreateAssetRequestsTable extends Migration
             $table->string('reference_number')->nullable();
             $table->unsignedInteger('receiving_warehouse_id');
             $table->boolean('is_fa_approved')->default(0);
+            $table->string('is_pr_returned')->default(0);
             $table->integer('pr_number')->nullable();
             $table->string('po_number')->nullable();
             $table->string('rr_number')->nullable();
