@@ -129,7 +129,7 @@ class AssetReleaseController extends Controller
 
             //todo: will change to Running Depreciation
 //            $depreciation = DepreciationStatus::where('depreciation_status_name', 'For Depreciation')->first()->id;
-            $depreciation = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
+            $depreciation = DepreciationStatus::where('depreciation_status_name', 'For Depreciation')->first()->id;
             foreach ($warehouseIds as $warehouseId) {
 
                 $fixedAssetQuery = FixedAsset::where('warehouse_number_id', $warehouseId)

@@ -106,7 +106,8 @@ trait AssetReleaseHandler
                     ->orWhere(function ($query) {
                         $query->where('accountability', 'Personal Issued')
                             ->where('asset_condition', '!=', 'New');
-                    })->orWhere(function ($query) {
+                    })
+                    ->orWhere(function ($query) {
                         $query->where('accountability', 'Personal Issued')
                             ->where('asset_condition', 'New')
                             ->whereNotNull('memo_series_id');
@@ -1205,6 +1206,11 @@ trait AssetReleaseHandler
         // Get the file data
         $data = file_get_contents($filePath);
 
+        // id $data is empty return null
+//        if (empty($data)) {
+//            return null;
+//        }
+
         // Convert the file data to base64
         $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
 
@@ -1247,20 +1253,20 @@ trait AssetReleaseHandler
 //            $updateData['account_id'] = $accountTitleId;
 //        }
 
-        $acquisitionCost = $asset->acquisition_cost;
-        $depreciationMethod = $acquisitionCost < 10000 ? 'One Time' : 'Straight Line';
-        $updateData['depreciation_method'] = $depreciationMethod;
+//        $acquisitionCost = $asset->acquisition_cost;
+//        $depreciationMethod = $acquisitionCost < 10000 ? 'One Time' : 'STL';
+//        $updateData['depreciation_method'] = $depreciationMethod;
 
         (clone $assetQuery)->update($updateData);
-        $formula = $asset->formula;
+//        $formula = $asset->formula;
         //check the acquisition cost if below 10,000 One Time else Straight Line
 
-        $formula->update([
-            'release_date' => now()->format('Y-m-d'),
-            'start_depreciation' => $this->calculationRepository->getStartDepreciation($depreciationMethod, now()->format('Y-m-d')),
-            'end_depreciation' => $this->calculationRepository->getEndDepreciation(now()->format('Y-m-d'), $asset->majorCategory->est_useful_life, $depreciationMethod), //TODO: temporary est useful life
-            'depreciation_method' => $depreciationMethod,
-        ]);
+//        $formula->update([
+//            'release_date' => now()->format('Y-m-d'),
+//            'start_depreciation' => $this->calculationRepository->getStartDepreciation($depreciationMethod, now()->format('Y-m-d')),
+//            'end_depreciation' => $this->calculationRepository->getEndDepreciation(now()->format('Y-m-d'), $asset->majorCategory->est_useful_life, $depreciationMethod), //TODO: temporary est useful life
+//            'depreciation_method' => $depreciationMethod,
+//        ]);
         $asset->refresh();
         $this->assetReleaseActivityLog($asset);
         $this->assetReleaseActivityLog($asset, true);
