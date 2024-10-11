@@ -53,7 +53,7 @@ class CalculationRepository
         if ($remaining_book_value < 0) {
             return 0;
         }
-        return round($remaining_book_value);
+        return round($remaining_book_value,2);
     }
 
     public function getEndDepreciation($start_depreciation, $est_useful_life, $depreciation_method): ?string
