@@ -39,6 +39,7 @@ class SubunitValidation implements Rule
                 'asset-transfer-container.store' => 'transferApprovers',
                 'asset-transfer.update' => 'departmentUnitApprovers',
                 'request-container.store' => 'departmentUnitApprovers',
+                'update-container' => 'departmentUnitApprovers'
             ];
 
             foreach ($routesToApprovers as $route => $approverType) {
