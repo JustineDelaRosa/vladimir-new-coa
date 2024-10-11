@@ -50,10 +50,10 @@ class MemoSeriesFilters extends QueryFilters
         'fixedAssets.location' => [
             'location_code',
             'location_name',
-        ],
-        'fixedAssets.accountTitle' => [
-            'account_title_code',
-            'account_title_name',
-        ],
+        ]
+//        'fixedAssets.accountTitle' => [
+//            'account_title_code',
+//            'account_title_name',
+//        ],
     ];
 }
