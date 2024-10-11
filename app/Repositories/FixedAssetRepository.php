@@ -484,7 +484,7 @@ class FixedAssetRepository
             'accumulated_cost' => $fixed_asset->formula->accumulated_cost ?? '-',
             'asset_status' =>[
                 'id' => $fixed_asset->assetStatus->id ?? '-',
-                'asset_status_name' =>$fixed_asset->is_released ? $fixed_asset->assetStatus->asset_status_name : 'For Releasing',
+                'asset_status_name' => $fixed_asset->from_request ? ($fixed_asset->is_released ? $fixed_asset->assetStatus->asset_status_name : 'For Releasing') : $fixed_asset->assetStatus->asset_status_name ?? '-',
             ],
             'cycle_count_status' => [
                 'id' => $fixed_asset->cycleCountStatus->id ?? '-',
