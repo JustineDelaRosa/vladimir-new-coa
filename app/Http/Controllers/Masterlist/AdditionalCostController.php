@@ -12,6 +12,7 @@ use App\Models\AccountTitle;
 use App\Models\AdditionalCost;
 use App\Models\BusinessUnit;
 use App\Models\Department;
+use App\Models\ElixirAC;
 use App\Models\FixedAsset;
 use App\Models\Formula;
 use App\Models\MajorCategory;
@@ -205,7 +206,7 @@ class AdditionalCostController extends Controller
     function validateRequest(Request $request)
     {
         return Validator::make($request->all(), [
-            'date' => 'required|date_format:Y-m-d',
+            'date' => 'required|date_format:Y-m',
         ],
             [
                 'date.required' => 'Date is required.',
@@ -267,22 +268,22 @@ class AdditionalCostController extends Controller
             $monthly_depreciation = $this->calculationRepository->getMonthlyDepreciation($properties->acquisition_cost, $properties->scrap_value, $age) ?? 0;
         }
 
+        $isDepreciated = $additionalCost->depreciation_method !== null;
+
         return [
             'onetime' => [
-                'depreciation_method' => $depreciation_method ?? '-',
-                'depreciable_basis' => $properties->depreciable_basis ?? 0,
-                'start_depreciation' => $properties->start_depreciation ?? '-',
-                'end_depreciation' => $properties->end_depreciation ?? '-',
-                'depreciated' => $monthly_depreciation ?? 0,
-                'depreciation_per_month' => $monthly_depreciation ?? 0,
-                'depreciation_per_year' => 0,
-                'accumulated_cost' => 0,
-                'remaining_book_value' => 0,
-                'scrap_value' => $scrap_value,
-                'acquisition_date' => $acquisition_date,
-                'acquisition_cost' => $acquisition_cost,
+                'depreciation_method' => $isDepreciated ? $depreciation_method : '-',
+                'depreciable_basis' => $isDepreciated ? $properties->depreciable_basis : 0,
                 'est_useful_life' => 'One Time',
-                'months_depreciated' => $custom_age,
+                'months_depreciated' => $isDepreciated ? $custom_age : 0,
+                'scrap_value' => $scrap_value ?? '-',
+                'depreciated' => $monthly_depreciation,
+                'depreciation_per_month' => $isDepreciated ? $monthly_depreciation : 0,
+                'depreciation_per_year' => $isDepreciated ? $yearly_depreciation : 0,
+                'accumulated_cost' => $isDepreciated ? $accumulated_cost : 0,
+                'remaining_book_value' => $isDepreciated ? $remaining_book_value : 0,
+                'acquisition_date' => $acquisition_date ?? '-',
+                'acquisition_cost' => $acquisition_cost ?? '-',
                 'initial_debit' => [
                     'id' => $additionalCost->accountTitle->initialDebit->id ?? '-',
                     'account_title_code' => $additionalCost->accountTitle->initialDebit->account_title_code ?? '-',
@@ -305,19 +306,19 @@ class AdditionalCostController extends Controller
                 ],
             ],
             'default' => [
-                'depreciation_method' => $depreciation_method ?? '-',
-                'depreciable_basis' => $properties->depreciable_basis ?? 0,
-                'est_useful_life' => $est_useful_life ?? 0,
-                'months_depreciated' => $custom_age ?? 0,
-                'scrap_value' => $scrap_value,
-                'start_depreciation' => $properties->start_depreciation ?? '-',
-                'end_depreciation' => $properties->end_depreciation ?? '-',
-                'depreciation_per_month' => $monthly_depreciation ?? 0,
-                'depreciation_per_year' => $yearly_depreciation ?? 0,
-                'accumulated_cost' => $accumulated_cost ?? 0,
-                'remaining_book_value' => $remaining_book_value ?? 0,
-                'acquisition_date' => $acquisition_date,
-                'acquisition_cost' => $acquisition_cost,
+                'depreciation_method' => $isDepreciated ? $depreciation_method : '-',
+                'depreciable_basis' => $isDepreciated ? $properties->depreciable_basis : 0,
+                'est_useful_life' => $est_useful_life ?? '-',
+                'months_depreciated' => $isDepreciated ? $custom_age : 0,
+                'scrap_value' => $scrap_value ?? '-',
+                'start_depreciation' => $isDepreciated ? $properties->start_depreciation : '-',
+                'end_depreciation' => $isDepreciated ? $properties->end_depreciation : '-',
+                'depreciation_per_month' => $isDepreciated ? $monthly_depreciation : 0,
+                'depreciation_per_year' => $isDepreciated ? $yearly_depreciation : 0,
+                'accumulated_cost' => $isDepreciated ? $accumulated_cost : 0,
+                'remaining_book_value' => $isDepreciated ? $remaining_book_value : 0,
+                'acquisition_date' => $acquisition_date ?? '-',
+                'acquisition_cost' => $acquisition_cost ?? '-',
                 'initial_debit' => [
                     'id' => $additionalCost->accountTitle->initialDebit->id ?? '-',
                     'account_title_code' => $additionalCost->accountTitle->initialDebit->account_title_code ?? '-',
@@ -381,21 +382,21 @@ class AdditionalCostController extends Controller
         $path = storage_path('app/sample/additionalCost.xlsx');
         return response()->download($path);
     }
+    public function tagToAsset(Request $request){
+//        $addCostItems = $request->input('assetTag');
+//        'add_cost_sequence' => $this->getAddCostSequence($request['fixed_asset_id']) ?? '-',
 
-    public function syncData(AdditionalCostSyncRequest $request)
-    {
         DB::beginTransaction();
         try {
-            $test = [];
             $additionalCosts = $request->assetTag;
             foreach ($additionalCosts as $additionalCost) {
                 $fixedAssetId = FixedAsset::where('vladimir_tag_number', $additionalCost['assetTag'])->first()->id;
-                $businessUnitQuery = BusinessUnit::where('id', $additionalCost['business_unit_id'])->first();
-                $majorCategory = MajorCategory::whereRaw('LOWER(major_category_name) = ?', [strtolower($additionalCost['major_category_name'])])->first();
+                $businessUnitQuery = BusinessUnit::where('id', $additionalCost['businessUnitId'])->first();
+                $majorCategory = MajorCategory::whereRaw('LOWER(major_category_name) = ?', [strtolower($additionalCost['majorCategoryName'])])->first();
                 $majorCategoryId = $majorCategory->id;
-                $minorCategory = MinorCategory::whereRaw('LOWER(minor_category_name) = ?', [strtolower($additionalCost['minor_category_name'])])->first();
+                $minorCategory = MinorCategory::whereRaw('LOWER(minor_category_name) = ?', [strtolower($additionalCost['minorCategoryName'])])->first();
                 $minorCategoryId = $minorCategory->id;
-                $depreciationMethod = $additionalCost['unit_price'] < 10000 ? 'One Time' : 'STL';
+                $depreciationMethod = $additionalCost['unitPrice'] < 10000 ? 'One Time' : 'STL';
                 $depreciationStatusId = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
                 $typeOfRequestId = TypeOfRequest::where('type_of_request_name', 'Asset')->first()->id;
                 $assetStatus = AssetStatus::where('asset_status_name', 'Good')->first()->id;
@@ -419,19 +420,68 @@ class AdditionalCostController extends Controller
                 $additionalCost['depreciation_method'] = $depreciationMethod;
                 $additionalCost['depreciation_status_id'] = $depreciationStatusId;
                 $additionalCost['acquisition_date'] = date('Y-m-d', strtotime($additionalCost['acquisitionDate']));
-                $additionalCost['acquisition_cost'] = $additionalCost['unit_price'];
-                $additionalCost['depreciable_basis'] = $additionalCost['unit_price'];
+                $additionalCost['acquisition_cost'] = $additionalCost['unitPrice'];
+                $additionalCost['depreciable_basis'] = $additionalCost['unitPrice'];
                 $additionalCost['months_depreciated'] = $this->calculationRepository->getMonthDifference($additionalCost['acquisitionDate'], date('Y-m-d'));
 
+                $additionalCost['company_id'] = $additionalCost['companyId'];
+                $additionalCost['business_unit_id'] = $additionalCost['businessUnitId'];
+                $additionalCost['department_id'] = $additionalCost['departmentId'];
+                $additionalCost['unit_id'] = $additionalCost['unitId'];
+                $additionalCost['subunit_id'] = $additionalCost['subUnitId'];
+                $additionalCost['location_id'] = $additionalCost['locationId'];
+
                 $additionalCost = $this->additionalCostRepository->storeAdditionalCost($additionalCost, $businessUnitQuery);
-                $test[] = $additionalCost;
             }
             DB::commit();
-            return $test;
+            return $this->responseSuccess('Successfully Tagged to Asset!');
         } catch (\Exception $e) {
             DB::rollBack();
             return $e->getMessage();
         }
+    }
 
+    public function syncData(AdditionalCostSyncRequest $request)
+    {
+
+//        return $additionalCosts = $request->assetTag;
+        DB::beginTransaction();
+        try {
+            $test = [];
+            $additionalCosts = $request->assetTag;
+            foreach ($additionalCosts as $additionalCost) {
+                ElixirAC::create([
+                    'po_number' => $additionalCost['poNumber'],
+                    'pr_number' => $additionalCost['prNumber'],
+                    'mir_id' => $additionalCost['mirId'],
+                    'warehouse_id' => $additionalCost['wareHouseId'],
+                    'acquisition_date' => $additionalCost['acquisitionDate'],
+                    'customer_code' => $additionalCost['customerCode'],
+                    'customer_name' => $additionalCost['customerName'],
+                    'item_code' => $additionalCost['itemCode'],
+                    'item_description' => $additionalCost['itemDescription'],
+                    'uom' => $additionalCost['uom'],
+                    'served_quantity' => $additionalCost['servedQuantity'],
+                    'asset_tag' => $additionalCost['assetTag'],
+                    'approved_date' => $additionalCost['approveDate'],
+                    'released_date' => $additionalCost['releasedDate'],
+                    'unit_price' => $additionalCost['unitPrice'],
+                    'company_id' => $additionalCost['companyId'],
+                    'business_unit_id' => $additionalCost['businessUnitId'],
+                    'department_id' => $additionalCost['departmentId'],
+                    'unit_id' => $additionalCost['unitId'],
+                    'sub_unit_id' => $additionalCost['subUnitId'],
+                    'location_id' => $additionalCost['locationId'],
+                    'major_category_name' => $additionalCost['majorCategoryName'],
+                    'minor_category_name' => $additionalCost['minorCategoryName'],
+
+                ]);
+            }
+            DB::commit();
+            return $this->responseSuccess('Successfully Synced!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->responseUnprocessable($e->getMessage());
+        }
     }
 }
