@@ -56,6 +56,7 @@ class MemoSeriesController extends Controller
     }
 
     public function memoReprint(){
+
         $reprintMemo = MemoSeries::with('fixedAssets')->useFilters()->dynamicPaginate();
         $reprintMemo->transform(function ($memo) {
             return [
