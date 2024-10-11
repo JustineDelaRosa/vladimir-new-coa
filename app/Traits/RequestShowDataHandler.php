@@ -97,7 +97,8 @@ trait RequestShowDataHandler
         }
         return [
             'is_removed' => $ar->trashed() ? 1 : 0,
-            //check if the requester_id is equal to deleter_id then the requester deleted it else get the role name of the deleter
+            'is_pr_returned' => $ar->is_pr_returned ?? 0,
+            //check if the requester_id is equal to delete_id then the requester deleted it else get the role name of the deleter
             'removed_by' => $ar->deleter_id == $ar->requester_id ? "Requestor" : ($ar->deleter ? $ar->deleter->role->role_name : null),
             'can_edit' => $ar->is_fa_approved ? 0 : 1,
             'can_add' => $isReleased ? 0 : 1,

@@ -64,7 +64,7 @@ trait AssetRequestHandler
     public function getAssetRequest($field, $value, $singleResult = true)
     {
         $query = AssetRequest::where($field, $value)
-            ->whereIn('status', ['For Approval of Approver 1', 'Returned']);
+            ->whereIn('status', ['For Approval of Approver 1', 'Returned', 'Returned From Ymir']);
 
         return $singleResult ? $query->first() : $query->get();
     }
@@ -708,6 +708,7 @@ trait AssetRequestHandler
 //            $ar->activityLog()->delete();
             $ar->update([
                 'deleter_id' => auth('sanctum')->user()->id,
+                'status' => 'Cancelled',
                 'filter' => null,
             ]);
             $ar->delete();

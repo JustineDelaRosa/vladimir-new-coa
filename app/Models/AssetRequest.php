@@ -145,7 +145,7 @@ class AssetRequest extends Model implements HasMedia
 
     public function subunit(): BelongsTo
     {
-        return $this->belongsTo(Subunit::class, 'subunit_id', 'id');
+        return $this->belongsTo(SubUnit::class, 'subunit_id', 'id');
     }
 
     public function typeOfRequest(): BelongsTo
