@@ -10,6 +10,7 @@ use App\Rules\NewCoaValidation\DepartmentValidation;
 use App\Rules\NewCoaValidation\LocationValidation;
 use App\Rules\NewCoaValidation\SubunitValidation;
 use App\Rules\NewCoaValidation\UnitValidation;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -39,8 +40,20 @@ class UpdateAssetRequestRequest extends FormRequest
                 Rule::exists('type_of_requests', 'id')
             ],
             'small_tool_id' => [
-                'required_if:type_of_request_id,' . TypeOfRequest::where('type_of_request_name', 'Small Tools')->first()->id,
-                'exists:small_tools,id',
+                function ($attribute, $value, $fail) {
+                    $typeOfRequestId = request()->input('type_of_request_id');
+                    $smallToolsId = TypeOfRequest::where('type_of_request_name', 'Small Tools')->first()->id;
+
+                    if ($typeOfRequestId == $smallToolsId) {
+                        if (empty($value)) {
+                            $fail('The small tool is required.');
+                        } elseif (!DB::table('small_tools')->where('id', $value)->exists()) {
+                            $fail('The small tool is invalid.');
+                        }
+                    } else {
+                        request()->merge(['small_tool_id' => null]);
+                    }
+                },
             ],
             'capex_number' => 'nullable',
             'date_needed' => 'required|date',

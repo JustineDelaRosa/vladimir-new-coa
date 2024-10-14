@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\RequestContainer;
 
+use App\Models\TypeOfRequest;
 use App\Rules\FileOrX;
 use App\Rules\NewCoaValidation\BusinessUnitValidation;
 use App\Rules\NewCoaValidation\DepartmentValidation;
@@ -9,6 +10,7 @@ use App\Rules\NewCoaValidation\LocationValidation;
 use App\Rules\NewCoaValidation\SubunitValidation;
 use App\Rules\NewCoaValidation\UnitValidation;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class UpdateRequestContainerRequest extends FormRequest
@@ -63,6 +65,22 @@ class UpdateRequestContainerRequest extends FormRequest
                     if (request()->accountability != 'Personal Issued') {
                         request()->merge(['accountable' => null]);
                         return;
+                    }
+                },
+            ],
+            'small_tool_id' => [
+                function ($attribute, $value, $fail) {
+                    $typeOfRequestId = request()->input('type_of_request_id');
+                    $smallToolsId = TypeOfRequest::where('type_of_request_name', 'Small Tools')->first()->id;
+
+                    if ($typeOfRequestId == $smallToolsId) {
+                        if (empty($value)) {
+                            $fail('The small tool is required.');
+                        } elseif (!DB::table('small_tools')->where('id', $value)->exists()) {
+                            $fail('The small tool is invalid.');
+                        }
+                    } else {
+                        request()->merge(['small_tool_id' => null]);
                     }
                 },
             ],
