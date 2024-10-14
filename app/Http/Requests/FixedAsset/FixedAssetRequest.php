@@ -270,7 +270,7 @@ class FixedAssetRequest extends FormRequest
                 'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
                 'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
                 'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
-                'account_title_id' => 'required|exists:account_titles,id',
+//                'account_title_id' => 'required|exists:account_titles,id',
                 'uom_id' => 'nullable|exists:unit_of_measures,id',
             ];
         }
