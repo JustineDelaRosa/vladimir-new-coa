@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Setup;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ApiTokenRequest\CreateApiTokenRequest;
+use App\Http\Requests\ApiTokenRequest\UpdateApiTokenRequest;
 use App\Models\ApiToken;
 use App\Models\YmirPRTransaction;
 use Essa\APIToolKit\Api\ApiResponse;
@@ -23,7 +24,7 @@ class ApiTokenController extends Controller
         $status = $request->input('status', 'active');
         $isActiveStatus = ($status === 'deactivated') ? 0 : 1;
 
-        $apiTokens = ApiToken::where('is_active', $isActiveStatus)
+        $apiTokens = ApiToken::withTrashed()->where('is_active', $isActiveStatus)
             ->orderBy('created_at', 'DESC')
             ->useFilters()
             ->dynamicPaginate();
@@ -36,11 +37,13 @@ class ApiTokenController extends Controller
     {
         $token = $request->input('token');
         $p_name = $request->input('p_name');
+        $endpoint = $request->input('endpoint');
 
         $hashedToken = Crypt::encryptString($token);
         $code = Str::uuid();
         ApiToken::create([
             'token' => $hashedToken,
+            'endpoint' => $endpoint,
             'code' => $code,
             'p_name' => ucwords(strtolower($p_name))
         ]);
@@ -54,21 +57,23 @@ class ApiTokenController extends Controller
         $apiToken = ApiToken::where('p_name', $projectName)->first();
         if ($apiToken) {
             $token = Crypt::decryptString($apiToken->token);
-            return $this->responseSuccess('Api Token', ['token' => $token]);
+            return $this->responseSuccess('Api Token', ['token' => $token, 'endpoint' => $apiToken->endpoint]);
         }
         return $this->responseNotFound('Api Token not found');
     }
 
 
-    public function update(Request $request, $id)
+    public function update(UpdateApiTokenRequest $request, $id)
     {
-        $request = $request->input('token');
+        $token = $request->input('token');
+        $endpoint = $request->input('endpoint');
 
         $apiToken = ApiToken::find($id);
         if ($apiToken) {
-            $hashedToken = Crypt::encryptString($request);
+            $hashedToken = Crypt::encryptString($token);
             $apiToken->update([
-                'token' => $hashedToken
+                'token' => $hashedToken,
+                'endpoint' => $endpoint
             ]);
             return $this->responseSuccess('Api Token Updated', $apiToken);
         }

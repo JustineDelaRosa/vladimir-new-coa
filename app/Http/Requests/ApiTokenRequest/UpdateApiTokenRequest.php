@@ -13,7 +13,7 @@ class UpdateApiTokenRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,7 +24,17 @@ class UpdateApiTokenRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            'token' => 'required|string',
+            'endpoint' => 'required|string',
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'token.required' => 'Token is required',
+            'endpoint.required' => 'Endpoint is required',
+            'endpoint.string' => 'Provide a valid endpoint',
         ];
     }
 }
