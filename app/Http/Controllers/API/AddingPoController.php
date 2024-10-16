@@ -143,11 +143,12 @@ class AddingPoController extends Controller
         $poData = [];
         $rrNumbers = [];
         foreach ($data as $asset) {
-
+            $causer = $asset['causer'] ?? null;
             $transactionNumber = $asset['transaction_no'];
             $poNo = $asset['po_number'];
             $prNo = $asset['pr_number'];
             $deletedAt = $asset['cancelled_at'];
+
 
             $assetRequest = AssetRequest::where('filter', 'Sent to Ymir')
                 ->where('transaction_number', $transactionNumber)
@@ -163,7 +164,8 @@ class AddingPoController extends Controller
                 foreach ($asset['order'] as $order) {
                     $supplier = $order['supplier'];
                     $unitPrice = $order['unit_price'];
-                    $referenceNumber = $order['item_code'];
+                    $itemCode = $order['item_code'];
+                    $referenceNumber = $order['reference_no'];
                     $remaining = $order['remaining'];
                     $inclusion = $order['remarks'];
                     $itemName = $order['item_name'];
@@ -226,7 +228,7 @@ class AddingPoController extends Controller
                         $this->createNewAssetRequests($itemRequest, $rr['quantity_receive'], $inclusion);
                         $rrNumbers[] = $rr['rr_number'];
 
-                        $this->receivingLog($itemName, $rr['quantity_receive'], $transactionNumber);
+                        $this->receivingLog($itemName, $rr['quantity_receive'], $transactionNumber, $causer);
                         $itemReceivedCount++;
                     }
                     $rrNumberArray = [];
@@ -249,18 +251,55 @@ class AddingPoController extends Controller
         return $this->responseSuccess('successfully sync received asset', $data);
     }
 
+    public function cancelRemaining(Request $request)
+    {
+//        $userLocationId = auth('sanctum')->user()->location_id;
+        $causer = $request->causer;
+        $reason = $request->reason;
+        $transactionNumber = $request->transaction_no;
 
-    public function receivingLog($itemName, $quantityDelivered, $transactionNumber)
+        $assetRequest = AssetRequest::where('filter', 'Sent to Ymir')
+            ->where('transaction_number', $transactionNumber)->get();
+//            ->whereHas('receivingWarehouse', function ($query) use ($userLocationId) {
+//                $query->where('location_id', $userLocationId);
+//            })
+
+        foreach ($assetRequest as $request) {
+            $remaining = $request->quantity - $request->quantity_delivered;
+            $replicatedAssetRequest = $request->replicate();
+            $replicatedAssetRequest->quantity = $remaining;
+            $replicatedAssetRequest->quantity_delivered = 0;
+            $replicatedAssetRequest->filter = NULL;
+            $replicatedAssetRequest->remarks = $reason;
+            $replicatedAssetRequest->save();
+            $replicatedAssetRequest->delete();
+
+            $request->quantity -= $remaining;
+            $request->save();
+            $this->receivingLog($request->description, $remaining, $transactionNumber, $causer, $reason, true);
+        }
+
+        return $this->responseSuccess('Successfully cancelled remaining items');
+
+    }
+
+
+    public function receivingLog($itemName, $quantityDelivered, $transactionNumber, $causer, $reason = null, $isCancelled = false)
     {
         $assetRequests = new AssetRequest();
         activity()
             ->performedOn($assetRequests)
-            ->inLog('Item Received')
-            ->withProperties(['asset_description' => $itemName, 'quantity_delivered' => $quantityDelivered])
+            ->inLog($isCancelled ? 'Remaining Cancelled' : 'Item Received')
+            ->withProperties(['asset_description' => $itemName,
+                $isCancelled ? 'quantity_cancelled'
+                    : 'quantity_delivered' => $quantityDelivered,
+                'causer' => $causer,
+                'reason' => $reason
+            ])
             ->tap(function ($activity) use ($transactionNumber) {
                 $activity->subject_id = $transactionNumber;
             })
-            ->log('Item Received');
+            ->log($isCancelled ? 'Remaining Cancelled' : 'Item Received');
     }
 
     //TODO: Probably not necessary anymore
