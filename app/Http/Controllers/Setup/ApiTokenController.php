@@ -28,6 +28,10 @@ class ApiTokenController extends Controller
             ->orderBy('created_at', 'DESC')
             ->useFilters()
             ->dynamicPaginate();
+        $apiTokens->getCollection()->transform(function ($apiToken) {
+            $apiToken->token = Crypt::decryptString($apiToken->token);
+            return $apiToken;
+        });
 
         return $apiTokens;
     }

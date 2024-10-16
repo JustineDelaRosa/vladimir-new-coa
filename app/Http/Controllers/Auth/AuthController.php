@@ -32,6 +32,7 @@ class AuthController extends Controller
 
     public function Login(Request $request)
     {
+//       return $apiKey = $request->header('x-api-key');
         $username = $request->username;
         $password = $request->password;
         $user = User::with('role')->where('username', $username)->first();
