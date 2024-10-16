@@ -16,6 +16,7 @@ class CreateApiTokensTable extends Migration
         Schema::create('api_tokens', function (Blueprint $table) {
             $table->increments('id');
             $table->text('token');
+            $table->string('endpoint');
             $table->string('code');
             $table->string('p_name');
             $table->boolean('is_active')->default(1);
