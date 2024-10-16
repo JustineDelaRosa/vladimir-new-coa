@@ -56,8 +56,6 @@ class FixedAssetController extends Controller
         $movement = $request->get('movement');
         $ymir = $request->get('ymir', false);
         $data = Cache::get('fixed_assets_data');
-
-
         return $this->fixedAssetRepository->faIndex($ymir, $movement);
 //        if ($data) {
 ////            return $this->fixedAssetRepository->faIndex();
@@ -452,14 +450,23 @@ class FixedAssetController extends Controller
     {
         //Variable declaration
         $properties = $fixedAsset->formula;
+        $additionalCosts = $fixedAsset->additionalCost;
         $start_depreciation = $fixedAsset->formula->start_depreciation;
         $end_depreciation = $fixedAsset->formula->end_depreciation;
         $custom_end_depreciation = $validator->validated()['date'];
         //FOR INFORMATION
         $depreciation_method = $properties->depreciation_method ?? null;
+
         $est_useful_life = $fixedAsset->majorCategory->est_useful_life ?? 0;
+        $est_useful_life += $fixedAsset->added_useful_life ?? 0;
+
+
+
+        $addCostSum = $additionalCosts->sum('acquisition_cost');
+        $properties->acquisition_cost = $properties->acquisition_cost + $addCostSum ?? null;
+        $acquisition_cost = $properties->acquisition_cost;
+
         $acquisition_date = $properties->acquisition_date ?? null;
-        $acquisition_cost = $properties->acquisition_cost ?? null;
         $scrap_value = $properties->scrap_value ?? null;
 
 
@@ -533,6 +540,8 @@ class FixedAssetController extends Controller
                 'remaining_book_value' => $isDepreciated ? $remaining_book_value : 0,
                 'acquisition_date' =>  $acquisition_date ?? '-',
                 'acquisition_cost' =>  $acquisition_cost ?? '-',
+//                'additionalCost' => $additionalCosts ?? null,
+                'addCostSum' => $addCostSum ?? null,
                 'initial_debit' => [
                     'id' => $fixedAsset->accountTitle->initialDebit->id ?? '-',
                     'account_title_code' => $fixedAsset->accountTitle->initialDebit->account_title_code ?? '-',
@@ -738,5 +747,27 @@ class FixedAssetController extends Controller
             'end_depreciation' => $this->calculationRepository->getEndDepreciation(now()->format('Y-m'), $fixedAsset->majorCategory->est_useful_life, $depreciationMethod),
             'depreciation_method' => $depreciationMethod,
         ]);
+    }
+
+    public function ymirFixedAsset(Request $request){
+        $tagNumber = $request->input('tag_number');
+        $assets = FixedAsset::where('vladimir_tag_number', 'LIKE', '%' . $tagNumber . '%')
+            ->get(['vladimir_tag_number', 'asset_description'])
+            ->map(function ($item) {
+                return [
+                    'vladimir_tag_number' => $item->vladimir_tag_number,
+                    'asset_description' => $item->asset_description,
+                ];
+            });
+
+        return $assets;
+    }
+
+    //Report for GL system
+    public function reportGL(Request $request){
+        $year = $request->input('year');
+        $month = $request->input('month');
+
+        return $this->responseSuccess('Report generated successfully.');
     }
 }
