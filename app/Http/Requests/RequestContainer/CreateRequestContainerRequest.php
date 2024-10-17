@@ -8,13 +8,16 @@ use App\Models\FixedAsset;
 use App\Models\Location;
 use App\Models\RequestContainer;
 use App\Models\SubUnit;
+use App\Models\TypeOfRequest;
 use App\Rules\NewCoaValidation\BusinessUnitValidation;
 use App\Rules\NewCoaValidation\DepartmentValidation;
 use App\Rules\NewCoaValidation\LocationValidation;
 use App\Rules\NewCoaValidation\SubunitValidation;
 use App\Rules\NewCoaValidation\UnitValidation;
+use App\Rules\SmallToolRequired;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -41,13 +44,33 @@ class CreateRequestContainerRequest extends BaseRequest
         return [
             'type_of_request_id' => [
                 'required',
-                Rule::exists('type_of_requests', 'id')
+                Rule::exists('type_of_requests', 'id'),
             ],
 
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
             'capex_number' => 'nullable',
             'is_addcost' => 'nullable|boolean',
             'item_status' => 'nullable  |in:New,Replacement,Additional',
+//            'small_tool_id' => [
+//                'required_if:type_of_request_id,' . TypeOfRequest::where('type_of_request_name', 'Small Tools')->first()->id,
+//                'exists:small_tools,id',
+//            ],
+            'small_tool_id' => [
+                function ($attribute, $value, $fail) {
+                    $typeOfRequestId = request()->input('type_of_request_id');
+                    $smallToolsId = TypeOfRequest::where('type_of_request_name', 'Small Tools')->first()->id;
+
+                    if ($typeOfRequestId == $smallToolsId) {
+                        if (empty($value)) {
+                            $fail('The small tool is required.');
+                        } elseif (!DB::table('small_tools')->where('id', $value)->exists()) {
+                            $fail('The small tool is invalid.');
+                        }
+                    } else {
+                        request()->merge(['small_tool_id' => null]);
+                    }
+                },
+            ],
             'fixed_asset_id' => [
                 'required-if:is_addcost,true',
                 Rule::exists('fixed_assets', 'id'),
@@ -154,6 +177,8 @@ class CreateRequestContainerRequest extends BaseRequest
             'cellphone_number.digits_between' => 'Invalid cellphone number.',
             'letter_of_request.required_if' => 'The letter of request is required.',
             'other_attachments.required_if' => 'The other attachments is required.',
+            'small_tool_id.exists' => 'The small tool is invalid.',
+            'small_tool_id.required_if' => 'The small tool is required.',
         ];
     }
 
