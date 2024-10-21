@@ -23,6 +23,14 @@ class AddingPoController extends Controller
 
     public function index(Request $request)
     {
+        //validate the request
+        $this->validate($request, [
+            'toPo' => 'nullable|boolean',
+            'from' => 'nullable|date',
+            'to' => 'nullable|date',
+            'per_page' => 'nullable|integer',
+        ]);
+
         $toPo = $request->get('toPo', null);
         $perPage = $request->input('per_page', null);
         $from = $request->get('from', null);
