@@ -160,7 +160,7 @@ class ApprovedRequestRepository
         if ($assetRequest->status == 'Returned') {
 //            $this->updateAssetRequestStatus($assetRequest->transaction_number, 'Returned' . ($assetApproval->layer));
             $this->updateAssetApprovalStatus($assetApproval, 'Returned');
-        } else if($isUpdated) {
+        } else if ($isUpdated) {
             $this->updateToNullOrVoid($transactionNumber);
             $this->updateAssetRequestStatus($assetApproval->transaction_number, 'For Approval of Approver ' . ($assetApproval->layer));
             $this->updateAssetApprovalStatus($assetApproval, 'For Approval');
@@ -183,9 +183,14 @@ class ApprovedRequestRepository
         return AssetApproval::where('transaction_number', $transactionNumber)->orderBy('layer')->get()->pluck('approver_id')->toArray();
     }
 
-    private function isApproverListChanged($approverIds, $assetApprovalIds): bool
+    private function isApproverListChanged($approverIds, $assetApprovalIds) //: bool
     {
-        return $assetApprovalIds != $approverIds;
+//        return [
+//            'approverIds' => $approverIds,
+//            'assetApprovalIds' => $assetApprovalIds
+//        ];
+//        return false;
+        return $assetApprovalIds == $approverIds;
     }
 
     //VOID REQUEST
