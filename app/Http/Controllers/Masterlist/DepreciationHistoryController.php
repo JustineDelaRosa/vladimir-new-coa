@@ -108,9 +108,9 @@ class DepreciationHistoryController extends Controller
                     })->map(function ($monthGroup, $month) {
                         return [
                             'month' => ucwords($month),
-                            'remaining_value' => $monthGroup->last()->book_value,
-                            'monthly_depreciation' => $monthGroup->sum('depreciated_amount_per_month'),
-                            'accumulated_depreciation' => $monthGroup->sum('accumulated_depreciation'),
+                            'remaining_value' => $monthGroup->last()->remaining_book_value,
+                            'monthly_depreciation' => $monthGroup->sum('depreciation_per_month'),
+                            'accumulated_depreciation' => $monthGroup->sum('accumulated_cost'),
                         ];
                     })->values()
                 ];
