@@ -17,10 +17,12 @@ class CreateDepreciationHistoriesTable extends Migration
             $table->increments('íd');
             $table->unsignedInteger('fixed_asset_id');
             $table->string('depreciated_date');
-            $table->string('depreciated_amount_per_month');
-            $table->string('accumulated_depreciation');
-            $table->string('book_value');
-            $table->string('depreciation_basis');
+            $table->double('depreciation_per_month');
+            $table->double('depreciation_per_year');
+            $table->double('accumulated_cost');
+            $table->double('remaining_book_value');
+            $table->double('depreciation_basis');
+            $table->double('acquisition_cost');
             $table->timestamps();
             $table->foreign('fixed_asset_id')->references('id')->on('fixed_assets')->onDelete('cascade');
         });
