@@ -12,6 +12,7 @@ use App\Traits\AddingPRHandler;
 use App\Traits\RequestShowDataHandler;
 use Carbon\Carbon;
 use Exception;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Traits\AssetRequestHandler;
@@ -141,6 +142,11 @@ class AddingPrController extends Controller
         $pagination = $request->input('pagination', null);
         $prNumber = (new \App\Models\AssetRequest)->generatePRNumber();
 
+        $user = auth('sanctum')->user();
+        $firstname = $user->firstname;
+        $lastname = $user->lastname;
+        $employee_id = $user->employee_id;
+
 //        $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
 //        $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
 
@@ -168,16 +174,22 @@ class AddingPrController extends Controller
 //            ->orderBy('created_at', 'desc')
 //            ->get()
             ->groupBy('transaction_number')
-            ->map(function ($assetRequestCollection) {
+            ->map(function ($assetRequestCollection) use ($firstname, $lastname, $employee_id) {
                 $latestDateNeeded = $assetRequestCollection->max('date_needed');
                 $assetRequest = $assetRequestCollection->first();
                 $assetRequest->date_needed = $latestDateNeeded;
                 $listOfItems = $assetRequestCollection->map(function ($item) {
                     return [
 //                        'item_id' => $item->id,
-                        'reference_number' => $item->pr_number,
-                        'item_code' => $item->reference_number,
-                        'item_name' => $item->asset_description,
+                        'id' => 1,
+                        'reference_no' => $item->reference_number,
+                        'asset_description' => $item->asset_description,
+//                        'item_code' => $item->reference_number,
+//                        'item_name' => $item->asset_description,
+
+                        'item_id' => $item->smallTool->sync_id ?? null,
+                        'item_code' => $item->smallTool->small_tool_code ?? null,
+                        'item_name' => $item->smallTool->small_tool_name ?? $item->asset_description,
                         'remarks' => $item->remarks ?? null, //TODO:check
                         'quantity' => $item->quantity,
 //                        'created_at' => $item->created_at,
@@ -196,6 +208,8 @@ class AddingPrController extends Controller
                     ];
                 })->toArray();
                 return [
+                    'v_name' => $firstname . ' ' . $lastname,
+                    'rdf_id' => $employee_id,
                     'vrid' => $assetRequest->requester_id, //vladimir requester ID\
                     'pr_description' => $assetRequest->acquisition_details,
                     'pr_number' => $assetRequest->pr_number,
@@ -243,6 +257,8 @@ class AddingPrController extends Controller
                 ];
             })
             ->values();
+
+        AssetRequest::where('transaction_number', $transactionNumber)->update(['is_pr_returned' => 0]);
 
 
         if ($perPage !== null && $pagination == null) {
@@ -354,13 +370,16 @@ class AddingPrController extends Controller
         $transactionNumber = $request->input('transaction_number');
         $prNumber = $request->input('pr_number');
         $reason = $request->input('reason');
+        $causer = $request->input('causer');
+        $itemIds = $request->input('item_ids');
+        $action = $request->input('action');
 
         if (!$this->validateAssetRequestAndApproval($transactionNumber, $prNumber)) {
             return $this->responseUnprocessable('Asset Request not found.');
         }
 
-        $this->updateAssetRequestAndApproval($transactionNumber,$prNumber, $reason);
-        $this->logActivityForTransaction($transactionNumber, $prNumber, $reason);
+        $this->updateAssetRequestAndApproval($transactionNumber, $prNumber, $itemIds, $action, $reason);
+        $this->logActivityForTransaction($transactionNumber, $prNumber, $causer, $action, $reason);
 
         return $this->responseSuccess('Asset Request returned successfully');
     }
@@ -373,34 +392,92 @@ class AddingPrController extends Controller
         return $assetRequestsExists && $assetApprovalExists;
     }
 
-    protected function updateAssetRequestAndApproval($transactionNumber,$prNumber, $reason)
+    protected function ymirUpdate($prNumber)
     {
-        AssetRequest::where('transaction_number', $transactionNumber)
-            ->where('pr_number', $prNumber)
-            ->update([
-                'pr_number' => null,
-                'filter' => 'Returned From Ymir',
-                'status' => 'Returned From Ymir',
-                'is_fa_approved' => false,
-                'remarks' => $reason ?? null
-            ]);
+        $user_id = auth('sanctum')->user();
+        $firstname = $user_id->firstname;
+        $lastname = $user_id->lastname;
+        $employee_id = $user_id->employee_id;
+        $fullName = $firstname . ' ' . $lastname;
 
-        AssetApproval::where('transaction_number', $transactionNumber)
-            ->update(['status' => 'Returned From Ymir']);
+        $ymirApiUrl = config('ymir-api.ymir_put_pr_api_url');
+        $ymirApiToken = config('ymir-api.ymir_put_pr_api_token');
+
+        $client = new Client();
+        $response = $client->request('PUT', $ymirApiUrl / $prNumber, [
+            'headers' => ['Authorization ' => 'Bearer ' . $ymirApiToken],
+            'json' => [
+                'v_name' => $fullName,
+                'rdf_id' => $employee_id
+
+            ]
+        ]);
+
+        if ($response->getStatusCode() == 200) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
-    protected function logActivityForTransaction($transactionNumber, $prNumber, $reason = null)
+    protected function updateAssetRequestAndApproval($transactionNumber, $prNumber, $itemIds, $action, $reason)
+    {
+        if (strtolower($action) === 'cancel') {
+            $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
+                ->where('pr_number', $prNumber)
+                ->where('is_fa_approved', 1)
+                ->get();
+
+            $assetRequests->each(function ($assetRequest) use ($reason) {
+                $assetRequest->update([
+                    'pr_number' => null,
+                    'filter' => 'Cancelled',
+                    'status' => 'Cancelled',
+                    'is_fa_approved' => false,
+                    'is_pr_returned' => true,
+                    'remarks' => $reason ?? null
+                ]);
+                $assetRequest->delete();
+            });
+
+            AssetApproval::where('transaction_number', $transactionNumber)
+                ->update(['status' => 'Cancelled']);
+
+        } else {
+            AssetRequest::where('transaction_number', $transactionNumber)
+                ->where('pr_number', $prNumber)
+                ->update([
+//                'pr_number' => null,
+                    'filter' => 'Returned From Ymir',
+                    'status' => 'Returned From Ymir',
+                    'is_fa_approved' => false,
+                    'is_pr_returned' => true,
+                    'remarks' => $reason ?? null
+                ]);
+            AssetApproval::where('transaction_number', $transactionNumber)
+                ->update(['status' => 'Returned From Ymir']);
+        }
+
+        foreach ($itemIds as $itemId) {
+            AssetRequest::where('reference_number', $itemId['reference_no'])
+                ->update([
+                    'ymir_id' => $itemId['id'],
+                ]);
+        }
+
+    }
+
+    protected function logActivityForTransaction($transactionNumber, $prNumber, $causer, $action, $reason = null)
     {
         $assetRequest = new AssetRequest(); // Consider if a new instance is needed or if an existing instance should be used.
         activity()
             ->performedOn($assetRequest)
-            ->withProperties(['transaction_number' => $transactionNumber, 'pr_number' => $prNumber, 'Remarks' => $reason])
-            ->inLog('PR Returned')
+            ->withProperties(['transaction_number' => $transactionNumber, 'pr_number' => $prNumber, 'Remarks' => $reason, 'causer' => $causer])
+            ->inLog(strtolower($action) === 'cancel' ? 'Cancelled' : 'Returned')
             ->tap(function ($activity) use ($transactionNumber) {
                 $activity->subject_id = $transactionNumber;
             })
-
-            ->log('Returned from Ymir');
+            ->log(strtolower($action) === 'cancel' ? 'Cancelled' : 'Returned');
     }
 
     public function prReport(Request $request)
