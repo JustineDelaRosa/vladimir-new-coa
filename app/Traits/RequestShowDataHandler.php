@@ -135,6 +135,7 @@ trait RequestShowDataHandler
             'small_tool' => [
                 'id' => $ar->smallTool->id ?? '-',
                 'small_tool_name' => $ar->smallTool->small_tool_name ?? '-',
+                'small_tool_code' => $ar->smallTool->small_tool_code ?? '-',
                 'items' => $ar->smallTool->item ?? '-',
             ],
             'major_category' => [
