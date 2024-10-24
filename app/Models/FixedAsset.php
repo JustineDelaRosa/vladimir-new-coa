@@ -231,72 +231,72 @@ class FixedAsset extends Model implements HasMedia
         return $value ? Department::where('id', $value)->first()->department_name : '-';
     }
 
-    public function getStartDepreciationAttriute($value)
-    {
-        return $value ? date('Y-m-d', strtotime($value)) : '-';
-    }
+    /*    public function getStartDepreciationAttriute($value)
+        {
+            return $value ? date('Y-m-d', strtotime($value)) : '-';
+        }*/
 
-    public function getEndDepreciationAttriute($value)
-    {
-        return $value ? date('Y-m-d', strtotime($value)) : '-';
-    }
+    /*    public function getEndDepreciationAttriute($value)
+        {
+            return 'testintg';
+        }*/
 
-    public function getDepreciationPerYearAttribute($value)
-    {
-        $estUsefulLife = $this->est_useful_life;
-        $scarpValue = $this->scap_value;
-        $acquisitionCost = $this->acquisition_cost;
+    /*    public function getDepreciationPerYearAttribute($value)
+        {
+            $estUsefulLife = $this->est_useful_life;
+            $scarpValue = $this->scap_value;
+            $acquisitionCost = $this->acquisition_cost;
 
-        if ($acquisitionCost == 0 && $scarpValue == 0) {
-            return 0;
-        }
-        $estUsefulLife = floor($estUsefulLife) + (($estUsefulLife - floor($estUsefulLife)) * 12) / 12;
-        return round(($acquisitionCost - $scarpValue) / $estUsefulLife, 2);
-    }
+            if ($acquisitionCost == 0 && $scarpValue == 0) {
+                return 0;
+            }
+            $estUsefulLife = floor($estUsefulLife) + (($estUsefulLife - floor($estUsefulLife)) * 12) / 12;
+            return round(($acquisitionCost - $scarpValue) / $estUsefulLife, 2);
+        }*/
 
-    public function getDepreciationPerMonthAttribute($value): float
-    {
-        $estUsefulLife = $this->est_useful_life;
-        $scarpValue = $this->scap_value;
-        $acquisitionCost = $this->acquisition_cost;
+    /*    public function getDepreciationPerMonthAttribute($value): float
+        {
+            $estUsefulLife = $this->est_useful_life;
+            $scarpValue = $this->scap_value;
+            $acquisitionCost = $this->acquisition_cost;
 
-        if ($acquisitionCost == 0 && $scarpValue == 0) {
-            return 0;
-        }
-        $estUsefulLife = floor($estUsefulLife) * 12 + (($estUsefulLife - floor($estUsefulLife)) * 12);
-        return round(($acquisitionCost - $scarpValue) / $estUsefulLife, 2);
-    }
+            if ($acquisitionCost == 0 && $scarpValue == 0) {
+                return 0;
+            }
+            $estUsefulLife = floor($estUsefulLife) * 12 + (($estUsefulLife - floor($estUsefulLife)) * 12);
+            return round(($acquisitionCost - $scarpValue) / $estUsefulLife, 2);
+        }*/
 
-    public function getMonthsDepreciatedAttribute($value)
-    {
-        return $this->start_depreciation ? Carbon::parse($this->start_depreciation)->diffInMonths(Carbon::now()) : 0;
-    }
+    /*    public function getMonthsDepreciatedAttribute($value)
+        {
+            return $this->start_depreciation ? Carbon::parse($this->start_depreciation)->diffInMonths(Carbon::now()) : 0;
+        }*/
 
-    public function getAccumulatedCostAttribute($value)
-    {
-        $customAge = $this->months_depreciated;
-        $depreciationBasis = $this->depreciable_basis;
-        $monthly_depreciation = $this->depreciation_per_month;
+    /*    public function getAccumulatedCostAttribute($value)
+        {
+            $customAge = $this->months_depreciated;
+            $depreciationBasis = $this->depreciable_basis;
+            $monthly_depreciation = $this->depreciation_per_month;
 
-        $accumulated_cost = $monthly_depreciation * $customAge;
-        if ($accumulated_cost > $depreciationBasis) {
-            return $depreciationBasis;
-        }
-        return round($accumulated_cost);
-    }
+            $accumulated_cost = $monthly_depreciation * $customAge;
+            if ($accumulated_cost > $depreciationBasis) {
+                return $depreciationBasis;
+            }
+            return round($accumulated_cost);
+        }*/
 
-    public function getRemainingBookValueAttribute($value)
-    {
-        $acquisitionCost = $this->acquisition_cost;
-        $accumulatedCost = $this->accumulated_cost;
+    /*    public function getRemainingBookValueAttribute($value)
+        {
+            $acquisitionCost = $this->acquisition_cost;
+            $accumulatedCost = $this->accumulated_cost;
 
-        $remainingBookValue = $acquisitionCost - $accumulatedCost;
-        //if the remaining book value is less than zero, return zero
-        if ($remainingBookValue < 0) {
-            return 0;
-        }
-        return round($remainingBookValue);
-    }
+            $remainingBookValue = $acquisitionCost - $accumulatedCost;
+            //if the remaining book value is less than zero, return zero
+            if ($remainingBookValue < 0) {
+                return 0;
+            }
+            return round($remainingBookValue);
+        }*/
 
     public function getCreatedAtAttribute($value)
     {

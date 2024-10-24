@@ -73,42 +73,52 @@ class AdditionalCost extends Model implements HasMedia
     {
         return $this->belongsTo(FixedAsset::class, 'fixed_asset_id', 'id');
     }
+
     public function capex()
     {
         return $this->belongsTo(Capex::class, 'capex_id', 'id');
     }
+
     public function subCapex()
     {
         return $this->belongsTo(SubCapex::class, 'sub_capex_id', 'id');
     }
+
     public function formula()
     {
         return $this->belongsTo(Formula::class, 'formula_id', 'id');
     }
+
     public function typeOfRequest()
     {
         return $this->belongsTo(TypeOfRequest::class, 'type_of_request_id', 'id');
     }
+
     public function majorCategory()
     {
         return $this->belongsTo(MajorCategory::class, 'major_category_id', 'id');
     }
+
     public function minorCategory()
     {
         return $this->belongsTo(MinorCategory::class, 'minor_category_id', 'id');
     }
+
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id', 'id');
     }
+
     public function department()
     {
         return $this->belongsTo(Department::class, 'department_id', 'id');
     }
+
     public function location()
     {
         return $this->belongsTo(Location::class, 'location_id', 'id');
     }
+
     public function accountTitle()
     {
         return $this->belongsTo(AccountingEntries::class, 'account_id', 'id');
@@ -121,47 +131,59 @@ class AdditionalCost extends Model implements HasMedia
     {
         return $this->belongsTo(AssetStatus::class, 'asset_status_id', 'id');
     }
+
     public function cycleCountStatus()
     {
         return $this->belongsTo(CycleCountStatus::class, 'cycle_count_status_id', 'id');
     }
+
     public function depreciationStatus()
     {
         return $this->belongsTo(DepreciationStatus::class, 'depreciation_status_id', 'id');
     }
+
     public function movementStatus()
     {
         return $this->belongsTo(MovementStatus::class, 'movement_status_id', 'id');
     }
+
     public function supplier()
     {
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
+
     public function requestor()
     {
         return $this->belongsTo(User::class, 'requester_id', 'id');
     }
+
     public function warehouseNumber()
     {
         return $this->belongsTo(WarehouseNumber::class, 'warehouse_number_id', 'id');
     }
+
     public function subunit()
     {
         return $this->belongsTo(SubUnit::class, 'subunit_id', 'id');
     }
+
     public function unit()
     {
         return $this->belongsTo(Unit::class, 'unit_id', 'id');
     }
+
     public function businessUnit()
     {
         return $this->belongsTo(BusinessUnit::class, 'business_unit_id', 'id');
     }
 
-    public function uom(){
+    public function uom()
+    {
         return $this->belongsTo(UnitOfMeasure::class, 'uom_id', 'id');
     }
-    public function warehouse(){
+
+    public function warehouse()
+    {
         return $this->belongsTo(Warehouse::class, 'warehouse_id', 'id');
     }
 
@@ -171,17 +193,18 @@ class AdditionalCost extends Model implements HasMedia
 //    }
 
 
-    public function getChargedDepartmentAttribute($value){
+    public function getChargedDepartmentAttribute($value)
+    {
         return $value ? Department::where('id', $value)->first()->department_name : '-';
     }
-    public function getStartDepreciationAttriute($value){
+    /*public function getStartDepreciationAttriute($value){
         return $value ? date('Y-m-d', strtotime($value)) : '-';
-    }
-    public function getEndDepreciationAttriute($value){
+    }*/
+    /*public function getEndDepreciationAttriute($value){
         return $value ? date('Y-m-d', strtotime($value)) : '-';
-    }
+    }*/
 
-    public function getDepreciationPerYearAttribute($value)
+    /*public function getDepreciationPerYearAttribute($value)
     {
         $estUsefulLife =  $this->est_useful_life;
         $scarpValue = $this->scap_value;
@@ -192,9 +215,9 @@ class AdditionalCost extends Model implements HasMedia
         }
         $estUsefulLife = floor($estUsefulLife) + (($estUsefulLife - floor($estUsefulLife)) * 12) / 12;
         return round(($acquisitionCost - $scarpValue) / $estUsefulLife, 2);
-    }
+    }*/
 
-    public function getDepreciationPerMonthAttribute($value): float
+    /*public function getDepreciationPerMonthAttribute($value): float
     {
         $estUsefulLife = $this->est_useful_life;
         $scarpValue = $this->scap_value;
@@ -205,12 +228,12 @@ class AdditionalCost extends Model implements HasMedia
         }
         $estUsefulLife = floor($estUsefulLife) * 12 + (($estUsefulLife - floor($estUsefulLife)) * 12);
         return round(($acquisitionCost - $scarpValue) / $estUsefulLife, 2);
-    }
-    public function getMonthsDepreciatedAttribute($value){
+    }*/
+    /*public function getMonthsDepreciatedAttribute($value){
         return $this->start_depreciation ? Carbon::parse($this->start_depreciation)->diffInMonths(Carbon::now()) : 0;
-    }
+    }*/
 
-    public function getAccumulatedCostAttribute($value)
+    /*public function getAccumulatedCostAttribute($value)
     {
         $customAge = $this->months_depreciated;
         $depreciationBasis = $this->depreciable_basis;
@@ -221,9 +244,9 @@ class AdditionalCost extends Model implements HasMedia
             return $depreciationBasis;
         }
         return round($accumulated_cost);
-    }
+    }*/
 
-    public function getRemainingBookValueAttribute($value){
+    /*public function getRemainingBookValueAttribute($value){
         $acquisitionCost = $this->acquisition_cost;
         $accumulatedCost = $this->accumulated_cost;
 
@@ -233,10 +256,12 @@ class AdditionalCost extends Model implements HasMedia
             return 0;
         }
         return round($remainingBookValue);
-    }
+    }*/
 
-    public function getCreatedAtAttribute($value){
+    public function getCreatedAtAttribute($value)
+    {
         return date('Y-m-d', strtotime($value));
     }
+
 
 }
