@@ -28,7 +28,7 @@ class ReceiveReceiptSummaryController extends Controller
 
     public function cancelledRR(Request $request, $rrNumber)
     {
-        $remarks = $request->get('remarks');
+        $remarks = $request->get('reason');
         // Select all the fixed assets with the same rr number, including soft deleted ones
         $fixedAssets = FixedAsset::withTrashed()->where('receipt', $rrNumber)->get();
         if ($fixedAssets->isEmpty()) {
