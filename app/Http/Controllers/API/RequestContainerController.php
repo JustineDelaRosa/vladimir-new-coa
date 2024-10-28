@@ -46,6 +46,7 @@ class RequestContainerController extends Controller
 
         DB::beginTransaction();
         try {
+
             $user = auth('sanctum')->user();
             $requesterId = $user->id;
 

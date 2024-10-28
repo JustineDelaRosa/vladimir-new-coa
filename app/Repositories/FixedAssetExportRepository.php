@@ -54,6 +54,14 @@ class FixedAssetExportRepository
             ->leftJoin('cycle_count_statuses', 'fixed_assets.cycle_count_status_id', '=', 'cycle_count_statuses.id')
             ->leftJoin('depreciation_statuses', 'fixed_assets.depreciation_status_id', '=', 'depreciation_statuses.id')
             ->leftJoin('movement_statuses', 'fixed_assets.movement_status_id', '=', 'movement_statuses.id')
+            ->leftJoin('depreciation_histories as latest_depreciation', function ($join) {
+                $join->on('fixed_assets.id', '=', 'latest_depreciation.fixed_asset_id')
+                    ->where('latest_depreciation.created_at', function ($query) {
+                        $query->select(DB::raw('MAX(created_at)'))
+                            ->from('depreciation_histories')
+                            ->whereColumn('fixed_assets.id', 'depreciation_histories.fixed_asset_id');
+                    });
+            })
             ->whereNotNull('fixed_assets.major_category_id');
 
         if ($search) {
@@ -102,7 +110,7 @@ class FixedAssetExportRepository
         }
 
         $fixedAsset = $fixedAsset->select(
-            'fixed_assets.id',
+            'fixed_assets.id as id',
             'users.username as requester',
             'capexes.capex as capex',
             'capexes.project_name as project_name',
@@ -164,20 +172,29 @@ class FixedAssetExportRepository
             'depreciation_credit.account_title_name as depreciation_credit_name',
             'depreciation_credit.account_title_code as depreciation_credit_code',
 
+
             DB::raw('NULL as add_cost_sequence'),
             'formulas.depreciation_method',
             'formulas.scrap_value',
-            'major_categories.est_useful_life', // todo: subject to monitor for possible bug
-            'formulas.depreciable_basis',
-            'formulas.months_depreciated',
-            'formulas.end_depreciation',
-            'formulas.depreciation_per_year',
-            'formulas.depreciation_per_month',
-            'formulas.accumulated_cost',
-            'formulas.remaining_book_value',
+            DB::raw('major_categories.est_useful_life + IFNULL(fixed_assets.added_useful_life, 0) as est_useful_life'),
+            // todo: subject to monitor for possible bug
+            'latest_depreciation.depreciation_basis as depreciable_basis',
+            'latest_depreciation.months_depreciated as months_depreciated',
+            DB::raw('DATE_FORMAT(DATE_ADD(STR_TO_DATE(CONCAT(formulas.end_depreciation, "-01"), "%Y-%m-%d"), INTERVAL COALESCE(fixed_assets.added_useful_life, 0) YEAR), "%Y-%m") as end_depreciation'),
+            'latest_depreciation.depreciation_per_year as depreciation_per_year',
+            'latest_depreciation.depreciation_per_month as depreciation_per_month',
+            'latest_depreciation.accumulated_cost as accumulated_cost',
+            'latest_depreciation.remaining_book_value as remaining_book_value',
             'formulas.release_date',
             'formulas.start_depreciation',
-//                'fixed_assets.created_at'
+//            'formulas.depreciable_basis',
+//            'formulas.months_depreciated',
+//            'formulas.end_depreciation',
+//            'formulas.depreciation_per_year',
+//            'formulas.depreciation_per_month',
+//            'formulas.accumulated_cost',
+//            'formulas.remaining_book_value',
+//            'fixed_assets.created_at'
         );
         return $fixedAsset;
     }
@@ -322,18 +339,19 @@ class FixedAssetExportRepository
             'depreciation_credit.account_title_code as depreciation_credit_code',
 
             'additional_costs.add_cost_sequence',
-            'formulas.depreciation_method',
-            'formulas.scrap_value',
-            'major_categories.est_useful_life', // todo: subject to monitor for possible bug
-            'formulas.depreciable_basis',
-            'formulas.months_depreciated',
-            'formulas.end_depreciation',
-            'formulas.depreciation_per_year',
-            'formulas.depreciation_per_month',
-            'formulas.accumulated_cost',
-            'formulas.remaining_book_value',
+            DB::raw('NULL as depreciation_method'),
+            DB::raw('NULL as scrap_value'),
+            DB::raw('NULL as est_useful_life'),
+            DB::raw('NULL as depreciable_basis'),
+            DB::raw('NULL as months_depreciated'),
+            DB::raw('NULL as end_depreciation'),
+            DB::raw('NULL as depreciation_per_year'),
+            DB::raw('NULL as depreciation_per_month'),
+            DB::raw('NULL as accumulated_cost'),
+            DB::raw('NULL as remaining_book_value'),
             'formulas.release_date',
-            'formulas.start_depreciation',
+            DB::raw('NULL as start_depreciation'),
+
 //            'fixed_assets.created_at'
         );
         return $additionalCost;

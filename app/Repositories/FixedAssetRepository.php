@@ -492,7 +492,9 @@ class FixedAssetRepository
             ],
             'depreciation_status' => [
                 'id' => $fixed_asset->depreciationStatus->id ?? '-',
-                'depreciation_status_name' => $fixed_asset->depreciationStatus->depreciation_status_name ?? '-',
+                'depreciation_status_name' => $fixed_asset->additionalCost->contains(function ($additionalCost) {
+                    return $additionalCost->depreciationStatus->depreciation_status_name == 'Running Depreciation';
+                }) ? 'Running Depreciation' : $fixed_asset->depreciationStatus->depreciation_status_name ?? '-',
             ],
             'movement_status' => [
                 'id' => $fixed_asset->movementStatus->id ?? '-',
@@ -644,7 +646,8 @@ class FixedAssetRepository
                     'accumulated_cost' => $additional_cost->formula->accumulated_cost ?? '-',
                     'asset_status' => [
                         'id' => $additional_cost->assetStatus->id ?? '-',
-                        'asset_status_name' => $additional_cost->assetStatus->asset_status_name ?? '-',
+                        'asset_status_name' => $additional_cost->from_request ? ($additional_cost->is_released ? $additional_cost->assetStatus->asset_status_name : 'For Releasing') : $additional_cost->assetStatus->asset_status_name ?? '-',
+
                     ],
                     'cycle_count_status' => [
                         'id' => $additional_cost->cycleCountStatus->id ?? '-',
@@ -823,7 +826,7 @@ class FixedAssetRepository
             'acquisition_cost' => $fixed_asset->acquisition_cost ?? '-',
             'asset_status' =>[
                 'id' => $fixed_asset->assetStatus->id ?? '-',
-                'asset_status_name' =>$fixed_asset->is_released ? $fixed_asset->assetStatus->asset_status_name : 'For Releasing',
+                'asset_status_name' => $fixed_asset->from_request ? ($fixed_asset->is_released ? $fixed_asset->assetStatus->asset_status_name : 'For Releasing') : $fixed_asset->assetStatus->asset_status_name ?? '-',
             ],
             'cycle_count_status' => [
                 'id' => $fixed_asset->cycleCountStatus->id ?? '-',
