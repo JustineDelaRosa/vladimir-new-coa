@@ -12,6 +12,6 @@ class MinorCategoryFilters extends QueryFilters
 
     protected array $relationSearch = [
         'majorCategory' => ['major_category_name'],
-        'accountTitle' => ['account_title_name'],
+//        'accountTitle' => ['account_title_name'],
     ];
 }
