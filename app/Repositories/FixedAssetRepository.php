@@ -394,6 +394,9 @@ class FixedAssetRepository
     public function transformSingleFixedAsset($fixed_asset): array
     {
         $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? $fixed_asset->additionalCost->count() : 0;
+        $smallToolsId = TypeOfRequest::where('type_of_request_name', 'Small Tools')->first()->id;
+        $isSmallTools = $smallToolsId == $fixed_asset->type_of_request_id;
+
         return [
             'total_cost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost, $fixed_asset->acquisition_cost),
             'total_adcost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost),
@@ -402,6 +405,15 @@ class FixedAssetRepository
             'id' => $fixed_asset->id,
             'transaction_number' => $fixed_asset->transaction_number,
             'reference_number' => $fixed_asset->reference_number,
+            'small_tools' => $isSmallTools ?
+                $fixed_asset->smallTool->item->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'sync_id' => $item->sync_id,
+                        'item_code' => $item->item_name,
+                        'item_name' => $item->item_name,
+                    ];
+                }) : [],
             'requestor' => [
                 'id' => $fixed_asset->requestor->id ?? '-',
                 'username' => $fixed_asset->requestor->username ?? '-',
