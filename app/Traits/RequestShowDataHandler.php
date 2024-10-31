@@ -88,7 +88,21 @@ trait RequestShowDataHandler
 
         //check if all the item with the same transaction number is deleted
         $isAllDeleted = AssetRequest::withTrashed()->where('transaction_number', $ar->transaction_number)->count() == AssetRequest::onlyTrashed()->where('transaction_number', $ar->transaction_number)->count();
-        $requestStatus = strpos($ar->status, 'For Approval') === 0 ? $ar->status : ($ar->is_fa_approved ? ($ar->filter == 'Sent to Ymir' ? 'Sent to ymir for PO' : $ar->filter) : ($isAllDeleted ? 'Cancelled' : $ar->status));
+
+        /*        $requestStatus = strpos($ar->status, 'For Approval') === 0 ? $ar->status
+                    : ($ar->is_fa_approved ? ($ar->filter == 'Sent to Ymir' ? 'Sent to ymir for PO' : $ar->filter)
+                        : ($isAllDeleted ? 'Cancelled' : ($ar->is_fa_approved ? $ar->status : 'For Approval of FA')));*/
+        $requestStatus = 'For Approval of FA';
+
+        if (strpos($ar->status, 'For Approval') === 0) {
+            $requestStatus = $ar->status;
+        } elseif ($ar->is_fa_approved) {
+            $requestStatus = $ar->filter == 'Sent to Ymir' ? 'Sent to ymir for PO' : $ar->filter;
+        } elseif ($isAllDeleted) {
+            $requestStatus = 'Cancelled';
+        } elseif ($ar->is_fa_approved) {
+            $requestStatus = $ar->status;
+        }
 
         try {
             $YmirPRNumber = YmirPRTransaction::where('pr_number', $ar->pr_number)->first()->pr_year_number_id ?? null;

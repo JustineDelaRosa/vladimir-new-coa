@@ -29,6 +29,17 @@ class WarehouseController extends Controller
     }
 
 
+    /*    public function store(Request $request)
+        {
+            $warehouseDate = $request->input('result');
+            if(empty($request->all()) || empty($request->input('result'))){
+                return $this->responseUnprocessable('Data not Ready');
+            }
+
+
+        }*/
+
+
     public function store(CreateWarehouseRequest $request)
     {
         $warehouse_name = ucwords(strtolower($request->warehouse_name));
@@ -109,7 +120,7 @@ class WarehouseController extends Controller
         if ($status == true) {
             if (Warehouse::where('id', $id)->where('is_active', true)->exists()) {
                 return $this->responseSuccess('No Changes');
-            }else{
+            } else {
                 Warehouse::withTrashed()->where('id', $id)->restore();
                 Warehouse::where('id', $id)->update([
                     'is_active' => true
