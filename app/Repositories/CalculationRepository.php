@@ -76,11 +76,11 @@ class CalculationRepository
     public function getStartDepreciation($method, $release_date = null): ?string //$release_date
     {
         if ($method == 'One Time') {
-            $release_date = Carbon::parse($release_date);
-            return $release_date->addMonth()->format('Y-m') ?? null;
+            $release_date = Carbon::parse($release_date)->startOfMonth();
+            return $release_date->addMonth()->startOfMonth()->format('Y-m') ?? null;
         } else {
-            $release_date = Carbon::parse($release_date);
-            return $release_date->addMonth(1)->format('Y-m') ?? null;
+            $release_date = Carbon::parse($release_date)->startOfMonth();
+            return $release_date->addMonth()->startOfMonth()->format('Y-m') ?? null;
         }
     }
 
