@@ -271,7 +271,7 @@ trait AssetRequestHandler
             'history' => Activity::whereSubjectType(AssetRequest::class)
                 ->whereSubjectId($assetRequest->transaction_number)
                 ->get()
-                ->map(function ($activityLog) {
+                ->map(function ($activityLog) use ($assetRequest) {
                     return [
                         'id' => $activityLog->id,
                         'action' => $activityLog->log_name,
@@ -282,12 +282,28 @@ trait AssetRequestHandler
                         'asset_description' => $activityLog->properties['description'] ?? null,
                         'vladimir_tag_number' => $activityLog->properties['vladimir_tag_number'] ?? null,
                         'pr_number' => $activityLog->properties['pr_number'] ?? null,
+                        'aging' => $this->calculateAging($activityLog, $assetRequest),
                     ];
                 }),
 
 //                $this->getHistory($assetRequest),
             'steps' => $this->getSteps($assetRequest),
         ];
+    }
+
+    private function calculateAging($activityLog, $assetRequest)
+    {
+//        return $activityLog->id . ' days';
+        $previousLog = Activity::whereSubjectType(AssetRequest::class)
+            ->whereSubjectId($assetRequest->transaction_number)
+            ->where('id', '<', $activityLog->id)
+            ->first();
+
+        if ($previousLog) {
+            return $activityLog->created_at->diffInDays($previousLog->created_at) . ' days';
+        } else {
+            return $activityLog->created_at->diffInDays($assetRequest->created_at) . ' days';
+        }
     }
 
     private function getStatus($assetRequest)
@@ -309,7 +325,7 @@ trait AssetRequestHandler
         return $assetRequest->assetApproval->filter(function ($approval) {
             return $approval->status == 'For Approval';
         })->map(function ($approval) {
-            return $approval->approver->user->firstname .' '. $approval->approver->user->lastname;
+            return $approval->approver->user->firstname . ' ' . $approval->approver->user->lastname;
         })->values()->first() ?? '';
 //        $this->getAfterApprovedStep($assetRequest)
     }
@@ -358,7 +374,7 @@ trait AssetRequestHandler
                 return 'Sent to ymir for PO';
             }
 
-            if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Received") {
+            if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Asset Tagging") {
                 return 'Asset Tagging';
             }
             if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) {
@@ -399,7 +415,7 @@ trait AssetRequestHandler
 //                return 'Inputting of PO No. and RR No.';
 //            }
             //$assetRequest->is_addcost != 1 && $assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count != $assetRequest->quantity
-            if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Received") {
+            if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Asset Tagging") {
                 return 'Asset Tagging';
             }
 
@@ -515,6 +531,7 @@ trait AssetRequestHandler
             'small_tool' => [
                 'id' => $assetRequest->smallTool->id ?? '-',
                 'small_tool_name' => $assetRequest->smallTool->small_tool_name ?? '-',
+                'small_tool_code' => $assetRequest->smallTool->small_tool_code ?? '-',
                 'items' => $assetRequest->smallTool->item ?? '-',
             ],
             'asset_specification' => $assetRequest->asset_specification ?? '-',
