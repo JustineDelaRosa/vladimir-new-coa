@@ -20,6 +20,8 @@ class WarehouseController extends Controller
         $rWarehouseStatus = $request->status ?? 'status';
         $isActiveStatus = ($rWarehouseStatus === 'deactivated') ? 0 : 1;
 
+//        return Warehouse::get();
+
         $rWarehouse = Warehouse::withTrashed()->with('location')->where('is_active', $isActiveStatus)
             ->orderByDesc('created_at')
             ->useFilters()
@@ -29,18 +31,35 @@ class WarehouseController extends Controller
     }
 
 
-    /*    public function store(Request $request)
-        {
-            $warehouseDate = $request->input('result');
-            if(empty($request->all()) || empty($request->input('result'))){
-                return $this->responseUnprocessable('Data not Ready');
-            }
+    public function store(Request $request)
+    {
+        $warehouseDate = $request->input('result');
+        if (empty($request->all()) || empty($request->input('result'))) {
+            return $this->responseUnprocessable('Data not Ready');
+        }
+
+        foreach ($warehouseDate as $warehouse) {
+            $syncId = $warehouse['id'];
+            $warehouseName = $warehouse['name'];
+            $warehouseCode = $warehouse['code'];
+            $isActive = $warehouse['deleted_at'];
+
+            Warehouse::updateOrCreate(
+                [
+                    'sync_id' => $syncId
+                ],
+                [
+                    'warehouse_name' => $warehouseName,
+                    'warehouse_code' => $warehouseCode,
+                    'is_active' => $isActive == NULL ? 1 : 0
+                ]
+            );
+        }
+        return $this->responseSuccess('Successfully Synced!');
+    }
 
 
-        }*/
-
-
-    public function store(CreateWarehouseRequest $request)
+    /*public function store(CreateWarehouseRequest $request)
     {
         $warehouse_name = ucwords(strtolower($request->warehouse_name));
         $locationId = $request->location_id;
@@ -52,7 +71,7 @@ class WarehouseController extends Controller
 
         return $this->responseCreated('Successfully created warehouse.');
 
-    }
+    }*/
 
 
     public function show($id)
@@ -90,43 +109,43 @@ class WarehouseController extends Controller
 
     }
 
-    public function archived(Request $request, $id)
-    {
+    /*    public function archived(Request $request, $id)
+        {
 
-        $status = $request->status;
-        $rWarehouse = Warehouse::query();
-        if (!$rWarehouse->withTrashed()->where('id', $id)->exists()) {
-            return $this->responseNotFound('Warehouse not found.');
-        }
+            $status = $request->status;
+            $rWarehouse = Warehouse::query();
+            if (!$rWarehouse->withTrashed()->where('id', $id)->exists()) {
+                return $this->responseNotFound('Warehouse not found.');
+            }
 
-        if ($status == false) {
-            if (!Warehouse::where('id', $id)->where('is_active', true)->exists()) {
-                return $this->responseBadRequest('No Changes.');
-            } else {
-                $checkAssetRequest = AssetRequest::where('receiving_warehouse_id', $id)->where('filter', '!=', 'Claimed')->exists();
-                if ($checkAssetRequest) {
-                    return $this->responseBadRequest('Warehouse cannot be deactivated. There are still pending asset requests.');
+            if ($status == false) {
+                if (!Warehouse::where('id', $id)->where('is_active', true)->exists()) {
+                    return $this->responseBadRequest('No Changes.');
+                } else {
+                    $checkAssetRequest = AssetRequest::where('receiving_warehouse_id', $id)->where('filter', '!=', 'Claimed')->exists();
+                    if ($checkAssetRequest) {
+                        return $this->responseBadRequest('Warehouse cannot be deactivated. There are still pending asset requests.');
+                    }
+                    if (Warehouse::where('id', $id)->exists()) {
+                        Warehouse::where('id', $id)->update([
+                            'is_active' => false
+                        ]);
+                        Warehouse::where('id', $id)->delete();
+                        return $this->responseSuccess('Warehouse deactivated successfully.');
+                    }
                 }
-                if (Warehouse::where('id', $id)->exists()) {
+            }
+
+            if ($status == true) {
+                if (Warehouse::where('id', $id)->where('is_active', true)->exists()) {
+                    return $this->responseSuccess('No Changes');
+                } else {
+                    Warehouse::withTrashed()->where('id', $id)->restore();
                     Warehouse::where('id', $id)->update([
-                        'is_active' => false
+                        'is_active' => true
                     ]);
-                    Warehouse::where('id', $id)->delete();
-                    return $this->responseSuccess('Warehouse deactivated successfully.');
+                    return $this->responseSuccess('Warehouse activated successfully.');
                 }
             }
-        }
-
-        if ($status == true) {
-            if (Warehouse::where('id', $id)->where('is_active', true)->exists()) {
-                return $this->responseSuccess('No Changes');
-            } else {
-                Warehouse::withTrashed()->where('id', $id)->restore();
-                Warehouse::where('id', $id)->update([
-                    'is_active' => true
-                ]);
-                return $this->responseSuccess('Warehouse activated successfully.');
-            }
-        }
-    }
+        }*/
 }
