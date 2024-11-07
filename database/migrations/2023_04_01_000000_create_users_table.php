@@ -20,6 +20,7 @@ class CreateUsersTable extends Migration
             $table->string('lastname');
             $table->string('username');
             $table->string('password');
+            $table->unsignedInteger('warehouse_id')->nullable();
             $table->unsignedInteger('company_id');
             $table->unsignedInteger('business_unit_id');
             $table->unsignedInteger('department_id');
@@ -52,6 +53,9 @@ class CreateUsersTable extends Migration
             $table->foreign('location_id')
             ->references('id')
             ->on('locations');
+            $table->foreign('warehouse_id')
+            ->references('id')
+            ->on('warehouses');
         });
     }
 

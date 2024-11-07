@@ -15,13 +15,15 @@ class CreateWarehousesTable extends Migration
     {
         Schema::create('warehouses', function (Blueprint $table) {
             $table->increments('id');
+            $table->unsignedInteger('sync_id')->unique();
             $table->string('warehouse_name');
-            $table->unsignedInteger('location_id')->index();
+            $table->string('warehouse_code')->unique();
+//            $table->unsignedInteger('location_id')->index();
             $table->boolean('is_active')->default(true);
             $table->softDeletes();
             $table->timestamps();
 
-            $table->foreign('location_id')->references('id')->on('locations');
+//            $table->foreign('location_id')->references('id')->on('locations');
         });
     }
 
