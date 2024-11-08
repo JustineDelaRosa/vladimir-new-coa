@@ -16,11 +16,17 @@ class Warehouse extends Model
 
     protected string $default_filters = WarehouseFilters::class;
 
-    public function assetRequest(){
+    public function assetRequest()
+    {
         return $this->hasMany(AssetTransferRequest::class, 'receiving_warehouse_id', 'id');
     }
 
-    public function location(){
-        return $this->belongsTo(Location::class, 'location_id', 'id');
+    public function users()
+    {
+        return $this->hasMany(User::class, 'warehouse_id', 'id');
     }
+
+    /*    public function location(){
+            return $this->belongsTo(Location::class, 'location_id', 'id');
+        }*/
 }

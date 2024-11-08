@@ -19,10 +19,20 @@ class WarehouseController extends Controller
     {
         $rWarehouseStatus = $request->status ?? 'status';
         $isActiveStatus = ($rWarehouseStatus === 'deactivated') ? 0 : 1;
+        $pagination = $request->pagination;
+        $userTagging = $request->input('user_tagging', false);
 
-//        return Warehouse::get();
+        $rWarehouse = Warehouse::where('is_active', $isActiveStatus)
+            ->when($pagination === 'none', function ($query) use ($userTagging) {
+                //show only the warehouse that is tag to a user
 
-        $rWarehouse = Warehouse::withTrashed()->with('location')->where('is_active', $isActiveStatus)
+                if (!$userTagging) {
+                    $query->whereHas('users');
+//                    $query->whereHas('users', function ($query) {
+//                        $query->where('id', auth()->user()->id);
+//                    });
+                }
+            })
             ->orderByDesc('created_at')
             ->useFilters()
             ->dynamicPaginate();
