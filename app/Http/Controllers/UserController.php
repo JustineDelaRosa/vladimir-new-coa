@@ -41,6 +41,11 @@ class UserController extends Controller
                 'lastname' => $item->lastname,
                 'username' => $item->username,
                 'role' => $item->role,
+                'warehouse' => [
+                    'id' => $item->warehouse->id ?? null,
+                    'warehouse_code' => $item->warehouse->warehouse_code ?? null,
+                    'warehouse_name' => $item->warehouse->warehouse_name ?? null,
+                ],
                 'company' => [
                     'id' => $item->company->id ?? null,
                     'company_code' => $item->company->company_code ?? null,
@@ -100,6 +105,7 @@ class UserController extends Controller
         $unit_id = $request->unit_id;
         $subunit_id = $request->subunit_id;
         $location_id = $request->location_id;
+        $warehouse_id = $request->warehouse_id;
 
         // $accessPermissionConvertedToString = implode(", ",$access_permission);
 
@@ -118,6 +124,7 @@ class UserController extends Controller
             'location_id' => $location_id,
             'is_active' => 1,
             'role_id' => $role_id,
+            'warehouse_id' => $warehouse_id
         ]);
 
         return response()->json(['message' => 'Successfully Created!', 'data' => $createUser], 201);
@@ -215,6 +222,7 @@ class UserController extends Controller
             'unit_id' => $request->unit_id,
             'subunit_id' => $request->subunit_id,
             'location_id' => $request->location_id,
+            'warehouse_id' => $request->warehouse_id
         ];
 
         foreach ($updatedFields as $field => $value) {
