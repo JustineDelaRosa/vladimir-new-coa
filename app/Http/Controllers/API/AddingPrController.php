@@ -199,7 +199,8 @@ class AddingPrController extends Controller
 //                        'cell_number' => $item->cell_number,
 //                        'brand' => $item->brand,
 //                        'remarks' => $item->remarks,
-
+                        'r_warehouse_id' => $item->receivingWarehouse->id,
+                        'r_warehouse_name' => $item->receivingWarehouse->warehouse_name,
                         'date_needed' => $item->date_needed,
                         'uom_id' => $item->uom->sync_id,
                         'uom_code' => $item->uom->uom_code,
@@ -209,7 +210,7 @@ class AddingPrController extends Controller
                 })->toArray();
                 return [
                     'v_name' => $firstname . ' ' . $lastname,
-                    'rdf_id' => $employee_id,
+                    'rdf_id' => preg_replace('/\D/', '', $employee_id),
                     'vrid' => $assetRequest->requester_id, //vladimir requester ID\
                     'pr_description' => $assetRequest->acquisition_details,
                     'pr_number' => $assetRequest->pr_number,
@@ -405,7 +406,7 @@ class AddingPrController extends Controller
 
         $client = new Client();
         $response = $client->request('PUT', $ymirApiUrl / $prNumber, [
-            'headers' => ['Authorization ' => 'Bearer ' . $ymirApiToken],
+            'headers' => ['Token ' => 'Bearer ' . $ymirApiToken],
             'json' => [
                 'v_name' => $fullName,
                 'rdf_id' => $employee_id

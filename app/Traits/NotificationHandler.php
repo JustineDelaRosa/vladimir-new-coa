@@ -46,13 +46,12 @@ trait NotificationHandler
 
     private function getToRelease($user)
     {
+        $userWarehouseId = auth('sanctum')->user()->warehouse_id;
         $fixeAssetCount = FixedAsset::where('from_request', 1)
             ->whereNotNull('print_count')
             ->where('can_release', 1)
             ->where('is_released', 0)
-            ->whereHas('warehouse', function ($query) use ($user) {
-                $query->where('location_id', $user->location_id);
-            })
+            ->where('warehouse_id', $userWarehouseId)
             ->where(function ($query) {
                 $query->where('accountability', 'Common')
                     ->where('memo_series_id', null)
@@ -94,6 +93,7 @@ trait NotificationHandler
         return AssetRequest::select('transaction_number')
             ->where('status', 'Approved')
             ->where('is_fa_approved', 1)
+            ->where('receiving_warehouse_id', $user->warehouse_id)
             ->groupBy('transaction_number')
             ->havingRaw('SUM(synced) >= 1')
             ->havingRaw('SUM(quantity) != SUM(quantity_delivered)')

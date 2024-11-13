@@ -34,14 +34,12 @@ trait AddingPoHandler
 
     public function createAssetRequestQuery($toPo, $from = null, $to = null)
     {
-        $userLocationId = auth('sanctum')->user()->location_id;
+        $userWarehouseId = auth('sanctum')->user()->warehouse_id;
         $query = AssetRequest::query()->withTrashed();
 
         $query->where('status', 'Approved')
             ->where('is_fa_approved', 1)
-            ->whereHas('receivingWarehouse', function ($query) use ($userLocationId) {
-                $query->where('location_id', $userLocationId);
-            })
+            ->where('receiving_warehouse_id', $userWarehouseId)
             ->when($from && $to, function ($query) use ($to, $from) {
                 $query->whereDate('received_at', '>=', $from)
                     ->whereDate('received_at', '<=', $to);

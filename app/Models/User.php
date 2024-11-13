@@ -110,5 +110,7 @@ class User extends Authenticatable
     {
         return $this->belongsTo(RoleManagement::class, 'role_id', 'id');
     }
-
+    public function warehouse(){
+        return $this->belongsTo(Warehouse::class, 'warehouse_id', 'id');
+    }
 }
