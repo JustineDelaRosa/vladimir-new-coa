@@ -32,6 +32,10 @@ class UpdateRequestContainerRequest extends FormRequest
      */
     public function rules()
     {
+
+        if ($this->input('small_tool_id') == '-') {
+            $this->merge(['small_tool_id' => null]);
+        }
         return [
             'type_of_request_id' => [
                 'required',

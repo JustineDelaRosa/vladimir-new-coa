@@ -34,6 +34,11 @@ class UpdateAssetRequestRequest extends FormRequest
     public function rules()
     {
         $typeOfRequestIdForCapex = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
+
+        //check if the small tool id value is "-" then return null as value
+        if ($this->input('small_tool_id') == '-') {
+            $this->merge(['small_tool_id' => null]);
+        }
         return [
             'type_of_request_id' => [
                 'required',
@@ -44,14 +49,13 @@ class UpdateAssetRequestRequest extends FormRequest
                     $typeOfRequestId = request()->input('type_of_request_id');
                     $smallToolsId = TypeOfRequest::where('type_of_request_name', 'Small Tools')->first()->id;
 
+
                     if ($typeOfRequestId == $smallToolsId) {
                         if (empty($value)) {
                             $fail('The small tool is required.');
                         } elseif (!DB::table('small_tools')->where('id', $value)->exists()) {
                             $fail('The small tool is invalid.');
                         }
-                    } else {
-                        request()->merge(['small_tool_id' => null]);
                     }
                 },
             ],
@@ -92,7 +96,7 @@ class UpdateAssetRequestRequest extends FormRequest
             'quotation' => ['bail', 'nullable', 'max:10000', new FileOrX],
             'specification_form' => ['bail', 'nullable', 'max:10000', new FileOrX],
             'tool_of_trade' => ['bail', 'nullable', 'max:10000', new FileOrX],
-            'other_attachments' => ['bail','nullable', 'required-if:type_of_request_id,2', 'max:10000', new FileOrX],
+            'other_attachments' => ['bail', 'nullable', 'required-if:type_of_request_id,2', 'max:10000', new FileOrX],
             'uom_id' => 'required|exists:unit_of_measures,id',
             'receiving_warehouse_id' => 'required|exists:warehouses,id',
             //
