@@ -26,6 +26,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\Models\Activity;
 
 class AssetRequestController extends Controller
 {
@@ -241,6 +242,7 @@ class AssetRequestController extends Controller
 
     public function updateRequest(UpdateAssetRequestRequest $request, $referenceNumber)
     {
+//        return $request->all();
 
         $transactionNumber = AssetRequest::where('reference_number', $referenceNumber)->first()->transaction_number ?? null;
 
@@ -311,7 +313,7 @@ class AssetRequestController extends Controller
         $assetRequests = $items->map(function ($item) use ($transactionNumber) {
             $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
             $assetRequest = new AssetRequest($item->only([
-                'status', 'is_addcost','item_status','small_tool_id', 'fixed_asset_id', 'requester_id', 'type_of_request_id', 'attachment_type',
+                'status', 'is_addcost', 'item_status', 'small_tool_id', 'fixed_asset_id', 'requester_id', 'type_of_request_id', 'attachment_type',
                 'additional_info', 'acquisition_details', 'accountability', 'major_category_id', 'minor_category_id',
                 'uom_id', 'company_id', 'business_unit_id', 'department_id', 'unit_id', 'subunit_id', 'location_id',
                 'account_title_id', 'accountable', 'asset_description', 'asset_specification', 'cellphone_number', 'brand',
@@ -331,7 +333,25 @@ class AssetRequestController extends Controller
 
         $this->createAssetApprovals($items, $requesterId, $assetRequests->last());
 
+        $this->requestedLog($transactionNumber);
+
         return $this->responseSuccess('Successfully requested');
+    }
+
+    public function requestedLog($transactionNumber)
+    {
+        $user = auth('sanctum')->user();
+        $assetRequests = new AssetRequest();
+        activity()
+            ->causedBy($user)
+            ->performedOn($assetRequests)
+            ->inLog('Requested')
+            ->tap(function ($activity) use ($transactionNumber) {
+                $activity->subject_id = $transactionNumber;
+            })
+            ->log('Requested Asset Request with Transaction Number: ' . $transactionNumber);
+
+
     }
 
 
@@ -564,4 +584,103 @@ class AssetRequestController extends Controller
 //
 //        return $this->responseSuccess('Successfully requested');
 //    }
+
+
+    public function exportAging(Request $request)
+    {
+        $user = auth('sanctum')->user();
+        $from = $request->input('from');
+        $to = $request->input('to');
+        $dataAll = $request->input('data_all', 0);
+
+        //check if the user is admin then allow the dataAll to be 1 else 0
+        if ($user->role->role_name != 'Admin') {
+            $dataAll = 0;
+        }
+
+
+//        $status = $request->input('status');
+
+
+        $assetRequest = AssetRequest::when($from && $to, function ($query) use ($from, $to) {
+            return $query->whereBetween('created_at', [$from, $to]);
+        })
+            ->when($from && !$to, function ($query) use ($from) {
+                return $query->where('created_at', '>=', $from);
+            })
+            ->when(!$from && $to, function ($query) use ($to) {
+                return $query->where('created_at', '<=', $to);
+            })
+            ->when($dataAll == 0, function ($query) use ($user) {
+                return $query->where('requester_id', $user->id);
+            })
+            ->get();
+
+        $data = $assetRequest->map(function ($item) {
+
+            //compute the the days from created_at to the last activity log created at date
+            $lastActivity = Activity::whereSubjectType(AssetRequest::class)
+                ->whereSubjectId($item->transaction_number)
+                ->latest()->first()->created_at;
+            $created = $item->created_at;
+            $days = $created->diffInDays($lastActivity);
+
+            try {
+                $YmirPRNumber = YmirPRTransaction::where('pr_number', $item->pr_number)->first()->pr_year_number_id ?? null;
+            } catch (\Exception $e) {
+                $YmirPRNumber = $item->pr_number;
+            }
+
+            $isAllDeleted = AssetRequest::withTrashed()->where('transaction_number', $item->transaction_number)->count() == AssetRequest::onlyTrashed()->where('transaction_number', $item->transaction_number)->count();
+
+            $requestStatus = 'For Approval of FA';
+
+            if (strpos($item->status, 'For Approval') === 0) {
+                $requestStatus = $item->status;
+            } elseif ($item->status == 'Returned') {
+                $requestStatus = $item->status;
+            } elseif ($item->is_fa_approved) {
+                $requestStatus = $item->filter == 'Sent to Ymir' ? 'Sent to ymir for PO' : $item->filter;
+            } elseif ($isAllDeleted) {
+                $requestStatus = 'Cancelled';
+            } elseif ($item->is_fa_approved) {
+                $requestStatus = $item->status;
+            }
+
+
+            return [
+                'transaction_number' => $item->transaction_number,
+//                'reference_number' => $item->reference_number,
+                'requester' => $item->requestor->username,
+                'ymir_pr_number' => $YmirPRNumber,
+                'pr_number' => $item->pr_number,
+//                'po_number' => $item->po_number,
+//                'rr_number' => $item->rr_number,
+                'item_status' => $item->item_status,
+                'acquisition_details' => $item->acquisition_details,
+                'quantity' => $item->quantity,
+                'delivered' => $item->quantity_delivered ?? '-',
+                'remaining' => $item->quantity - $item->quantity_delivered ?? '-',
+                'cancelled' => (int)$item->onlyTrashed()->where('transaction_number', $item->transaction_number)->sum('quantity'),
+                'company_name' => $item->company->company_name,
+                'company_code' => $item->company->company_code,
+                'business_unit_name' => $item->businessUnit->business_unit_name,
+                'business_unit_code' => $item->businessUnit->business_unit_code,
+                'department_name' => $item->department->department_name,
+                'department_code' => $item->department->department_code,
+                'unit_name' => $item->unit->unit_name,
+                'unit_code' => $item->unit->unit_code,
+                'sub_unit_name' => $item->subUnit->sub_unit_name,
+                'sub_unit_code' => $item->subUnit->sub_unit_code,
+                'location_name' => $item->location->location_name,
+                'location_code' => $item->location->location_code,
+                'status' => $requestStatus,
+                'created_at' => $item->created_at,
+                'aging' => $days
+            ];
+        });
+
+        return $data;
+
+    }
 }
