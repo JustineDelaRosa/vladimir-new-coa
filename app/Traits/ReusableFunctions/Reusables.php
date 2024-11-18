@@ -5,6 +5,7 @@ namespace App\Traits\ReusableFunctions;
 use App\Models\Approvers;
 use App\Models\AssetRequest;
 use App\Models\FixedAsset;
+use App\Models\MovementNumber;
 use App\Models\RoleManagement;
 use App\Models\User;
 use Essa\APIToolKit\Api\ApiResponse;
@@ -388,4 +389,23 @@ trait Reusables
 //
 //        return $filteredAndGroupedAssetRequests;
 //    }
+
+    public function movementLogs($transactionNumber, $action, $reason = null)
+    {
+        $user = auth('sanctum')->user();
+        $movementNumber = new MovementNumber();
+        activity()
+            ->causedBy($user)
+            ->performedOn($movementNumber)
+            ->inLog($action)
+            ->withProperties([
+                'action' => $action,
+                'transaction_number' => $transactionNumber,
+                'remarks' => $reason,
+            ])
+            ->tap(function ($activity) use ($transactionNumber) {
+                $activity->subject_id = $transactionNumber;
+            })
+            ->log($action . ' Request');
+    }
 }
