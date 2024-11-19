@@ -36,6 +36,7 @@ class UserController extends Controller
         $user->transform(function ($item) {
             return [
                 'id' => $item->id,
+                'full_id_number_full_name' => $item->employee_id . ' ' . $item->firstname . ' ' . $item->lastname,
                 'employee_id' => $item->employee_id,
                 'firstname' => $item->firstname,
                 'lastname' => $item->lastname,
