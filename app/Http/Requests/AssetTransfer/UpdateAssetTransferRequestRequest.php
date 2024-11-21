@@ -38,7 +38,7 @@ class UpdateAssetTransferRequestRequest extends FormRequest
 //                $inContainer = AssetTransferRequest::where('fixed_asset_id', $value)->first();
 //                if($inContainer) $fail('The selected fixed asset is already in the asset transfer container.');
                 $inTransferRequest = AssetTransferRequest::where('fixed_asset_id', $value)
-                    ->where('status', '!==', 'Approved')->first();
+                    ->where('status', '!==', 'Received')->first();
                 if($inTransferRequest) $fail('The selected fixed asset is already in the asset transfer request.');
             }],
             'accountability' => 'required|in:Common,Personal Issued',
