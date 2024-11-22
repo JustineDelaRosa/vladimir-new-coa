@@ -29,6 +29,7 @@ class CreateTransfersTable extends Migration
             $table->unsignedInteger('location_id');
             $table->unsignedInteger('account_id');
             $table->string('remarks')->nullable();
+            $table->timestamp('received_at')->nullable();
             $table->softDeletes();
             $table->timestamps();
             $table->foreign('business_unit_id')

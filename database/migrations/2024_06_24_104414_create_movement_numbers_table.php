@@ -17,7 +17,9 @@ class CreateMovementNumbersTable extends Migration
             $table->increments('id');
             $table->string('status')->default('For Approval of Approver 1');
             $table->boolean('is_fa_approved');
+            $table->boolean('is_received')->default(false);
             $table->unsignedInteger('requester_id');
+            $table->text('remarks')->nullable();
             $table->softDeletes();
             $table->timestamps();
 

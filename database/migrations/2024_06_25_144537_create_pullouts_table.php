@@ -16,8 +16,17 @@ class CreatePulloutsTable extends Migration
         Schema::create('pullouts', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('movement_id');
+            $table->unsignedInteger('fixed_asset_id');
+            $table->string('description');
             $table->string('care_of');
+            $table->string('remarks');
+            $table->timestamp('received_at')->nullable();
+            $table->softDeletes();
             $table->timestamps();
+            $table->foreign('fixed_asset_id')
+                ->references('id')
+                ->on('fixed_assets')
+                ->onDelete('cascade');
             $table->foreign('movement_id')
                 ->references('id')
                 ->on('movement_numbers')
