@@ -3,10 +3,14 @@
 namespace App\Traits\ReusableFunctions;
 
 use App\Models\Approvers;
+use App\Models\AssetPullOutApprover;
 use App\Models\AssetRequest;
+use App\Models\AssetTransferApprover;
 use App\Models\FixedAsset;
 use App\Models\MovementNumber;
+use App\Models\Pullout;
 use App\Models\RoleManagement;
+use App\Models\Transfer;
 use App\Models\User;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
@@ -407,5 +411,40 @@ trait Reusables
                 $activity->subject_id = $transactionNumber;
             })
             ->log($action . ' Request');
+    }
+
+    public function getApprovers($modelType, $subUnitId)
+    {
+        if ($modelType instanceof Transfer) {
+            $requestApproversCollection = AssetTransferApprover::where('subunit_id', $subUnitId)
+                ->orderBy('layer', 'asc')
+                ->get();
+            return $requestApproversCollection->map(function ($item) {
+                return [
+                    'id' => $item->approver->id,
+                    'approver_id' => $item->approver->approver_id,
+//                     'username' => $item->approver->user->username,
+                    'layer' => $item->layer,
+                    'max_layer' => $item->max('layer'),
+                ];
+            })->toArray();
+        }else if($modelType instanceof Pullout){
+            $requestApproversCollection = AssetPullOutApprover::where('subunit_id', $subUnitId)
+                ->orderBy('layer', 'asc')
+                ->get();
+            return $requestApproversCollection->map(function ($item) {
+                return [
+                    'id' => $item->approver->id,
+                    'approver_id' => $item->approver->approver_id,
+//                     'username' => $item->approver->user->username,
+                    'layer' => $item->layer,
+                    'max_layer' => $item->max('layer'),
+                ];
+            })->toArray();
+        }
+
+
+        // Add more conditions for other model types if needed
+        return collect();
     }
 }

@@ -14,6 +14,11 @@ class Transfer extends Model implements HasMedia
 
     protected $guarded = [];
 
+    public function fixedAsset()
+    {
+        return $this->belongsTo(FixedAsset::class, 'fixed_asset_id', 'id');
+    }
+
     public function movementNumber()
     {
         return $this->belongsTo(MovementNumber::class, 'movement_id', 'id');
@@ -31,6 +36,10 @@ class Transfer extends Model implements HasMedia
     {
         return $this->belongsTo(Unit::class, 'unit_id', 'id');
     }
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id', 'id');
+    }
     public function subUnit()
     {
         return $this->belongsTo(SubUnit::class, 'subunit_id', 'id');
@@ -38,6 +47,11 @@ class Transfer extends Model implements HasMedia
     public function location()
     {
         return $this->belongsTo(Location::class, 'location_id', 'id');
+    }
+
+    public function receiver()
+    {
+        return $this->belongsTo(User::class, 'receiver_id', 'id');
     }
     // i also want to access the table that is connected with movement number
     public function movementApproval()

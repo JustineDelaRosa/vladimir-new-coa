@@ -2,6 +2,8 @@
 
 namespace App\Traits\AssetMovement;
 
+use App\Models\MovementNumber;
+
 trait TransferHandler
 {
 
@@ -10,17 +12,28 @@ trait TransferHandler
         $transfer = $transfer->map(function ($item) {
             $transfer = $item->transfer->first();
             $attachments = $item->first()->getMedia('attachments')->all();
+
+            $canEdit = 1;
+            $canDelete = 0;
+            if($item->is_received || $item->is_fa_approved){
+                $canEdit = 0;
+            }
+            if($item->statis == 'Returned' || $item->status == 'For Approval of Approver 1'){
+                $canDelete = 1;
+            }
             return [
+                'can_edit' => $canEdit,
+                'can_delete' => $canDelete,
                 'id' => $item->transfer->map(function ($transferMovement) {
                     return $transferMovement->id;
                 })->values(),
                 'movement_id' => $item->id,
                 'assets' => $item->transfer->map(function ($transferMovement) {
-                    return $this->transformSingleFixedAssetShowData($transferMovement->fixedAsset);
+                    return $this->transformSingleFixedAssetShowData($transferMovement->fixedAsset, null);
                 })->values(),
                 'accountability' => $transfer->accountability,
                 'accountable' => [
-                    'full_id_number_full_name'=> $transfer->accountable
+                    'full_id_number_full_name' => $transfer->accountable
                 ],
                 'receiver' => [
                     'id' => $transfer->receiver->id ?? '-',
@@ -28,7 +41,7 @@ trait TransferHandler
                     'first_name' => $transfer->receiver->firstname ?? '-',
                     'last_name' => $transfer->receiver->lastname ?? '-',
                     'employee_id' => $transfer->receiver->employee_id ?? '-',
-                    'full_id_number_full_name'=> $transfer->receiver->employee_id.' '.$transfer->receiver->firstname.' '.$transfer->receiver->lastname
+                    'full_id_number_full_name' => $transfer->receiver->employee_id . ' ' . $transfer->receiver->firstname . ' ' . $transfer->receiver->lastname
                 ],
                 'company' => [
                     'id' => $transfer->company->id ?? '-',
@@ -129,19 +142,20 @@ trait TransferHandler
         ];
     }
 
-    private function transformSingleFixedAssetShowData($fixed_asset): array
+    private function transformSingleFixedAssetShowData($fixed_asset, $movementNumber = null, $transfer = null): array
     {
-
-
 //        $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? $fixed_asset->additionalCost->count() : 0;
+        $attachment = $movementNumber ? $movementNumber->getMedia('attachments')->all() : null;
+        $transfer = $transfer ?: null;
         return [
 //            'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id ?? '-',
+//            'is_received' => $transfer ? ($transfer->whereNotNull('received_at') ? 1 : 0) : '-',
             'requestor' => [
                 'id' => $fixed_asset->requestor->id ?? '-',
                 'username' => $fixed_asset->requestor->username ?? '-',
-                'first_name' => $fixed_asset->requestor->first_name ?? '-',
-                'last_name' => $fixed_asset->requestor->last_name ?? '-',
+                'first_name' => $fixed_asset->requestor->firstname ?? '-',
+                'last_name' => $fixed_asset->requestor->lastname ?? '-',
                 'employee_id' => $fixed_asset->requestor->employee_id ?? '-',
             ],
             'pr_number' => $fixed_asset->pr_number ?? '-',
@@ -253,7 +267,6 @@ trait TransferHandler
                 'department_code' => $fixed_asset->department->department_code ?? '-',
                 'department_name' => $fixed_asset->department->department_name ?? '-',
             ],
-
             'unit' => [
                 'id' => $fixed_asset->unit->id ?? '-',
                 'unit_code' => $fixed_asset->unit->unit_code ?? '-',
@@ -280,134 +293,172 @@ trait TransferHandler
                 'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
             ],
             'remarks' => $fixed_asset->remarks ?? '-',
+            'received_at' => $transfer->received_at ?? '-',
             'print_count' => $fixed_asset->print_count ?? '-',
             'print' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag' ?? '-',
             'last_printed' => $fixed_asset->last_printed,
             'tagging' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
-//            'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
-//                return [
-//                    'id' => $additional_cost->id ?? '-',
-//                    'requestor' => [
-//                        'id' => $additional_cost->requestor->id ?? '-',
-//                        'username' => $additional_cost->requestor->username ?? '-',
-//                        'first_name' => $additional_cost->requestor->first_name ?? '-',
-//                        'last_name' => $additional_cost->requestor->last_name ?? '-',
-//                        'employee_id' => $additional_cost->requestor->employee_id ?? '-',
-//                    ],
-//                    'pr_number' => $additional_cost->pr_number ?? '-',
-//                    'po_number' => $additional_cost->po_number ?? '-',
-//                    'rr_number' => $additional_cost->rr_number ?? '-',
-//                    'warehouse_number' => [
-//                        'id' => $additional_cost->warehouseNumber->id ?? '-',
-//                        'warehouse_number' => $additional_cost->warehouseNumber->warehouse_number ?? '-',
-//                    ],
-//                    'from_request' => $additional_cost->from_request ?? '-',
-//                    'can_release' => $additional_cost->can_release ?? '-',
-//                    'add_cost_sequence' => $additional_cost->add_cost_sequence ?? '-',
-//                    'asset_description' => $additional_cost->asset_description ?? '-',
-//                    'type_of_request' => [
-//                        'id' => $additional_cost->typeOfRequest->id ?? '-',
-//                        'type_of_request_name' => $additional_cost->typeOfRequest->type_of_request_name ?? '-',
-//                    ],
-//                    'asset_specification' => $additional_cost->asset_specification ?? '-',
-//                    'accountability' => $additional_cost->accountability ?? '-',
-//                    'accountable' => $additional_cost->accountable ?? '-',
-//                    'cellphone_number' => $additional_cost->cellphone_number ?? '-',
-//                    'brand' => $additional_cost->brand ?? '-',
-//                    'supplier' => [
-//                        'id' => $fixed_asset->supplier->id ?? '-',
-//                        'supplier_code' => $fixed_asset->supplier->supplier_code ?? '-',
-//                        'supplier_name' => $fixed_asset->supplier->supplier_name ?? '-',
-//                    ],
-//                    'division' => [
-//                        'id' => $additional_cost->department->division->id ?? '-',
-//                        'division_name' => $additional_cost->department->division->division_name ?? '-',
-//                    ],
-//                    'major_category' => [
-//                        'id' => $additional_cost->majorCategory->id ?? '-',
-//                        'major_category_name' => $additional_cost->majorCategory->major_category_name ?? '-',
-//                    ],
-//                    'minor_category' => [
-//                        'id' => $additional_cost->minorCategory->id ?? '-',
-//                        'minor_category_name' => $additional_cost->minorCategory->minor_category_name ?? '-',
-//                    ],
-//                    'unit_of_measure' => [
-//                        'id' => $additional_cost->uom->id ?? '-',
-//                        'uom_code' => $additional_cost->uom->uom_code ?? '-',
-//                        'uom_name' => $additional_cost->uom->uom_name ?? '-',
-//                    ],
-//                    'est_useful_life' => $additional_cost->majorCategory->est_useful_life ?? '-',
-//                    'voucher' => $additional_cost->voucher ?? '-',
-//                    'voucher_date' => $additional_cost->voucher_date ?? '-',
-//                    'receipt' => $additional_cost->receipt ?? '-',
-//                    'quantity' => $additional_cost->quantity ?? '-',
-//                    'depreciation_method' => $additional_cost->depreciation_method ?? '-',
-//                    //                    'salvage_value' => $additional_cost->salvage_value,
-//                    'acquisition_date' => $additional_cost->acquisition_date ?? '-',
-//                    'acquisition_cost' => $additional_cost->acquisition_cost ?? '-',
-//                    'scrap_value' => $additional_cost->formula->scrap_value ?? '-',
-//                    'depreciable_basis' => $additional_cost->formula->depreciable_basis ?? '-',
-//                    'accumulated_cost' => $additional_cost->formula->accumulated_cost ?? '-',
-//                    'asset_status' => [
-//                        'id' => $additional_cost->assetStatus->id ?? '-',
-//                        'asset_status_name' => $additional_cost->assetStatus->asset_status_name ?? '-',
-//                    ],
-//                    'cycle_count_status' => [
-//                        'id' => $additional_cost->cycleCountStatus->id ?? '-',
-//                        'cycle_count_status_name' => $additional_cost->cycleCountStatus->cycle_count_status_name ?? '-',
-//                    ],
-//                    'depreciation_status' => [
-//                        'id' => $additional_cost->depreciationStatus->id ?? '-',
-//                        'depreciation_status_name' => $additional_cost->depreciationStatus->depreciation_status_name ?? '-',
-//                    ],
-//                    'movement_status' => [
-//                        'id' => $additional_cost->movementStatus->id ?? '-',
-//                        'movement_status_name' => $additional_cost->movementStatus->movement_status_name ?? '-',
-//                    ],
-//                    'is_additional_cost' => $additional_cost->is_additional_cost ?? '-',
-//                    'status' => $additional_cost->is_active ?? '-',
-//                    'care_of' => $additional_cost->care_of ?? '-',
-//                    'months_depreciated' => $additional_cost->formula->months_depreciated ?? '-',
-//                    'end_depreciation' => $additional_cost->formula->end_depreciation ?? '-',
-//                    'depreciation_per_year' => $additional_cost->formula->depreciation_per_year ?? '-',
-//                    'depreciation_per_month' => $additional_cost->formula->depreciation_per_month ?? '-',
-//                    'remaining_book_value' => $additional_cost->formula->remaining_book_value ?? '-',
-//                    'release_date' => $additional_cost->formula->release_date ?? '-',
-//                    'start_depreciation' => $additional_cost->formula->start_depreciation ?? '-',
-//                    'company' => [
-//                        'id' => $additional_cost->department->company->id ?? '-',
-//                        'company_code' => $additional_cost->department->company->company_code ?? '-',
-//                        'company_name' => $additional_cost->department->company->company_name ?? '-',
-//                    ],
-//                    'business_unit' => [
-//                        'id' => $fixed_asset->department->businessUnit->id ?? '-',
-//                        'business_unit_code' => $fixed_asset->department->businessUnit->business_unit_code ?? '-',
-//                        'business_unit_name' => $fixed_asset->department->businessUnit->business_unit_name ?? '-',
-//                    ],
-//                    'department' => [
-//                        'id' => $additional_cost->department->id ?? '-',
-//                        'department_code' => $additional_cost->department->department_code ?? '-',
-//                        'department_name' => $additional_cost->department->department_name ?? '-',
-//                    ],
-//                    'charged_department' => [
-//                        'id' => $additional_cost->department->id ?? '-',
-//                        'charged_department_code' => $additional_cost->department->department_code ?? '-',
-//                        'charged_department_name' => $additional_cost->department->department_name ?? '-',
-//                    ],
-//                    'location' => [
-//                        'id' => $additional_cost->location->id ?? '-',
-//                        'location_code' => $additional_cost->location->location_code ?? '-',
-//                        'location_name' => $additional_cost->location->location_name ?? '-',
-//                    ],
-//                    'account_title' => [
-//                        'id' => $additional_cost->accountTitle->id ?? '-',
-//                        'account_title_code' => $additional_cost->accountTitle->account_title_code ?? '-',
-//                        'account_title_name' => $additional_cost->accountTitle->account_title_name ?? '-',
-//                    ],
-//                    'remarks' => $additional_cost->remarks ?? '-',
-//                ];
-//            }) : [],
+            'attachments' => $attachment ? collect($attachment)->map(function ($attachment) {
+                return [
+                    'id' => $attachment->id,
+                    'name' => $attachment->file_name,
+                    'url' => $attachment->getUrl(),
+                ];
+            }) : collect([]),
+            /*            'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
+                            return [
+                                'id' => $additional_cost->id ?? '-',
+                                'requestor' => [
+                                    'id' => $additional_cost->requestor->id ?? '-',
+                                    'username' => $additional_cost->requestor->username ?? '-',
+                                    'first_name' => $additional_cost->requestor->first_name ?? '-',
+                                    'last_name' => $additional_cost->requestor->last_name ?? '-',
+                                    'employee_id' => $additional_cost->requestor->employee_id ?? '-',
+                                ],
+                                'pr_number' => $additional_cost->pr_number ?? '-',
+                                'po_number' => $additional_cost->po_number ?? '-',
+                                'rr_number' => $additional_cost->rr_number ?? '-',
+                                'warehouse_number' => [
+                                    'id' => $additional_cost->warehouseNumber->id ?? '-',
+                                    'warehouse_number' => $additional_cost->warehouseNumber->warehouse_number ?? '-',
+                                ],
+                                'from_request' => $additional_cost->from_request ?? '-',
+                                'can_release' => $additional_cost->can_release ?? '-',
+                                'add_cost_sequence' => $additional_cost->add_cost_sequence ?? '-',
+                                'asset_description' => $additional_cost->asset_description ?? '-',
+                                'type_of_request' => [
+                                    'id' => $additional_cost->typeOfRequest->id ?? '-',
+                                    'type_of_request_name' => $additional_cost->typeOfRequest->type_of_request_name ?? '-',
+                                ],
+                                'asset_specification' => $additional_cost->asset_specification ?? '-',
+                                'accountability' => $additional_cost->accountability ?? '-',
+                                'accountable' => $additional_cost->accountable ?? '-',
+                                'cellphone_number' => $additional_cost->cellphone_number ?? '-',
+                                'brand' => $additional_cost->brand ?? '-',
+                                'supplier' => [
+                                    'id' => $fixed_asset->supplier->id ?? '-',
+                                    'supplier_code' => $fixed_asset->supplier->supplier_code ?? '-',
+                                    'supplier_name' => $fixed_asset->supplier->supplier_name ?? '-',
+                                ],
+                                'division' => [
+                                    'id' => $additional_cost->department->division->id ?? '-',
+                                    'division_name' => $additional_cost->department->division->division_name ?? '-',
+                                ],
+                                'major_category' => [
+                                    'id' => $additional_cost->majorCategory->id ?? '-',
+                                    'major_category_name' => $additional_cost->majorCategory->major_category_name ?? '-',
+                                ],
+                                'minor_category' => [
+                                    'id' => $additional_cost->minorCategory->id ?? '-',
+                                    'minor_category_name' => $additional_cost->minorCategory->minor_category_name ?? '-',
+                                ],
+                                'unit_of_measure' => [
+                                    'id' => $additional_cost->uom->id ?? '-',
+                                    'uom_code' => $additional_cost->uom->uom_code ?? '-',
+                                    'uom_name' => $additional_cost->uom->uom_name ?? '-',
+                                ],
+                                'est_useful_life' => $additional_cost->majorCategory->est_useful_life ?? '-',
+                                'voucher' => $additional_cost->voucher ?? '-',
+                                'voucher_date' => $additional_cost->voucher_date ?? '-',
+                                'receipt' => $additional_cost->receipt ?? '-',
+                                'quantity' => $additional_cost->quantity ?? '-',
+                                'depreciation_method' => $additional_cost->depreciation_method ?? '-',
+                                //                    'salvage_value' => $additional_cost->salvage_value,
+                                'acquisition_date' => $additional_cost->acquisition_date ?? '-',
+                                'acquisition_cost' => $additional_cost->acquisition_cost ?? '-',
+                                'scrap_value' => $additional_cost->formula->scrap_value ?? '-',
+                                'depreciable_basis' => $additional_cost->formula->depreciable_basis ?? '-',
+                                'accumulated_cost' => $additional_cost->formula->accumulated_cost ?? '-',
+                                'asset_status' => [
+                                    'id' => $additional_cost->assetStatus->id ?? '-',
+                                    'asset_status_name' => $additional_cost->assetStatus->asset_status_name ?? '-',
+                                ],
+                                'cycle_count_status' => [
+                                    'id' => $additional_cost->cycleCountStatus->id ?? '-',
+                                    'cycle_count_status_name' => $additional_cost->cycleCountStatus->cycle_count_status_name ?? '-',
+                                ],
+                                'depreciation_status' => [
+                                    'id' => $additional_cost->depreciationStatus->id ?? '-',
+                                    'depreciation_status_name' => $additional_cost->depreciationStatus->depreciation_status_name ?? '-',
+                                ],
+                                'movement_status' => [
+                                    'id' => $additional_cost->movementStatus->id ?? '-',
+                                    'movement_status_name' => $additional_cost->movementStatus->movement_status_name ?? '-',
+                                ],
+                                'is_additional_cost' => $additional_cost->is_additional_cost ?? '-',
+                                'status' => $additional_cost->is_active ?? '-',
+                                'care_of' => $additional_cost->care_of ?? '-',
+                                'months_depreciated' => $additional_cost->formula->months_depreciated ?? '-',
+                                'end_depreciation' => $additional_cost->formula->end_depreciation ?? '-',
+                                'depreciation_per_year' => $additional_cost->formula->depreciation_per_year ?? '-',
+                                'depreciation_per_month' => $additional_cost->formula->depreciation_per_month ?? '-',
+                                'remaining_book_value' => $additional_cost->formula->remaining_book_value ?? '-',
+                                'release_date' => $additional_cost->formula->release_date ?? '-',
+                                'start_depreciation' => $additional_cost->formula->start_depreciation ?? '-',
+                                'company' => [
+                                    'id' => $additional_cost->department->company->id ?? '-',
+                                    'company_code' => $additional_cost->department->company->company_code ?? '-',
+                                    'company_name' => $additional_cost->department->company->company_name ?? '-',
+                                ],
+                                'business_unit' => [
+                                    'id' => $fixed_asset->department->businessUnit->id ?? '-',
+                                    'business_unit_code' => $fixed_asset->department->businessUnit->business_unit_code ?? '-',
+                                    'business_unit_name' => $fixed_asset->department->businessUnit->business_unit_name ?? '-',
+                                ],
+                                'department' => [
+                                    'id' => $additional_cost->department->id ?? '-',
+                                    'department_code' => $additional_cost->department->department_code ?? '-',
+                                    'department_name' => $additional_cost->department->department_name ?? '-',
+                                ],
+                                'charged_department' => [
+                                    'id' => $additional_cost->department->id ?? '-',
+                                    'charged_department_code' => $additional_cost->department->department_code ?? '-',
+                                    'charged_department_name' => $additional_cost->department->department_name ?? '-',
+                                ],
+                                'location' => [
+                                    'id' => $additional_cost->location->id ?? '-',
+                                    'location_code' => $additional_cost->location->location_code ?? '-',
+                                    'location_name' => $additional_cost->location->location_name ?? '-',
+                                ],
+                                'account_title' => [
+                                    'id' => $additional_cost->accountTitle->id ?? '-',
+                                    'account_title_code' => $additional_cost->accountTitle->account_title_code ?? '-',
+                                    'account_title_name' => $additional_cost->accountTitle->account_title_name ?? '-',
+                                ],
+                                'remarks' => $additional_cost->remarks ?? '-',
+                            ];
+                        }) : [],*/
         ];
     }
+
+    public function receiverTableViewing($transfer)
+    {
+        return $transfer->map(function ($item) {
+            return [
+                'request_id' => $item->movementNumber->id,
+                'id' => $item->id,
+                'vladimir_tag_number' => $item->fixedAsset->vladimir_tag_number,
+                'description' => $item->fixedAsset->asset_description,
+                'status' => $item->fixedAsset->assetStatus->asset_status_name,
+                'accountability' => $item->fixedAsset->accountability,
+                'accountable' => $item->fixedAsset->accountable ?? '-',
+                'receiver' => $item->receiver->employee_id . ' ' . $item->receiver->firstname . ' ' . $item->receiver->lastname,
+                'company' => $item->company->company_name,
+                'company_code' => $item->company->company_code,
+                'business_unit' => $item->businessUnit->business_unit_name,
+                'business_unit_code' => $item->businessUnit->business_unit_code,
+                'department' => $item->department->department_name,
+                'department_code' => $item->department->department_code,
+                'unit' => $item->unit->unit_name,
+                'unit_code' => $item->unit->unit_code,
+                'sub_unit' => $item->subUnit->sub_unit_name,
+                'sub_unit_code' => $item->subUnit->sub_unit_code,
+                'location' => $item->location->location_name,
+                'location_code' => $item->location->location_code,
+                'created_at' => $item->created_at,
+            ];
+        });
+    }
+
 
 }
