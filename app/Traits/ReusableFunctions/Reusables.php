@@ -8,7 +8,7 @@ use App\Models\AssetRequest;
 use App\Models\AssetTransferApprover;
 use App\Models\FixedAsset;
 use App\Models\MovementNumber;
-use App\Models\Pullout;
+use App\Models\PullOut;
 use App\Models\RoleManagement;
 use App\Models\Transfer;
 use App\Models\User;
@@ -428,7 +428,7 @@ trait Reusables
                     'max_layer' => $item->max('layer'),
                 ];
             })->toArray();
-        }else if($modelType instanceof Pullout){
+        }else if($modelType instanceof PullOut){
             $requestApproversCollection = AssetPullOutApprover::where('subunit_id', $subUnitId)
                 ->orderBy('layer', 'asc')
                 ->get();
