@@ -4,6 +4,7 @@ namespace App\Http\Requests\AssetTransfer;
 
 use App\Models\AssetMovementContainer\AssetTransferContainer;
 use App\Models\AssetTransferRequest;
+use App\Rules\AssetMovementCheck;
 use App\Rules\FileOrX;
 use App\Rules\NewCoaValidation\BusinessUnitValidation;
 use App\Rules\NewCoaValidation\DepartmentValidation;
@@ -33,7 +34,7 @@ class UpdateAssetTransferRequestRequest extends FormRequest
     {
         return [
             'assets' => 'required|array',
-            'assets.*.fixed_asset_id' => ['required', 'exists:fixed_assets,id', function($attribute, $value, $fail) {
+            'assets.*.fixed_asset_id' => [new AssetMovementCheck(),'required', 'exists:fixed_assets,id', function($attribute, $value, $fail) {
                 //check if the fixed asset is already in asset transfer container
 //                $inContainer = AssetTransferRequest::where('fixed_asset_id', $value)->first();
 //                if($inContainer) $fail('The selected fixed asset is already in the asset transfer container.');
