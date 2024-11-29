@@ -26,7 +26,7 @@ class UpdateAssetPullOutRequest extends FormRequest
     {
         return [
             'assets' => 'required|array',
-            'assets.*.fixed_asset_id' => ['required', 'exists:fixed_assets,id', function ($attribute, $value, $fail) {
+            'assets.*.fixed_asset_id' => [new AssetMovementCheck(), 'required', 'exists:fixed_assets,id', function ($attribute, $value, $fail) {
 
                 // Get all fixed_asset_id values
                 $fixedAssetIds = array_column($this->input('assets'), 'fixed_asset_id');
