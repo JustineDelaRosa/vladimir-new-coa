@@ -11,7 +11,7 @@ trait TransferHandler
     {
         $transfer = $transfer->map(function ($item) {
             $transfer = $item->transfer->first();
-            $attachments = $item->first()->getMedia('attachments')->all();
+            $attachments = $item->getMedia('attachments')->all();
 
             $canEdit = 1;
             $canDelete = 0;
@@ -27,6 +27,7 @@ trait TransferHandler
                 'id' => $item->transfer->map(function ($transferMovement) {
                     return $transferMovement->id;
                 })->values(),
+                'remarks'=> $transfer->remarks,
                 'movement_id' => $item->id,
                 'assets' => $item->transfer->map(function ($transferMovement) {
                     return $this->transformSingleFixedAssetShowData($transferMovement->fixedAsset, null);
