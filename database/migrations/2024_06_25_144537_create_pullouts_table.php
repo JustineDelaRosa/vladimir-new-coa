@@ -19,8 +19,10 @@ class CreatePulloutsTable extends Migration
             $table->unsignedInteger('fixed_asset_id');
             $table->string('description');
             $table->string('care_of');
-            $table->string('remarks');
+            $table->string('remarks')->nullable();
+            $table->enum('evaluation', ['Repaired', 'For Disposal'])->nullable();
             $table->timestamp('received_at')->nullable();
+            $table->timestamp('picked_up_at')->nullable();
             $table->softDeletes();
             $table->timestamps();
             $table->foreign('fixed_asset_id')

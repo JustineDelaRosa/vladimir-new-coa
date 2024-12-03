@@ -15,7 +15,12 @@ class CreateAssetMovementHistoriesTable extends Migration
     {
         Schema::create('asset_movement_histories', function (Blueprint $table) {
             $table->increments('id');
+//            $table->unsignedInteger('subject_id');
+//            $table->string('subject_type');
+            $table->morphs('subject', 'subject');
             $table->unsignedInteger('created_by_id');
+            $table->boolean('is_memo_printed')->default(false);
+            $table->json('inclusion')->nullable();
             $table->unsignedInteger('fixed_asset_id');
             $table->unsignedInteger('requester_id')->nullable();
             $table->string('transaction_number')->nullable();
