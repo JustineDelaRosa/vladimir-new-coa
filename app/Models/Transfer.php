@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,9 +11,16 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 class Transfer extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes, InteractsWithMedia;
+    use HasFactory, SoftDeletes, InteractsWithMedia, Filterable;
 
     protected $guarded = [];
+
+    public function transferHistory()
+    {
+        return $this->morphMany(AssetMovementHistory::class, 'movementHistory',
+            'subject_type',
+            'subject_id');
+    }
 
     public function fixedAsset()
     {
@@ -28,22 +36,27 @@ class Transfer extends Model implements HasMedia
     {
         return $this->belongsTo(Company::class, 'company_id', 'id');
     }
+
     public function businessUnit()
     {
         return $this->belongsTo(BusinessUnit::class, 'business_unit_id', 'id');
     }
+
     public function unit()
     {
         return $this->belongsTo(Unit::class, 'unit_id', 'id');
     }
+
     public function department()
     {
         return $this->belongsTo(Department::class, 'department_id', 'id');
     }
+
     public function subUnit()
     {
         return $this->belongsTo(SubUnit::class, 'subunit_id', 'id');
     }
+
     public function location()
     {
         return $this->belongsTo(Location::class, 'location_id', 'id');
@@ -53,6 +66,7 @@ class Transfer extends Model implements HasMedia
     {
         return $this->belongsTo(User::class, 'receiver_id', 'id');
     }
+
     // i also want to access the table that is connected with movement number
     public function movementApproval()
     {
