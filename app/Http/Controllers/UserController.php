@@ -27,8 +27,14 @@ class UserController extends Controller
 //        return $user;
         $userStatus = $request->status;
         $isActiveStatus = ($userStatus === "deactivated") ? 0 : 1;
+        $unit = $request->input('unit', null);
+        $currentUserId = auth('sanctum')->user()->id;
 
         $user = User::withTrashed()->where('is_active', $isActiveStatus)
+            ->when($unit, function ($query) use ($unit, $currentUserId) {
+                $query->where('unit_id', $unit)
+                    ->where('id', '!=', $currentUserId);
+            })
             ->orderByDesc('created_at')
             ->useFilters()
             ->dynamicPaginate();
