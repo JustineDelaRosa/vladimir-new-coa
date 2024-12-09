@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Filters\TransferFilters;
 use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,8 @@ class Transfer extends Model implements HasMedia
     use HasFactory, SoftDeletes, InteractsWithMedia, Filterable;
 
     protected $guarded = [];
+
+    protected string $default_filters = TransferFilters::class;
 
     public function transferHistory()
     {
