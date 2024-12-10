@@ -15,7 +15,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        if ($this->app->environment('local')) {
+            $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
+            $this->app->register(TelescopeServiceProvider::class);
+        }
     }
 
     /**
@@ -33,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
             return (empty($value) && !empty($otherArrayData)) || (!empty($value) && empty($otherArrayData));
         });
 
-        //TODO: Uncomment this line to enable token expiration
+//        TODO: Uncomment this line to enable token expiration
 //        Sanctum::$accessTokenAuthenticationCallback = function ($accessToken, $isValid){
 //            return !$accessToken->last_used_at || $accessToken->last_used_at->gte(now()->subMinutes(60));
 //        };
