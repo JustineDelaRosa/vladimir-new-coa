@@ -6,6 +6,7 @@ use App\Models\Approvers;
 use App\Models\AssetRequest;
 use App\Models\FixedAsset;
 use App\Models\YmirPRTransaction;
+use App\Traits\AssetReleaseHandler;
 use App\Traits\RequestShowDataHandler;
 use Illuminate\Http\Request;
 use App\Traits\AddingPoHandler;
@@ -248,7 +249,7 @@ class AddingPoController extends Controller
 
 //        $this->storePOs($poData);
         if (!empty($rrNumbers)) {
-            Http::withHeaders(['Authorization' => 'Bearer ' . $bearerToken])
+            Http::withHeaders(['Token' => 'Bearer ' . $bearerToken])
                 ->put($apiUrl, ['rr_number' => $rrNumbers]);
         }
 
@@ -261,6 +262,7 @@ class AddingPoController extends Controller
 
     public function cancelRemaining(Request $request)
     {
+
 //        $userLocationId = auth('sanctum')->user()->location_id;
         $causer = $request->causer;
         $reason = $request->reason;
@@ -272,9 +274,24 @@ class AddingPoController extends Controller
 //                $query->where('location_id', $userLocationId);
 //            })
 
-        foreach ($assetRequest as $request) {
-            $remaining = $request->quantity - $request->quantity_delivered;
-            $replicatedAssetRequest = $request->replicate();
+        if ($assetRequest->isEmpty()) {
+            return $this->responseUnprocessable('No asset request found for transaction number ' . $transactionNumber);
+        }
+
+        foreach ($assetRequest as $aRequest) {
+            if ($aRequest->quantity_delivered == 0) {
+                $aRequest->update([
+                    'filter' => 'Cancelled',
+                    'remarks' => $reason,
+                ]);
+                $this->receivingLog($request->description, $aRequest->quantity, $transactionNumber, $causer, $reason, true);
+                $aRequest->delete();
+                //skip the remaining code
+                continue;
+            }
+
+            $remaining = $aRequest->quantity - $aRequest->quantity_delivered;
+            $replicatedAssetRequest = $aRequest->replicate();
             $replicatedAssetRequest->quantity = $remaining;
             $replicatedAssetRequest->quantity_delivered = 0;
             $replicatedAssetRequest->filter = NULL;
@@ -282,8 +299,8 @@ class AddingPoController extends Controller
             $replicatedAssetRequest->save();
             $replicatedAssetRequest->delete();
 
-            $request->quantity -= $remaining;
-            $request->save();
+            $aRequest->quantity -= $remaining;
+            $aRequest->save();
             $this->receivingLog($request->description, $remaining, $transactionNumber, $causer, $reason, true);
         }
 

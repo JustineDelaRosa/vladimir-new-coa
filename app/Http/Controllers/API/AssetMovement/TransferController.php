@@ -11,7 +11,7 @@ use App\Models\AssetTransferApprover;
 use App\Models\Disposal;
 use App\Models\FixedAsset;
 use App\Models\MovementNumber;
-use App\Models\Pullout;
+use App\Models\PullOut;
 use App\Models\Transfer;
 use App\Models\User;
 use App\Services\AssetTransferServices;

@@ -35,7 +35,7 @@ class AssetTransferApprovalController extends Controller
         $user = auth('sanctum')->user();
         $role = RoleManagement::whereId($user->role_id)->pluck('role_name');
         $adminRoles = ['Super Admin', 'Admin', 'ERP'];
-        $approverId = Approvers::where('approver_id', $user->id)->pluck('id');
+        $approverId = Approvers::where('approver_id', $user->id)->value('id');
         $status = $request->input('status', 'For Approval');
 
         if (!in_array($role, $adminRoles)) {
@@ -47,8 +47,8 @@ class AssetTransferApprovalController extends Controller
         if (!$forMonitoring) {
             $transferApprovalQuery->where('approver_id', $approverId);
         }
-
         $transferNumbers = [];
+
         if ($this->isUserFa()) {
             $transferNumbers = AssetTransferRequest::where('status', 'Approved')
                 ->when($status == 'Approved', function ($query) {
@@ -60,6 +60,7 @@ class AssetTransferApprovalController extends Controller
         }
 
         $transferApproval = $transferApprovalQuery->where('status', $status)->get();
+
         $transferNumbers = is_array($transferNumbers) ? $transferNumbers : [$transferNumbers];
         $transferNumbers = array_merge($transferNumbers, $transferApproval->pluck('transfer_number')->toArray());
         $transferNumbers = Arr::flatten($transferNumbers);
