@@ -22,6 +22,7 @@ class Kernel extends HttpKernel
         \App\Http\Middleware\TrimStrings::class,
 //        \App\Http\Middleware\LogRequestDetails::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+//        \App\Http\Middleware\NgrokSkipBrowserWarning::class,
         // \App\Http\Middleware\NormalizeInput::class,
     ];
 
@@ -45,7 +46,7 @@ class Kernel extends HttpKernel
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'throttle:150,1',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \Illuminate\Session\Middleware\StartSession::class
+            \Illuminate\Session\Middleware\StartSession::class,
         ],
     ];
 

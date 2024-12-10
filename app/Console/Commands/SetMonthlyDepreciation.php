@@ -34,7 +34,7 @@ class SetMonthlyDepreciation extends Command
      */
     public function handle()
     {
-        $runningDepreciationStatusId = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
+//        $runningDepreciationStatusId = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
 //        ->where('depreciation_status_id', $runningDepreciationStatusId)
         $selectedAsset = FixedAsset::with(['formula', 'additionalCost'])
             ->get()
@@ -75,7 +75,7 @@ class SetMonthlyDepreciation extends Command
             })
             ->values();
 
-        $items = [];
+//        $items = [];
 
         foreach ($selectedAsset as $fixed_asset) {
             $isOneTime = $fixed_asset->depreciation_method == "One Time";
@@ -125,6 +125,7 @@ class SetMonthlyDepreciation extends Command
              * example nag depreciate na ng 122 last month so may accumulated cost na sya ng 122,
              * dapat yung 122 na yun ang basehan ng depreciation this month, if mag depreciate na this month and computation is,
              * 122 last month + 122 this month = 244 na ang accumulated cost nya same sa remaining book value
+             * todo: isDONE
              * */
 
 
@@ -151,7 +152,7 @@ class SetMonthlyDepreciation extends Command
             }
 
 
-            $yearsDepreciated = floor(($monthsDepreciated + $actualMonthsDepreciated) / 12);
+//            $yearsDepreciated = floor(($monthsDepreciated + $actualMonthsDepreciated) / 12);
 
             if ($fixed_asset->depreciation_method === "One Time" && $additionalCost->count() > 0) {
                 $currentRemainingBookValue = $totalAcquisitionCost - $lastDepreciationHistory->accumulated_cost;
@@ -162,20 +163,20 @@ class SetMonthlyDepreciation extends Command
                     $currentAccumulatedCost = $totalAcquisitionCost;
                 }
 
-//                $items[] = [
-////                    'is_equal' => $isEqual,
-//                    'fixed_asset_id' => $fixed_asset->id,
-//                    'depreciated_date' => now()->format('Y-m'),
-//                    'estimated_useful_life' => $est_useful_life,
-//                    'remaining_useful_life' => $est_useful_life - ($monthsDepreciated + $actualMonthsDepreciated),
-////                    'months_depreciated' => $monthsDepreciated + $actualMonthsDepreciated,
-//                    'depreciation_per_month' => $depreciationValue,
-//                    'depreciation_per_year' => 0,
-//                    'accumulated_cost' => $currentAccumulatedCost,
-//                    'remaining_book_value' => $currentRemainingBookValue,
-//                    'depreciation_basis' => $depreciationValue,
-//                    'acquisition_cost' => $totalAcquisitionCost,
-//                ];
+                /*$items[] = [
+                    'is_equal' => $isEqual,
+                    'fixed_asset_id' => $fixed_asset->id,
+                    'depreciated_date' => now()->format('Y-m'),
+                    'estimated_useful_life' => $est_useful_life,
+                    'remaining_useful_life' => $est_useful_life - ($monthsDepreciated + $actualMonthsDepreciated),
+                    'months_depreciated' => $monthsDepreciated + $actualMonthsDepreciated,
+                    'depreciation_per_month' => $depreciationValue,
+                    'depreciation_per_year' => 0,
+                    'accumulated_cost' => $currentAccumulatedCost,
+                    'remaining_book_value' => $currentRemainingBookValue,
+                    'depreciation_basis' => $depreciationValue,
+                    'acquisition_cost' => $totalAcquisitionCost,
+                ];*/
                 DepreciationHistory::create([
                     'fixed_asset_id' => $fixed_asset->id,
                     'depreciated_date' => now()->addMonths()->format('Y-m'),
@@ -186,6 +187,13 @@ class SetMonthlyDepreciation extends Command
                     'remaining_book_value' => $currentRemainingBookValue,
                     'depreciation_basis' => $depreciationValue,
                     'acquisition_cost' => $totalAcquisitionCost,
+                    'company_id' => $fixed_asset->company_id,
+                    'business_unit_id' => $fixed_asset->business_unit_id,
+                    'department_id' => $fixed_asset->department_id,
+                    'unit_id' => $fixed_asset->unit_id,
+                    'subunit_id' => $fixed_asset->subunit_id,
+                    'location_id' => $fixed_asset->location_id,
+                    'account_id' => $fixed_asset->account_id,
                 ]);
 
                 //if the remaining book value is 0, then update the depreciation status to fully depreciated
@@ -200,20 +208,20 @@ class SetMonthlyDepreciation extends Command
                 }
 
             } else {
-//                $items[] = [
-////                'totalAcq' => $previousAccumulatedCost,
-//                    'fixed_asset_id' => $fixed_asset->id,
-//                    'depreciated_date' => now()->format('Y-m'),
-//                    'estimated_useful_life' => $est_useful_life,
-//                    'remaining_useful_life' => $est_useful_life - $yearsDepreciated,
-//                    'months_depreciated' => $monthsDepreciated + $actualMonthsDepreciated,
-//                    'depreciation_per_month' => $monthly_depreciation,
-//                    'depreciation_per_year' => $yearly_depreciation,
-//                    'accumulated_cost' => $currentAccumulatedCost,
-//                    'remaining_book_value' => $currentRemainingBookValue,
-//                    'depreciation_basis' => $depreciationValue,
-//                    'acquisition_cost' => $totalAcquisitionCost,
-//                ];
+                /*$items[] = [
+                'totalAcq' => $previousAccumulatedCost,
+                    'fixed_asset_id' => $fixed_asset->id,
+                    'depreciated_date' => now()->format('Y-m'),
+                    'estimated_useful_life' => $est_useful_life,
+                    'remaining_useful_life' => $est_useful_life - $yearsDepreciated,
+                    'months_depreciated' => $monthsDepreciated + $actualMonthsDepreciated,
+                    'depreciation_per_month' => $monthly_depreciation,
+                    'depreciation_per_year' => $yearly_depreciation,
+                    'accumulated_cost' => $currentAccumulatedCost,
+                    'remaining_book_value' => $currentRemainingBookValue,
+                    'depreciation_basis' => $depreciationValue,
+                    'acquisition_cost' => $totalAcquisitionCost,
+                ];*/
 
                 DepreciationHistory::create([
                     'fixed_asset_id' => $fixed_asset->id,
@@ -225,6 +233,13 @@ class SetMonthlyDepreciation extends Command
                     'remaining_book_value' => $currentRemainingBookValue,
                     'depreciation_basis' => $depreciationValue,
                     'acquisition_cost' => $totalAcquisitionCost,
+                    'company_id' => $fixed_asset->company_id,
+                    'business_unit_id' => $fixed_asset->business_unit_id,
+                    'department_id' => $fixed_asset->department_id,
+                    'unit_id' => $fixed_asset->unit_id,
+                    'subunit_id' => $fixed_asset->subunit_id,
+                    'location_id' => $fixed_asset->location_id,
+                    'account_id' => $fixed_asset->account_id,
                 ]);
 
                 //if the remaining book value is 0, then update the depreciation status to fully depreciated
