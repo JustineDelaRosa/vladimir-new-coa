@@ -213,7 +213,7 @@ class AuthController extends Controller
             'Fixed Asset Associate', 'Po-receiving',
             'Purchase Request', 'Approver',
             'Warehouse', 'Fixed Assets', 'Fixed Asset',
-            'ERP', 'Requester-approver', 'Fixed Asset Associate'
+            'ERP', 'Requester-approver', 'Fixed Asset Associate', 'Requestor'
         ];
         $response = [
             'toApproveCount' => 0,
@@ -221,6 +221,8 @@ class AuthController extends Controller
             'toReceive' => 0,
             'toTagCount' => 0,
             'toRelease' => 0,
+            'toTransferApproveCount' => 0,
+            'toTransferReceiving' => 0,
         ];
 
         if (!in_array($user->role->role_name, $roleList)) {
@@ -230,21 +232,24 @@ class AuthController extends Controller
                 'toReceive' => 0,
                 'toTagCount' => 0,
                 'toRelease' => 0,
+                'toTransferApproveCount' => 0,
+                'toTransferReceiving' => 0,
             ]);
         }
 
         $roleFunctionMapping = [
-            'Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
-            'Super Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
-            'Fixed Asset Associate' => ['getFaApproval', 'getToTagCount'],
-            'Po-receiving' => ['getToRelease', 'getToReceive'],
-            'Purchase Request' => 'getToPurchaseRequest',
-            'Approver' => 'getToApproveCount',
-            'Warehouse' => ['getToRelease', 'getToReceive'],
-            'Fixed Assets' => ['getFaApproval', 'getToTagCount'],
-            'Fixed Asset' => ['getFaApproval', 'getToTagCount'],
-            'ERP' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive'],
-            'Requester-approver' => ['getToApproveCount'],
+            'Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive', 'getToTransferReceiving'],
+            'Super Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive', 'getToTransferReceiving'],
+            'Fixed Asset Associate' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval'],
+            'Po-receiving' => ['getToRelease', 'getToReceive', 'getToTransferReceiving'],
+            'Purchase Request' => ['getToPurchaseRequest', 'getToTransferReceiving'],
+            'Approver' => ['getToApproveCount', 'getToTransferReceiving', 'getToTransfer'],
+            'Warehouse' => ['getToRelease', 'getToReceive', 'getToTransferReceiving'],
+            'Fixed Assets' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval'],
+            'Fixed Asset' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval'],
+            'ERP' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive', 'getToTransferReceiving'],
+            'Requester-approver' => ['getToApproveCount', 'getToTransfer', 'getToTransferReceiving'],
+            'Requestor' => ['getToTransfer', 'getToTransferReceiving'],
         ];
 
         foreach ($roleFunctionMapping as $role => $functions) {

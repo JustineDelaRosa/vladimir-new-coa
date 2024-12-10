@@ -7,13 +7,16 @@ use App\Models\Approvers;
 use App\Models\AssetApproval;
 use App\Models\AssetRequest;
 use App\Models\FixedAsset;
+use App\Models\MovementApproval;
+use App\Models\MovementNumber;
+use App\Models\Transfer;
 
 trait NotificationHandler
 {
-    private function executeFunction($function, $user, $response)
+    public function executeFunction($function, $user, $response)
     {
         switch ($function) {
-            case 'getFaApproval':
+            case 'getAcquisitionFaApproval':
             case 'getToApproveCount':
                 $response['toApproveCount'] += $this->$function($user);
                 break;
@@ -26,6 +29,13 @@ trait NotificationHandler
 //            case 'getToPurchaseRequest':
 //                $response['toPR'] += $this->$function($user);
 //                break;
+            case 'getTransferFaApproval':
+            case 'getToTransfer':
+                $response['toTransferApproveCount'] += $this->$function($user);
+                break;
+            case 'getToTransferReceiving':
+                $response['toTransferReceiving'] += $this->$function($user);
+                break;
             case 'getToReceive':
                 $response['toReceive'] += $this->$function($user);
                 break;
@@ -100,11 +110,45 @@ trait NotificationHandler
             ->count();
     }
 
-    private function getFaApproval($user)
+    private function getAcquisitionFaApproval($user)
     {
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
         $assetApproval = AssetApproval::where('approver_id', $approverId)->where('status', 'For pAproval')->count();
         $forFaApproval = AssetRequest::where('status', 'Approved')->where('is_fa_approved', 0)->distinct('transaction_number')->count();
         return $assetApproval + $forFaApproval;
+    }
+
+    private function getTransferFaApproval($user)
+    {
+        $approverId = Approvers::where('approver_id', $user->id)->value('id');
+        $assetApproval = AssetApproval::where('approver_id', $approverId)->where('status', 'For pAproval')->count();
+        $movementFaApproval = MovementNumber::where('status', 'Approved')->where('is_fa_approved', 0)->distinct('id')->count();
+        return $assetApproval + $movementFaApproval;
+    }
+
+    private function getToTransfer($user)
+    {
+        $approverId = Approvers::where('approver_id', $user->id)->value('id');
+        $transferApproval = MovementApproval::whereHas('movementNumber.transfer')
+            ->where('approver_id', $approverId)->where('status', 'For Approval')->count();
+        return $transferApproval;
+    }
+
+    private function getToTransferReceiving($user)
+    {
+        /*$toReceived = MovementNumber::where('status', 'Approved')->where('is_fa_approved', 1)
+            ->where('is_received', 0)
+            ->whereHas('transfer', function ($query) use ($user) {
+                $query->where('received_at', null)->count();
+            })->count();*/
+
+        $toReceived = Transfer::whereHas('movementNumber', function ($query) use ($user) {
+            $query->where('status', 'Approved')->where('is_fa_approved', 1)
+                ->where('is_received', 0);
+        })->where('receiver_id', $user->id)->where('received_at', null)->count();
+
+
+//        return 100;
+        return $toReceived;
     }
 }
