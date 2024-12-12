@@ -236,6 +236,7 @@ class AdditionalCostRepository
     {
         return [
             //            'total_adcost' => $this->calculationRepository->getTotalCost($additional_cost->fixedAsset->additionalCosts),
+            'parent_id' => $additional_cost->fixedAsset->id,
             'id' => $additional_cost->id,
             'add_cost_sequence' => $additional_cost->add_cost_sequence,
             'fixed_asset' => [
