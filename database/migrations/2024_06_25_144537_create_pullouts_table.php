@@ -21,6 +21,8 @@ class CreatePulloutsTable extends Migration
             $table->string('care_of');
             $table->string('remarks')->nullable();
             $table->enum('evaluation', ['Repaired', 'For Disposal'])->nullable();
+            $table->string('status')->nullable();
+            $table->boolean('is_fa_approved')->default(false);
             $table->timestamp('received_at')->nullable();
             $table->timestamp('picked_up_at')->nullable();
             $table->softDeletes();
