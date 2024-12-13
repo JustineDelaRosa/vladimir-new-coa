@@ -29,6 +29,14 @@ trait Reusables
         return $user ? 1 : 0;
     }
 
+    public function isUserHMorME(): bool
+    {
+        $user = auth('sanctum')->user()->id;
+        $hmRoleIds = RoleManagement::whereIn('role_name', ['Hardware & Maintenance', 'Machinery & Equipment', 'Hardware and Maintenance', 'Machinery and Equipment'])->pluck('id');
+        $user = User::where('id', $user)->whereIn('role_id', $hmRoleIds)->exists();
+        return $user ? 1 : 0;
+    }
+
     public function isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName): bool
     {
         $request = $model::where([
@@ -428,7 +436,7 @@ trait Reusables
                     'max_layer' => $item->max('layer'),
                 ];
             })->toArray();
-        }else if($modelType instanceof PullOut){
+        } else if ($modelType instanceof PullOut) {
             $requestApproversCollection = AssetPullOutApprover::where('subunit_id', $subUnitId)
                 ->orderBy('layer', 'asc')
                 ->get();
@@ -447,4 +455,34 @@ trait Reusables
         // Add more conditions for other model types if needed
         return collect();
     }
+
+
+    public function updateAssetData($modelClass, $id, array $attributes)
+    {
+        $modelInstance = $modelClass::find($id);
+
+        if ($modelInstance) {
+            $modelInstance->update($attributes);
+        }
+    }
+
+    public function addToMovementHistory($modelClass, $subjectClass, $assetId, $id, $remarks)
+    {
+        $modelInstance = $modelClass::find($assetId);
+        $movementInstance = $subjectClass::find($id);
+
+        if ($modelInstance) {
+            $newMovementHistory = $modelInstance->replicate();
+            $newMovementHistory->setTable('asset_movement_histories');
+            $newMovementHistory->fixed_asset_id = $modelInstance->id;
+            $newMovementHistory->remarks = $remarks;
+            $newMovementHistory->created_by_id = $movementInstance->movementNumber->requester_id;
+            $newMovementHistory->receiver_id = auth('sanctum')->user()->id;
+            $newMovementHistory->subject_id = $id;
+            $newMovementHistory->subject_type = $subjectClass;
+            $newMovementHistory->save();
+        }
+    }
+
+
 }
