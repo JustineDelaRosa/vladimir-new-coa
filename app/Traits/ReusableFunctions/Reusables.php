@@ -32,7 +32,7 @@ trait Reusables
     public function isUserHMorME(): bool
     {
         $user = auth('sanctum')->user()->id;
-        $hmRoleIds = RoleManagement::whereIn('role_name', ['Hardware & Maintenance', 'Machinery & Equipment', 'Hardware and Maintenance', 'Machinery and Equipment'])->pluck('id');
+        $hmRoleIds = RoleManagement::whereIn('role_name', ['Hardware & Maintenance', 'Machinery & Equipment', 'Hardware and Maintenance', 'Machinery and Equipment', 'Admin'])->pluck('id');
         $user = User::where('id', $user)->whereIn('role_id', $hmRoleIds)->exists();
         return $user ? 1 : 0;
     }
