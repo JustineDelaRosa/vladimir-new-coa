@@ -26,6 +26,7 @@ class UserController extends Controller
 //        $user = User::with('role')->get();
 //        return $user;
         $userStatus = $request->status;
+        $isCoordinator = $request->is_coordinator;
         $isActiveStatus = ($userStatus === "deactivated") ? 0 : 1;
         $unit = $request->input('unit', null);
         $currentUserId = auth('sanctum')->user()->id;
@@ -34,6 +35,9 @@ class UserController extends Controller
             ->when($unit, function ($query) use ($unit, $currentUserId) {
                 $query->where('unit_id', $unit)
                     ->where('id', '!=', $currentUserId);
+            })
+            ->when($isCoordinator, function ($query) use ($isCoordinator) {
+                $query->where('is_coordinator', $isCoordinator);
             })
             ->orderByDesc('created_at')
             ->useFilters()
@@ -48,6 +52,7 @@ class UserController extends Controller
                 'lastname' => $item->lastname,
                 'username' => $item->username,
                 'role' => $item->role,
+                'is_coordinator' => $item->is_coordinator,
                 'warehouse' => [
                     'id' => $item->warehouse->id ?? null,
                     'warehouse_code' => $item->warehouse->warehouse_code ?? null,
@@ -106,6 +111,7 @@ class UserController extends Controller
         $lastname = ucwords(strtolower($request->lastname));
         $username = $request->username;
         $role_id = $request->role_id;
+        $isCoordinator = $request->is_coordinator;
         $company_id = $request->company_id;
         $business_unit_id = $request->business_unit_id;
         $department_id = $request->department_id;
@@ -124,6 +130,7 @@ class UserController extends Controller
             'username' => $username,
             'password' => Crypt::encryptString($username),
             'company_id' => $company_id,
+            'is_coordinator' => $isCoordinator,
             'business_unit_id' => $business_unit_id,
             'department_id' => $department_id,
             'unit_id' => $unit_id,
@@ -223,6 +230,7 @@ class UserController extends Controller
             'lastname' => ucwords(strtolower($request->lastname)),
             'username' => $request->username,
             'role_id' => $request->role_id,
+            'is_coordinator' => $request->is_coordinator,
             'company_id' => $request->company_id,
             'business_unit_id' => $request->business_unit_id,
             'department_id' => $request->department_id,
