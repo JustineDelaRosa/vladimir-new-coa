@@ -20,6 +20,7 @@ class AssetPullOutApproverController extends UnitApproverBaseController
     {
         return CreateAssetPullOutApproverRequest::class;
     }
+
     protected function getUpdateFormRequest()
     {
         return UpdateAssetTransferApproverRequest::class;
