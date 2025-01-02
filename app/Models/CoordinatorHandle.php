@@ -13,7 +13,9 @@ class CoordinatorHandle extends Model
     protected $guarded = [];
 
 
-
+    public function coordinator(){
+        return $this->belongsTo(User::class, 'user_id');
+    }
     public function company()
     {
         return $this->belongsTo(Company::class);

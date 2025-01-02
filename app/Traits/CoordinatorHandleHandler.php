@@ -9,7 +9,14 @@ trait CoordinatorHandleHandler
     public function indexData($data)
     {
         return [
-            'user_id' => $data->first()->user_id,
+            'user' => [
+                'id' => $data->first()->user_id,
+                'username' => $data->first()->coordinator->username,
+                'employee_id' => $data->first()->coordinator->employee_id,
+                'first_name' => $data->first()->coordinator->firstname,
+                'last_name' => $data->first()->coordinator->lastname,
+                'full_id_number_full_name' => $data->first()->coordinator->employee_id . ' - ' . $data->first()->coordinator->firstname . ' ' . $data->first()->coordinator->lastname,
+            ],
             'handles' => $data->map(function ($handle) {
                 return [
                     'company' => [

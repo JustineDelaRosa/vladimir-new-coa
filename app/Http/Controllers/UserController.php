@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Approvers;
+use App\Models\CoordinatorHandle;
 use App\Models\User;
 use App\Models\Sedar;
 use App\Models\Module;
@@ -313,6 +314,11 @@ class UserController extends Controller
 //            }
                 $ApproverCheck = Approvers::Where('approver_id', $id)->exists();
                 if ($ApproverCheck) {
+                    return response()->json(['error' => 'User Account still in use'], 422);
+                }
+
+                $handleCheck = CoordinatorHandle::where('user_id', $id)->exists();
+                if ($handleCheck) {
                     return response()->json(['error' => 'User Account still in use'], 422);
                 }
 
