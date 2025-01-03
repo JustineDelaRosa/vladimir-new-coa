@@ -17,6 +17,7 @@ class CreateAssetStatusesTable extends Migration
             $table->increments('id');
             $table->string('asset_status_name');
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_coordinator')->default(false);
             $table->softDeletes();
             $table->timestamps();
         });
