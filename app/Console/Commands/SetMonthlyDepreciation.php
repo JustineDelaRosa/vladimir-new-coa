@@ -151,6 +151,26 @@ class SetMonthlyDepreciation extends Command
                 $currentRemainingBookValue -= $monthly_depreciation;
             }
 
+            $company_id = $fixed_asset->company_id;
+            $business_unit_id = $fixed_asset->business_unit_id;
+            $department_id = $fixed_asset->department_id;
+            $unit_id = $fixed_asset->unit_id;
+            $subunit_id = $fixed_asset->subunit_id;
+            $location_id = $fixed_asset->location_id;
+            $account_id = $fixed_asset->account_id;
+            $isTransferred = 0;
+
+            if ($lastDepreciationHistory && $lastDepreciationHistory->is_transferred == 0) {
+                $company_id = $lastDepreciationHistory->company_id == $fixed_asset->company_id ? $fixed_asset->company_id : $lastDepreciationHistory->company_id;
+                $business_unit_id = $lastDepreciationHistory->business_unit_id == $fixed_asset->business_unit_id ? $fixed_asset->business_unit_id : $lastDepreciationHistory->business_unit_id;
+                $department_id = $lastDepreciationHistory->department_id == $fixed_asset->department_id ? $fixed_asset->department_id : $lastDepreciationHistory->department_id;
+                $unit_id = $lastDepreciationHistory->unit_id == $fixed_asset->unit_id ? $fixed_asset->unit_id : $lastDepreciationHistory->unit_id;
+                $subunit_id = $lastDepreciationHistory->subunit_id == $fixed_asset->subunit_id ? $fixed_asset->subunit_id : $lastDepreciationHistory->subunit_id;
+                $location_id = $lastDepreciationHistory->location_id == $fixed_asset->location_id ? $fixed_asset->location_id : $lastDepreciationHistory->location_id;
+                $account_id = $lastDepreciationHistory->account_id == $fixed_asset->account_id ? $fixed_asset->account_id : $lastDepreciationHistory->account_id;
+                $isTransferred = $lastDepreciationHistory->subunit_id == $fixed_asset->subunit_id ? 0 : 1;
+            }
+
 
 //            $yearsDepreciated = floor(($monthsDepreciated + $actualMonthsDepreciated) / 12);
 
@@ -177,9 +197,11 @@ class SetMonthlyDepreciation extends Command
                     'depreciation_basis' => $depreciationValue,
                     'acquisition_cost' => $totalAcquisitionCost,
                 ];*/
+
+
                 DepreciationHistory::create([
                     'fixed_asset_id' => $fixed_asset->id,
-                    'depreciated_date' => now()->addMonths()->format('Y-m'),
+                    'depreciated_date' => now()->format('Y-m'),
                     'depreciation_per_month' => $depreciationValue,
                     'months_depreciated' => $monthsDepreciated + $actualMonthsDepreciated,
                     'depreciation_per_year' => 0,
@@ -187,13 +209,14 @@ class SetMonthlyDepreciation extends Command
                     'remaining_book_value' => $currentRemainingBookValue,
                     'depreciation_basis' => $depreciationValue,
                     'acquisition_cost' => $totalAcquisitionCost,
-                    'company_id' => $fixed_asset->company_id,
-                    'business_unit_id' => $fixed_asset->business_unit_id,
-                    'department_id' => $fixed_asset->department_id,
-                    'unit_id' => $fixed_asset->unit_id,
-                    'subunit_id' => $fixed_asset->subunit_id,
-                    'location_id' => $fixed_asset->location_id,
-                    'account_id' => $fixed_asset->account_id,
+                    'company_id' => $company_id,
+                    'business_unit_id' => $business_unit_id,
+                    'department_id' => $department_id,
+                    'unit_id' => $unit_id,
+                    'subunit_id' => $subunit_id,
+                    'location_id' => $location_id,
+                    'account_id' => $account_id,
+                    'is_transferred' => $isTransferred,
                 ]);
 
                 //if the remaining book value is 0, then update the depreciation status to fully depreciated
@@ -233,13 +256,14 @@ class SetMonthlyDepreciation extends Command
                     'remaining_book_value' => $currentRemainingBookValue,
                     'depreciation_basis' => $depreciationValue,
                     'acquisition_cost' => $totalAcquisitionCost,
-                    'company_id' => $fixed_asset->company_id,
-                    'business_unit_id' => $fixed_asset->business_unit_id,
-                    'department_id' => $fixed_asset->department_id,
-                    'unit_id' => $fixed_asset->unit_id,
-                    'subunit_id' => $fixed_asset->subunit_id,
-                    'location_id' => $fixed_asset->location_id,
-                    'account_id' => $fixed_asset->account_id,
+                    'company_id' => $company_id,
+                    'business_unit_id' => $business_unit_id,
+                    'department_id' => $department_id,
+                    'unit_id' => $unit_id,
+                    'subunit_id' => $subunit_id,
+                    'location_id' => $location_id,
+                    'account_id' => $account_id,
+                    'is_transferred' => $isTransferred,
                 ]);
 
                 //if the remaining book value is 0, then update the depreciation status to fully depreciated
@@ -253,8 +277,6 @@ class SetMonthlyDepreciation extends Command
                     }
                 }
             }
-
-
         }
 
 //        return $items;
