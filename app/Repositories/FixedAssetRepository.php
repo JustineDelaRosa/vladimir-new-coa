@@ -494,7 +494,7 @@ class FixedAssetRepository
             'scrap_value' => $fixed_asset->formula->scrap_value ?? '-',
             'depreciable_basis' => $fixed_asset->formula->depreciable_basis ?? '-',
             'accumulated_cost' => $fixed_asset->formula->accumulated_cost ?? '-',
-            'asset_status' =>[
+            'asset_status' => [
                 'id' => $fixed_asset->assetStatus->id ?? '-',
                 'asset_status_name' => $fixed_asset->from_request ? ($fixed_asset->is_released ? $fixed_asset->assetStatus->asset_status_name : 'For Releasing') : $fixed_asset->assetStatus->asset_status_name ?? '-',
             ],
@@ -836,7 +836,7 @@ class FixedAssetRepository
             //                    'salvage_value' => $fixed_asset->salvage_value,
             'acquisition_date' => $fixed_asset->acquisition_date ?? '-',
             'acquisition_cost' => $fixed_asset->acquisition_cost ?? '-',
-            'asset_status' =>[
+            'asset_status' => [
                 'id' => $fixed_asset->assetStatus->id ?? '-',
                 'asset_status_name' => $fixed_asset->from_request ? ($fixed_asset->is_released ? $fixed_asset->assetStatus->asset_status_name : 'For Releasing') : $fixed_asset->assetStatus->asset_status_name ?? '-',
             ],
@@ -939,7 +939,7 @@ class FixedAssetRepository
     public function tranformForIndex($fixed_asset)
     {
         return [
-            'transfer' => $fixed_asset->transfer,
+//            'transfer' => $fixed_asset->transfer,
             'total_cost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost, $fixed_asset->acquisition_cost),
             'total_adcost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCost),
             'additional_cost_count' => $fixed_asset->additional_cost_count,
@@ -1172,7 +1172,7 @@ class FixedAssetRepository
     }
 
 
-    public function faIndex($ymir, $movement = null): JsonResponse
+    public function faIndex($ymir, $addCost, $movement = null, $subUnit = null): JsonResponse
     {
         $fixed_assets = FixedAsset::select([
             'id', 'vladimir_tag_number', 'tag_number', 'tag_number_old', 'asset_description', 'receipt', 'acquisition_cost',
@@ -1206,30 +1206,71 @@ class FixedAssetRepository
                 'subunit:id,sub_unit_name,sub_unit_code',
                 'location:id,location_name,location_code',
             ])
-            ->when($movement != null, function ($query) {
-                $query->where('from_request', '!=', 1)
-                    ->orWhere(function ($query) {
-                        $query->where('from_request', 1)
-                            ->where('is_released', 1);
+            ->when($movement !== null, function ($query) use ($subUnit) {
+                if ($subUnit == null) {
+                    $subUnit = auth('sanctum')->user()->subunit_id;
+                }
+                $query->where('subunit_id', $subUnit)
+                    ->whereHas('assetStatus', function ($query) {
+                        $query->where('asset_status_name', 'Good');
+                    })->Where(function ($query) {
+                        $query->where(function ($query) {
+                            $query->where(function ($query) {
+                                $query->whereHas('transfer', function ($query) {
+                                    $query->where('received_at', '!=', null);
+                                })->orWhereDoesntHave('transfer');
+                            })->where(function ($query) {
+                                $query->whereHas('pullout', function ($query) {
+                                    $query->where('evaluation', '!=', null);
+                                })->orWhereDoesntHave('pullout');
+                            });
+                        });
+                    })
+                    ->where(function ($query) {
+                        $query->where('from_request', 0)
+                            ->orWhere(function ($query) {
+                                $query->where('from_request', 1)
+                                    ->where('is_released', 1);
+                            });
                     });
-            })->when($ymir == true, function ($query) {
+
+                /*            ->when($movement !== null, function ($query) {
+$query->where('department_id', auth()->user()->department_id)
+    ->where(function ($query) {
+        $query->where('from_request', '!=', 1)
+            ->orWhere(function ($query) {
                 $query->where('from_request', 1)
-                    ->whereNotNull('depreciation_method')
+                    ->where('is_released', 1)
+                    ->where(function ($query) {
+                        $query->whereHas('transfer', function ($query) {
+                            $query->where('received_at', '!=', null);
+                        })->orWhereHas('pullout', function ($query) {
+                            $query->where('received_at', '!=', null);
+                        });
+                    });
+            });
+    });*/
+            })->when($ymir == true, function ($query) {
+//                    ->where('from_request', 1)
+                $query->whereNotNull('depreciation_method')
+                    ->where('is_released', 1);
+            })->when($addCost, function ($query) {
+                $query->whereNotNull('depreciation_method')
                     ->where('is_released', 1);
             })
-//            ->where(function ($query) {
-//                $query->where('from_request', '!=', 1)
-//                    ->orWhere(function ($query) {
-//                        $query->where('from_request', 1)
-//                            ->where('is_released', 1);
-//                    });
-//            })
+            /*            ->where(function ($query) {
+                            $query->where('from_request', '!=', 1)
+                                ->orWhere(function ($query) {
+                                    $query->where('from_request', 1)
+                                        ->where('is_released', 1);
+                                });
+                        })*/
             ->get();
 
-        $fixed_assets = $fixed_assets->map(function ($fixedAsset) {
-            $fixedAsset->transfer = $fixedAsset->isStillInTransferApproval() ? 1 : 0;
-            return $fixedAsset;
-        });
+//        $fixed_assets = $fixed_assets->map(function ($fixedAsset) {
+//            $fixedAsset->transfer = $fixedAsset->isStillInTransferApproval() ? 1 : 0;
+//            return $fixedAsset;
+//        });
 
         return response()->json([
             'message' => 'Fixed Assets retrieved successfully.',
