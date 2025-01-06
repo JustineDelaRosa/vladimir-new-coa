@@ -37,7 +37,7 @@ class CreateAssetTransferRequestRequest extends FormRequest
         return [
             'assets' => 'required|array',
 //            'receiver_id' => 'required|exists:users,id',
-            'assets.*.fixed_asset_id' => [new AssetMovementCheck(),'required', 'exists:fixed_assets,id', function ($attribute, $value, $fail) {
+            'assets.*.fixed_asset_id' => [new AssetMovementCheck(), 'required', 'exists:fixed_assets,id', function ($attribute, $value, $fail) {
 
                 // Get all fixed_asset_id values
                 $fixedAssetIds = array_column($this->input('assets'), 'fixed_asset_id');
@@ -46,8 +46,29 @@ class CreateAssetTransferRequestRequest extends FormRequest
                 if (count($fixedAssetIds) !== count(array_unique($fixedAssetIds))) {
                     $fail('Duplicate fixed asset found');
                 }
+
+                //check if this asset has this sub unit id
+                $fixedAsset = FixedAsset::find($value);
+                $fromSubunitId = request()->from_subunit_id ? request()->from_subunit_id : auth('sanctum')->user()->subunit_id;
+                if ($fixedAsset->subunit_id != $fromSubunitId) {
+                    $fail('Asset does not belong to this subunit');
+                }
             }],
             'assets.*.receiver_id' => 'required|exists:users,id',
+
+
+            /*'from_company_id' => 'required|exists:companies,id',
+            'from_business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+            'from_department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+            'from_unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+            'from_subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true), function ($attribute, $value, $fail) {
+                //                $user = auth('sanctum')->user();
+                //                $userSubunit = $user->subunit_id;
+                //                if ($userSubunit == $value) {
+                //                    $fail('You are not allowed to transfer assets to this subunit');
+                //                }
+            }],
+            'from_location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],*/
 
             'company_id' => 'required|exists:companies,id',
             'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
