@@ -25,6 +25,7 @@ class TaggingOfAddCostRequest extends FormRequest
     {
         return [
             'added_useful_life' => 'required|integer',
+            'replacementTag' => 'nullable|exists:fixed_assets,vladimir_tag_number',
 //            'company_id' => 'required|exists:companies,id',
 //            'business_unit_id' => 'required|exists:business_units,id',
 //            'department_id' => 'required|exists:departments,id',
@@ -37,6 +38,9 @@ class TaggingOfAddCostRequest extends FormRequest
     public function messages()
     {
         return [
+            'added_useful_life.required' => 'Added useful life is required',
+            'added_useful_life.integer' => 'Invalid added useful life',
+            'replacementTag.exists' => 'Replacement tag does not exist',
             'est_useful_life.required' => 'Estimated useful life is required',
             'est_useful_life.integer' => 'Invalid estimated useful life',
             'company_id.required' => 'Company is required',
