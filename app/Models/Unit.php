@@ -24,4 +24,8 @@ class Unit extends Model
     {
         return $this->hasMany(SubUnit::class, 'unit_sync_id', 'sync_id');
     }
+
+    public function coordinatorHandle(){
+        return $this->hasMany(CoordinatorHandle::class, 'unit_id', 'id');
+    }
 }

@@ -20,12 +20,18 @@ class UnitController extends Controller
     public function index(Request $request)
     {
         $unitStatus = $request->status ?? 'active';
+        $userId = $request->user_id;
         $isActiveStatus = ($unitStatus === 'deactivated') ? 0 : 1;
         $unit = Unit::where('is_active', $isActiveStatus)
+            ->when($userId, function ($query) use ($userId) {
+                $query->wherehas('coordinatorHandle', function ($query) use ($userId) {
+                    $query->where('user_id', $userId);
+                });
+            })
             ->orderBy('created_at', 'DESC')
             ->useFilters()
             ->dynamicPaginate();
-        return $this->transformUnit($unit);
+        return $this->transformUnit($unit, $userId);
     }
 
     public function store(Request $request)
