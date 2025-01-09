@@ -28,9 +28,11 @@ class UserController extends Controller
 //        return $user;
         $userStatus = $request->status;
         $isCoordinator = $request->is_coordinator;
+
         $isActiveStatus = ($userStatus === "deactivated") ? 0 : 1;
         $unit = $request->input('unit', null);
         $currentUserId = auth('sanctum')->user()->id;
+
 
         $user = User::withTrashed()->where('is_active', $isActiveStatus)
             ->when($unit, function ($query) use ($unit, $currentUserId) {
@@ -54,6 +56,7 @@ class UserController extends Controller
                 'username' => $item->username,
                 'role' => $item->role,
                 'is_coordinator' => $item->is_coordinator,
+                'has_handle' =>$item->coordinatorHandle ? 1 : 0,
                 'warehouse' => [
                     'id' => $item->warehouse->id ?? null,
                     'warehouse_code' => $item->warehouse->warehouse_code ?? null,

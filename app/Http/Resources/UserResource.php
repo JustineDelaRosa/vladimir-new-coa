@@ -16,6 +16,7 @@ class UserResource extends JsonResource
             'lastname' => $this->lastname,
             'username' => $this->username,
             'is_coordinator' => $this->is_coordinator,
+            'has_handle' =>$this->coordinatorHandle ? 1 : 0,
             'coa' => [
                 'company' => [
                     'id' => $this->company->id ?? '-',
