@@ -96,6 +96,8 @@ trait RequestShowDataHandler
 
         if (strpos($ar->status, 'For Approval') === 0) {
             $requestStatus = $ar->status;
+        } elseif ($ar->status == 'Returned'){
+            $requestStatus = $ar->status;
         } elseif ($ar->is_fa_approved) {
             $requestStatus = $ar->filter == 'Sent to Ymir' ? 'Sent to ymir for PO' : $ar->filter;
         } elseif ($isAllDeleted) {
