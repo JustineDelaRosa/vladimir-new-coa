@@ -46,11 +46,11 @@ class UpdateAssetTransferRequestRequest extends FormRequest
                     $fail('Duplicate fixed asset found');
                 }
 
-                $fixedAsset = FixedAsset::find($value);
+                /*$fixedAsset = FixedAsset::find($value);
                 $fromSubunitId = request()->from_subunit_id ? request()->from_subunit_id : auth('sanctum')->user()->subunit_id;
                 if ($fixedAsset->subunit_id != $fromSubunitId) {
                     $fail('Asset does not belong to this subunit');
-                }
+                }*/
             }],
             'assets.*.receiver_id' => 'required|exists:users,id',
 
