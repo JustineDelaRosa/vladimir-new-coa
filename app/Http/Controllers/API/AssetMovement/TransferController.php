@@ -28,9 +28,9 @@ class TransferController extends AssetMovementBaseController
         parent::__construct(new Transfer(), $assetTransferServices, $movementApprovalServices);
     }
 
-//    public function store(){
-//        return AssetTransferApprover::where('subunit_id', 49)->get();
-//    }
+    //    public function store(){
+    //        return AssetTransferApprover::where('subunit_id', 49)->get();
+    //    }
 
     protected function movementCreateFormRequest()
     {
@@ -41,7 +41,6 @@ class TransferController extends AssetMovementBaseController
     {
         return UpdateAssetTransferRequestRequest::class;
     }
-
 
     public function singleViewing($transferId)
     {

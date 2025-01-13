@@ -25,7 +25,7 @@ class TaggingOfAddCostRequest extends FormRequest
     {
         return [
             'added_useful_life' => 'required|integer',
-            'replacementTag' => 'nullable|exists:fixed_assets,vladimir_tag_number',
+            'replacement_tag' => 'nullable|exists:fixed_assets,vladimir_tag_number',
 //            'company_id' => 'required|exists:companies,id',
 //            'business_unit_id' => 'required|exists:business_units,id',
 //            'department_id' => 'required|exists:departments,id',
