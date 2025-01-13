@@ -22,9 +22,15 @@ class SubUnitController extends Controller
     public function index(Request $request)
     {
         $requestStatus = $request->status;
+        $userId = $request->user_id;
         $isActiveStatus = ($requestStatus === "deactivated") ? 0 : 1;
 
         $subUnits = SubUnit::withTrashed()->where('is_active', $isActiveStatus)
+            ->when($userId, function ($query) use ($userId) {
+                $query->whereHas('coordinatorHandle', function ($query) use ($userId) {
+                    $query->where('user_id', $userId);
+                });
+            })
             ->orderBy('created_at', 'desc')
             ->useFilters()
             ->dynamicPaginate();

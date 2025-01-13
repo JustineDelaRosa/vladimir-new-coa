@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Location extends Model
 {
-    use HasFactory,Filterable;
+    use HasFactory, Filterable;
+
     protected $fillable = [
         'sync_id',
         'location_code',
@@ -31,6 +32,11 @@ class Location extends Model
 //    {
 //        return $this->belongsToMany(Department::class, 'location_sync_id', 'sync_id');
 //    }
+
+    public function coordinatorHandle()
+    {
+        return $this->hasMany(CoordinatorHandle::class, 'location_id', 'id');
+    }
 
 
     public function subunit()

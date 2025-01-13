@@ -55,6 +55,10 @@ class Department extends Model
         return $this->hasMany(Unit::class, 'department_sync_id', 'sync_id');
     }
 
+    public function coordinatorHandle(){
+        return $this->hasMany(CoordinatorHandle::class, 'department_id', 'id');
+    }
+
 
 //    public function location(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
 //    {

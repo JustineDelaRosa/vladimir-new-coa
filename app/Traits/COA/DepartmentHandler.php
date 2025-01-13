@@ -4,9 +4,9 @@ namespace App\Traits\COA;
 
 trait DepartmentHandler
 {
-    public function transformDepartment($department)
+    public function transformDepartment($department, $userId = null)
     {
-        $department->transform(function ($department) {
+        $department->transform(function ($department) use ($userId) {
             return [
                 'id' => $department->id,
                 'sync_id' => $department->sync_id,
@@ -28,15 +28,7 @@ trait DepartmentHandler
                     'division_id' => $department->division->id ?? "-",
                     'division_name' => $department->division->division_name ?? "-",
                 ],
-                'unit' => $department->unit->map(function ($unit) {
-                    return [
-                        'id' => $unit->id ?? "-",
-                        'unit_sync_id' => $unit->sync_id ?? "-",
-                        'unit_code' => $unit->unit_code ?? "-",
-                        'unit_name' => $unit->unit_name ?? "-",
-                        'unit_status' => $unit->is_active ?? '-',
-                    ];
-                }),
+                'unit' => $this->transformUnits($department->unit(), $userId),
                 'department_code' => $department->department_code,
                 'department_name' => $department->department_name,
                 'is_active' => $department->is_active,
@@ -45,5 +37,34 @@ trait DepartmentHandler
             ];
         });
         return $department;
+    }
+
+
+    private function transformUnits($unitQuery, $userId)
+    {
+        // Handle the null userId case
+        if ($userId === null) {
+            return $unitQuery->get()->map(function ($unit) {
+                return $this->formatUnit($unit);
+            });
+        }
+
+        // Filter and map units when userId is provided
+        return $unitQuery->whereHas('coordinatorHandle', function ($query) use ($userId) {
+            $query->where('user_id', $userId);
+        })->get()->map(function ($unit) {
+            return $this->formatUnit($unit);
+        });
+    }
+
+    private function formatUnit($unit)
+    {
+        return [
+            'id' => $unit->id ?? "-",
+            'sync_id' => $unit->sync_id ?? "-",
+            'unit_code' => $unit->unit_code ?? "-",
+            'unit_name' => $unit->unit_name ?? "-",
+            'is_active' => $unit->is_active ?? '-',
+        ];
     }
 }

@@ -20,12 +20,19 @@ class DepartmentController extends Controller
     public function index(Request $request)
     {
         $departmentStatus = $request->status ?? 'active';
+        $userId = $request->user_id;
         $isActiveStatus = ($departmentStatus === 'deactivated') ? 0 : 1;
+
         $department = Department::where('is_active', $isActiveStatus)
+            ->when($userId, function ($query) use ($userId) {
+                $query->wherehas('coordinatorHandle', function ($query) use ($userId) {
+                    $query->where('user_id', $userId);
+                });
+            })
             ->orderBy('created_at', 'DESC')
             ->useFilters()
             ->dynamicPaginate();
-        return $this->transformDepartment($department);
+        return $this->transformDepartment($department,$userId);
     }
 
     /**

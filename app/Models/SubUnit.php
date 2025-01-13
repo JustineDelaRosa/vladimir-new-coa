@@ -38,13 +38,19 @@ class SubUnit extends Model
         return $this->hasMany(DepartmentUnitApprovers::class, 'subunit_id', 'id');
     }
 
-    public function transferApprovers(){
+    public function transferApprovers()
+    {
         return $this->hasMany(AssetTransferApprover::class, 'subunit_id', 'id');
     }
 
     public function unit()
     {
         return $this->belongsTo(Unit::class, 'unit_sync_id', 'sync_id');
+    }
+
+    public function coordinatorHandle()
+    {
+        return $this->hasMany(CoordinatorHandle::class, 'subunit_id', 'id');
     }
 
     public function location()
