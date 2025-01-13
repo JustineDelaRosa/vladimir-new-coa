@@ -15,10 +15,10 @@ trait TransferHandler
 
             $canEdit = 1;
             $canDelete = 0;
-            if($item->is_received || $item->is_fa_approved){
+            if ($item->is_received || $item->is_fa_approved) {
                 $canEdit = 0;
             }
-            if($item->statis == 'Returned' || $item->status == 'For Approval of Approver 1'){
+            if ($item->status == 'Returned' || $item->status == 'For Approval of Approver 1') {
                 $canDelete = 1;
             }
             return [
@@ -27,22 +27,60 @@ trait TransferHandler
                 'id' => $item->transfer->map(function ($transferMovement) {
                     return $transferMovement->id;
                 })->values(),
-                'remarks'=> $transfer->remarks,
+                'remarks' => $transfer->remarks,
                 'movement_id' => $item->id,
-                'assets' => $item->transfer->map(function ($transferMovement) {
-                    return $this->transformSingleFixedAssetShowData($transferMovement->fixedAsset, null);
+                'assets' => $item->transfer->map(function ($transferMovement) use ($item) {
+                    return $this->transformSingleFixedAssetShowData($transferMovement->fixedAsset, null, $transferMovement);
                 })->values(),
-                'accountability' => $transfer->accountability,
-                'accountable' => [
-                    'full_id_number_full_name' => $transfer->accountable
+//                'accountability' => $transfer->accountability,
+//                'accountable' => [
+//                    'full_id_number_full_name' => $transfer->accountable
+//                ],
+//                'receiver' => [
+//                    'id' => $transfer->receiver->id ?? '-',
+//                    'username' => $transfer->receiver->username ?? '-',
+//                    'first_name' => $transfer->receiver->firstname ?? '-',
+//                    'last_name' => $transfer->receiver->lastname ?? '-',
+//                    'employee_id' => $transfer->receiver->employee_id ?? '-',
+//                    'full_id_number_full_name' => $transfer->receiver->employee_id . ' ' . $transfer->receiver->firstname . ' ' . $transfer->receiver->lastname
+//                ],
+                'requestor' => [
+                    'id' => $transfer->movementNumber->requester->id ?? '-',
+                    'username' => $transfer->movementNumber->requester->username ?? '-',
+                    'first_name' => $transfer->movementNumber->requester->firstname ?? '-',
+                    'last_name' => $transfer->movementNumber->requester->lastname ?? '-',
+                    'employee_id' => $transfer->movementNumber->requester->employee_id ?? '-',
+                    'full_id_number_full_name' => $transfer->movementNumber->requester->employee_id . ' ' . $transfer->movementNumber->requester->firstname . ' ' . $transfer->movementNumber->requester->lastname
                 ],
-                'receiver' => [
-                    'id' => $transfer->receiver->id ?? '-',
-                    'username' => $transfer->receiver->username ?? '-',
-                    'first_name' => $transfer->receiver->firstname ?? '-',
-                    'last_name' => $transfer->receiver->lastname ?? '-',
-                    'employee_id' => $transfer->receiver->employee_id ?? '-',
-                    'full_id_number_full_name' => $transfer->receiver->employee_id . ' ' . $transfer->receiver->firstname . ' ' . $transfer->receiver->lastname
+                'company_from' => [
+                    'id' => $transfer->fixedAsset->company->id ?? '-',
+                    'company_code' => $transfer->fixedAsset->company->company_code ?? '-',
+                    'company_name' => $transfer->fixedAsset->company->company_name ?? '-',
+                ],
+                'business_unit_from' => [
+                    'id' => $transfer->fixedAsset->businessUnit->id ?? '-',
+                    'business_unit_code' => $transfer->fixedAsset->businessUnit->business_unit_code ?? '-',
+                    'business_unit_name' => $transfer->fixedAsset->businessUnit->business_unit_name ?? '-',
+                ],
+                'department_from' => [
+                    'id' => $transfer->fixedAsset->department->id ?? '-',
+                    'department_code' => $transfer->fixedAsset->department->department_code ?? '-',
+                    'department_name' => $transfer->fixedAsset->department->department_name ?? '-',
+                ],
+                'unit_from' => [
+                    'id' => $transfer->fixedAsset->unit->id ?? '-',
+                    'unit_code' => $transfer->fixedAsset->unit->unit_code ?? '-',
+                    'unit_name' => $transfer->fixedAsset->unit->unit_name ?? '-',
+                ],
+                'subunit_from' => [
+                    'id' => $transfer->fixedAsset->subunit->id ?? '-',
+                    'subunit_code' => $transfer->fixedAsset->subunit->sub_unit_code ?? '-',
+                    'subunit_name' => $transfer->fixedAsset->subunit->sub_unit_name ?? '-',
+                ],
+                'location_from' => [
+                    'id' => $transfer->fixedAsset->location->id ?? '-',
+                    'location_code' => $transfer->fixedAsset->location->location_code ?? '-',
+                    'location_name' => $transfer->fixedAsset->location->location_name ?? '-',
                 ],
                 'company' => [
                     'id' => $transfer->company->id ?? '-',
@@ -81,6 +119,7 @@ trait TransferHandler
                         'id' => $attachment->id,
                         'name' => $attachment->file_name,
                         'url' => $attachment->getUrl(),
+                        'uuid' => $attachment->uuid,
                     ];
                 }) : collect([]),
             ];
@@ -148,17 +187,37 @@ trait TransferHandler
 //        $fixed_asset->additional_cost_count = $fixed_asset->additionalCost ? $fixed_asset->additionalCost->count() : 0;
         $attachment = $movementNumber ? $movementNumber->getMedia('attachments')->all() : null;
         $transfer = $transfer ?: null;
+        // todo: make this dynamic for pullout
+//        $movementRequestor = $movementNumber ? MovementNumber::where('id', $movementNumber)->first() : null;
+//        if ($movementRequestor) {
+//            $transfer = $movementRequestor->transfer->where('fixed_asset_id', $fixed_asset->id)->first();
+//        }
         return [
 //            'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id ?? '-',
 //            'is_received' => $transfer ? ($transfer->whereNotNull('received_at') ? 1 : 0) : '-',
-            'requestor' => [
-                'id' => $fixed_asset->requestor->id ?? '-',
-                'username' => $fixed_asset->requestor->username ?? '-',
-                'first_name' => $fixed_asset->requestor->firstname ?? '-',
-                'last_name' => $fixed_asset->requestor->lastname ?? '-',
-                'employee_id' => $fixed_asset->requestor->employee_id ?? '-',
+
+            'receiver' => $transfer ? [
+                'id' => $transfer->receiver->id ?? '-',
+                'username' => $transfer->receiver->username ?? '-',
+                'first_name' => $transfer->receiver->firstname ?? '-',
+                'last_name' => $transfer->receiver->lastname ?? '-',
+                'employee_id' => $transfer->receiver->employee_id ?? '-',
+                'full_id_number_full_name' => $transfer->receiver->employee_id . ' ' . $transfer->receiver->firstname . ' ' . $transfer->receiver->lastname
+            ] : '-',
+
+            'new_accountability' => $transfer->accountability ?? '-',
+            'new_accountable' => [
+                'full_id_number_full_name' => $transfer->accountable ?? '-'
             ],
+            /*'requestor' => [
+                'id' => $activeMovement->movementNumber->requester->id ?? '-',
+                'username' => $activeMovement->movementNumber->requester->username ?? '-',
+                'first_name' => $activeMovement->movementNumber->requester->firstname ?? '-',
+                'last_name' => $activeMovement->movementNumber->requester->lastname ?? '-',
+                'employee_id' => $activeMovement->movementNumber->requester->employee_id ?? '-',
+                'full_id_number_full_name' => $activeMovement->movementNumber->requester->employee_id . ' ' . $activeMovement->movementNumber->requester->firstname . ' ' . $activeMovement->movementNumber->requester->lastname
+            ],*/
             'pr_number' => $fixed_asset->pr_number ?? '-',
             'po_number' => $fixed_asset->po_number ?? '-',
             'rr_number' => $fixed_asset->rr_number ?? '-',
