@@ -588,6 +588,7 @@ class FixedAssetRepository
             'print' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
             'last_printed' => $fixed_asset->last_printed,
             'tagging' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
+            'created_at' => $fixed_asset->created_at,
             'additional_cost' => isset($fixed_asset->additionalCost) ? $fixed_asset->additionalCost->map(function ($additional_cost) {
                 return [
                     'id' => $additional_cost->id ?? '-',
@@ -1216,13 +1217,15 @@ class FixedAssetRepository
                     })->Where(function ($query) {
                         $query->where(function ($query) {
                             $query->where(function ($query) {
-                                $query->whereHas('transfer', function ($query) {
-                                    $query->where('received_at', '!=', null);
-                                })->orWhereDoesntHave('transfer');
+                                $query->WhereDoesntHave('transfer', function ($query) {
+                                    $query->where('received_at', null);
+                                });
+//                                    ->orWhereHas('transfer');
                             })->where(function ($query) {
-                                $query->whereHas('pullout', function ($query) {
-                                    $query->where('evaluation', '!=', null);
-                                })->orWhereDoesntHave('pullout');
+                                $query->WhereDoesntHave('pullout', function ($query) {
+                                    $query->where('evaluation', null);
+                                });
+//                                    ->orWhereHas('pullout');
                             });
                         });
                     })

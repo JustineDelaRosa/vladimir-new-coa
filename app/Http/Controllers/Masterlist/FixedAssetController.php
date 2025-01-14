@@ -12,6 +12,7 @@ use App\Imports\MasterlistImport;
 use App\Models\AccountingEntries;
 use App\Models\AccountTitle;
 use App\Models\AdditionalCost;
+use App\Models\AssetMovementHistory;
 use App\Models\BusinessUnit;
 use App\Models\Capex;
 use App\Models\Company;
@@ -24,8 +25,10 @@ use App\Models\MajorCategory;
 use App\Models\MemoSeries;
 use App\Models\MinorCategory;
 use App\Models\PoBatch;
+use App\Models\PullOut;
 use App\Models\Status\DepreciationStatus;
 use App\Models\SubCapex;
+use App\Models\Transfer;
 use App\Models\TypeOfRequest;
 use App\Models\YmirPRTransaction;
 use App\Repositories\CalculationRepository;
@@ -54,10 +57,17 @@ class FixedAssetController extends Controller
 
     public function index(Request $request)
     {
+//       return  auth('sanctum')->user()->department_id;
         $movement = $request->get('movement');
+        $subUnitId = $request->get('sub_unit_id', null);
+        $addCost = $request->get('add_cost', false);
         $ymir = $request->get('ymir', false);
 //        $data = Cache::get('fixed_assets_data');
-        return $this->fixedAssetRepository->faIndex($ymir, $movement);
+        return $this->fixedAssetRepository->faIndex($ymir, $addCost, $movement, $subUnitId);
+
+
+
+
 //        if ($data) {
 ////            return $this->fixedAssetRepository->faIndex();
 //            return Crypt::decrypt($data);
@@ -939,7 +949,7 @@ class FixedAssetController extends Controller
     public function removeInclusionItem(Request $request)
     {
 
-         $referenceNumber = $request->input('reference_number');
+        $referenceNumber = $request->input('reference_number');
         $vTagNumber = $request->input('vladimir_tag_number', null);
 
         // Retrieve all FixedAsset records with the given reference number
@@ -1039,112 +1049,252 @@ class FixedAssetController extends Controller
     //Report for GL system
     public function reportGL(Request $request)
     {
+
+        //todo: will adjust the response on the following days
         $year = $request->input('year');
         $month = $request->input('month');
 
-        return $this->responseSuccess('Report generated successfully.');
+        $fixedAssets = FixedAsset::whereNotNull('depreciation_method')
+            ->when($year && $month, function ($query) use ($year, $month) {
+                return $query->whereYear('created_at', $year)
+                    ->whereMonth('created_at', $month);
+            })->get();
+
+        $fixedAssets->transform(function ($item) {
+            return [
+                "Sync Id" => $item->id,
+                "Mark" => "mark1",
+                "Mark 2" => "mark2",
+                "Asset / CIP #" => "assetCIP",
+                "Accounting Tag" => "accountingTag",
+                "Transaction Date" => $item->acquisition_date,
+                "Supplier / Customer" => $item->supplier->supplier_name ?? null,
+                "Account Title Code" => $item->accountTitle->initialCredit->account_title_code,
+                "Account Title" => $item->accountTitle->initialCredit->account_title_name,
+                "Company Code" => $item->company->company_code,
+                "Company" => $item->company->company_name,
+                "Division Code" => $item->department->division->division_name ?? null,
+                "Division" => $item->department->division->division_name ?? null,
+                "Department Code" => $item->department->department_code,
+                "Department" => $item->department->department_name,
+                "Unit Code" => $item->unit->unit_code,
+                "Unit" => $item->unit->unit_name,
+                "Sub Unit Code" => $item->subunit->sub_unit_code,
+                "Sub Unit" => $item->subunit->sub_unit_name,
+                "Location Code" => $item->location->location_code,
+                "Location" => $item->location->location_name,
+                "PO No." => $item->po_number ?? null,
+                "RR No." => $item->rr_number ?? null,
+                "Reference No." => $item->reference_number,
+                "Item Code" => $item->item_code,
+                "Description" => $item->asset_description,
+                "Quantity" => $item->quantity,
+                "unit" => $item->uom->uom_name,
+                "Unit Price" => $item->acquisition_cost,
+                "Line Amount" => "lineAmount",
+                "Voucher / GJ No." => $item->voucher,
+                "Account Type" => "accountType",
+                "DR / CR" => "drcp",
+                "Asset Code" => "assetCode",
+                "Asset" => "asset",
+                "Service Provider Code" => "serviceProviderCode",
+                "Service Provider" => "serviceProvider",
+                "BOA" => "boa",
+                "Allocation" => "allocation",
+                "Account Group" => "accountGroup",
+                "Account SubGroup" => "accountSubGroup",
+                "Financial Statement" => "financialStatement",
+                "Unit Responsible" => "unitResponsible",
+                "Batch" => "batch",
+                "Remarks" => "remarks",
+                "Payroll Period" => "payrollPeriod",
+                "Position" => "position",
+                "Payroll Type 1" => "payrollType",
+                "Payroll Type 2" => "payrollType2",
+                "Additional Description for DEPR" => "depreciationDescription",
+                "Remaining BV for DEPR" => "remainingDepreciationValue",
+                "Useful Life" => "usefulLife",
+                "Month" => "month",
+                "Year" => "year",
+                "Particulars" => "particulars",
+                "Month 2" => "month2",
+                "Farm Type" => "farmType",
+                "Jean Remarks" => "jeanRemarks",
+                "From" => "from",
+                "Changed To" => "changeTo",
+                "Reason" => "reason",
+                "Checking Remarks" => "checkingRemarks",
+                "Bank Name" => "bankName",
+                "Cheque No." => "chequeNumber",
+                "Cheque Voucher No." => "chequeVoucherNumber",
+                "BOA 2" => "boA2",
+                "System" => "system",
+                "Books" => "books",
+            ];
+        });
+
+        return $this->responseSuccess('Report generated successfully.', $fixedAssets);
     }
 
 
-    public function depreciationViewing(Request $request, $id)
+    public function movementReports(Request $request)
     {
-        $fixed_asset = FixedAsset::where('id', $id)->first();
-        $depreciation = DepreciationHistory::where('fixed_asset_id', $id)->latest()->first();
-
-        $formula = $fixed_asset->formula;
-        $actualStartDepreciation = $formula->start_depreciation;
-
-        $est_useful_life = $fixed_asset->majorCategory->est_useful_life ?? 0;
-        $est_useful_life += $fixed_asset->added_useful_life;
-
-        $end_depreciation = (date('Y-m', strtotime($formula->end_depreciation . ' + ' . ($fixed_asset->added_useful_life ?? 0) . ' years')));
-
-
-        if ($fixed_asset->additionalCost->isNotEmpty()) {
-            $formula->start_depreciation = Carbon::parse($fixed_asset->additionalCost->last()->created_at)->addMonth()->format('Y-m');
+        $from = $request->input('from', null);
+        $to = $request->input('to', null);
+        $movementType = $request->input('movement_type', null);
+        if ($from) {
+            $from = Carbon::parse($from)->startOfDay();
+        }
+        if ($to) {
+            $to = Carbon::parse($to)->endOfDay();
         }
 
 
-        $actualMonthsDepreciated = $this->calculationRepository->getMonthDifference($actualStartDepreciation, now()->format('Y-m')) ?? 0;
-        $monthsDepreciated = $this->calculationRepository->getMonthDifference($formula->start_depreciation, now()->format('Y-m')) ?? 0;
-        $yearsDepreciated = floor(($monthsDepreciated + $actualMonthsDepreciated) / 12);
-
-
-        if ($fixed_asset->depreciation_method == "One Time") {
-            return [
-                'fixed_asset_id' => $fixed_asset->id,
-                'depreciated_date' => now()->format('Y-m'),
-                'estimated_useful_life' => $est_useful_life,
-                'remaining_useful_life' => $est_useful_life - $yearsDepreciated,
-                'months_depreciated' => $monthsDepreciated + $actualMonthsDepreciated,
-                'depreciation_per_month' => $depreciation->depreciation_per_month,
-                'depreciation_per_year' => $depreciation->depreciation_per_year,
-                'accumulated_cost' => $depreciation->accumulated_cost,
-                'remaining_book_value' => $depreciation->remaining_book_value,
-                'depreciation_basis' => $depreciation->depreciation_basis,
-                'acquisition_cost' => $depreciation->acquisition_cost,
-                'start_depreciation' => $formula->start_depreciation,
-                'end_depreciation' => $end_depreciation,
-                'scrap_value' => $formula->scrap_value,
-                'initial_debit' => [
-                    'id' => $fixed_asset->accountTitle->initialDebit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->initialDebit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->initialDebit->account_title_name ?? '-',
-                ],
-                'initial_credit' => [
-                    'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
-                ],
-                'depreciation_debit' => $fixed_asset->depreciation_method !== null ? [
-                    'id' => $fixed_asset->accountTitle->depreciationDebit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->depreciationDebit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->depreciationDebit->account_title_name ?? '-',
-                ] : null,
-                'depreciation_credit' => $fixed_asset->depreciation_method !== null ? [
-                    'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
-                ] : null,
-
-            ];
-        } else {
-            return [
-                'fixed_asset_id' => $fixed_asset->id,
-                'depreciated_date' => now()->format('Y-m'),
-                'estimated_useful_life' => $est_useful_life,
-                'remaining_useful_life' => $est_useful_life - $yearsDepreciated,
-                'months_depreciated' => $monthsDepreciated + $actualMonthsDepreciated,
-                'depreciation_per_month' => $depreciation->depreciation_per_month,
-                'depreciation_per_year' => $depreciation->depreciation_per_year,
-                'accumulated_cost' => $depreciation->accumulated_cost,
-                'remaining_book_value' => $depreciation->remaining_book_value,
-                'depreciation_basis' => $depreciation->depreciation_basis,
-                'acquisition_cost' => $depreciation->acquisition_cost,
-                'start_depreciation' => $formula->start_depreciation,
-                'end_depreciation' => $end_depreciation,
-                'scrap_value' => $formula->scrap_value,
-                'initial_debit' => [
-                    'id' => $fixed_asset->accountTitle->initialDebit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->initialDebit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->initialDebit->account_title_name ?? '-',
-                ],
-                'initial_credit' => [
-                    'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
-                ],
-                'depreciation_debit' => $fixed_asset->depreciation_method !== null ? [
-                    'id' => $fixed_asset->accountTitle->depreciationDebit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->depreciationDebit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->depreciationDebit->account_title_name ?? '-',
-                ] : null,
-                'depreciation_credit' => $fixed_asset->depreciation_method !== null ? [
-                    'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
-                ] : null,
-            ];
+        switch (ucwords($movementType)) {
+            case 'Transfer':
+                $movementHistory = AssetMovementHistory::whereHasMorph('movementHistory', Transfer::class);
+                break;
+            case 'Pullout':
+                $movementHistory = AssetMovementHistory::whereHasMorph('movementHistory', PullOut::class);
+                break;
+            default:
+                $movementHistory = AssetMovementHistory::whereHasMorph('movementHistory', [Transfer::class, PullOut::class]);
+                break;
         }
+
+        $movementHistory = $movementHistory->when($from, function ($query) use ($from) {
+            return $query->where('created_at', '>=', $from);
+        })->when($to, function ($query) use ($to) {
+            return $query->where('created_at', '<=', $to);
+        })->orderBy('created_at')->dynamicPaginate();
+
+
+        $movementHistory->transform(function ($item) {
+            $movementHistory = $item->movementHistory;
+//            $item->accountable ?:
+            $movementTypes = [
+                'App\\Models\\Transfer' => 'Transfer',
+                'App\\Models\\PullOut' => 'Pull Out',
+                'App\\Models\\Disposal' => 'Disposal',
+                // Add more mappings as needed
+            ];
+            $item->from = $item->requester->employee_id . ' - ' . $item->requester->firstname . ' ' . $item->requester->lastname;
+            $item->to = $movementHistory->receiver->employee_id . ' - ' . $movementHistory->receiver->firstname . ' ' . $movementHistory->receiver->lastname;
+            return [
+                'id' => $item->id,
+                'vladimir_tag_number' => $movementHistory->fixedAsset->vladimir_tag_number,
+                'asset_description' => $movementHistory->fixedAsset->asset_description,
+                'from' => $item->from,
+                'to' => $item->to,
+                'movement_type' => $movementTypes[$item->subject_type] ?? $item->subject_type,
+                'status' => $item->fixedAsset->assetStatus->asset_status_name,
+                'created_at' => $item->created_at,
+            ];
+        });
+
+        return $movementHistory;
     }
+
+
+    /*    public function depreciationViewing(Request $request, $id)
+        {
+            $fixed_asset = FixedAsset::where('id', $id)->first();
+            $depreciation = DepreciationHistory::where('fixed_asset_id', $id)->latest()->first();
+
+            $formula = $fixed_asset->formula;
+            $actualStartDepreciation = $formula->start_depreciation;
+
+            $est_useful_life = $fixed_asset->majorCategory->est_useful_life ?? 0;
+            $est_useful_life += $fixed_asset->added_useful_life;
+
+            $end_depreciation = (date('Y-m', strtotime($formula->end_depreciation . ' + ' . ($fixed_asset->added_useful_life ?? 0) . ' years')));
+
+
+            if ($fixed_asset->additionalCost->isNotEmpty()) {
+                $formula->start_depreciation = Carbon::parse($fixed_asset->additionalCost->last()->created_at)->addMonth()->format('Y-m');
+            }
+
+
+            $actualMonthsDepreciated = $this->calculationRepository->getMonthDifference($actualStartDepreciation, now()->format('Y-m')) ?? 0;
+            $monthsDepreciated = $this->calculationRepository->getMonthDifference($formula->start_depreciation, now()->format('Y-m')) ?? 0;
+            $yearsDepreciated = floor(($monthsDepreciated + $actualMonthsDepreciated) / 12);
+
+
+            if ($fixed_asset->depreciation_method == "One Time") {
+                return [
+                    'fixed_asset_id' => $fixed_asset->id,
+                    'depreciated_date' => now()->format('Y-m'),
+                    'estimated_useful_life' => $est_useful_life,
+                    'remaining_useful_life' => $est_useful_life - $yearsDepreciated,
+                    'months_depreciated' => $monthsDepreciated + $actualMonthsDepreciated,
+                    'depreciation_per_month' => $depreciation->depreciation_per_month,
+                    'depreciation_per_year' => $depreciation->depreciation_per_year,
+                    'accumulated_cost' => $depreciation->accumulated_cost,
+                    'remaining_book_value' => $depreciation->remaining_book_value,
+                    'depreciation_basis' => $depreciation->depreciation_basis,
+                    'acquisition_cost' => $depreciation->acquisition_cost,
+                    'start_depreciation' => $formula->start_depreciation,
+                    'end_depreciation' => $end_depreciation,
+                    'scrap_value' => $formula->scrap_value,
+                    'initial_debit' => [
+                        'id' => $fixed_asset->accountTitle->initialDebit->id ?? '-',
+                        'account_title_code' => $fixed_asset->accountTitle->initialDebit->account_title_code ?? '-',
+                        'account_title_name' => $fixed_asset->accountTitle->initialDebit->account_title_name ?? '-',
+                    ],
+                    'initial_credit' => [
+                        'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+                        'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+                        'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+                    ],
+                    'depreciation_debit' => $fixed_asset->depreciation_method !== null ? [
+                        'id' => $fixed_asset->accountTitle->depreciationDebit->id ?? '-',
+                        'account_title_code' => $fixed_asset->accountTitle->depreciationDebit->account_title_code ?? '-',
+                        'account_title_name' => $fixed_asset->accountTitle->depreciationDebit->account_title_name ?? '-',
+                    ] : null,
+                    'depreciation_credit' => $fixed_asset->depreciation_method !== null ? [
+                        'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
+                        'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
+                        'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
+                    ] : null,
+
+                ];
+            } else {
+                return [
+                    'fixed_asset_id' => $fixed_asset->id,
+                    'depreciated_date' => now()->format('Y-m'),
+                    'estimated_useful_life' => $est_useful_life,
+                    'remaining_useful_life' => $est_useful_life - $yearsDepreciated,
+                    'months_depreciated' => $monthsDepreciated + $actualMonthsDepreciated,
+                    'depreciation_per_month' => $depreciation->depreciation_per_month,
+                    'depreciation_per_year' => $depreciation->depreciation_per_year,
+                    'accumulated_cost' => $depreciation->accumulated_cost,
+                    'remaining_book_value' => $depreciation->remaining_book_value,
+                    'depreciation_basis' => $depreciation->depreciation_basis,
+                    'acquisition_cost' => $depreciation->acquisition_cost,
+                    'start_depreciation' => $formula->start_depreciation,
+                    'end_depreciation' => $end_depreciation,
+                    'scrap_value' => $formula->scrap_value,
+                    'initial_debit' => [
+                        'id' => $fixed_asset->accountTitle->initialDebit->id ?? '-',
+                        'account_title_code' => $fixed_asset->accountTitle->initialDebit->account_title_code ?? '-',
+                        'account_title_name' => $fixed_asset->accountTitle->initialDebit->account_title_name ?? '-',
+                    ],
+                    'initial_credit' => [
+                        'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
+                        'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
+                        'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+                    ],
+                    'depreciation_debit' => $fixed_asset->depreciation_method !== null ? [
+                        'id' => $fixed_asset->accountTitle->depreciationDebit->id ?? '-',
+                        'account_title_code' => $fixed_asset->accountTitle->depreciationDebit->account_title_code ?? '-',
+                        'account_title_name' => $fixed_asset->accountTitle->depreciationDebit->account_title_name ?? '-',
+                    ] : null,
+                    'depreciation_credit' => $fixed_asset->depreciation_method !== null ? [
+                        'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
+                        'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
+                        'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
+                    ] : null,
+                ];
+            }
+        }*/
 }
