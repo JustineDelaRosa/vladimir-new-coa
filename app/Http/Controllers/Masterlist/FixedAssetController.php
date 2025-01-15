@@ -410,10 +410,12 @@ class FixedAssetController extends Controller
         $est_useful_life = $fixed_asset->majorCategory->est_useful_life ?? 0;
         $est_useful_life += $fixed_asset->added_useful_life;
 
+        $addedUsefulLife = $fixed_asset->added_useful_life;
+//        $addedUsefulLife = 5 / 12;
 
         if ($formula->end_depreciation !== null) {
 //            $end_depreciation = (date('Y-m', strtotime($formula->end_depreciation . ' + ' . ($fixed_asset->added_useful_life ?? 0) . ' years')));
-            $end_depreciation = Carbon::parse($formula->start_depreciation)->addYears($fixed_asset->added_useful_life)->format('Y-m');
+            $end_depreciation = Carbon::parse($formula->end_depreciation)->addMonths($addedUsefulLife)->format('Y-m');
         } else {
             $end_depreciation = $formula->end_depreciation;
         }
@@ -1025,7 +1027,8 @@ class FixedAssetController extends Controller
         ]);
         $formula = $fixedAsset->formula;
         $formula->update([
-            'start_depreciation' => $this->calculationRepository->getStartDepreciation($depreciationMethod, $formula->release_date),
+//            'start_depreciation' => $this->calculationRepository->getStartDepreciation($depreciationMethod, $formula->release_date),
+            'start_depreciation' => $this->calculationRepository->getStartDepreciation($depreciationMethod, now()->format('Y-m')),
             'end_depreciation' => $this->calculationRepository->getEndDepreciation(now()->format('Y-m'), $fixedAsset->majorCategory->est_useful_life, $depreciationMethod),
             'depreciation_method' => $depreciationMethod,
         ]);
