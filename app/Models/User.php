@@ -58,6 +58,10 @@ class User extends Authenticatable
     //     return $this->belongsTo(Department::class)->select('id', 'department_name');
     // }
 
+    public function authorizedTransferReceiver()
+    {
+        return $this->hasMany(AuthorizedTransferReceiver::class, 'user_id', 'id');
+    }
     public function coordinatorHandle()
     {
         return $this->hasOne(CoordinatorHandle::class, 'user_id', 'id');

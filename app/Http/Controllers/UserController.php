@@ -30,11 +30,18 @@ class UserController extends Controller
         $isCoordinator = $request->is_coordinator;
 
         $isActiveStatus = ($userStatus === "deactivated") ? 0 : 1;
+        $department = $request->input('department', null);
         $unit = $request->input('unit', null);
+
         $currentUserId = auth('sanctum')->user()->id;
 
 
         $user = User::withTrashed()->where('is_active', $isActiveStatus)
+            ->when($department, function ($query) use ($department) {
+                $query->whereHas('authorizedTransferReceiver', function ($q) use ($department) {
+                    $q->where('department_id', $department);
+                });
+            })
             ->when($unit, function ($query) use ($unit, $currentUserId) {
                 $query->where('unit_id', $unit)
                     ->where('id', '!=', $currentUserId);
@@ -56,7 +63,7 @@ class UserController extends Controller
                 'username' => $item->username,
                 'role' => $item->role,
                 'is_coordinator' => $item->is_coordinator,
-                'has_handle' =>$item->coordinatorHandle ? 1 : 0,
+                'has_handle' => $item->coordinatorHandle ? 1 : 0,
                 'warehouse' => [
                     'id' => $item->warehouse->id ?? null,
                     'warehouse_code' => $item->warehouse->warehouse_code ?? null,
