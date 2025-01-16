@@ -18,13 +18,17 @@ trait ReceiveReceiptSummaryHandler
         $perPage = $request->get('per_page');
         $status = $request->get('status');
 
+//        return auth('sanctum')->user()->warehouse_id;
+
+        //check if the user is the same warehouse user as the asset request
         $query = FixedAsset::with('formula')
 //            ->where('is_released', 0)
             ->where('from_request', 1)
+            ->where('warehouse_id', auth('sanctum')->user()->warehouse_id)
             ->whereNotNull('receipt')
             ->orderByDesc('rr_number');
 
-        if($status == 'deactivated'){
+        if ($status == 'deactivated') {
             $query->onlyTrashed();
         }
 
@@ -41,13 +45,14 @@ trait ReceiveReceiptSummaryHandler
                 'transaction_number' => $fixed_asset->first()->transaction_number,
                 'reference_number' => array_values($fixed_asset->pluck('reference_number')->unique()->all()),
                 'status' => $fixed_asset->first()->trashed() ? 'cancelled' : 'active',
-                'ymir_pr_number'=>$YmirPRNumber ?: '-',
-                'pr_number' => $fixed_asset->first()->pr_number,
-                'rr_number' => $fixed_asset->first()->receipt,
-                'po_number' => $fixed_asset->first()->po_number,
+                'ymir_pr_number' => $YmirPRNumber ?: '-',
+                'pr_number' => $fixed_asset->first()->pr_number ?? '-',
+                'rr_number' => $fixed_asset->first()->receipt ?? '-',
+                'po_number' => $fixed_asset->first()->po_number ?? '-',
                 'vladimir_tag_number' => $fixed_asset->pluck('vladimir_tag_number')->all(),
                 'item_count' => $fixed_asset->count(),
                 'remarks' => $status == 'deactivated' ? AssetRequest::where('pr_number', $fixed_asset->first()->pr_number)->first()->remarks ?? '-' : '-',
+                'created_at' => $fixed_asset->first()->created_at
             ];
         })->values();
 
