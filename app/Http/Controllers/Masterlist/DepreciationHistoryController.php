@@ -111,6 +111,31 @@ class DepreciationHistoryController extends Controller
                             'remaining_value' => $monthGroup->last()->remaining_book_value,
                             'monthly_depreciation' => $monthGroup->sum('depreciation_per_month'),
                             'accumulated_depreciation' => $monthGroup->sum('accumulated_cost'),
+                            'company' => [
+                                'company_code' => $monthGroup->first()->company->company_code,
+                                'company_name' => $monthGroup->first()->company->company_name
+                            ],
+                            'business_unit' => [
+                                'business_unit_code' => $monthGroup->first()->businessUnit->business_unit_code,
+                                'business_unit_name' => $monthGroup->first()->businessUnit->business_unit_name
+                            ],
+                            'department' => [
+                                'department_code' => $monthGroup->first()->department->department_code,
+                                'department_name' => $monthGroup->first()->department->department_name
+                            ],
+                            'unit' => [
+                                'unit_code' => $monthGroup->first()->unit->unit_code,
+                                'unit_name' => $monthGroup->first()->unit->unit_name
+                            ],
+                            'sub_unit' => [
+                                'sub_unit_code' => $monthGroup->first()->subUnit->sub_unit_code,
+                                'sub_unit_name' => $monthGroup->first()->subUnit->sub_unit_name
+                            ],
+                            'location' => [
+                                'location_code' => $monthGroup->first()->location->location_code,
+                                'location_name' => $monthGroup->first()->location->location_name
+                            ],
+
                         ];
                     })->values()
                 ];
