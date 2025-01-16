@@ -41,7 +41,8 @@ class SetMonthlyDepreciation extends Command
             ->map(function ($fixed_asset) {
                 if ($fixed_asset->additionalCost) {
                     $addedUsefulLife = $fixed_asset->added_useful_life;
-                    $fixed_asset->formula->end_depreciation = \Illuminate\Support\Carbon::parse($fixed_asset->formula->end_depreciation)->addYears($addedUsefulLife)->format('Y-m');
+//                    $addedUsefulLife = $addedUsefulLife / 12;
+                    $fixed_asset->formula->end_depreciation = \Illuminate\Support\Carbon::parse($fixed_asset->formula->end_depreciation)->addMonths($addedUsefulLife)->format('Y-m');
                 }
                 return $fixed_asset;
             })
