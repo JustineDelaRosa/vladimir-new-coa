@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CoordinatorHandleRequest\CreateCoordinatorHandleRequest;
 use App\Http\Requests\CoordinatorHandleRequest\UpdateCoordinatorHandleRequest;
 use App\Models\CoordinatorHandle;
+use App\Models\FixedAsset;
+use App\Models\User;
 use App\Traits\CoordinatorHandleHandler;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class CoordinatorHandleController extends Controller
@@ -20,28 +23,30 @@ class CoordinatorHandleController extends Controller
     {
         $user_id = $request->input('user_id');
         $perPage = $request->input('per_page', null);
+        $status = $request->input('status');
+//        $status = $status == 'active' ? 1 : 0;
 
-        $query = CoordinatorHandle::when($user_id, function ($query) use ($user_id) {
-            $query->where('user_id', $user_id);
-        });
-
-        if ($perPage) {
-            $coordinatorHandle = $query->paginate($perPage);
-            $collection = $coordinatorHandle->getCollection();
-        } else {
-            $collection = $query->get();
-        }
-
-        $groupedHandles = $collection->groupBy('user_id')->map(function ($handles) {
+        $query = CoordinatorHandle::withTrashed()->where('is_active', $status)
+            ->when($user_id, function ($query) use ($user_id) {
+                $query->where('user_id', $user_id);
+            });
+        $groupedHandles = $query->useFilters()->get()->groupBy('user_id')->map(function ($handles) {
             return $this->indexData($handles);
         })->values();
 
         if ($perPage) {
-            $coordinatorHandle->setCollection($groupedHandles);
-            return $coordinatorHandle;
-        } else {
-            return $groupedHandles;
+            //use lengthAwarePaginator to paginate the collection
+            $page = $request->input('page', 1);
+            $groupedHandles = new LengthAwarePaginator(
+                $groupedHandles->forPage($page, $perPage),
+                $groupedHandles->count(),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
         }
+
+        return $groupedHandles;
     }
 
     public function store(CreateCoordinatorHandleRequest $request)
@@ -71,6 +76,22 @@ class CoordinatorHandleController extends Controller
         return $this->responseSuccess('Coordinator handle updated successfully');
     }
 
+    public function show($id)
+    {
+        $coordinatorHandle = CoordinatorHandle::where('user_id', $id)->get();
+        if ($coordinatorHandle->isEmpty()) {
+            return $this->responseUnprocessable('Coordinator Handle not found.');
+        }
+        return $this->indexData($coordinatorHandle);
+    }
+
+    public function destroy($id)
+    {
+        $coordinatorHandle = CoordinatorHandle::where('user_id', $id)->get();
+        $coordinatorHandle->each->forceDelete();
+        return $this->responseSuccess('Coordinator handle deleted successfully');
+    }
+
     public function archived(Request $request, $id)
     {
         $status = $request->status;
@@ -97,6 +118,11 @@ class CoordinatorHandleController extends Controller
             if (CoordinatorHandle::withTrashed()->where('user_id', $id)->where('is_active', true)->exists()) {
                 return $this->responseSuccess('No Changes.');
             } else {
+                //check if the user is still coordinator
+                $user = User::where('id', $id)->where('is_coordinator', true)->first();
+                if (!$user) {
+                    return $this->responseUnprocessable('User is not a coordinator.');
+                }
                 if (CoordinatorHandle::withTrashed()->where('user_id', $id)->exists()) {
                     CoordinatorHandle::withTrashed()->restore();
                     CoordinatorHandle::Where('user_id', $id)->update([

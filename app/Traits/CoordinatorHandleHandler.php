@@ -17,6 +17,7 @@ trait CoordinatorHandleHandler
                 'last_name' => $data->first()->coordinator->lastname,
                 'full_id_number_full_name' => $data->first()->coordinator->employee_id . ' - ' . $data->first()->coordinator->firstname . ' ' . $data->first()->coordinator->lastname,
             ],
+            'status' => $data->first()->is_active,
             'handles' => $data->map(function ($handle) {
                 return [
                     'company' => [
@@ -51,6 +52,7 @@ trait CoordinatorHandleHandler
                     ],
                 ];
             }),
+            'created_at' => $data->first()->created_at,
         ];
     }
 }
