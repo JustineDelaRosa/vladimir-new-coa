@@ -16,11 +16,29 @@ class CreateAccountingEntriesTable extends Migration
         Schema::create('accounting_entries', function (Blueprint $table) {
             $table->increments('id');
 //            $table->string('acc_entry_type');
-            $table->string('initial_debit');
-            $table->string('initial_credit');
-            $table->string('depreciation_debit');
-            $table->string('depreciation_credit');
+            $table->unsignedInteger('initial_debit');
+            $table->unsignedInteger('initial_credit')->nullable();
+            $table->unsignedInteger('depreciation_debit')->nullable();
+            $table->unsignedInteger('depreciation_credit');
             $table->timestamps();
+
+            $table->foreign('initial_debit')
+                ->references('sync_id')
+                ->on('account_titles')
+                ->onDelete('cascade');
+            $table->foreign('initial_credit')
+                ->references('sync_id')
+                ->on('account_titles')
+                ->onDelete('cascade');
+            $table->foreign('depreciation_debit')
+                ->references('sync_id')
+                ->on('account_titles')
+                ->onDelete('cascade');
+            $table->foreign('depreciation_credit')
+                ->references('sync_id')
+                ->on('account_titles')
+                ->onDelete('cascade');
+
         });
     }
 
