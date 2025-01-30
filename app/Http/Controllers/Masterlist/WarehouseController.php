@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Warehouse\CreateWarehouseRequest;
 use App\Http\Requests\Warehouse\UpdateWarehouseRequest;
 use App\Models\AssetRequest;
+use App\Models\Location;
 use App\Models\Warehouse;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class WarehouseController extends Controller
 {
@@ -22,7 +24,7 @@ class WarehouseController extends Controller
         $pagination = $request->pagination;
         $userTagging = $request->input('user_tagging', false);
 
-        $rWarehouse = Warehouse::where('is_active', $isActiveStatus)
+        $rWarehouse = Warehouse::with('location')->where('is_active', $isActiveStatus)
             ->when($pagination === 'none', function ($query) use ($userTagging) {
                 //show only the warehouse that is tag to a user
 
@@ -94,7 +96,7 @@ class WarehouseController extends Controller
     }
 
 
-    public function update(UpdateWarehouseRequest $request, $id)
+    /*public function update(UpdateWarehouseRequest $request, $id)
     {
         $warehouseName = ucwords(strtolower($request->warehouse_name));
         $locationId = $request->location_id;
@@ -111,7 +113,7 @@ class WarehouseController extends Controller
         ]);
 
         return $this->responseSuccess('Warehouse updated successfully.');
-    }
+    }*/
 
 
     public function destroy($id)
@@ -158,4 +160,38 @@ class WarehouseController extends Controller
                 }
             }
         }*/
+
+    public function locationTagging(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            $locationId = $request->input('location_id', []);
+            $rWarehouse = Warehouse::find($id);
+            if (!$rWarehouse) {
+                return $this->responseNotFound('Warehouse not found.');
+            }
+
+            $rWarehouse->location()->update([
+                'receiving_warehouse_id' => null
+            ]);
+
+            foreach ($locationId as $location) {
+                $rLocation = Location::find($location);
+                if ($rLocation->receivingWarehouse) {
+                    return $this->responseUnprocessable('Location already tagged to another warehouse.');
+                }
+                $rLocation->update([
+                    'receiving_warehouse_id' => $id
+                ]);
+
+            }
+            DB::commit();
+            return $this->responseSuccess('Location Tagging successfully.', $rLocation);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->responseUnprocessable('Location is required.');
+        }
+
+    }
 }
