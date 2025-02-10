@@ -18,9 +18,12 @@ class CreateLocationsTable extends Migration
             $table->unsignedInteger('sync_id')->unique()->index();
             $table->string('location_code')->unique();
             $table->longText('location_name');
+            $table->unsignedInteger('receiving_warehouse_id')->nullable();
             $table->boolean('is_active');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
+
+            $table->foreign('receiving_warehouse_id')->references('id')->on('warehouses');
         });
     }
 
