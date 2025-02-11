@@ -9,6 +9,7 @@ class AssetRequestFilters extends QueryFilters
     protected array $allowedFilters = [
         'transaction_number',
         'pr_number',
+        'ymir_pr_number',
         'acquisition_details',
         //        'reference_number',
         //        'asset_description',
@@ -23,6 +24,7 @@ class AssetRequestFilters extends QueryFilters
     protected array $columnSearch = [
         'transaction_number',
         'pr_number',
+        'ymir_pr_number',
         'acquisition_details',
         //        'reference_number',
         //        'asset_description',
