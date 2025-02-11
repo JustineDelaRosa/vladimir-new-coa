@@ -12,6 +12,8 @@ class MinorCategoryFilters extends QueryFilters
 
     protected array $relationSearch = [
         'majorCategory' => ['major_category_name'],
+        'initialDebit' => ['account_title_name', 'account_title_code'],
+        'depreciationCredit' => ['credit_name', 'credit_code'],
 //        'accountTitle' => ['account_title_name'],
     ];
 }
