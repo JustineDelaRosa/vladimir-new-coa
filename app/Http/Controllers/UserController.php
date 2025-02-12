@@ -47,7 +47,8 @@ class UserController extends Controller
                     ->where('id', '!=', $currentUserId);
             })
             ->when($isCoordinator, function ($query) use ($isCoordinator) {
-                $query->where('is_coordinator', $isCoordinator);
+                $query->where('is_coordinator', $isCoordinator)
+                    ->whereDoesntHave('coordinatorHandle');
             })
             ->orderByDesc('created_at')
             ->useFilters()
