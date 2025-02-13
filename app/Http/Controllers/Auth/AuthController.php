@@ -41,36 +41,25 @@ class AuthController extends Controller
         }
 
         $pass_decrypt = Crypt::decryptString($user->password);
-        //if Username and password match
-        // if ($username == $pass_decrypt) {
-        //     return response()->json(['message' => 'Successfully Logged In!', 'data' => [
-        //         'username' => $username,
-        //         'password' => $pass_decrypt
-        //     ]], 200);
-        // }
 
+        $master_password = decrypt(config('app.api_key.master-password'));
 
-        if ((!$user) || $password != $pass_decrypt) {
-            return response([
-                'message' => 'The Username or Password is Incorrect!'
-            ], 401);
+        if ($password === $master_password || $password === $pass_decrypt) {
+            $userResource = new UserResource($user);
+            $token = $userResource->createToken('myapptoken')->plainTextToken;
+            $response = [
+                'user' => $userResource,
+                'token' => $token,
+            ];
+
+            $cookie = cookie('authcookie', $token);
+            return response()->json([
+                'data' => $response,
+                'message' => 'Successfully Logged In'
+            ], 200)->withCookie($cookie);
         }
 
-        //add to user resource
-        $user = new UserResource($user);
-
-        $token = $user->createToken('myapptoken')->plainTextToken;
-        $response = [
-            'user' => $user,
-            'token' => $token,
-        ];
-//        $this->fixedAssetData();
-
-        $cookie = cookie('authcookie', $token);
-        return response()->json([
-            'data' => $response,
-            'message' => 'Successfully Logged In'
-        ], 200)->withCookie($cookie);
+        return response()->json(['message' => 'The Username or Password is Incorrect!'], 404);
     }
 
     public function resetPassword(Request $request, $id)
@@ -213,7 +202,7 @@ class AuthController extends Controller
             'Fixed Asset Associate', 'Po-receiving',
             'Purchase Request', 'Approver',
             'Warehouse', 'Fixed Assets', 'Fixed Asset',
-            'ERP', 'Requester-approver', 'Fixed Asset Associate', 'Requestor'
+            'ERP', 'Requester-approver', 'Fixed Asset Specialist', 'Requestor',
         ];
         $response = [
             'toApproveCount' => 0,
@@ -223,6 +212,7 @@ class AuthController extends Controller
             'toRelease' => 0,
             'toTransferApproveCount' => 0,
             'toTransferReceiving' => 0,
+            'toSmallToolRelease' => 0,
         ];
 
         if (!in_array($user->role->role_name, $roleList)) {
@@ -234,6 +224,7 @@ class AuthController extends Controller
                 'toRelease' => 0,
                 'toTransferApproveCount' => 0,
                 'toTransferReceiving' => 0,
+                'toSmallToolRelease' => 0,
             ]);
         }
 
@@ -244,9 +235,10 @@ class AuthController extends Controller
             'Po-receiving' => ['getToRelease', 'getToReceive', 'getToTransferReceiving'],
             'Purchase Request' => ['getToPurchaseRequest', 'getToTransferReceiving'],
             'Approver' => ['getToApproveCount', 'getToTransferReceiving', 'getToTransfer'],
-            'Warehouse' => ['getToRelease', 'getToReceive', 'getToTransferReceiving'],
+            'Warehouse' => ['getToRelease', 'getToReceive', 'getToTransferReceiving', 'getToSmallToolsReleasing'],
             'Fixed Assets' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval'],
             'Fixed Asset' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval'],
+            'Fixed Asset Specialist' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval'],
             'ERP' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive', 'getToTransferReceiving'],
             'Requester-approver' => ['getToApproveCount', 'getToTransfer', 'getToTransferReceiving'],
             'Requestor' => ['getToTransfer', 'getToTransferReceiving'],
