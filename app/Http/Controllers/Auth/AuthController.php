@@ -212,7 +212,7 @@ class AuthController extends Controller
             'toRelease' => 0,
             'toTransferApproveCount' => 0,
             'toTransferReceiving' => 0,
-            'toSmallToolRelease' => 0,
+            'toSmallToolTagging' => 0,
         ];
 
         if (!in_array($user->role->role_name, $roleList)) {
@@ -224,20 +224,20 @@ class AuthController extends Controller
                 'toRelease' => 0,
                 'toTransferApproveCount' => 0,
                 'toTransferReceiving' => 0,
-                'toSmallToolRelease' => 0,
+                'toSmallToolTagging' => 0,
             ]);
         }
 
         $roleFunctionMapping = [
-            'Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive', 'getToTransferReceiving'],
-            'Super Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive', 'getToTransferReceiving'],
-            'Fixed Asset Associate' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval'],
+            'Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive', 'getToTransferReceiving','getToSmallToolTagging'],
+            'Super Admin' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive', 'getToTransferReceiving','getToSmallToolTagging'],
+            'Fixed Asset Associate' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval', 'getToSmallToolTagging'],
             'Po-receiving' => ['getToRelease', 'getToReceive', 'getToTransferReceiving'],
             'Purchase Request' => ['getToPurchaseRequest', 'getToTransferReceiving'],
             'Approver' => ['getToApproveCount', 'getToTransferReceiving', 'getToTransfer'],
-            'Warehouse' => ['getToRelease', 'getToReceive', 'getToTransferReceiving', 'getToSmallToolsReleasing'],
-            'Fixed Assets' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval'],
-            'Fixed Asset' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval'],
+            'Warehouse' => ['getToRelease', 'getToReceive', 'getToTransferReceiving'],
+            'Fixed Assets' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval', 'getToSmallToolTagging'],
+            'Fixed Asset' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval', 'getToSmallToolTagging'],
             'Fixed Asset Specialist' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval'],
             'ERP' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive', 'getToTransferReceiving'],
             'Requester-approver' => ['getToApproveCount', 'getToTransfer', 'getToTransferReceiving'],
