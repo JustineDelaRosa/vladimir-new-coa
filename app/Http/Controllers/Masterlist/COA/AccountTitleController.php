@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Masterlist\COA;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\DepreciationDebitTaggin\CreateDepreciationDebitTaggingRequest;
 use App\Models\AccountTitle;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
@@ -21,9 +22,9 @@ class AccountTitleController extends Controller
     {
         $accountTitleStatus = $request->status ?? 'activated';
         $isActiveStatus = ($accountTitleStatus === 'deactivated') ? 0 : 1;
-        $forRequest = $request->query('for_request',false);
+        $forRequest = $request->query('for_request', false);
 
-        $accountTitle = AccountTitle::where('is_active', $isActiveStatus)
+        $accountTitle = AccountTitle::with('depreciationDebit')->where('is_active', $isActiveStatus)
             ->when($forRequest, function ($query) use ($forRequest) {
                 return $query->where('account_title_name', 'Asset Clearing');
             })->orderBy('created_at', 'DESC')
@@ -171,5 +172,14 @@ class AccountTitleController extends Controller
                 return $this->responseSuccess('Successfully Activated!');
             }
         }
+    }
+
+    public function depreciationDebitTagging(CreateDepreciationDebitTaggingRequest $request, $syncId)
+    {
+        $depreciationDebitId = $request->depreciation_debit_id;
+        $accountTitle = AccountTitle::where('sync_id', $syncId)->first();
+        //compare the previous tagged depreciation debit to the new one, then remove or add the new one
+        $accountTitle->depreciationDebit()->sync($depreciationDebitId);
+        return $this->responseSuccess('Depreciation Debit Tagging Successfully');
     }
 }

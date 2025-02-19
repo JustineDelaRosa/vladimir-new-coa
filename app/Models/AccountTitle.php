@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class AccountTitle extends Model
 {
     use HasFactory, Filterable;
+
     protected $fillable = [
         'sync_id',
         'account_title_code',
@@ -26,8 +27,21 @@ class AccountTitle extends Model
     {
         return $this->hasMany(FixedAsset::class, 'account_sync_id', 'sync_id');
     }
+
     public function minorCategory()
     {
         return $this->hasOne(MinorCategory::class, 'account_title_sync_id', 'sync_id');
+    }
+
+    public function depreciationDebit()
+    {
+        return $this->belongsToMany(
+            AccountTitle::class,
+            'initial_debit_depreciation_debit',
+            'initial_debit_id',
+            'depreciation_debit_id',
+            'sync_id',
+            'sync_id'
+        )->withTimestamps();
     }
 }
