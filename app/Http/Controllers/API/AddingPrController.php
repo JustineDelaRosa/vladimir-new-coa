@@ -18,6 +18,10 @@ use Illuminate\Http\JsonResponse;
 use App\Traits\AssetRequestHandler;
 use App\Http\Controllers\Controller;
 use Essa\APIToolKit\Api\ApiResponse;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Symfony\Component\HttpFoundation\File\File;
 use function PHPUnit\Framework\isEmpty;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Http\Requests\AddingPr\CreateAddingPrRequest;
@@ -131,147 +135,232 @@ class AddingPrController extends Controller
         return $this->responseSuccess('PR No. removed successfully');
     }
 
-    //This is for Ymir
+
     public function requestToPR(Request $request)
     {
+        try {
+            DB::beginTransaction();
 
-//        $toPr = $request->get('toPr', null);
-//        $filter = $request->input('filter', 'old');
-        $transactionNumber = $request->input('transaction_number', null);
-        $perPage = $request->input('per_page', null);
-        $pagination = $request->input('pagination', null);
-        $prNumber = (new \App\Models\AssetRequest)->generatePRNumber();
+            $transactionNumber = $request->input('transaction_number', null);
+            $perPage = $request->input('per_page', null);
+            $pagination = $request->input('pagination', null);
+            $prNumber = (new \App\Models\AssetRequest)->generatePRNumber();
 
-        $user = auth('sanctum')->user();
-        $firstname = $user->firstname;
-        $lastname = $user->lastname;
-        $employee_id = $user->employee_id;
+//            return $prNumber;
 
-//        $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
-//        $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
+            /*$user = auth('sanctum')->user();
+            $firstname = $user->firstname;
+            $lastname = $user->lastname;
+            $employee_id = $user->employee_id;*/
 
-        $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
-            ->where('status', 'Approved')
-            ->where('is_fa_approved', 1)
-            ->useFilters()
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->each(function ($assetRequest) use ($prNumber) {
-                // Check if the asset request already has a PR number
-                if (is_null($assetRequest->pr_number)) {
-                    $assetRequest->update([
-                        'pr_number' => $prNumber,
-                    ]);
+//            return AssetRequest::where('transaction_number', $transactionNumber)->first()->is_pr_returned;
+
+            $assetRequests = AssetRequest::where('transaction_number', $transactionNumber)
+                ->where('status', 'Approved')
+                ->where('is_fa_approved', 1)
+                ->useFilters()
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->each(function ($assetRequest) use ($prNumber) {
+                    if (is_null($assetRequest->pr_number)) {
+                        $assetRequest->update([
+                            'pr_number' => $prNumber,
+                        ]);
+                    }
+                });
+
+            $filteredAndGroupedAssetRequests = $assetRequests->fresh()
+                ->where('status', 'Approved')
+                ->where('is_fa_approved', true)
+                ->whereNull('deleted_at')
+                ->groupBy('transaction_number')
+                ->map(function ($assetRequestCollection) use ($transactionNumber) {
+                    $latestDateNeeded = $assetRequestCollection->max('date_needed');
+                    $assetRequest = $assetRequestCollection->first();
+                    $assetRequest->date_needed = $latestDateNeeded;
+                    $listOfItems = $assetRequestCollection->map(function ($item) use ($transactionNumber) {
+                        return [
+                            'id' => AssetRequest::where('transaction_number', $transactionNumber)->first()->is_pr_returned == 1 ? $item->ymir_id : $item->id,
+                            'reference_no' => $item->reference_number,
+                            'asset_description' => $item->asset_description . "-" . $item->asset_specification,
+                            'item_id' => null,
+                            'item_code' => null,
+                            'item_name' => $item->asset_description . "-" . $item->asset_specification,
+                            'remarks' => $item->remarks ?? null,
+                            'quantity' => $item->quantity,
+                            'r_warehouse_id' => $item->receivingWarehouse->id,
+                            'r_warehouse_name' => $item->receivingWarehouse->warehouse_name,
+                            'date_needed' => $item->date_needed,
+                            'uom_id' => $item->uom->sync_id,
+                            'uom_code' => $item->uom->uom_code,
+                            'uom_name' => $item->uom->uom_name,
+//                            $this->sendTransactionWithAttachments($referenceNumber),
+                        ];
+                    })->toArray();
+                    return [
+                        'v_name' => $assetRequest->requestor->firstname . ' ' . $assetRequest->requestor->lastname,
+                        'rdf_id' => $assetRequest->requestor->employee_id, //preg_replace('/\D/', '', $employee_id),
+                        'vrid' => $assetRequest->requester_id,
+                        'pr_description' => $assetRequest->acquisition_details,
+                        'pr_number' => (string)$assetRequest->pr_number,
+                        'transaction_number' => $assetRequest->transaction_number,
+                        "type_id" => "4",
+                        "type_name" => "Asset",
+                        'r_warehouse_id' => $assetRequest->receivingWarehouse->id,
+                        'r_warehouse_name' => $assetRequest->receivingWarehouse->warehouse_name,
+                        'company_id' => $assetRequest->company->sync_id,
+                        'company_name' => $assetRequest->company->company_name,
+                        'business_unit_id' => $assetRequest->businessUnit->sync_id,
+                        'business_unit_name' => $assetRequest->businessUnit->business_unit_name,
+                        'department_id' => $assetRequest->department->sync_id,
+                        'department_name' => $assetRequest->department->department_name,
+                        'department_unit_id' => $assetRequest->unit->sync_id,
+                        'department_unit_name' => $assetRequest->unit->unit_name,
+                        'sub_unit_id' => $assetRequest->subunit->sync_id,
+                        'sub_unit_name' => $assetRequest->subunit->sub_unit_name,
+                        'location_id' => $assetRequest->location->sync_id,
+                        'location_name' => $assetRequest->location->location_name,
+                        'account_title_id' => $assetRequest->accountingEntries->initialDebit->sync_id,
+                        'account_title_name' => $assetRequest->accountingEntries->initialDebit->account_title_name,
+                        'initial_debit_id' => $assetRequest->accountingEntries->initialDebit->sync_id,
+                        'initial_debit_name' => $assetRequest->accountingEntries->initialDebit->account_title_name,
+                        'description' => $assetRequest->acquisition_details,
+                        'created_at' => $assetRequest->created_at,
+                        'date_needed' => $assetRequest->date_needed,
+                        'module_name' => 'Asset',
+                        'sgp' => null,
+                        'f1' => null,
+                        'f2' => null,
+                        'order' => $listOfItems
+                    ];
+                })->values();
+
+
+            if (AssetRequest::where('transaction_number', $transactionNumber)->first()->is_pr_returned == 1) {
+                $filteredAndGroupedAssetRequests = $filteredAndGroupedAssetRequests->first();
+            }
+
+
+//            $referenceNumber = [];
+//            foreach ($filteredAndGroupedAssetRequests[0]['order'] as $order) {
+//                $referenceNumber [] = $order['reference_no'];
+//            }
+//            return $referenceNumber;
+
+
+            AssetRequest::where('transaction_number', $transactionNumber)->update(['is_pr_returned' => 0]);
+
+//            $referenceNumber = $filteredAndGroupedAssetRequests->pluck('order.*.reference_no')->flatten()->toArray();
+
+//            foreach ($referenceNumber as $reference) {
+//                $this->sendTransactionWithAttachments($reference, count($referenceNumber));
+//            }
+
+            DB::commit();
+            return $filteredAndGroupedAssetRequests;
+        } catch (Exception $e) {
+            DB::rollBack();
+            return $e->getMessage();
+            return $this->responseUnprocessable('An error occurred while processing the request.');
+        }
+    }
+
+
+    public function sendTransactionWithAttachments($referenceNumber, $itemCount)
+    {
+
+
+        $apiUrl = config('ymir-api.ymir_put_api_url');
+        $bearerToken = config('ymir-api.ymir_put_api_token');
+
+        $assetRequest = AssetRequest::with('media')
+            ->where('referenceNumber', $referenceNumber)
+            ->first();
+
+        if (!$assetRequest) {
+            return response()->json(['error' => 'Asset request not found'], 404);
+        }
+
+        $attachments = collect([
+            'letter_of_request',
+            'quotation',
+            'specification_form',
+            'tool_of_trade',
+            'other_attachments'
+        ])->flatMap(function ($collection) use ($assetRequest) {
+            return $assetRequest->getMedia($collection);
+        })
+            ->filter()
+            ->map(function ($media) use ($itemCount) {
+                try {
+                    $filePath = $media->getPath();
+
+                    // Validate file existence and readability
+                    if (!file_exists($filePath) || !is_readable($filePath)) {
+                        throw new \Exception("File not accessible: {$filePath}");
+                    }
+
+                    // Open file in binary-safe mode
+                    $resource = fopen($filePath, 'rb');
+
+                    if (!is_resource($resource)) {
+                        throw new \Exception("Failed to open file: {$filePath}");
+                    }
+
+                    return [
+                        'type' => 'pr',
+                        'items' => $itemCount,
+                        'file' => 'file[]', // API expects multiple files
+                        'contents' => $resource,
+                        'filename' => $this->sanitizeFilename($media->file_name),
+                        'headers' => [
+                            'Content-Type' => $media->mime_type,
+                            'Content-Length' => $media->size
+                        ]
+                    ];
+                } catch (\Exception $e) {
+                    report($e);
+                    return null;
+                }
+            })
+            ->filter()
+            ->toArray();
+
+
+        if (empty($attachments)) {
+            return $this->responseUnprocessable('No attachments found');
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $bearerToken,
+                'Accept' => 'application/json',
+            ])
+                /*->withOptions([
+                    'verify' => config('app.env') === 'production', // SSL verification
+                    'timeout' => 30,
+                ])*/
+                ->attach($attachments)
+                ->post($apiUrl);
+
+            // Cleanup file resources
+            array_walk($attachments, function ($attachment) {
+                if (is_resource($attachment['contents'])) {
+                    fclose($attachment['contents']);
                 }
             });
 
-        $filteredAndGroupedAssetRequests = $assetRequests->fresh()
-            ->where('status', 'Approved')
-            ->where('is_fa_approved', true)
-//            ->whereNotNull('pr_number')
-            ->whereNull('deleted_at')
-//            ->useFilters()
-//            ->orderBy('created_at', 'desc')
-//            ->get()
-            ->groupBy('transaction_number')
-            ->map(function ($assetRequestCollection) use ($firstname, $lastname, $employee_id) {
-                $latestDateNeeded = $assetRequestCollection->max('date_needed');
-                $assetRequest = $assetRequestCollection->first();
-                $assetRequest->date_needed = $latestDateNeeded;
-                $listOfItems = $assetRequestCollection->map(function ($item) {
-                    return [
-//                        'item_id' => $item->id,
-                        'id' => 1,
-                        'reference_no' => $item->reference_number,
-                        'asset_description' => $item->asset_description,
-//                        'item_code' => $item->reference_number,
-//                        'item_name' => $item->asset_description,
+            return $this->responseSuccess('File transfer successful', $response->json());
 
-                        'item_id' => $item->smallTool->sync_id ?? null,
-                        'item_code' => $item->smallTool->small_tool_code ?? null,
-                        'item_name' => $item->smallTool->small_tool_name ?? $item->asset_description,
-                        'remarks' => $item->remarks ?? null, //TODO:check
-                        'quantity' => $item->quantity,
-//                        'created_at' => $item->created_at,
-                        //                        'additional_info' => $item->additional_info,
-//                        'accountability' => $item->accountability,
-//                        'accountable' => $item->accountable == '-' ? null : $item->accountable,
-//                        'cell_number' => $item->cell_number,
-//                        'brand' => $item->brand,
-//                        'remarks' => $item->remarks,
-                        'r_warehouse_id' => $item->receivingWarehouse->id,
-                        'r_warehouse_name' => $item->receivingWarehouse->warehouse_name,
-                        'date_needed' => $item->date_needed,
-                        'uom_id' => $item->uom->sync_id,
-                        'uom_code' => $item->uom->uom_code,
-                        'uom_name' => $item->uom->uom_name,
-                        // Add more fields as needed
-                    ];
-                })->toArray();
-                return [
-                    'v_name' => $firstname . ' ' . $lastname,
-                    'rdf_id' => preg_replace('/\D/', '', $employee_id),
-                    'vrid' => $assetRequest->requester_id, //vladimir requester ID\
-                    'pr_description' => $assetRequest->acquisition_details,
-                    'pr_number' => $assetRequest->pr_number,
-                    'transaction_number' => $assetRequest->transaction_number,
-                    "type_id" => "4",
-                    "type_name" => "Asset",
-                    'r_warehouse_id' => $assetRequest->receivingWarehouse->id,
-                    'r_warehouse_name' => $assetRequest->receivingWarehouse->warehouse_name,
-
-                    'company_id' => $assetRequest->company->sync_id,
-//                    'company_code' => $assetRequest->company->company_code,
-                    'company_name' => $assetRequest->company->company_name,
-
-                    'business_unit_id' => $assetRequest->businessUnit->sync_id,
-//                    'business_unit_code' => $assetRequest->businessUnit->business_unit_code,
-                    'business_unit_name' => $assetRequest->businessUnit->business_unit_name,
-
-                    'department_id' => $assetRequest->department->sync_id,
-//                    'department_code' => $assetRequest->department->department_code,
-                    'department_name' => $assetRequest->department->department_name,
-
-                    'department_unit_id' => $assetRequest->unit->sync_id,
-//                    'department_unit_code' => $assetRequest->unit->unit_code,
-                    'department_unit_name' => $assetRequest->unit->unit_name,
-
-                    'sub_unit_id' => $assetRequest->subunit->sync_id,
-//                    'subunit_code' => $assetRequest->subunit->sub_unit_code,
-                    'sub_unit_name' => $assetRequest->subunit->sub_unit_name,
-
-                    'location_id' => $assetRequest->location->sync_id,
-//                    'location_code' => $assetRequest->location->location_code,
-                    'location_name' => $assetRequest->location->location_name,
-
-                    'account_title_id' => $assetRequest->minorCategory->accountingEntries->initialCredit->sync_id,
-//                    'account_title_code' => $assetRequest->accountTitle->account_title_code,
-                    'account_title_name' => $assetRequest->minorCategory->accountingEntries->initialCredit->account_title_name,
-                    'description' => $assetRequest->acquisition_details,
-                    'created_at' => $assetRequest->created_at,
-                    'date_needed' => $assetRequest->date_needed,
-                    'module_name' => 'Asset',
-                    'sgp' => null,
-                    'f1' => null,
-                    'f2' => null,
-                    'order' => $listOfItems
-                ];
-            })
-            ->values();
-
-        AssetRequest::where('transaction_number', $transactionNumber)->update(['is_pr_returned' => 0]);
-
-
-        if ($perPage !== null && $pagination == null) {
-            $page = $request->input('page', 1);
-            $offset = $page * $perPage - $perPage;
-            $filteredAndGroupedAssetRequests = new LengthAwarePaginator($filteredAndGroupedAssetRequests->slice($offset, $perPage)->values(), $filteredAndGroupedAssetRequests->count(), $perPage, $page, [
-                'path' => $request->url(),
-                'query' => $request->query(),
-            ]);
+        } catch (\Exception $e) {
+            return $this->responseUnprocessable('An error occurred while transferring files');
         }
+    }
 
-        return $filteredAndGroupedAssetRequests;
+    protected function sanitizeFilename($filename)
+    {
+        // Remove special characters and spaces
+        return preg_replace('/[^\w.-]/', '_', $filename);
     }
 
 
@@ -281,7 +370,7 @@ class AddingPrController extends Controller
         $assets = $this->requestToPR($request);
 //        return $assets;
 //        $assets = $request->all();
-        $user_id = Auth()->user()->id;
+        $user_id = auth('sanctum')->user()->id;
 
         $date_today = Carbon::now()
             ->timeZone("Asia/Manila")
@@ -306,7 +395,7 @@ class AddingPrController extends Controller
         foreach ($assets as $sync) {
             $pr_year_number_id =
                 $current_year .
-                "-V-" .
+                "-FA-" .
                 str_pad($new_number, 3, "0", STR_PAD_LEFT);
 
 
@@ -529,8 +618,16 @@ class AddingPrController extends Controller
                     'subunit' => $assetRequest->subunit->sub_unit_name,
                     'location_code' => $assetRequest->location->location_code,
                     'location' => $assetRequest->location->location_name,
-                    'account_title_code' => $assetRequest->accountTitle->account_title_code,
-                    'account_title' => $assetRequest->accountTitle->account_title_name,
+//                    'account_title_code' => $assetRequest->accountTitle->account_title_code,
+//                    'account_title' => $assetRequest->accountTitle->account_title_name,
+                    'initial_debit_code' => $assetRequest->accountingEntries->initialDebit->account_title_code,
+                    'initial_debit' => $assetRequest->accountingEntries->initialDebit->account_title_name,
+                    'initial_credit_code' => $assetRequest->accountingEntries->initialCredit->account_title_code,
+                    'initial_credit' => $assetRequest->accountingEntries->initialCredit->account_title_name,
+                    'depreciation_debit_code' => $assetRequest->accountingEntries->depreciationDebit->account_title_code,
+                    'depreciation_debit' => $assetRequest->accountingEntries->depreciationDebit->account_title_name,
+                    'depreciation_credit_code' => $assetRequest->accountingEntries->depreciationCredit->credit_code,
+                    'depreciation_credit' => $assetRequest->accountingEntries->depreciationCredit->credit_name,
                     'date_needed' => $assetRequest->date_needed,
                     'created_at' => $assetRequest->created_at,
                 ];
@@ -561,8 +658,16 @@ class AddingPrController extends Controller
                     'subunit_code' => $assetRequestCollection->first()->subunit->sub_unit_code,
                     'location' => $assetRequestCollection->first()->location->location_name,
                     'location_code' => $assetRequestCollection->first()->location->location_code,
-                    'account_title' => $assetRequestCollection->first()->accountTitle->account_title_name,
-                    'account_title_code' => $assetRequestCollection->first()->accountTitle->account_title_code,
+//                    'account_title' => $assetRequestCollection->first()->accountTitle->account_title_name,
+//                    'account_title_code' => $assetRequestCollection->first()->accountTitle->account_title_code,
+                    'initial_debit_code' => $assetRequestCollection->first()->accountingEntries->initialDebit->account_title_code ?? '-',
+                    'initial_debit' => $assetRequestCollection->first()->accountingEntries->initialDebit->account_title_name ?? '-',
+                    'initial_credit_code' => $assetRequestCollection->first()->accountingEntries->initialCredit->account_title_code ?? '-',
+                    'initial_credit' => $assetRequestCollection->first()->accountingEntries->initialCredit->account_title_name ?? '-',
+                    'depreciation_debit_code' => $assetRequestCollection->first()->accountingEntries->depreciationDebit->account_title_code ?? '-',
+                    'depreciation_debit' => $assetRequestCollection->first()->accountingEntries->depreciationDebit->account_title_name ?? '-',
+                    'depreciation_credit_code' => $assetRequestCollection->first()->accountingEntries->depreciationCredit->credit_code ?? '-',
+                    'depreciation_credit' => $assetRequestCollection->first()->accountingEntries->depreciationCredit->credit_name ?? '-',
                     'items' => $assetRequestCollection->map(function ($item) {
                         return [
                             'asset_description' => $item->asset_description,
