@@ -5,10 +5,12 @@ namespace App\Traits;
 use App\Models\AccountingEntries;
 use App\Models\AdditionalCost;
 use App\Models\AssetRequest;
+use App\Models\AssetSmallTool;
 use App\Models\FixedAsset;
 use App\Models\Formula;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
+use App\Models\SmallTools;
 use App\Models\Status\AssetStatus;
 use App\Models\Status\CycleCountStatus;
 use App\Models\Status\MovementStatus;
@@ -213,26 +215,32 @@ trait AddingPoHandler
         }
     }
 
-    private function createNewAssetRequests($assetRequest, $quantityDelivered, $inclusion = null)
+    private function createNewAssetRequests($assetRequest, $quantityDelivered, $initialCreditId, $inclusion = null)
     {
 
         if ($assetRequest->quantity > 1) {
             foreach (range(1, $quantityDelivered) as $index) {
-                $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost, $inclusion);
+                $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost, $initialCreditId, $inclusion);
             }
         } else {
-            $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost, $inclusion);
+            $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost, $initialCreditId, $inclusion);
         }
 
     }
 
 
-    private function addToFixedAssets($asset, $isAddCost, $inclusion = null)
+    private function addToFixedAssets($asset, $isAddCost, $initialCreditId, $inclusion = null)
     {
         $rrNumbers = $asset->rr_number;
         $rrNumbersArr = explode(',', $rrNumbers);
         $rrNumber = end($rrNumbersArr);
-        $accountingEntries = MinorCategory::where('id', $asset->minor_category_id)->first()->accounting_entries_id;
+//        $accountingEntries = MinorCategory::where('id', $asset->minor_category_id)->first()->accounting_entries_id;
+         $accountingEntries = AccountingEntries::where('id', $asset->account_title_id)->first();
+//        $smallToolItems = null;
+//        if ($asset->smallTool->isNotEmpty()) {
+//            $smallToolItems = SmallTools::with('item')->where('id', $asset->small_tool_id)->first() ?? null;
+//        }
+//        dd($asset);
         if ($isAddCost == 1) {
 
             $formula = Formula::create([
@@ -249,15 +257,24 @@ trait AddingPoHandler
             $warehouseNumber->update([
                 'warehouse_number' => $generateWhNumber,
             ]);
+            $accountingId = AccountingEntries::create([
+                'initial_debit' => $accountingEntries->initial_debit,
+                'initial_credit' => $initialCreditId,
+                'depreciation_credit' => $accountingEntries->depreciation_credit,
+            ]);
+
+
             $formula->additionalCost()->create([
                 'requester_id' => $asset->requester_id,
                 'reference_number' => $asset->reference_number,
                 'uom_id' => $asset->uom_id,
+                'ymir_pr_number' => $asset->ymir_pr_number,
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
                 'inclusion' => $inclusion,
                 'receipt' => $rrNumber,
                 'rr_number' => $rrNumber,
+                'rr_id' => $asset->rr_id,
                 'warehouse_id' => $asset->receiving_warehouse_id,
                 'warehouse_number_id' => $warehouseNumber->id,
                 'fixed_asset_id' => $asset->fixed_asset_id,
@@ -267,7 +284,7 @@ trait AddingPoHandler
                 'transaction_number' => $asset->transaction_number,
                 'asset_description' => $asset->asset_description,
                 'type_of_request_id' => $asset->type_of_request_id,
-                'small_tool_id' => $asset->small_tool_id,
+//                'small_tool_id' => $asset->small_tool_id,
 //                'charged_department' => $asset->department_id,
                 'asset_specification' => $asset->asset_specification,
                 'major_category_id' => $asset->major_category_id,
@@ -290,7 +307,7 @@ trait AddingPoHandler
                 'unit_id' => $asset->unit_id,
                 'subunit_id' => $asset->subunit_id,
                 'location_id' => $asset->location_id,
-                'account_id' => $accountingEntries,
+                'account_id' => $accountingId->id,
                 'remarks' => $asset->remarks,
                 'movement_status_id' => MovementStatus::where('movement_status_name', 'New')->first()->id,
                 'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id,
@@ -298,6 +315,8 @@ trait AddingPoHandler
             ]);
 
         } else {
+
+//            dd($asset);
             $formula = Formula::create([
                 'depreciation_method' => $asset->depreciation_method,
                 'acquisition_date' => $asset->acquisition_date,
@@ -312,15 +331,25 @@ trait AddingPoHandler
             $warehouseNumber->update([
                 'warehouse_number' => $generateWhNumber,
             ]);
+//            return $accountingEntries->depreciation_credit;
+            $accountingId = AccountingEntries::create([
+                'initial_debit' => $accountingEntries->initial_debit,
+                'initial_credit' => $initialCreditId,
+                'depreciation_credit' => $accountingEntries->depreciation_credit,
+            ]);
+
+
             $fixedAsset = $formula->fixedAsset()->create([
                 'requester_id' => $asset->requester_id,
                 'reference_number' => $asset->reference_number,
                 'asset_condition' => $asset->item_status,
                 'uom_id' => $asset->uom_id,
+                'ymir_pr_number' => $asset->ymir_pr_number,
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
                 'vladimir_tag_number' => $this->vladimirTagGeneratorRepository->vladimirTagGenerator(),
                 'rr_number' => $rrNumber,
+                'rr_id' => $asset->rr_id,
                 'receipt' => $rrNumber,
                 'inclusion' => $inclusion,
                 'capex_number' => $asset->capex_number,
@@ -330,7 +359,7 @@ trait AddingPoHandler
                 'transaction_number' => $asset->transaction_number,
                 'asset_description' => $asset->asset_description,
                 'type_of_request_id' => $asset->type_of_request_id,
-                'small_tool_id' => $asset->small_tool_id,
+//                'small_tool_id' => $asset->small_tool_id ?? null,
                 'charged_department' => $asset->department_id,
                 'asset_specification' => $asset->asset_specification,
                 'supplier_id' => $asset->supplier_id,
@@ -353,11 +382,29 @@ trait AddingPoHandler
                 'unit_id' => $asset->unit_id,
                 'subunit_id' => $asset->subunit_id,
                 'location_id' => $asset->location_id,
-                'account_id' => $accountingEntries,
+                'account_id' => $accountingId->id,
                 'remarks' => $asset->remarks,
                 'movement_status_id' => MovementStatus::where('movement_status_name', 'New')->first()->id,
                 'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id,
             ]);
+
+            /*if ($smallToolItems) {
+                $smallToolItems = $smallToolItems->item;
+                foreach ($smallToolItems as $smallToolItem) {
+                    $assetSmallTools = AssetSmallTool::create([
+                        'fixed_asset_id' => $fixedAsset->id,
+                        'transaction_number' => $asset->transaction_number,
+                        'reference_number' => $asset->reference_number,
+                        'receiving_warehouse_id' => $asset->receiving_warehouse_id,
+                        'small_tool_id' => $smallToolItem->id,
+                        'quantity' => 1,
+                        'status_description' => 'Good',
+                        'is_active' => 1,
+                        'to_release' => 0,
+                        'is_released' => 0,
+                    ]);
+                }
+            }*/
 //            $fixedAsset->vladimir_tag_number = $this->vladimirTagGeneratorRepository->vladimirTagGenerator();
 //            $fixedAsset->save();
         }
