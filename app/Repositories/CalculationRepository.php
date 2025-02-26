@@ -66,7 +66,7 @@ class CalculationRepository
             $years_added = floor($est_useful_life);
             $months_added = floor(($est_useful_life - $years_added) * 12);
 
-            $end_depreciation = $start_depreciation->addYears($years_added)->addMonths($months_added)->subMonth(1);
+            $end_depreciation = $start_depreciation->addYears($years_added)->addMonths($months_added); //->subMonth(1)
         }
 
         return $end_depreciation->format('Y-m') ?? null;
