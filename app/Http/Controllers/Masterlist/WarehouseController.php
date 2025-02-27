@@ -24,7 +24,7 @@ class WarehouseController extends Controller
         $pagination = $request->pagination;
         $userTagging = $request->input('user_tagging', false);
 
-        $rWarehouse = Warehouse::with('location')->where('is_active', $isActiveStatus)
+        $rWarehouse = Warehouse::withTrashed()->with('location')->where('is_active', $isActiveStatus)
             ->when($pagination === 'none', function ($query) use ($userTagging) {
                 //show only the warehouse that is tag to a user
 
@@ -121,52 +121,53 @@ class WarehouseController extends Controller
 
     }
 
-    /*    public function archived(Request $request, $id)
-        {
+    public function archived(Request $request, $id)
+    {
 
-            $status = $request->status;
-            $rWarehouse = Warehouse::query();
-            if (!$rWarehouse->withTrashed()->where('id', $id)->exists()) {
-                return $this->responseNotFound('Warehouse not found.');
-            }
+        $status = $request->status;
+        $rWarehouse = Warehouse::query();
+        if (!$rWarehouse->withTrashed()->where('id', $id)->exists()) {
+            return $this->responseNotFound('Warehouse not found.');
+        }
 
-            if ($status == false) {
-                if (!Warehouse::where('id', $id)->where('is_active', true)->exists()) {
-                    return $this->responseBadRequest('No Changes.');
-                } else {
-                    $checkAssetRequest = AssetRequest::where('receiving_warehouse_id', $id)->where('filter', '!=', 'Claimed')->exists();
-                    if ($checkAssetRequest) {
-                        return $this->responseBadRequest('Warehouse cannot be deactivated. There are still pending asset requests.');
-                    }
-                    if (Warehouse::where('id', $id)->exists()) {
-                        Warehouse::where('id', $id)->update([
-                            'is_active' => false
-                        ]);
-                        Warehouse::where('id', $id)->delete();
-                        return $this->responseSuccess('Warehouse deactivated successfully.');
-                    }
+        if ($status == false) {
+            if (!Warehouse::where('id', $id)->where('is_active', true)->exists()) {
+                return $this->responseBadRequest('No Changes.');
+            } else {
+                $checkAssetRequest = AssetRequest::where('receiving_warehouse_id', $id)->where('filter', '!=', 'Claimed')->exists();
+                if ($checkAssetRequest) {
+                    return $this->responseBadRequest('Warehouse cannot be deactivated. There are still pending asset requests.');
                 }
-            }
-
-            if ($status == true) {
-                if (Warehouse::where('id', $id)->where('is_active', true)->exists()) {
-                    return $this->responseSuccess('No Changes');
-                } else {
-                    Warehouse::withTrashed()->where('id', $id)->restore();
+                if (Warehouse::where('id', $id)->exists()) {
                     Warehouse::where('id', $id)->update([
-                        'is_active' => true
+                        'is_active' => false
                     ]);
-                    return $this->responseSuccess('Warehouse activated successfully.');
+                    Warehouse::where('id', $id)->delete();
+                    return $this->responseSuccess('Warehouse deactivated successfully.');
                 }
             }
-        }*/
+        }
+
+        if ($status == true) {
+            if (Warehouse::where('id', $id)->where('is_active', true)->exists()) {
+                return $this->responseSuccess('No Changes');
+            } else {
+                Warehouse::withTrashed()->where('id', $id)->restore();
+                Warehouse::where('id', $id)->update([
+                    'is_active' => true
+                ]);
+                return $this->responseSuccess('Warehouse activated successfully.');
+            }
+        }
+    }
 
     public function locationTagging(Request $request, $id)
     {
         DB::beginTransaction();
         try {
+
             $locationId = $request->input('location_id', []);
-            $rWarehouse = Warehouse::find($id);
+            $rWarehouse = Warehouse::where('sync_id', $id)->first();
             if (!$rWarehouse) {
                 return $this->responseNotFound('Warehouse not found.');
             }
@@ -176,7 +177,7 @@ class WarehouseController extends Controller
             ]);
 
             foreach ($locationId as $location) {
-                $rLocation = Location::find($location);
+                $rLocation = Location::where('sync_id', $location)->first();
                 if ($rLocation->receivingWarehouse) {
                     return $this->responseUnprocessable('Location already tagged to another warehouse.');
                 }
@@ -190,8 +191,20 @@ class WarehouseController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            return $e->getMessage();
             return $this->responseUnprocessable('Location is required.');
         }
 
     }
+
+    /*public function warehouseLocationTagging(Request $request, $syncId){
+        $locationId = $request->input('location_id', []);
+        $rWarehouse = Warehouse::where('sync_id', $syncId)->first();
+        if (!$rWarehouse) {
+            return $this->responseNotFound('Warehouse not found.');
+        }
+        $rWarehouse->warehouseLocation()->sync($locationId);
+        return $this->responseSuccess('Location Tagging successfully.');
+
+    }*/
 }
