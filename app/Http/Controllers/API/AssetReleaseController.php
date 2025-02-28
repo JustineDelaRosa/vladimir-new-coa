@@ -27,22 +27,28 @@ class AssetReleaseController extends Controller
 
     public function index(Request $request)
     {
+//        return             $query = FixedAsset::where('can_release', 1)->get();
         $search = $request->get('search');
         $per_page = $request->get('per_page');
         $page = $request->get('page');
         $isReleased = $request->get('isReleased');
+        $userWarehouseId = auth('sanctum')->user()->warehouse_id;
         if ($per_page == null) {
             $query = FixedAsset::where('can_release', 1)
                 ->where('from_request', 1)
+                ->where('warehouse_id', $userWarehouseId)
+//                ->whereHas('warehouse', function ($query) use ($userWarehouseId) {
+//                    $query->where('id', $userWarehouseId);
+//                })
                 ->where(function ($query) {
                     $query->where('accountability', 'Common')
                         ->where('memo_series_id', null)
                         ->orWhere(function ($query) {
-                            $query->where('accountability', 'Personal Issued')
-                                ->where('asset_condition', '!=', 'New');
+                            $query->where('accountability', 'Personal Issued');
+//                                ->where('asset_condition', '!=', 'New');
                         })->orWhere(function ($query) {
                             $query->where('accountability', 'Personal Issued')
-                                ->where('asset_condition', 'New')
+//                                ->where('asset_condition', 'New')
                                 ->whereNotNull('memo_series_id');
                         });
                 });
@@ -137,11 +143,11 @@ class AssetReleaseController extends Controller
                         $query->where('accountability', 'Common')
                             ->where('memo_series_id', null)
                             ->orWhere(function ($query) {
-                                $query->where('accountability', 'Personal Issued')
-                                    ->where('asset_condition', '!=', 'New');
+                                $query->where('accountability', 'Personal Issued');
+//                                    ->where('asset_condition', '!=', 'New');
                             })->orWhere(function ($query) {
                                 $query->where('accountability', 'Personal Issued')
-                                    ->where('asset_condition', 'New')
+//                                    ->where('asset_condition', 'New')
                                     ->whereNotNull('memo_series_id');
                             });
                     })->where('is_released', 0);
@@ -174,12 +180,14 @@ class AssetReleaseController extends Controller
 
                     // If all assets are released, update the asset request
                     if ($unreleasedFixedAssets == 0 && $unreleasedAdditionalCosts == 0) {
+//                        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->get();
                         AssetRequest::where('transaction_number', $transactionNumber)->update([
                             'is_claimed' => 1,
 //                            'filter' => 'Claimed'
                         ]);
                         AssetRequest::where('transaction_number', $transactionNumber)
                             ->whereColumn('quantity', 'quantity_delivered')
+//                            ->whereNull('item_id')
                             ->update([
                                 'filter' => 'Claimed'
                             ]);
@@ -190,6 +198,7 @@ class AssetReleaseController extends Controller
             return $this->responseSuccess('Assets Released');
         } catch (\Exception $e) {
             DB::rollBack();
+//            return $e->getMessage();
             return $this->responseUnprocessable('An error occurred while releasing assets: ' . $e->getMessage());
         }
 
