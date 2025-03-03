@@ -4,9 +4,12 @@ namespace App\Traits;
 
 use App\Models\AdditionalCost;
 use App\Models\AssetRequest;
+use App\Models\AssetSmallTool;
 use App\Models\FixedAsset;
+use App\Models\Status\AssetStatus;
 use App\Models\YmirPRTransaction;
 use App\Repositories\CalculationRepository;
+use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +17,7 @@ use Illuminate\Support\Str;
 
 trait AssetReleaseHandler
 {
+    use ApiResponse;
 
     protected CalculationRepository $calculationRepository;
 
@@ -91,25 +95,23 @@ trait AssetReleaseHandler
     {
         $fixedAssetFields = $this->getFixedAssetFields();
         $additionalCostFields = $this->getAdditionalCostFields();
-        $userLocationId = auth('sanctum')->user()->location_id;
+        $userWarehouseId = auth('sanctum')->user()->warehouse_id;
 
         $firstQuery = FixedAsset::select($fixedAssetFields)
             ->where('from_request', 1)
             ->where('can_release', 1)
             ->where('is_released', $isReleased)
-            ->whereHas('warehouse', function ($query) use ($userLocationId) {
-                $query->where('location_id', $userLocationId);
-            })
+            ->where('warehouse_id', $userWarehouseId)
             ->where(function ($query) {
                 $query->where('accountability', 'Common')
                     ->where('memo_series_id', null)
                     ->orWhere(function ($query) {
-                        $query->where('accountability', 'Personal Issued')
-                            ->where('asset_condition', '!=', 'New');
+                        $query->where('accountability', 'Personal Issued');
+//                            ->where('asset_condition', '!=', 'New');
                     })
                     ->orWhere(function ($query) {
                         $query->where('accountability', 'Personal Issued')
-                            ->where('asset_condition', 'New')
+//                            ->where('asset_condition', 'New')
                             ->whereNotNull('memo_series_id');
                     });
             });
@@ -118,11 +120,8 @@ trait AssetReleaseHandler
             ->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
             ->where('additional_costs.from_request', 1)
             ->where('additional_costs.can_release', 1)
-            ->where('additional_costs.is_released', $isReleased)
-            ->whereHas('warehouse', function ($query) use ($userLocationId) {
-                $query->where('location_id', $userLocationId);
-            });
-
+            ->where('additional_costs.is_released', $isReleased);
+//            ->where('additional_costs.receiving_warehouse_id', $userWarehouseId);
         return $firstQuery->unionAll($secondQuery)->orderBy('created_at', 'desc')->get();
     }
 
@@ -138,6 +137,7 @@ trait AssetReleaseHandler
         return [
             'id',
             'requester_id',
+            'ymir_pr_number',
             'pr_number',
             'po_number',
             'rr_number',
@@ -189,6 +189,7 @@ trait AssetReleaseHandler
             'created_at',
             'print_count',
             'last_printed',
+            'is_printable',
             DB::raw("NULL as add_cost_sequence"),
         ];
     }
@@ -198,6 +199,7 @@ trait AssetReleaseHandler
         return [
             'additional_costs.id',
             'additional_costs.requester_id',
+            'additional_costs.ymir_pr_number',
             'additional_costs.pr_number',
             'additional_costs.po_number',
             'additional_costs.rr_number',
@@ -246,9 +248,10 @@ trait AssetReleaseHandler
             'additional_costs.location_id',
             'additional_costs.account_id',
             'additional_costs.remarks',
-            'fixed_assets.created_at',
+            'additional_costs.created_at',
             'fixed_assets.print_count',
             'fixed_assets.last_printed',
+            DB::raw("0 as add_cost_sequence"),
             'additional_costs.add_cost_sequence',
         ];
     }
@@ -271,6 +274,7 @@ trait AssetReleaseHandler
         $authorizationMemoImg = $fixed_asset->getMedia('authorizationMemoImg')->first();
         return [
 //            'additional_cost_count' => $fixed_asset->additional_cost_count,
+
             'id' => $fixed_asset->id,
             'requestor' => [
                 'id' => $fixed_asset->requestor->id ?? '-',
@@ -294,6 +298,48 @@ trait AssetReleaseHandler
             ],
             'from_request' => $fixed_asset->from_request ?? '-',
             'can_release' => $fixed_asset->can_release ?? '-',
+            /*            'small_tools_item' => $fixed_asset->assetSmallTools ?
+                            $fixed_asset->assetSmallTools->map(function ($smallTool) {
+                                return [
+                                    'id' => $smallTool->id ?? '-',
+                                    'sync_id' => $smallTool->item->sync_id ?? '-',
+                                    'item_code' => $smallTool->item->item_code ?? '-',
+                                    'item_name' => $smallTool->item->item_name ?? '-',
+                                    'quantity' => $smallTool->quantity ?? '-',
+                                    'status' => $smallTool->is_active ?? '-',
+                                    'status_description' => $smallTool->to_release ? 'For Releasing' :
+                                        $smallTool->status_description,
+            //                        'items' => $smallTool->item ?? [],
+                                ];
+                            })
+                            : [],*/
+            'small_tools' => $fixed_asset->assetSmallTools ?
+                $fixed_asset->assetSmallTools->map(function ($smallTool) {
+                    return [
+                        'id' => $smallTool->id ?? '-',
+                        'description' => $smallTool->description ?? '-',
+                        'specification' => $smallTool->specification ?? '-',
+                        'pr_number' => $smallTool->pr_number ?? '-',
+                        'po_number' => $smallTool->po_number ?? '-',
+                        'rr_number' => $smallTool->rr_number ?? '-',
+                        'acquisition_cost' => $smallTool->acquisition_cost ?? '-',
+                        'quantity' => $smallTool->quantity ?? '-',
+                        'status' => $smallTool->is_active ?? '-',
+                        'status_description' => $smallTool->status_description,
+                    ];
+                })
+                : [],
+            'item' => $fixed_asset->assetSmallTools->map(function ($item) {
+                return [
+                    'id' => $item->item->id ?? '-',
+                    'item_code' => $item->item->item_code ?? '-',
+                    'item_name' => $item->item->item_name ?? '-',
+                    'quantity' => $item->quantity ?? '-',
+                    'status_description' => $item->status_description ?? '-',
+                    'status' => $item->is_active ?? '-',
+                    'to_release' => $item->to_release ?? '-',
+                ];
+            }),
             'capex' => [
                 'id' => $fixed_asset->capex->id ?? '-',
                 'capex' => $fixed_asset->capex->capex ?? '-',
@@ -436,13 +482,14 @@ trait AssetReleaseHandler
             ],
             'depreciation_credit' => [
                 'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
-                'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
-                'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->credit_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->credit_name ?? '-',
             ],
             'remarks' => $fixed_asset->remarks,
             'print_count' => $fixed_asset->print_count,
             'print' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
             'last_printed' => $fixed_asset->last_printed,
+            'is_printable' => $fixed_asset->is_printable,
             'tagging' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
             'receiverImg' => $receiverImg ? [
                 'id' => $receiverImg->id,
@@ -629,8 +676,8 @@ trait AssetReleaseHandler
                     ],
                     'depreciation_credit' => [
                         'id' => $additional_cost->accountTitle->depreciationCredit->id ?? '-',
-                        'account_title_code' => $additional_cost->accountTitle->depreciationCredit->account_title_code ?? '-',
-                        'account_title_name' => $additional_cost->accountTitle->depreciationCredit->account_title_name ?? '-',
+                        'account_title_code' => $additional_cost->accountTitle->depreciationCredit->credit_code ?? '-',
+                        'account_title_name' => $additional_cost->accountTitle->depreciationCredit->credit_name ?? '-',
                     ],
                     'remarks' => $additional_cost->remarks ?? '-',
                 ];
@@ -804,14 +851,15 @@ trait AssetReleaseHandler
             ],
             'depreciation_credit' => [
                 'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
-                'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
-                'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
+                'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->credit_code ?? '-',
+                'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->credit_name ?? '-',
             ],
             'remarks' => $fixed_asset->remarks ?? '-',
             'print_count' => $fixed_asset->print_count,
             'print' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
             'last_printed' => $fixed_asset->last_printed ?? '-',
-            'created_at' => $fixed_asset->created_at ?? '-',
+            'is_printable' => $fixed_asset->is_printable,
+            'created_at' => $fixed_asset->created_at,
             'add_cost_sequence' => $fixed_asset->add_cost_sequence ?? null,
         ];
     }
@@ -820,6 +868,10 @@ trait AssetReleaseHandler
     {
         $mainAttributes = [
             'vladimir_tag_number',
+            'ymir_pr_number',
+            'pr_number',
+            'po_number',
+            'rr_number',
             'tag_number',
             'tag_number_old',
             'asset_description',
@@ -998,10 +1050,11 @@ trait AssetReleaseHandler
             'remaining_book_value' => $additional_cost->formula->remaining_book_value ?? '-',
             'release_date' => $additional_cost->formula->release_date ?? '-',
             'start_depreciation' => $additional_cost->formula->start_depreciation ?? '-',
+            'is_printable' => 0,
             'company' => [
-                'id' => $additional_cost->department->company->id ?? '-',
-                'company_code' => $additional_cost->department->company->company_code ?? '-',
-                'company_name' => $additional_cost->department->company->company_name ?? '-',
+                'id' => $additional_cost->company->id ?? '-',
+                'company_code' => $additional_cost->company->company_code ?? '-',
+                'company_name' => $additional_cost->company->company_name ?? '-',
             ],
             'business_unit' => [
                 'id' => $additional_cost->department->businessUnit->id ?? '-',
@@ -1025,8 +1078,8 @@ trait AssetReleaseHandler
             ],
             'subunit' => [
                 'id' => $additional_cost->subunit->id ?? '-',
-                'subunit_code' => $additional_cost->subunit->subunit_code ?? '-',
-                'subunit_name' => $additional_cost->subunit->subunit_name ?? '-',
+                'subunit_code' => $additional_cost->subunit->sub_unit_code ?? '-',
+                'subunit_name' => $additional_cost->subunit->sub_unit_name ?? '-',
             ],
             'location' => [
                 'id' => $additional_cost->location->id ?? '-',
@@ -1218,14 +1271,47 @@ trait AssetReleaseHandler
     }
 
 
-    private function processAsset($assetQuery, $images, $receivedBy, $accountability, $accountable, $depreciation, $companyId, $businessUnitId, $departmentId, $unitId, $subunitId, $locationId)
+    public function processAsset($assetQuery, $images, $receivedBy, $accountability, $accountable, $depreciation, $companyId, $businessUnitId, $departmentId, $unitId, $subunitId, $locationId)
     {
         $asset = (clone $assetQuery)->first();
         $asset->storeBase64Images($images);
 
+
+        /*if ($asset->is_additional_cost) {
+            $itemId = AssetRequest::where('reference_number', $asset->reference_number)->value('item_id');
+            $assetSmallTools = AssetSmallTool::find($itemId);
+
+            if ($assetSmallTools) {
+                $newAssetSmallToolData = [
+                    'quantity' => 1,
+                    'is_active' => 1,
+                    'status_description' => 'Good',
+                    'pr_number' => $asset->ymir_pr_number,
+                    'po_number' => $asset->po_number,
+                    'rr_number' => $asset->rr_number,
+                    'acquisition_cost' => $asset->acquisition_cost,
+                ];
+
+                if ($assetSmallTools->quantity == 1) {
+                    $assetSmallTools->update(['is_active' => 0, 'status_description' => 'Replaced']);
+                } else {
+                    $assetSmallTools->decrement('quantity');
+                }
+
+                $assetSmallTools->refresh();
+                $newAssetSmallTool = $assetSmallTools->replicate();
+                $newAssetSmallTool->fill($newAssetSmallToolData);
+                $newAssetSmallTool->save();
+            }
+        }*/
+
+        if ($asset->is_additional_cost) {
+            $this->assetSmallToolUpdate($asset);
+        }
+
         $updateData = [
-            'accountability' => $accountability,
-            'accountable' => $accountable,
+//            'accountability' => $accountability,
+//            'accountable' => $accountable,
             'received_by' => $receivedBy,
             'is_released' => 1,
             'depreciation_status_id' => $depreciation,
@@ -1258,21 +1344,283 @@ trait AssetReleaseHandler
 //        $updateData['depreciation_method'] = $depreciationMethod;
 
         (clone $assetQuery)->update($updateData);
-//        $formula = $asset->formula;
+        $formula = $asset->formula;
         //check the acquisition cost if below 10,000 One Time else Straight Line
 
-//        $formula->update([
-//            'release_date' => now()->format('Y-m-d'),
+        $formula->update([
+            'release_date' => now()->format('Y-m-d'),
 //            'start_depreciation' => $this->calculationRepository->getStartDepreciation($depreciationMethod, now()->format('Y-m-d')),
 //            'end_depreciation' => $this->calculationRepository->getEndDepreciation(now()->format('Y-m-d'), $asset->majorCategory->est_useful_life, $depreciationMethod), //TODO: temporary est useful life
 //            'depreciation_method' => $depreciationMethod,
-//        ]);
+        ]);
         $asset->refresh();
         $this->assetReleaseActivityLog($asset);
         $this->assetReleaseActivityLog($asset, true);
 
         return $asset;
     }
+
+
+    private function assetSmallToolUpdate($asset)
+    {
+        $itemId = AssetRequest::where('reference_number', $asset->reference_number)->value('item_id');
+
+        if (!$itemId) {
+            return $this->responseUnprocessable('Asset request not found for this reference number');
+        }
+
+        $assetSmallTools = AssetSmallTool::find($itemId);
+
+        if (!$assetSmallTools) {
+            return $this->responseUnprocessable('Asset Small Tool not found');
+        }
+
+        // Check if there's an existing replaced item with same specifications
+        $existingReplaced = $this->findExistingReplacedItem($assetSmallTools);
+
+        if ($assetSmallTools->quantity == 1) {
+            // Handle single quantity item
+            $this->handleSingleQuantityItem($assetSmallTools);
+        } else {
+            // Handle multiple quantity item
+            $assetSmallTools->quantity -= 1;
+            $assetSmallTools->save();
+
+            if ($existingReplaced) {
+                $this->updateExistingReplacedItem($existingReplaced, $assetSmallTools);
+            } else {
+                $this->createNewReplacedItem($assetSmallTools);
+            }
+        }
+
+        // Handle the good condition item
+        $existingGoodItem = $this->findExistingGoodItem($assetSmallTools);
+
+        if ($existingGoodItem) {
+            $this->updateExistingGoodItem($existingGoodItem);
+        } else {
+            $this->createNewGoodItem($assetSmallTools, $asset);
+        }
+
+        return true;
+    }
+
+    private function findExistingReplacedItem($assetSmallTools)
+    {
+        return AssetSmallTool::withTrashed()
+            ->where('status_description', 'Replaced')
+            ->where('reference_number', $assetSmallTools->reference_number)
+            ->where('description', $assetSmallTools->description)
+            ->where('specification', $assetSmallTools->specification)
+            ->first();
+    }
+
+    private function handleSingleQuantityItem($assetSmallTools)
+    {
+        // If quantity is 1, update the current item to replaced
+        $assetSmallTools->update([
+            'is_active' => 0,
+            'status_description' => 'Replaced'
+        ]);
+        $assetSmallTools->delete();
+
+        $this->updateAdditionalCost($assetSmallTools->reference_number);
+    }
+
+    private function updateExistingReplacedItem($existingReplaced, $assetSmallTools)
+    {
+        // If replaced item exists, increment its quantity
+        $existingReplaced->quantity += 1;
+        $existingReplaced->save();
+
+        $this->updateAdditionalCost($assetSmallTools->reference_number);
+    }
+
+    private function createNewReplacedItem($assetSmallTools)
+    {
+        // If no replaced item exists, create a new one
+        $replacedItemData = $assetSmallTools->toArray();
+        $replacedItemData['quantity'] = 1;
+        $replacedItemData['is_active'] = 0;
+        $replacedItemData['reference_number'] = $assetSmallTools->reference_number;
+        $replacedItemData['status_description'] = 'Replaced';
+
+        $replacedItem = new AssetSmallTool($replacedItemData);
+        unset($replacedItem->id);
+        $replacedItem->save();
+        $replacedItem->delete();
+
+        $this->deleteAdditionalCost($assetSmallTools->reference_number);
+    }
+
+    private function updateAdditionalCost($referenceNumber)
+    {
+        $additionalCost = AdditionalCost::where('reference_number', $referenceNumber)->first();
+        if ($additionalCost) {
+            $assetStatusId = AssetStatus::where('asset_status_name', 'Replaced')->value('id') ?? 1;
+            $additionalCost->update(['asset_status_id' => $assetStatusId]);
+        }
+    }
+
+    private function deleteAdditionalCost($referenceNumber)
+    {
+        $additionalCost = AdditionalCost::where('reference_number', $referenceNumber)->first();
+        if (!$additionalCost) {
+            return $this->responseUnprocessable('Additional Cost not found');
+        }
+        $additionalCost->delete();
+    }
+
+    private function findExistingGoodItem($assetSmallTools)
+    {
+        return AssetSmallTool::withTrashed()
+            ->where('id', $assetSmallTools->id)
+            ->where('reference_number', $assetSmallTools->reference_number)
+            ->where('status_description', 'Good')
+            ->where('description', $assetSmallTools->description)
+            ->where('specification', $assetSmallTools->specification)
+            ->first();
+    }
+
+    private function updateExistingGoodItem($existingGoodItem)
+    {
+        $existingGoodItem->quantity += 1;
+        $existingGoodItem->save();
+    }
+
+    private function createNewGoodItem($assetSmallTools, $asset)
+    {
+        $newAssetSmallToolData = [
+            'quantity' => 1,
+            'is_active' => 1,
+            'status_description' => 'Good',
+            'pr_number' => $asset->ymir_pr_number,
+            'po_number' => $asset->po_number,
+            'rr_number' => $asset->rr_number,
+            'acquisition_cost' => $asset->acquisition_cost,
+            'reference_number' => $asset->reference_number,
+            'deleted_at' => null,
+        ];
+
+        $assetSmallTools->refresh();
+        $newAssetSmallTool = $assetSmallTools->replicate();
+        $newAssetSmallTool->fill($newAssetSmallToolData);
+        unset($newAssetSmallTool->id);
+        $newAssetSmallTool->save();
+    }
+
+    /*    private function assetSmallToolUpdate($asset)
+        {
+            $itemId = AssetRequest::where('reference_number', $asset->reference_number)->value('item_id');
+            $assetSmallTools = AssetSmallTool::find($itemId);
+
+            if ($assetSmallTools) {
+                // Check if there's an existing item with same specifications and "Good" status
+
+
+                // Check if there's an existing replaced item with same specifications
+                $existingReplaced = AssetSmallTool::withTrashed()
+                    //                ->where('id', $assetSmallTools->id)
+                    ->where('status_description', 'Replaced')
+                    ->where('reference_number', $assetSmallTools->reference_number)
+                    ////                ->where('acquisition_cost', $asset->acquisition_cost)
+                    ->where('description', $assetSmallTools->description)
+                    ->where('specification', $assetSmallTools->specification)
+                    ->first();
+                //            return $existingReplaced;
+
+                if ($assetSmallTools->quantity == 1) {
+                    // If quantity is 1, update the current item to replaced
+                    $assetSmallTools->update(['is_active' => 0, 'status_description' => 'Replaced']);
+                    $assetSmallTools->delete();
+                    $additionalCost = AdditionalCost::where('reference_number', $assetSmallTools->reference_number)
+                        ->where('from_request', 1)
+                        ->first();
+    //                dd($additionalCost);
+                    if ($additionalCost) {
+                        $assetStatusId = AssetStatus::where('asset_status_name', 'Replaced')->value('id') ?? 1;
+                        $additionalCost->update(['asset_status_id' => $assetStatusId]);
+                        $additionalCost->delete();
+                    }
+
+                } else {
+                    // If quantity > 1, decrement and handle replaced item
+                    $assetSmallTools->quantity -= 1;
+                    //                $assetSmallTools->decrement('quantity');
+
+                    if ($existingReplaced) {
+                        // If replaced item exists, increment its quantity
+                        $existingReplaced->quantity += 1;
+                        $existingReplaced->save();
+
+                        $additionalCost = AdditionalCost::where('reference_number', $assetSmallTools->reference_number)->first();
+                        if ($additionalCost) {
+                            $assetStatusId = AssetStatus::where('asset_status_name', 'Replaced')->value('id') ?? 1;
+                            $additionalCost->update(['asset_status_id' => $assetStatusId]);
+                        }
+
+                        //                     $existingReplaced->increment('quantity');
+                    } else {
+                        // If no replaced item exists, create a new one
+                        $replacedItemData = $assetSmallTools->toArray();
+                        $replacedItemData['quantity'] = 1;
+                        $replacedItemData['is_active'] = 0;
+                        $replacedItemData['reference_number'] = $assetSmallTools->reference_number;
+                        $replacedItemData['status_description'] = 'Replaced';
+
+                        $replacedItem = new AssetSmallTool($replacedItemData);
+                        unset($replacedItem->id);
+                        $replacedItem->save();
+                        $replacedItem->delete();
+
+                        $additionalCost = AdditionalCost::where('reference_number', $assetSmallTools->reference_number)->first();
+                        if (!$additionalCost) {
+                            return $this->responseUnprocessable('Additional Cost not found');
+                        }
+                        $additionalCost->delete();
+                    }
+                }
+
+
+                $existingGoodItem = AssetSmallTool::withTrashed()->where('id', $assetSmallTools->id)
+                    ->where('reference_number', $assetSmallTools->reference_number)
+                    ->where('status_description', 'Good')
+                    //                ->where('acquisition_cost', $asset->acquisition_cost)
+                    ->where('description', $assetSmallTools->description)
+                    ->where('specification', $assetSmallTools->specification)
+                    ->first();
+
+                // Handle the good condition item
+                if ($existingGoodItem) {
+                    // If good item exists, increment its quantity
+
+                    $existingGoodItem->quantity += 1;
+                    $existingGoodItem->save();
+                    //                $existingGoodItem->increment('quantity');
+                } else {
+                    // If no good item exists, create a new one
+                    $newAssetSmallToolData = [
+                        'quantity' => 1,
+                        'is_active' => 1,
+                        'status_description' => 'Good',
+                        'pr_number' => $asset->ymir_pr_number,
+                        'po_number' => $asset->po_number,
+                        'rr_number' => $asset->rr_number,
+                        'acquisition_cost' => $asset->acquisition_cost,
+                        'reference_number' => $asset->reference_number,
+                        'deleted_at' => null,
+                    ];
+
+                    $assetSmallTools->refresh();
+                    $newAssetSmallTool = $assetSmallTools->replicate();
+                    $newAssetSmallTool->fill($newAssetSmallToolData);
+                    unset($newAssetSmallTool->id);
+                    $newAssetSmallTool->save();
+                }
+            } else {
+                return $this->responseUnprocessable('Asset Small Tool not found');
+            }
+        }*/
 
     public function updateRemoveMemoTag($fixedAsset, $additionalCost)
     {
