@@ -268,8 +268,6 @@ class AddingPrController extends Controller
 
     public function sendTransactionWithAttachments($referenceNumber, $itemCount)
     {
-
-
         $apiUrl = config('ymir-api.ymir_put_api_url');
         $bearerToken = config('ymir-api.ymir_put_api_token');
 
@@ -562,7 +560,7 @@ class AddingPrController extends Controller
         $assetRequest = new AssetRequest(); // Consider if a new instance is needed or if an existing instance should be used.
         activity()
             ->performedOn($assetRequest)
-            ->withProperties(['transaction_number' => $transactionNumber, 'pr_number' => $prNumber, 'Remarks' => $reason, 'causer' => $causer])
+            ->withProperties(['transaction_number' => $transactionNumber, 'pr_number' => $prNumber, 'remarks' => $reason, 'causer' => $causer])
             ->inLog(strtolower($action) === 'cancel' ? 'Cancelled' : 'Returned')
             ->tap(function ($activity) use ($transactionNumber) {
                 $activity->subject_id = $transactionNumber;
