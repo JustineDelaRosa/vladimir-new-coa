@@ -35,6 +35,11 @@ class FixedAsset extends Model implements HasMedia
         'inclusion' => 'json',
     ];
 
+    public function movementHistory()
+    {
+        return $this->morphMany(AssetMovementHistory::class, 'movementHistory');
+    }
+
     protected static function booted()
     {
         static::created(function () {
@@ -89,7 +94,7 @@ class FixedAsset extends Model implements HasMedia
         return $this->hasMany(AssetTransferRequest::class, 'fixed_asset_id', 'id');
     }
 
-    public function isStillInTransferApproval()
+    /*public function isStillInTransferApproval()
     {
         // Check if the fixed asset is still in transfer approval
         $isInTransferApproval = AssetTransferRequest::where('fixed_asset_id', $this->id)
@@ -98,11 +103,26 @@ class FixedAsset extends Model implements HasMedia
             ->exists();
 
         return $isInTransferApproval;
+    }*/
+
+    public function transfer()
+    {
+        return $this->hasMany(Transfer::class, 'fixed_asset_id', 'id');
+    }
+
+    public function pullout()
+    {
+        return $this->hasMany(PullOut::class, 'fixed_asset_id', 'id');
     }
 
     public function additionalCost()
     {
         return $this->hasMany(AdditionalCost::class, 'fixed_asset_id', 'id');
+    }
+
+    public function additionalCostWithTrashed()
+    {
+        return $this->hasMany(AdditionalCost::class, 'fixed_asset_id', 'id')->withTrashed();
     }
 
     public function capex()
@@ -156,6 +176,11 @@ class FixedAsset extends Model implements HasMedia
         return $this->belongsTo(AccountingEntries::class, 'account_id', 'id');
     }
 
+    public function accountingEntries()
+    {
+        return $this->belongsTo(AccountingEntries::class, 'account_id', 'id');
+    }
+
 //    public function accountTitle()
 //    {
 //        return $this->belongsTo(AccountTitle::class, 'account_id', 'id');
@@ -188,7 +213,7 @@ class FixedAsset extends Model implements HasMedia
 
     public function supplier()
     {
-        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'sync_id');
     }
 
     public function warehouseNumber()
@@ -218,7 +243,7 @@ class FixedAsset extends Model implements HasMedia
 
     public function warehouse()
     {
-        return $this->belongsTo(Warehouse::class, 'warehouse_id', 'id');
+        return $this->belongsTo(Warehouse::class, 'warehouse_id', 'sync_id');
     }
 
     public function depreciationHistory()
@@ -230,10 +255,22 @@ class FixedAsset extends Model implements HasMedia
     {
         return $this->belongsTo(SmallTools::class, 'small_tool_id', 'id');
     }
+
     public function getChargedDepartmentAttribute($value)
     {
-        return $value ? Department::where('id', $value)->first()->department_name : '-';
+        if (!$value) {
+            return '-';
+        }
+
+        $department = Department::find($value);
+        return $department->department_name ?? '-';
     }
+
+    public function assetSmallTools()
+    {
+        return $this->hasMany(AssetSmallTool::class, 'fixed_asset_id', 'id');
+    }
+
 
     /*    public function getStartDepreciationAttriute($value)
         {
@@ -306,6 +343,4 @@ class FixedAsset extends Model implements HasMedia
     {
         return date('Y-m-d', strtotime($value));
     }
-
-
 }
