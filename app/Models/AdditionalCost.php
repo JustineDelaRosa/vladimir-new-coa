@@ -123,6 +123,11 @@ class AdditionalCost extends Model implements HasMedia
     {
         return $this->belongsTo(AccountingEntries::class, 'account_id', 'id');
     }
+
+    public function accountingEntries(){
+        return $this->belongsTo(AccountingEntries::class, 'account_id', 'id');
+    }
+
 //    public function accountTitle()
 //    {
 //        return $this->belongsTo(AccountTitle::class, 'account_id', 'id');
@@ -149,7 +154,7 @@ class AdditionalCost extends Model implements HasMedia
 
     public function supplier()
     {
-        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'sync_id');
     }
 
     public function requestor()
@@ -184,7 +189,7 @@ class AdditionalCost extends Model implements HasMedia
 
     public function warehouse()
     {
-        return $this->belongsTo(Warehouse::class, 'warehouse_id', 'id');
+        return $this->belongsTo(Warehouse::class, 'warehouse_id', 'sync_id');
     }
 
 //    public function getAccountableAttribute($value)
