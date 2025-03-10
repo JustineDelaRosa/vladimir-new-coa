@@ -16,7 +16,8 @@ class Department extends Model
         'department_code',
         'division_id',
         'is_active',
-        'department_name'
+        'department_name',
+        'receiving_warehouse_id',
     ];
     protected $casts = [
         'is_active' => 'boolean'
@@ -57,6 +58,11 @@ class Department extends Model
 
     public function coordinatorHandle(){
         return $this->hasMany(CoordinatorHandle::class, 'department_id', 'id');
+    }
+
+    public function receivingWarehouse()
+    {
+        return $this->belongsTo(Warehouse::class, 'receiving_warehouse_id', 'sync_id');
     }
 
 

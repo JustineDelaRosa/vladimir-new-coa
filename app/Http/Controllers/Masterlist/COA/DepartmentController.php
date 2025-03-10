@@ -23,7 +23,8 @@ class DepartmentController extends Controller
         $userId = $request->user_id;
         $isActiveStatus = ($departmentStatus === 'deactivated') ? 0 : 1;
 
-        $department = Department::where('is_active', $isActiveStatus)
+        $department = Department::with('receivingWarehouse')
+            ->where('is_active', $isActiveStatus)
             ->when($userId, function ($query) use ($userId) {
                 $query->wherehas('coordinatorHandle', function ($query) use ($userId) {
                     $query->where('user_id', $userId);
@@ -32,7 +33,7 @@ class DepartmentController extends Controller
             ->orderBy('created_at', 'DESC')
             ->useFilters()
             ->dynamicPaginate();
-        return $this->transformDepartment($department,$userId);
+        return $this->transformDepartment($department, $userId);
     }
 
     /**

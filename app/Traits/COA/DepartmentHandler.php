@@ -28,6 +28,7 @@ trait DepartmentHandler
                     'division_id' => $department->division->id ?? "-",
                     'division_name' => $department->division->division_name ?? "-",
                 ],
+                'warehouse' => $department->receivingWarehouse,
                 'unit' => $this->transformUnits($department->unit(), $userId),
                 'department_code' => $department->department_code,
                 'department_name' => $department->department_name,
