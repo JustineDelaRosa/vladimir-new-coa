@@ -203,9 +203,11 @@ class AuthController extends Controller
             'Purchase Request', 'Approver',
             'Warehouse', 'Fixed Assets', 'Fixed Asset',
             'ERP', 'Requester-approver', 'Fixed Asset Specialist', 'Requestor',
+            'Requestor-approver-fixed Asset'
         ];
         $response = [
             'toApproveCount' => 0,
+            'toAcquisitionFaApproval' => 0,
 //            'toPR' => 0,
             'toReceive' => 0,
             'toTagCount' => 0,
@@ -218,6 +220,7 @@ class AuthController extends Controller
         if (!in_array($user->role->role_name, $roleList)) {
             return response()->json([
                 'toApproveCount' => 0,
+                'toAcquisitionFaApproval' => 0,
 //                'toPR' => 0,
                 'toReceive' => 0,
                 'toTagCount' => 0,
@@ -236,9 +239,10 @@ class AuthController extends Controller
             'Purchase Request' => ['getToPurchaseRequest', 'getToTransferReceiving'],
             'Approver' => ['getToApproveCount', 'getToTransferReceiving', 'getToTransfer'],
             'Warehouse' => ['getToRelease', 'getToReceive', 'getToTransferReceiving'],
-            'Fixed Assets' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval', 'getToSmallToolTagging'],
-            'Fixed Asset' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval', 'getToSmallToolTagging'],
-            'Fixed Asset Specialist' => ['getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval'],
+            'Fixed Assets' => ['getToApproveCount','getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval', 'getToSmallToolTagging'],
+            'Fixed Asset' => ['getToApproveCount','getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval', 'getToSmallToolTagging'],
+            'Requestor-approver-fixed Asset'=> ['getToApproveCount','getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval', 'getToSmallToolTagging'],
+            'Fixed Asset Specialist' => ['getToApproveCount','getAcquisitionFaApproval', 'getToTagCount', 'getToTransferReceiving', 'getToTransfer', 'getTransferFaApproval', 'getToSmallToolTagging'],
             'ERP' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive', 'getToTransferReceiving'],
             'Requester-approver' => ['getToApproveCount', 'getToTransfer', 'getToTransferReceiving'],
             'Requestor' => ['getToTransfer', 'getToTransferReceiving'],

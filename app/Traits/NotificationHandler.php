@@ -6,6 +6,7 @@ use App\Models\AdditionalCost;
 use App\Models\Approvers;
 use App\Models\AssetApproval;
 use App\Models\AssetRequest;
+use App\Models\AssetSmallTool;
 use App\Models\FixedAsset;
 use App\Models\MovementApproval;
 use App\Models\MovementNumber;
@@ -17,6 +18,8 @@ trait NotificationHandler
     {
         switch ($function) {
             case 'getAcquisitionFaApproval':
+                $response['toAcquisitionFaApproval'] += $this->$function($user);
+                break;
             case 'getToApproveCount':
                 $response['toApproveCount'] += $this->$function($user);
                 break;
@@ -39,6 +42,10 @@ trait NotificationHandler
             case 'getToReceive':
                 $response['toReceive'] += $this->$function($user);
                 break;
+            case 'getToSmallToolTagging':
+                $response['toSmallToolTagging'] += $this->$function($user);
+                break;
+
         }
         return $response;
     }
@@ -46,12 +53,17 @@ trait NotificationHandler
     private function getToApproveCount($user)
     {
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
-        return AssetApproval::where('approver_id', $approverId)->where('status', 'For Approval')->count();
+        $assetApproval = AssetApproval::where('approver_id', $approverId)->where('status', 'For Approval')->count();
+        return $assetApproval;
     }
 
     private function getToTagCount($user)
     {
-        return FixedAsset::where('from_request', 1)->where('print_count', 0)->count();
+        return FixedAsset::where('from_request', 1)->where('print_count', 0)
+            ->whereHas('typeOfRequest', function ($query) {
+                $query->whereNotIn('type_of_request_name', ['Small Tools', 'Small Tool']);
+            })
+            ->count();
     }
 
     private function getToRelease($user)
@@ -66,11 +78,11 @@ trait NotificationHandler
                 $query->where('accountability', 'Common')
                     ->where('memo_series_id', null)
                     ->orWhere(function ($query) {
-                        $query->where('accountability', 'Personal Issued')
-                            ->where('asset_condition', '!=', 'New');
+                        $query->where('accountability', 'Personal Issued');
+//                            ->where('asset_condition', '!=', 'New');
                     })->orWhere(function ($query) {
                         $query->where('accountability', 'Personal Issued')
-                            ->where('asset_condition', 'New')
+//                            ->where('asset_condition', 'New')
                             ->whereNotNull('memo_series_id');
                     });
             })->count();
@@ -113,15 +125,15 @@ trait NotificationHandler
     private function getAcquisitionFaApproval($user)
     {
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
-        $assetApproval = AssetApproval::where('approver_id', $approverId)->where('status', 'For pAproval')->count();
+        $assetApproval = AssetApproval::where('approver_id', $approverId)->where('status', 'For Approval')->count();
         $forFaApproval = AssetRequest::where('status', 'Approved')->where('is_fa_approved', 0)->distinct('transaction_number')->count();
-        return $assetApproval + $forFaApproval;
+        return $forFaApproval;
     }
 
     private function getTransferFaApproval($user)
     {
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
-        $assetApproval = AssetApproval::where('approver_id', $approverId)->where('status', 'For pAproval')->count();
+        $assetApproval = MovementApproval::where('approver_id', $approverId)->where('status', 'For Approval')->count();
         $movementFaApproval = MovementNumber::where('status', 'Approved')->where('is_fa_approved', 0)->distinct('id')->count();
         return $assetApproval + $movementFaApproval;
     }
@@ -150,5 +162,20 @@ trait NotificationHandler
 
 //        return 100;
         return $toReceived;
+    }
+
+    private function getToSmallToolTagging($user)
+    {
+        /*        $assetSmallTools = AssetSmallTool::where('to_release', 1)
+                    ->where('receiving_warehouse_id', $user->warehouse_id)
+                    ->count();
+
+                return $assetSmallTools;*/
+
+        return FixedAsset::where('from_request', 1)->where('print_count', 0)
+            ->where('can_release', 0)
+            ->whereHas('typeOfRequest', function ($query) {
+                $query->whereIn('type_of_request_name', ['Small Tools', 'Small Tool']);
+            })->count();
     }
 }
