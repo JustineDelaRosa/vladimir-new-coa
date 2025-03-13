@@ -10,6 +10,7 @@ trait LocationHandler
                 'sync_id' => $location->sync_id,
                 'location_code' => $location->location_code,
                 'location_name' => $location->location_name,
+//                'warehouse' => $location->receivingWarehouse,
                 'subunit' => $location->subunit->map(function ($subunit) {
                     return [
                         'id' => $subunit->id ?? '-',
