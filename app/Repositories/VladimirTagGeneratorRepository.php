@@ -68,6 +68,6 @@ class VladimirTagGeneratorRepository
     private function checkDuplicateEan13(string $ean13Result): bool
     {
         $generated = [];
-        return in_array($ean13Result, $generated) || FixedAsset::where('vladimir_tag_number', $ean13Result)->exists();
+        return in_array($ean13Result, $generated) || FixedAsset::withTrashed()->where('vladimir_tag_number', $ean13Result)->exists();
     }
 }
