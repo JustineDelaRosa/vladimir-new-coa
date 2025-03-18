@@ -8,6 +8,7 @@ use App\Http\Requests\AssetApproval\UpdateAssetApprovalRequest;
 use App\Models\Approvers;
 use App\Models\AssetApproval;
 use App\Models\AssetRequest;
+use App\Models\MinorCategory;
 use App\Models\RoleManagement;
 use App\Models\User;
 use App\Repositories\ApprovedRequestRepository;
@@ -20,6 +21,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class AssetApprovalController extends Controller
 {
@@ -46,6 +48,7 @@ class AssetApprovalController extends Controller
         $adminRoles = ['Super Admin', 'Admin', 'ERP'];
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
         $status = $request->input('status', 'For Approval');
+        $finalApproval = $request->input('final_approval', false);
 
         if (!in_array($role, $adminRoles)) {
             $forMonitoring = false;
@@ -53,11 +56,11 @@ class AssetApprovalController extends Controller
 
         $assetApprovalsQuery = AssetApproval::query();
         if (!$forMonitoring) {
-             $assetApprovalsQuery->where('approver_id', $approverId)->get();
+            $assetApprovalsQuery->where('approver_id', $approverId)->get();
         }
         $transactionNumbers = [];
         if ($this->isUserFa()) {
-             $transactionNumbers = AssetRequest::where('status', 'Approved')
+            $transactionNumbers = AssetRequest::where('status', 'Approved')
                 ->when($status == 'Approved', function ($query) {
                     return $query->where('is_fa_approved', true);
                 }, function ($query) {
@@ -67,8 +70,14 @@ class AssetApprovalController extends Controller
         }
 
         $assetApprovals = $assetApprovalsQuery->where('status', $status)->get();
-        $transactionNumbers = is_array($transactionNumbers) ? $transactionNumbers : [$transactionNumbers];
-        $transactionNumbers = array_merge($transactionNumbers, $assetApprovals->pluck('transaction_number')->toArray());
+
+        if ($finalApproval) {
+            $transactionNumbers = is_array($transactionNumbers) ? $transactionNumbers : [$transactionNumbers];
+        } else {
+            $transactionNumbers = $assetApprovals->pluck('transaction_number')->toArray();
+        }
+
+//        $transactionNumbers = array_merge($transactionNumbers, $assetApprovals->pluck('transaction_number')->toArray());
         $transactionNumbers = Arr::flatten($transactionNumbers);
 
         $data = AssetRequest::with('assetApproval', 'assetApproval.approver', 'assetApproval.approver.user')
@@ -170,18 +179,42 @@ class AssetApprovalController extends Controller
     }
 
     //TODO: To be adjust because of FA Approval
-    public function getNextRequest()
+    public function getNextRequest(Request $request)
     {
         $user = auth('sanctum')->user();
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
-        $status = 'For Approval'; // or any other status you want to check
-
-        // Check if the user is a FA approver
+        $status = 'For Approval';
+        $finalApproval = $request->final_approval ?? false;
         $isUserFa = $this->isUserFa();
 
-        $assetApprovalsQuery = AssetApproval::where('approver_id', $approverId);
+        // Get transaction numbers based on user role
+        $transactionNumbers = $this->getTransactionNumbersForUser(
+            $isUserFa,
+            $approverId,
+            $status,
+            $finalApproval
+        );
 
+        // If no transaction numbers found, return early
+        if (empty($transactionNumbers)) {
+            return $this->responseNotFound('No request found');
+        }
+
+        // Get and format asset requests
+        $data = $this->getFormattedAssetRequests($transactionNumbers);
+
+        if ($data->isEmpty()) {
+            return $this->responseNotFound('No request found');
+        }
+
+        return $data;
+    }
+
+    private function getTransactionNumbersForUser($isUserFa, $approverId, $status, $finalApproval)
+    {
         $transactionNumbers = [];
+
+        // Get transaction numbers for FA approvers
         if ($isUserFa) {
             $transactionNumbers = AssetRequest::where('status', 'Approved')
                 ->when($status == 'Approved', function ($query) {
@@ -189,15 +222,26 @@ class AssetApprovalController extends Controller
                 }, function ($query) {
                     return $query->where('is_fa_approved', false);
                 })
-                ->pluck('transaction_number');
+                ->pluck('transaction_number')
+                ->toArray();
         }
 
-        $assetApprovals = $assetApprovalsQuery->where('status', $status)->get();
-        $transactionNumbers = is_array($transactionNumbers) ? $transactionNumbers : [$transactionNumbers];
-        $transactionNumbers = array_merge($transactionNumbers, $assetApprovals->pluck('transaction_number')->toArray());
-        $transactionNumbers = Arr::flatten($transactionNumbers);
+        // Get transaction numbers from asset approvals
+        $assetApprovals = AssetApproval::where('approver_id', $approverId)
+            ->where('status', $status)
+            ->get();
 
-        $data = AssetRequest::with('assetApproval', 'assetApproval.approver', 'assetApproval.approver.user')
+        // Determine which transaction numbers to use
+        if (!$finalApproval || empty($transactionNumbers)) {
+            $transactionNumbers = $assetApprovals->pluck('transaction_number')->toArray();
+        }
+
+        return Arr::flatten($transactionNumbers);
+    }
+
+    private function getFormattedAssetRequests($transactionNumbers)
+    {
+        return AssetRequest::with('assetApproval', 'assetApproval.approver', 'assetApproval.approver.user')
             ->whereIn('transaction_number', $transactionNumbers)
             ->get()
             ->groupBy('transaction_number')
@@ -206,12 +250,6 @@ class AssetApprovalController extends Controller
             })
             ->flatten(1)
             ->values();
-
-        if($data->isEmpty()){
-            return $this->responseNotFound('No request found');
-        }
-
-        return $data;
     }
 
 
@@ -226,5 +264,75 @@ class AssetApprovalController extends Controller
             $page,
             ['path' => $request->url(), 'query' => $request->query()]
         );
+    }
+
+
+    public function finalApprovalUpdate(Request $request, $referenceNumber)
+    {
+        DB::beginTransaction();
+        try {
+            if (!$this->isUserFa()) {
+                return $this->responseUnprocessable('You are not authorized to perform this action');
+            }
+
+            $majorCategory = $request->major_category_id;
+            $minorCategory = $request->minor_category_id;
+            $description = $request->description;
+            $assetRequest = AssetRequest::where('reference_number', $referenceNumber)
+                ->where('status', 'Approved')
+                ->where('is_fa_approved', false)
+                ->first();
+
+            if (!$assetRequest) {
+                return $this->responseNotFound('Request not found');
+            }
+
+            $oldMinorCategory = $assetRequest->minor_category_id;
+            $isSameCategory = $oldMinorCategory == $minorCategory;
+            $assetRequest->update([
+                'major_category_id' => $majorCategory,
+                'minor_category_id' => $minorCategory,
+                'asset_description' => $description,
+            ]);
+            $newMinorCategory = MinorCategory::where('id', $minorCategory)->first();
+            if (!$isSameCategory) {
+                //update the accounting entries
+                $accountingEntries = $assetRequest->accountingEntries;
+                $accountingEntries->update([
+                    'initial_debit' => $newMinorCategory->initialDebit->sync_id,
+                    'depreciation_credit' => $newMinorCategory->depreciationCredit->sync_id,
+                ]);
+            }
+
+            $this->logFinalApproverUpdate($assetRequest, $request, $oldMinorCategory);
+
+            DB::commit();
+            return $this->responseSuccess('Final approval update successful');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->responseUnprocessable('Failed to update: ' . $e->getMessage());
+        }
+    }
+
+    private function logFinalApproverUpdate($assetRequest, $request, $oldMinorCategory)
+    {
+        $user = auth('sanctum')->user();
+        $aRequest = new AssetRequest();
+        $minorCategory = MinorCategory::where('id', $request->minor_category_id)->first();
+        activity()
+            ->causedBy($user)
+            ->performedOn($aRequest)
+            ->withProperties([
+                'action' => 'FA Update',
+                'reference_number' => $assetRequest->reference_number,
+                'description' => $assetRequest->description,
+                'old_minor_category' => $minorCategory->minor_category_name,
+            ])
+            ->inLog(ucwords('FA Update'))
+            ->tap(function ($activity) use ($assetRequest) {
+                $activity->subject_id = $assetRequest->transaction_number;
+            })
+            ->log('FA Update the Request');
     }
 }
