@@ -13,6 +13,7 @@ use App\Models\MinorCategory;
 use App\Models\SmallTools;
 use App\Models\Status\AssetStatus;
 use App\Models\Status\CycleCountStatus;
+use App\Models\Status\DepreciationStatus;
 use App\Models\Status\MovementStatus;
 use App\Models\WarehouseNumber;
 use App\Repositories\AdditionalCostRepository;
@@ -311,6 +312,7 @@ trait AddingPoHandler
                 'remarks' => $asset->remarks,
                 'movement_status_id' => MovementStatus::where('movement_status_name', 'New')->first()->id,
                 'cycle_count_status_id' => CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id,
+                'depreciation_status_id' => FixedAsset::where('id', $asset->fixed_asset_id)->first()->depreciation_status_id,
 
             ]);
 
