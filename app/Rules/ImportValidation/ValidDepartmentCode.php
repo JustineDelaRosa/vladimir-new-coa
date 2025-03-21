@@ -20,7 +20,10 @@ class ValidDepartmentCode implements Rule
 
     public function passes($attribute, $value)
     {
-        $inactive = Department::where('department_code', $value)->where('is_active', 0)->first();
+        $inactive = Department::where('department_code', (string)$value)
+            ->whereRaw('BINARY department_code = ?', [(string)$value])
+            ->where('is_active', 0)
+            ->first();
         if ($inactive) {
             $this->errorMessage = 'Department is inactive';
             return false;

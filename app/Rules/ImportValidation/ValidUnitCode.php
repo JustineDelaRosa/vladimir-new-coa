@@ -2,6 +2,7 @@
 
 namespace App\Rules\ImportValidation;
 
+use App\Models\BusinessUnit;
 use App\Models\Department;
 use App\Models\Unit;
 use Illuminate\Contracts\Validation\Rule;
@@ -9,18 +10,23 @@ use Illuminate\Contracts\Validation\Rule;
 class ValidUnitCode implements Rule
 {
     private $departmentCode;
+    private $businessUnitCode;
     private $unitName;
-    private string $errorMessage;
+    private $errorMessage;
 
-    public function __construct($departmentCode, $unitName)
+    public function __construct($departmentCode, $unitName, $businessUnitCode)
     {
         $this->departmentCode = $departmentCode;
         $this->unitName = $unitName;
+        $this->businessUnitCode = $businessUnitCode;
     }
 
     public function passes($attribute, $value)
     {
-        $inactive = Unit::where('unit_code', $value)->where('is_active', 0)->first();
+        $inactive = Unit::where('unit_code', (string)$value)
+            ->whereRaw('BINARY unit_code = ?', [(string)$value])
+            ->where('is_active', 0)
+            ->first();
         if ($inactive) {
             $this->errorMessage = 'The unit is inactive';
             return false;
@@ -36,12 +42,12 @@ class ValidUnitCode implements Rule
             $this->errorMessage = 'The unit does not exist';
             return false;
         }
-
-        $departmentSyncId = Department::where('department_code', $this->departmentCode)->first()->sync_id ?? 0;
+        $businessUnitSyncId = BusinessUnit::where('business_unit_code', $this->businessUnitCode)->first()->sync_id ?? 0;
+        $departmentSyncId = Department::where(['department_code' => $this->departmentCode, 'business_unit_sync_id' => $businessUnitSyncId])->first()->sync_id ?? 0;
         $unitDepartmentCheck = Unit::where('unit_code', $value)
             ->where('department_sync_id', $departmentSyncId)
             ->first();
-        if(!$unitDepartmentCheck) {
+        if (!$unitDepartmentCheck) {
             $this->errorMessage = 'The unit does not belong to the department';
             return false;
         }

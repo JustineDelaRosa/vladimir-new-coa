@@ -24,7 +24,9 @@ class ValidCompanyCode implements Rule
      */
     public function passes($attribute, $value)
     {
-        $inactive = Company::where('company_code', $value)->where('is_active', 0)->first();
+        $inactive = Company::where('company_code', (string)$value)
+            ->whereRaw('BINARY company_code = ?', [(string)$value])
+            ->where('is_active', 0)->first();
         if ($inactive) {
             $this->errorMessage = 'The company is inactive';
             return false;

@@ -27,7 +27,10 @@ class ValidBusinessUnitCode implements Rule
      */
     public function passes($attribute, $value)
     {
-        $inactive = BusinessUnit::where('business_unit_code', $value)->where('is_active', 0)->first();
+        $inactive = BusinessUnit::where('business_unit_code', (string)$value)
+            ->whereRaw('BINARY business_unit_code = ?', [(string)$value])
+            ->where('is_active', 0)
+            ->first();
         if ($inactive) {
             $this->errorMessage = 'The business unit is inactive';
             return false;

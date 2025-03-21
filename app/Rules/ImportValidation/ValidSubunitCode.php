@@ -21,7 +21,10 @@ class ValidSubunitCode implements Rule
 
     public function passes($attribute, $value)
     {
-        $inactive = SubUnit::where('sub_unit_code', $value)->where('is_active', 0)->first();
+        $inactive = SubUnit::where('sub_unit_code', (string)$value)
+            ->whereRaw('BINARY sub_unit_name = ?', [(string)$value])
+            ->where('is_active', 0)
+            ->first();
         if ($inactive) {
             $this->errorMessage = 'The subunit is inactive';
             return false;

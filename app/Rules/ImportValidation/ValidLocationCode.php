@@ -21,7 +21,10 @@ class ValidLocationCode implements Rule
 
     public function passes($attribute, $value)
     {
-        $inactive = Location::where('location_code', $value)->where('is_active', 0)->first();
+        $inactive = Location::where('location_code', (string)$value)
+            ->whereRaw('BINARY location_code = ?', [(string)$value]) // Ensures exact match
+            ->where('is_active', 0)
+            ->first();
         if ($inactive) {
             $this->errorMessage = 'The location is inactive';
             return false;
