@@ -4,11 +4,14 @@ namespace App\Http\Requests\RequestContainer;
 
 use App\Http\Requests\BaseRequest;
 use App\Models\Approvers;
+use App\Models\AssetRequest;
+use App\Models\Department;
 use App\Models\FixedAsset;
 use App\Models\Location;
 use App\Models\RequestContainer;
 use App\Models\SubUnit;
 use App\Models\TypeOfRequest;
+use App\Rules\FileOrX;
 use App\Rules\NewCoaValidation\BusinessUnitValidation;
 use App\Rules\NewCoaValidation\DepartmentValidation;
 use App\Rules\NewCoaValidation\LocationValidation;
@@ -45,8 +48,45 @@ class CreateRequestContainerRequest extends BaseRequest
             'type_of_request_id' => [
                 'required',
                 Rule::exists('type_of_requests', 'id'),
-            ],
+                function ($attribute, $value, $fail) {
+                    $assetContainer = RequestContainer::where('requester_id', auth()->user()->id)
+                        ->whereHas('typeOfRequest', function ($query) {
+                            $query->whereIn('type_of_request_name', ['Small Tools', 'Small Tool']);
+                        })->where('item_status', 'Replacement')->first();
 
+                    if (!$assetContainer) {
+                        return;
+                    }
+
+                    //From Container
+                    $companyId = $assetContainer->company_id;
+                    $businessUnitId = $assetContainer->business_unit_id;
+                    $departmentId = $assetContainer->department_id;
+                    $unitId = $assetContainer->unit_id;
+                    $subunitId = $assetContainer->subunit_id;
+                    $locationId = $assetContainer->location_id;
+
+                    //From New Request
+                    $nrCompanyId = request()->company_id;
+                    $nrBusinessUnitId = request()->business_unit_id;
+                    $nrDepartmentId = request()->department_id;
+                    $nrUnitId = request()->unit_id;
+                    $nrSubunitId = request()->subunit_id;
+                    $nrLocationId = request()->location_id;
+
+                    // Check if they do not match
+                    if (
+                        $companyId != $nrCompanyId ||
+                        $businessUnitId != $nrBusinessUnitId ||
+                        $departmentId != $nrDepartmentId ||
+                        $unitId != $nrUnitId ||
+                        $subunitId != $nrSubunitId ||
+                        $locationId != $nrLocationId
+                    ) {
+                        $fail('This COA did not match the COA from the previous replacement small tools');
+                    }
+                }
+            ],
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
             'capex_number' => 'nullable',
             'is_addcost' => 'nullable|boolean',
@@ -55,7 +95,7 @@ class CreateRequestContainerRequest extends BaseRequest
 //                'required_if:type_of_request_id,' . TypeOfRequest::where('type_of_request_name', 'Small Tools')->first()->id,
 //                'exists:small_tools,id',
 //            ],
-            'small_tool_id' => [
+            /*'small_tool_id' => [
                 function ($attribute, $value, $fail) {
                     $typeOfRequestId = request()->input('type_of_request_id');
                     $smallToolsId = TypeOfRequest::where('type_of_request_name', 'Small Tools')->first()->id;
@@ -70,22 +110,44 @@ class CreateRequestContainerRequest extends BaseRequest
                         request()->merge(['small_tool_id' => null]);
                     }
                 },
-            ],
-            'fixed_asset_id' => [
-                'required-if:is_addcost,true',
-                Rule::exists('fixed_assets', 'id'),
-                //check if this has different fixed asset id from other request container
-                function ($attribute, $value, $fail) {
-//                    $userId = auth()->user()->id;
-//                    $requestContainerFA = RequestContainer::where('requester_id', $userId)->first()->fixed_asset->id ?? null;
-//                    if(!$requestContainerFA){
-//                        return;
-//                    }
-//                    if($requestContainerFA !== $value){
-//                        $fail('The selected fixed asset is different from the other item.');
-//                    }
-                },
-            ],
+            ],*/
+            'item_id' => ['nullable',
+                'exists:asset_small_tools,id', function ($attribute, $value, $fail) {
+                    $fixedAsset = FixedAsset::where('id', request()->fixed_asset_id)->first();
+                    //available items
+                    $availableItems = $fixedAsset->assetSmallTools->where('status_description', 'Good')->where('id', $value)->first()->quantity ?? 0;
+
+                    if ($availableItems == 0) {
+                        $fail('The selected item is already Requested or Not Available');
+                    }
+                    //check the quantity of the $availableItems, if the available item has 2 quantity, then the user can't request for the same item more than 2 time or have the quantity of more than 2
+                    $itemCount = RequestContainer::where('item_id', $value)->where('fixed_asset_id', $fixedAsset->id)->first()->quantity ?? 0;
+                    $requestItemCount = AssetRequest::where('item_id', $value)->where('fixed_asset_id', $fixedAsset->id)
+                        ->where('status', '!=', 'Cancelled')
+                        ->where('filter', '!=', 'Claimed')->first()->quantity ?? 0;
+                    $totalItemCountInRequest = $itemCount + $requestItemCount;
+                    $totalItemQuantity = $totalItemCountInRequest + request()->quantity;
+
+                    if ($totalItemQuantity > $availableItems) {
+                        $fail('The selected item is already Requested or Not Available');
+                    }
+                }],
+            'fixed_asset_id' => ['nullable'],
+            /*            'fixed_asset_id' => [
+                            'required-if:item_status,Replacement',
+            //                Rule::exists('fixed_assets', 'id'),
+                            //check if this has different fixed asset id from other request container
+                            function ($attribute, $value, $fail) {
+            //                    $userId = auth()->user()->id;
+            //                    $requestContainerFA = RequestContainer::where('requester_id', $userId)->first()->fixed_asset->id ?? null;
+            //                    if(!$requestContainerFA){
+            //                        return;
+            //                    }
+            //                    if($requestContainerFA !== $value){
+            //                        $fail('The selected fixed asset is different from the other item.');
+            //                    }
+                            },
+                        ],*/
 
             'accountability' => 'required|in:Personal Issued,Common',
             'accountable' => [
@@ -107,22 +169,30 @@ class CreateRequestContainerRequest extends BaseRequest
             'brand' => 'nullable',
             'quantity' => 'required|numeric|min:1',
             'date_needed' => 'required|date|after_or_equal:today',
-            'letter_of_request' => 'nullable|required-if:attachment_type,Unbudgeted|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
-            'quotation' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
-            'specification_form' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
-            'tool_of_trade' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
-            'other_attachments' => 'nullable|required-if:type_of_request_id,2|file|mimes:pdf,doc,docx,xls,xlsx,csv|max:10000',
+            'letter_of_request' => ['nullable', 'required-if:attachment_type,Unbudgeted', 'max:10000', new FileOrX],
+            'quotation' => ['nullable', 'max:10000', new FileOrX],
+            'specification_form' => ['nullable', 'max:10000', new FileOrX],
+            'tool_of_trade' => [ 'nullable', 'max:10000', new FileOrX],
+            'other_attachments' => ['nullable', 'required-if:type_of_request_id,2', 'max:10000', new FileOrX],
             'major_category_id' => 'nullable|exists:major_categories,id',
             'minor_category_id' => 'nullable|exists:minor_categories,id',
             'company_id' => 'nullable|exists:companies,id',
             'business_unit_id' => ['nullable', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
-            'department_id' => ['nullable', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+            'department_id' => ['nullable', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id), function ($attribute, $value, $fail) {
+                $department = Department::where('id', $value)->first();
+                //check if the location has a warehouse
+                if ($department->receivingWarehouse == null) {
+                    $fail('The selected location does not have a warehouse.');
+                }
+            }],
             'unit_id' => ['nullable', 'exists:units,id', new UnitValidation(request()->department_id)],
             'subunit_id' => ['nullable', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
             'location_id' => ['nullable', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
 //            'account_title_id' => 'nullable|exists:account_titles,id',
+            'initial_debit_id' => 'required|exists:account_titles,sync_id',
+            'depreciation_credit_id' => 'required|exists:account_titles,sync_id',
             'uom_id' => 'required|exists:unit_of_measures,id',
-            'receiving_warehouse_id' => 'required|exists:warehouses,id',
+//            'receiving_warehouse_id' => 'required|exists:warehouses,sync_id',
         ];
     }
 

@@ -87,6 +87,7 @@ class CreateAssetTransferRequestRequest extends FormRequest
 //            'accountable' => 'nullable|required_if:accountability,Personal Issued',
             'assets.*.accountability' => 'required|in:Common,Personal Issued',
             'assets.*.accountable' => 'nullable|required_if:assets.*.accountability,Personal Issued',
+            'depreciation_debit_id' => 'required|exists:account_titles,id',
             'remarks' => 'nullable',
             'description' => 'required',
             'attachments' => 'nullable|max:10240',
@@ -121,6 +122,8 @@ class CreateAssetTransferRequestRequest extends FormRequest
             'description.required' => 'Description is required',
             'attachments.mimes' => 'Attachment must be a file of type: pdf, jpg, jpeg, png, doc, docx, xls, xlsx',
             'attachments.max' => 'Attachment must not be greater than 10MB',
+            'depreciation_debit_id.required' => 'Depreciation credit is required',
+            'depreciation_debit_id.exists' => 'Depreciation credit does not exist',
         ];
     }
 }

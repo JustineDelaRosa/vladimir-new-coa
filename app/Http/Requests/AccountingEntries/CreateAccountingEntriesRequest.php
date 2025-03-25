@@ -24,10 +24,10 @@ class CreateAccountingEntriesRequest extends FormRequest
     public function rules()
     {
         return [
-            'initial_debit_id' => 'required|exists:account_titles,id',
-            'initial_credit_id' => 'required|exists:account_titles,id',
+//            'initial_debit_id' => 'required|exists:account_titles,id',
+//            'initial_credit_id' => 'required|exists:account_titles,id',
             'depreciation_debit_id' => 'required|exists:account_titles,id',
-            'depreciation_credit_id' => 'required|exists:account_titles,id',
+//            'depreciation_credit_id' => 'required|exists:account_titles,id',
         ];
     }
 
