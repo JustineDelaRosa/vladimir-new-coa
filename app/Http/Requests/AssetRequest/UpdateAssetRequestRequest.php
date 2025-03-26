@@ -2,6 +2,11 @@
 
 namespace App\Http\Requests\AssetRequest;
 
+use App\Models\AssetRequest;
+use App\Models\Department;
+use App\Models\FixedAsset;
+use App\Models\Location;
+use App\Models\RequestContainer;
 use App\Models\SubUnit;
 use App\Rules\FileOrX;
 use App\Models\TypeOfRequest;
@@ -36,15 +41,55 @@ class UpdateAssetRequestRequest extends FormRequest
         $typeOfRequestIdForCapex = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
 
         //check if the small tool id value is "-" then return null as value
-        if ($this->input('small_tool_id') == '-') {
+        if ($this->input('small_tool_id') === '-') {
             $this->merge(['small_tool_id' => null]);
         }
         return [
             'type_of_request_id' => [
                 'required',
-                Rule::exists('type_of_requests', 'id')
+                Rule::exists('type_of_requests', 'id'),
+                function ($attribute, $value, $fail) {
+                    $assetRequest = AssetRequest::where('requester_id', auth()->user()->id)
+                        ->where('reference_number', '!=', $this->route('referenceNumber'))
+                        ->where('transaction_number', request()->transaction_number)
+                        ->whereHas('typeOfRequest', function ($query) {
+                            $query->whereIn('type_of_request_name', ['Small Tools', 'Small Tool']);
+                        })->where('item_status', 'Replacement')->first();
+
+                    if (!$assetRequest) {
+                        return;
+                    }
+
+                    //From Container
+                    $companyId = $assetRequest->company_id;
+                    $businessUnitId = $assetRequest->business_unit_id;
+                    $departmentId = $assetRequest->department_id;
+                    $unitId = $assetRequest->unit_id;
+                    $subunitId = $assetRequest->subunit_id;
+                    $locationId = $assetRequest->location_id;
+
+                    //From New Request
+                    $nrCompanyId = request()->company_id;
+                    $nrBusinessUnitId = request()->business_unit_id;
+                    $nrDepartmentId = request()->department_id;
+                    $nrUnitId = request()->unit_id;
+                    $nrSubunitId = request()->subunit_id;
+                    $nrLocationId = request()->location_id;
+
+                    // Check if they do not match
+                    if (
+                        $companyId != $nrCompanyId ||
+                        $businessUnitId != $nrBusinessUnitId ||
+                        $departmentId != $nrDepartmentId ||
+                        $unitId != $nrUnitId ||
+                        $subunitId != $nrSubunitId ||
+                        $locationId != $nrLocationId
+                    ) {
+                        $fail('This COA did not match the COA from the previous replacement small tools');
+                    }
+                }
             ],
-            'small_tool_id' => [
+            /*'small_tool_id' => [
                 function ($attribute, $value, $fail) {
                     $typeOfRequestId = request()->input('type_of_request_id');
                     $smallToolsId = TypeOfRequest::where('type_of_request_name', 'Small Tools')->first()->id;
@@ -58,11 +103,58 @@ class UpdateAssetRequestRequest extends FormRequest
                         }
                     }
                 },
-            ],
+            ],*/
             'capex_number' => 'nullable',
             'date_needed' => 'required|date',
             'is_addcost' => 'nullable|in:0,1',
-            'fixed_asset_id' => ['required-if:is_addcost,1', Rule::exists('fixed_assets', 'id')],
+            'item_status' => 'required|in:New,Replacement',
+            'item_id' => ['nullable', 'exists:asset_small_tools,id', function ($attribute, $value, $fail) {
+                 $fixedAsset = FixedAsset::where('id', request()->fixed_asset_id)->first();
+
+                 $request = AssetRequest::where('reference_number', $this->route('referenceNumber'))
+                     ->where('transaction_number', request()->transaction_number)
+                     ->where('item_id', $value)
+                     ->where('fixed_asset_id', $fixedAsset->id)
+                     ->first();
+                 if ($request) {
+                     return;
+                 }
+                 if (request()->item_status == 'New') {
+                     return;
+                 }
+                 //available items
+                 $availableItems = $fixedAsset->assetSmallTools->where('status_description', 'Good')->where('id', $value)->first()->quantity ?? 0;
+
+                 if ($availableItems == 0) {
+                     $fail('The selected item is already Requested or Not Available');
+                 }
+                 //check the quantity of the $availableItems, if the available item has 2 quantity, then the user can't request for the same item more than 2 time or have the quantity of more than 2
+                 $itemCount = RequestContainer::where('item_id', $value)->where('fixed_asset_id', $fixedAsset->id)->first()->quantity;
+                 $requestItemCount = AssetRequest::where('item_id', $value)->where('fixed_asset_id', $fixedAsset->id)->where('filter', '!=', 'Claimed')->where('status', '!=', 'Cancelled')->first()->quantity;
+ //                $fail('The selected item is already Requested or Not Available' . $requestItemCount);
+                 $totalItemCountInRequest = $itemCount + $requestItemCount;
+                 $totalItemQuantity = $totalItemCountInRequest + request()->quantity;
+
+                 if ($totalItemQuantity > $availableItems) {
+                     $fail('The selected item is already Requested or Not Available');
+                 }
+            }],
+            'fixed_asset_id' => ['nullable', function ($attribute, $value, $fail) {
+                $fixedAsset = FixedAsset::where('id', request()->fixed_asset_id)->first();
+
+                $faContainerCheck = RequestContainer::where('fixed_asset_id', $fixedAsset->id)->first();
+                $faRequestCheck = AssetRequest::where('fixed_asset_id', $fixedAsset->id)
+                    ->where('status', '!=', 'Cancelled')
+                    ->where('filter', '!=', 'Claimed')->first()->quantity ?? 0;
+
+                if($faContainerCheck || $faRequestCheck){
+                    $fail('The selected fixed asset is already requested.');
+                }
+            }],
+//                'required-if:item_status,Replacement'],
+
+
+//            'fixed_asset_id' => ['required-if:is_addcost,1', Rule::exists('fixed_assets', 'id')],
             //            'charged_department_id' => ['required', Rule::exists('departments', 'id')],
             'attachment_type' => 'required|in:Budgeted,Unbudgeted',
             //            'subunit_id' =>['required', Rule::exists('sub_units', 'id')],
@@ -87,10 +179,16 @@ class UpdateAssetRequestRequest extends FormRequest
             'quantity' => 'required|numeric|min:1',
             'company_id' => 'required|exists:companies,id',
             'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
-            'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+            'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id), function ($attribute, $value, $fail) {
+                $department = Department::where('id', $value)->first();
+                //check if the location has a warehouse
+                if ($department->receivingWarehouse == null) {
+                    $fail('The selected location does not have a warehouse.');
+                }
+            }],
             'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
             'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
-            'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
+            'location_id' => ['nullable', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
 //            'account_title_id' => 'required|exists:account_titles,id',
             'letter_of_request' => ['bail', 'nullable', 'required-if:attachment_type,Unbudgeted', 'max:10000', new FileOrX],
             'quotation' => ['bail', 'nullable', 'max:10000', new FileOrX],
@@ -98,7 +196,7 @@ class UpdateAssetRequestRequest extends FormRequest
             'tool_of_trade' => ['bail', 'nullable', 'max:10000', new FileOrX],
             'other_attachments' => ['bail', 'nullable', 'required-if:type_of_request_id,2', 'max:10000', new FileOrX],
             'uom_id' => 'required|exists:unit_of_measures,id',
-            'receiving_warehouse_id' => 'required|exists:warehouses,id',
+//            'receiving_warehouse_id' => 'required|exists:warehouses,id',
             //
         ];
     }
