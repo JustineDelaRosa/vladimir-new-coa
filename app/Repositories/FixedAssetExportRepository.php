@@ -45,10 +45,10 @@ class FixedAssetExportRepository
             ->leftJoin('major_categories', 'fixed_assets.major_category_id', '=', 'major_categories.id')
             ->leftJoin('minor_categories', 'fixed_assets.minor_category_id', '=', 'minor_categories.id')
             ->leftJoin('accounting_entries', 'fixed_assets.account_id', '=', 'accounting_entries.id')
-            ->leftJoin('account_titles as initial_debit', 'accounting_entries.initial_debit', '=', 'initial_debit.id')
-            ->leftJoin('account_titles as initial_credit', 'accounting_entries.initial_credit', '=', 'initial_credit.id')
-            ->leftJoin('account_titles as depreciation_debit', 'accounting_entries.depreciation_debit', '=', 'depreciation_debit.id')
-            ->leftJoin('account_titles as depreciation_credit', 'accounting_entries.depreciation_credit', '=', 'depreciation_credit.id')
+            ->leftJoin('account_titles as initial_debit', 'accounting_entries.initial_debit', '=', 'initial_debit.sync_id')
+            ->leftJoin('credits as initial_credit', 'accounting_entries.initial_credit', '=', 'initial_credit.sync_id')
+            ->leftJoin('account_titles as depreciation_debit', 'accounting_entries.depreciation_debit', '=', 'depreciation_debit.sync_id')
+            ->leftJoin('credits as depreciation_credit', 'accounting_entries.depreciation_credit', '=', 'depreciation_credit.sync_id')
             ->leftJoin('divisions', 'departments.division_id', '=', 'divisions.id')
             ->leftJoin('asset_statuses', 'fixed_assets.asset_status_id', '=', 'asset_statuses.id')
             ->leftJoin('cycle_count_statuses', 'fixed_assets.cycle_count_status_id', '=', 'cycle_count_statuses.id')
@@ -162,12 +162,12 @@ class FixedAssetExportRepository
             DB::raw("COALESCE(locations.location_name, '-') as location_name"),
             DB::raw("COALESCE(initial_debit.account_title_name, '-') as initial_debit_name"),
             DB::raw("COALESCE(initial_debit.account_title_code, '-') as initial_debit_code"),
-            DB::raw("COALESCE(initial_credit.account_title_name, '-') as initial_credit_name"),
-            DB::raw("COALESCE(initial_credit.account_title_code, '-') as initial_credit_code"),
+            DB::raw("COALESCE(initial_credit.credit_name, '-') as initial_credit_name"),
+            DB::raw("COALESCE(initial_credit.credit_code, '-') as initial_credit_code"),
             DB::raw("COALESCE(depreciation_debit.account_title_name, '-') as depreciation_debit_name"),
             DB::raw("COALESCE(depreciation_debit.account_title_code, '-') as depreciation_debit_code"),
-            DB::raw("COALESCE(depreciation_credit.account_title_name, '-') as depreciation_credit_name"),
-            DB::raw("COALESCE(depreciation_credit.account_title_code, '-') as depreciation_credit_code"),
+            DB::raw("COALESCE(depreciation_credit.credit_name, '-') as depreciation_credit_name"),
+            DB::raw("COALESCE(depreciation_credit.credit_code, '-') as depreciation_credit_code"),
 /*            'companies.company_code as company_code',
             'companies.company_name as company_name',
             'business_units.business_unit_code as business_unit_code',
@@ -238,10 +238,10 @@ class FixedAssetExportRepository
             ->leftJoin('major_categories', 'fixed_assets.major_category_id', '=', 'major_categories.id')
             ->leftJoin('minor_categories', 'fixed_assets.minor_category_id', '=', 'minor_categories.id')
             ->leftJoin('accounting_entries', 'fixed_assets.account_id', '=', 'accounting_entries.id')
-            ->leftJoin('account_titles as initial_debit', 'accounting_entries.initial_debit', '=', 'initial_debit.id')
-            ->leftJoin('account_titles as initial_credit', 'accounting_entries.initial_credit', '=', 'account_titles.id')
-            ->leftJoin('account_titles as depreciation_debit', 'accounting_entries.depreciation_debit', '=', 'account_titles.id')
-            ->leftJoin('account_titles as depreciation_credit', 'accounting_entries.depreciation_credit', '=', 'account_titles.id')
+            ->leftJoin('account_titles as initial_debit', 'accounting_entries.initial_debit', '=', 'initial_debit.sync_id')
+            ->leftJoin('credits as initial_credit', 'accounting_entries.initial_credit', '=', 'initial_credit.sync_id')
+            ->leftJoin('account_titles as depreciation_debit', 'accounting_entries.depreciation_debit', '=', 'depreciation_debit.sync_id')
+            ->leftJoin('credits as depreciation_credit', 'accounting_entries.depreciation_credit', '=', 'depreciation_credit.sync_id')
             ->leftJoin('divisions', 'departments.division_id', '=', 'divisions.id')
             ->leftJoin('asset_statuses', 'fixed_assets.asset_status_id', '=', 'asset_statuses.id')
             ->leftJoin('cycle_count_statuses', 'fixed_assets.cycle_count_status_id', '=', 'cycle_count_statuses.id')
@@ -347,12 +347,12 @@ class FixedAssetExportRepository
             DB::raw("COALESCE(locations.location_name, '-') as location_name"),
             DB::raw("COALESCE(initial_debit.account_title_name, '-') as initial_debit_name"),
             DB::raw("COALESCE(initial_debit.account_title_code, '-') as initial_debit_code"),
-            DB::raw("COALESCE(initial_credit.account_title_name, '-') as initial_credit_name"),
-            DB::raw("COALESCE(initial_credit.account_title_code, '-') as initial_credit_code"),
+            DB::raw("COALESCE(initial_credit.credit_name, '-') as initial_credit_name"),
+            DB::raw("COALESCE(initial_credit.credit_code, '-') as initial_credit_code"),
             DB::raw("COALESCE(depreciation_debit.account_title_name, '-') as depreciation_debit_name"),
             DB::raw("COALESCE(depreciation_debit.account_title_code, '-') as depreciation_debit_code"),
-            DB::raw("COALESCE(depreciation_credit.account_title_name, '-') as depreciation_credit_name"),
-            DB::raw("COALESCE(depreciation_credit.account_title_code, '-') as depreciation_credit_code"),
+            DB::raw("COALESCE(depreciation_credit.credit_name, '-') as depreciation_credit_name"),
+            DB::raw("COALESCE(depreciation_credit.credit_code, '-') as depreciation_credit_code"),
 
             /*'companies.company_code as company_code',
             'companies.company_name as company_name',
