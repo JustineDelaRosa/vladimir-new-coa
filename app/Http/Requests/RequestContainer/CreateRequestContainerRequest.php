@@ -123,16 +123,41 @@ class CreateRequestContainerRequest extends BaseRequest
                     //check the quantity of the $availableItems, if the available item has 2 quantity, then the user can't request for the same item more than 2 time or have the quantity of more than 2
                     $itemCount = RequestContainer::where('item_id', $value)->where('fixed_asset_id', $fixedAsset->id)->first()->quantity ?? 0;
                     $requestItemCount = AssetRequest::where('item_id', $value)->where('fixed_asset_id', $fixedAsset->id)
-                        ->where('status', '!=', 'Cancelled')
-                        ->where('filter', '!=', 'Claimed')->first()->quantity ?? 0;
+                        ->where(function($query) {
+                            $query->where('status', '!=', 'Cancelled')
+                                ->orWhere('filter', '!=', 'Claimed');
+                        })->first()->quantity ?? 0;
+
                     $totalItemCountInRequest = $itemCount + $requestItemCount;
                     $totalItemQuantity = $totalItemCountInRequest + request()->quantity;
 
                     if ($totalItemQuantity > $availableItems) {
                         $fail('The selected item is already Requested or Not Available');
                     }
+
+
                 }],
-            'fixed_asset_id' => ['nullable'],
+            'fixed_asset_id' => ['nullable', function ($attribute, $value, $fail) {
+                //if the request item_id is not null then skip this validation
+                if ($this->input('item_id') !== null) {
+//                    $fail('test');
+                    return;
+                }
+//                $fail('success');
+                $fixedAsset = FixedAsset::where('id', $value)->first();
+
+                $faContainerCheck = RequestContainer::where('fixed_asset_id', $value)->count();
+                $faRequestCheck = AssetRequest::where('fixed_asset_id', $value)
+                    ->where(function($query) {
+                        $query->where('status', '!=', 'Cancelled')
+                            ->orWhere('filter', '!=', 'Claimed');
+                    })->count();
+
+
+                if($faContainerCheck || $faRequestCheck){
+                    $fail('The selected fixed asset is already requested.');
+                }
+            }],
             /*            'fixed_asset_id' => [
                             'required-if:item_status,Replacement',
             //                Rule::exists('fixed_assets', 'id'),
@@ -155,7 +180,7 @@ class CreateRequestContainerRequest extends BaseRequest
                 function ($attribute, $value, $fail) {
                     $accountable = request()->input('accountable');
                     //if the accountability is not Personal Issued, nullify the accountable field and return
-                    if (request()->accountability != 'Personal Issued') {
+                    if (request()->accountability !== 'Personal Issued') {
                         request()->merge(['accountable' => null]);
                         return;
                     }
@@ -172,7 +197,7 @@ class CreateRequestContainerRequest extends BaseRequest
             'letter_of_request' => ['nullable', 'required-if:attachment_type,Unbudgeted', 'max:10000', new FileOrX],
             'quotation' => ['nullable', 'max:10000', new FileOrX],
             'specification_form' => ['nullable', 'max:10000', new FileOrX],
-            'tool_of_trade' => [ 'nullable', 'max:10000', new FileOrX],
+            'tool_of_trade' => ['nullable', 'max:10000', new FileOrX],
             'other_attachments' => ['nullable', 'required-if:type_of_request_id,2', 'max:10000', new FileOrX],
             'major_category_id' => 'nullable|exists:major_categories,id',
             'minor_category_id' => 'nullable|exists:minor_categories,id',
