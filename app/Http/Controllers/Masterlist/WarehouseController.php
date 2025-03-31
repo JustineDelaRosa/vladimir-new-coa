@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Warehouse\CreateWarehouseRequest;
 use App\Http\Requests\Warehouse\UpdateWarehouseRequest;
 use App\Models\AssetRequest;
+use App\Models\Department;
 use App\Models\Location;
 use App\Models\Warehouse;
 use Essa\APIToolKit\Api\ApiResponse;
@@ -24,7 +25,7 @@ class WarehouseController extends Controller
         $pagination = $request->pagination;
         $userTagging = $request->input('user_tagging', false);
 
-        $rWarehouse = Warehouse::withTrashed()->with('location')->where('is_active', $isActiveStatus)
+        $rWarehouse = Warehouse::withTrashed()->with('department')->where('is_active', $isActiveStatus)
             ->when($pagination === 'none', function ($query) use ($userTagging) {
                 //show only the warehouse that is tag to a user
 
@@ -191,8 +192,47 @@ class WarehouseController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return $e->getMessage();
+//            return $e->getMessage();
             return $this->responseUnprocessable('Location is required.');
+        }
+
+    }
+
+
+
+
+    public function departmentTagging(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+
+            $departmentIds = $request->input('department_id', []);
+            $rWarehouse = Warehouse::where('sync_id', $id)->first();
+            if (!$rWarehouse) {
+                return $this->responseNotFound('Warehouse not found.');
+            }
+
+            $rWarehouse->department()->update([
+                'receiving_warehouse_id' => null
+            ]);
+
+            foreach ($departmentIds as $departmentId) {
+                $rDepartment = Department::where('sync_id', $departmentId)->first();
+                if ($rDepartment->receivingWarehouse) {
+                    return $this->responseUnprocessable('Department already tagged to another warehouse.');
+                }
+                $rDepartment->update([
+                    'receiving_warehouse_id' => $id
+                ]);
+
+            }
+            DB::commit();
+            return $this->responseSuccess('Department Tagging successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $e->getMessage();
+            return $this->responseUnprocessable('Department is required.');
         }
 
     }
