@@ -48,7 +48,7 @@ class UserRequest extends FormRequest
                 'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
                 'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
                 'role_id' => 'required|exists:role_management,id',
-                'warehouse_id' => $roleName === 'Warehouse' ? 'required|exists:warehouses,id' : 'nullable|exists:warehouses,id',
+                'warehouse_id' => $roleName === 'Warehouse' ? 'required|exists:warehouses,sync_id' : 'nullable|exists:warehouses,sync_id',
             ];
         }
 
@@ -65,7 +65,7 @@ class UserRequest extends FormRequest
                 'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
                 'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
                 'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
-                'warehouse_id' => $roleName === 'Warehouse' ? 'required|exists:warehouses,id' : 'nullable|exists:warehouses,id',
+                'warehouse_id' => $roleName === 'Warehouse' ? 'required|exists:warehouses,sync_id' : 'nullable|exists:warehouses,sync_id',
             ];
         }
 

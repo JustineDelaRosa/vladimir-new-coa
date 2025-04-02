@@ -32,6 +32,7 @@ class UserResource extends JsonResource
                     'id' => $this->department->id ?? '-',
                     'department_code' => $this->department->department_code ?? '-',
                     'department_name' => $this->department->department_name ?? '-',
+                    'warehouse' => $this->department->receivingWarehouse ?? '-',
                 ],
                 'unit' => [
                     'id' => $this->unit->id ?? '-',
