@@ -121,12 +121,19 @@ class CreateRequestContainerRequest extends BaseRequest
                         $fail('The selected item is already Requested or Not Available');
                     }
                     //check the quantity of the $availableItems, if the available item has 2 quantity, then the user can't request for the same item more than 2 time or have the quantity of more than 2
-                    $itemCount = RequestContainer::where('item_id', $value)->where('fixed_asset_id', $fixedAsset->id)->first()->quantity ?? 0;
-                    $requestItemCount = AssetRequest::where('item_id', $value)->where('fixed_asset_id', $fixedAsset->id)
+                    $itemCount = RequestContainer::where('item_id', $value)
+                        ->where('fixed_asset_id', $fixedAsset->id)
+                        ->get()
+                        ->sum('quantity');
+
+                    $requestItemCount = AssetRequest::where('item_id', $value)
+                        ->where('fixed_asset_id', $fixedAsset->id)
                         ->where(function($query) {
                             $query->where('status', '!=', 'Cancelled')
                                 ->orWhere('filter', '!=', 'Claimed');
-                        })->first()->quantity ?? 0;
+                        })
+                        ->get()
+                        ->sum('quantity');
 
                     $totalItemCountInRequest = $itemCount + $requestItemCount;
                     $totalItemQuantity = $totalItemCountInRequest + request()->quantity;
