@@ -192,7 +192,7 @@ class UpdateRequestContainerRequest extends FormRequest
                     }
                 },
             ],*/
-            'additional_info' => 'nullable',
+            'additional_info' => 'required',
             'acquisition_details' => 'required|string',
             'asset_description' => 'required',
             'asset_specification' => 'nullable',
@@ -251,6 +251,7 @@ class UpdateRequestContainerRequest extends FormRequest
             'type_of_request_id.required-if' => 'The type of request field is required.',
             'letter_of_request.required_if' => 'The letter of request is required.',
             'other_attachments.required_if' => 'The other attachments is required.',
+            'additional_info.required' => 'The capex number/unit charging field is required',
         ];
     }
 }

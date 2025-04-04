@@ -187,6 +187,7 @@ class UpdateAssetRequestRequest extends FormRequest
                     }
                 }
             ],
+            'additional_info' => 'required',
             'asset_description' => 'required',
             'asset_specification' => 'nullable',
             'cellphone_number' => 'nullable|digits_between:11,12',
@@ -260,6 +261,7 @@ class UpdateAssetRequestRequest extends FormRequest
             'other_attachments.required_if' => 'The other attachments is required.',
             'receiving_warehouse_id.required' => 'The receiving warehouse field is required',
             'receiving_warehouse_id.exists' => 'The selected receiving warehouse is invalid',
+            'additional_info.required' => 'The capex number/unit charging field is required',
         ];
     }
 }
