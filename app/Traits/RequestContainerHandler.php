@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\Models\AccountingEntries;
 use App\Models\AccountTitle;
 use App\Models\MinorCategory;
 use App\Models\RequestContainer;
@@ -10,6 +11,7 @@ use Essa\APIToolKit\Api\ApiResponse;
 trait RequestContainerHandler
 {
     use ApiResponse;
+
     private function checkIfRequesterIsApprover($requesterId, $departmentUnitApprovers)
     {
         $layerIds = $departmentUnitApprovers->map(function ($approverObject) {
@@ -27,9 +29,9 @@ trait RequestContainerHandler
         return [$isRequesterApprover, $isLastApprover, $requesterLayer];
     }
 
-    private function createRequestContainer($request, $isRequesterApprover, $isLastApprover, $requesterLayer, $requesterId)
+    private function createRequestContainer($request, $isRequesterApprover, $isLastApprover, $requesterLayer, $requesterId, $accountingEntriesId)
     {
-        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountingEntries->initialCredit->id ?? "null";
+//        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountingEntries->initialCredit->id ?? "null";
 //        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountTitle->id ?? "null";
         return RequestContainer::create([
             'status' => $isLastApprover
@@ -39,13 +41,14 @@ trait RequestContainerHandler
                     : 'For Approval of Approver 1'),
             'requester_id' => $requesterId,
             'capex_number' => $request->capex_number,
-            'is_addcost' => (bool)$request->fixed_asset_id,
+            'is_addcost' => $request->is_addcost,
             'fixed_asset_id' => $request->fixed_asset_id ?? null,
             'item_status' => $request->item_status,
-            'small_tool_id' => $request->small_tool_id ?? null,
+            'item_id' => $request->item_id ?? null,
+//            'small_tool_id' => $request->small_tool_id ?? null,
             'type_of_request_id' => $request->type_of_request_id,
             'attachment_type' => $request->attachment_type,
-            'account_title_id' => $accountTitleID ?? null,
+            'account_title_id' => $accountingEntriesId ?? null,
             'accountability' => $request->accountability,
             'accountable' => $request->accountable ?? null,
             'additional_info' => $request->additional_info ?? null,
@@ -68,6 +71,23 @@ trait RequestContainerHandler
             'receiving_warehouse_id' => $request->receiving_warehouse_id,
         ]);
     }
+
+    private function creatAccountingEntries($initialDebitId, $depreciationCreditId, $request, $isRequesterApprover, $isLastApprover, $requesterLayer, $requesterId)
+    {
+        $accountingEntries = AccountingEntries::create([
+            'initial_debit' => $initialDebitId,
+            'depreciation_credit' => $depreciationCreditId,
+        ]);
+
+        $assetRequest = $this->createRequestContainer($request, $isRequesterApprover, $isLastApprover, $requesterLayer, $requesterId, $accountingEntries->id);
+
+        $this->addMediaToRequestContainer($request, $assetRequest);
+//            return $assetRequest->status;
+        $this->updateStatusIfDifferent($assetRequest->status);
+
+        return $assetRequest;
+    }
+
 
     private function addMediaToRequestContainer($request, $assetRequest)
     {
