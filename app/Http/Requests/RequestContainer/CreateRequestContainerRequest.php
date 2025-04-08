@@ -193,7 +193,7 @@ class CreateRequestContainerRequest extends BaseRequest
                     }
                 },
             ],
-            'additional_info' => 'nullable',
+            'additional_info' => 'required',
             'acquisition_details' => 'required|string',
             'asset_description' => 'required',
             'asset_specification' => 'nullable',
@@ -256,7 +256,7 @@ class CreateRequestContainerRequest extends BaseRequest
             'quantity.required' => 'The quantity is required.',
             'quantity.numeric' => 'The quantity must be a number.',
             'quantity.min' => 'The quantity must be at least 1.',
-            'additional_info.required' => 'The additional info is required.',
+            'additional_info.required' => 'The capex number/unit charging field is required',
             'acquisition_details.required' => 'The acquisition details is required.',
             'letter_of_request.file' => 'The letter of request must be a file.',
             'letter_of_request.mimes' => 'The letter of request must be a file of type: pdf, doc, docx.',
