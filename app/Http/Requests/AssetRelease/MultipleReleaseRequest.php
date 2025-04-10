@@ -56,15 +56,15 @@ class MultipleReleaseRequest extends FormRequest
                 if (count(array_unique($departmentIds)) > 1) {
                     $fail('The department of the selected items is not the same.');
                 }
-                if(count(array_unique($subunitIds)) > 1) {
-                    $fail('The subunit of the selected items is not the same.');
-                }
+//                if(count(array_unique($subunitIds)) > 1) {
+//                    $fail('The subunit of the selected items is not the same.');
+//                }
 
                 if (count(array_unique($locationIds)) > 1) {
                     $fail('The location of the selected items is not the same.');
                 }
             }],
-            'accountability' => ['required', 'string', 'in:Common,Personal Issued', function ($attribute, $value, $fail) {
+            /*'accountability' => ['required', 'string', 'in:Common,Personal Issued', function ($attribute, $value, $fail) {
                 $warehouseIds = $this->input('warehouse_number_id');
                 $accountability = [];
                 foreach ($warehouseIds as $warehouseId) {
@@ -82,7 +82,7 @@ class MultipleReleaseRequest extends FormRequest
                     $fail('The accountability of the selected items is not the same.');
                 }
             }],
-            'accountable' => ['required_if:accountability,Personal Issued', 'string'],
+            'accountable' => ['required_if:accountability,Personal Issued', 'string'],*/
             'received_by' => ['required', 'string'],
 //            'signature' => ['required'],
             'receiver_img' => ['required', new Base64ImageValidation()],
