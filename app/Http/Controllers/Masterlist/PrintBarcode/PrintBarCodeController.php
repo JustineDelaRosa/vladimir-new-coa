@@ -101,40 +101,62 @@ class PrintBarCodeController extends Controller
                                 ^FT0,22^APN,20,6^FB161,1,4,C^FH\^FD" . $VDM['accountable'] . "^FS
                                 ^PQ1,0,1,Y
                                 ^XZ";
-                    if ($fixedAsset) {
-                        $fixedAsset->increment('print_count', 1);
-                        $fixedAsset->update(['last_printed' => Carbon::now()]);
+
+                    $fixedAsset->increment('print_count', 1);
+                    $fixedAsset->update(['last_printed' => Carbon::now()]);
+                    if ($fixedAsset->from_request == 1 && $assetRequest) {
+                        /*$fixedAsset->increment('print_count', 1);
+                        $fixedAsset->update(['last_printed' => Carbon::now()]);*/
                         if ($assetRequest) {
                             $assetRequest->increment('print_count', 1);
                             $assetRequest->update(['last_printed' => Carbon::now()]);
                         }
 
                         //get all the fixed asset with the same transaction number
-                        $fixedAssets = FixedAsset::where('transaction_number', $fixedAsset->transaction_number)->get();
+                        $fixedAssets = FixedAsset::where('transaction_number', $fixedAsset->transaction_number)
+                            ->where('is_printable', 1)
+                            ->get();
                         //get also all the asset request with the same asset request
-                        $assetRequests = AssetRequest::where('transaction_number', $fixedAsset->transaction_number)->get();
+                        $assetRequests = AssetRequest::where('transaction_number', $fixedAsset->transaction_number)
+                            ->whereNull('item_id')
+                            ->get();
+
+                        $excludedItemsCount = FixedAsset::where('transaction_number', $fixedAsset->transaction_number)
+                            ->where('is_printable', 0)
+                            ->count();
+
+                        $excludedFromAR = AssetRequest::where('transaction_number', $fixedAsset->transaction_number)
+                            ->where('filter', 'Ready to Pickup')->get()->sum('quantity');
+
+//                    $excluded = $excludedItemsCount + $excludedFromAR;
+
+
+//                    return $assetRequests->sum('quantity') - $excludedItemsCount;
                         //if the count of the fixed asset is equal to total count of the quantity of the asset request then update the filter column in all asset request to "Ready to Pickup"
-                        if ($fixedAssets->sum('print_count') == $assetRequests->sum('quantity')) {
+                        if ($fixedAssets->sum('print_count') == ($assetRequests->where('is_asset_small_tool', 0)->sum('quantity') - $excludedItemsCount)) {
                             $assetRequests->each(function ($assetRequest) {
                                 $assetRequest->update(['filter' => 'Ready to Pickup']);
                             });
                         }
+
+//                    $fixedAsset->decrement('print_count', 1);
+//                    return "testing";
                         $assetRequest = new AssetRequest();
-                        if ($fixedAsset->from_request == 1) {
-                            $fixedAsset->update(['can_release' => 1]);
-                            activity()
-                                ->causedBy(auth('sanctum')->user()) // the user who caused the activity
-                                ->performedOn($assetRequest) // the object the activity is performed on
-                                ->inLog('Printed') // the log name (should same as in config)
-                                ->withProperties([
-                                    'description' => $fixedAsset->asset_description,
-                                    'vladimir_tag_number' => $fixedAsset->vladimir_tag_number,
-                                ]) // any properties relevant to the activity
-                                ->tap(function ($activity) use ($fixedAsset) {
-                                    $activity->subject_id = $fixedAsset->transaction_number;
-                                })
-                                ->log('Printed'); // a textual description of the activity
-                        }
+//                    if ($fixedAsset->from_request == 1) {
+                        $fixedAsset->update(['can_release' => 1]);
+                        activity()
+                            ->causedBy(auth('sanctum')->user()) // the user who caused the activity
+                            ->performedOn($assetRequest) // the object the activity is performed on
+                            ->inLog('Printed') // the log name (should same as in config)
+                            ->withProperties([
+                                'description' => $fixedAsset->asset_description,
+                                'vladimir_tag_number' => $fixedAsset->vladimir_tag_number,
+                            ]) // any properties relevant to the activity
+                            ->tap(function ($activity) use ($fixedAsset) {
+                                $activity->subject_id = $fixedAsset->transaction_number;
+                            })
+                            ->log('Printed'); // a textual description of the activity
+//                    }
                     }
                 } else {
                     //Copy
@@ -198,8 +220,10 @@ class PrintBarCodeController extends Controller
 //            DB::rollBack();
             // Handle any exceptions that may occur during the printing process
             //            throw new Exception("Couldn't print to this printer: {$e->getMessage()}");
-
+//            return $this->responseSuccess('Barcode printed successfully!');
+//                return $this->responseUnprocessable($e->getMessage());
             //            return response()->json(['message' => 'Unable to Print'], 422);
+//            return $e->getMessage() .'-'. $e->getLine();
             return $this->responseUnprocessable('Unable to Print, Please contact your support team');
         }
     }
@@ -258,9 +282,10 @@ class PrintBarCodeController extends Controller
         $search = $request->get('search');
         $startDate = $request->get('startDate');
         $endDate = $request->get('endDate');
-        $limit = $request->get('limit');
+//        $limit = $request->get('limit');
         $filter = $request->get('isRequest');
         $printMemo = $request->get('printMemo', 0);
+        $smallTool = $request->get('smallTool', 0);
 
         /*//type of request capex should not be printed
         $typeOfRequest = TypeOfRequest::where('type_of_request_name', 'Capex')->first()->id;
@@ -280,8 +305,12 @@ class PrintBarCodeController extends Controller
                         });
                 });
             })
-            ->when($filter == 1 && $printMemo == 0, function ($query) {
-                return $query->where('from_request', 1)
+            ->when($filter == 1 && $printMemo == 0, function ($query) use ($smallTool) {
+                return $query->whereHas('TypeOfRequest', function ($query) use ($smallTool) {
+                    $typeNames = $smallTool == 1 ? ['Small Tool', 'Small Tools'] : ['Asset', 'Assets'];
+                    $query->whereIn('type_of_request_name', $typeNames);
+                })
+                    ->where('from_request', 1)
                     ->where('is_released', 0)
                     ->where('print_count', 0)
                     ->where('can_release', 0);
@@ -291,7 +320,7 @@ class PrintBarCodeController extends Controller
                     $query->where('accountability', 'Personal Issued')
                         ->where('memo_series_id', null)
                         ->where('is_released', 0)
-                        ->where('asset_condition', 'New')
+//                        ->where('asset_condition', 'New')
                         ->whereIn('can_release', [0, 1]);
                 });
             });
@@ -314,172 +343,191 @@ class PrintBarCodeController extends Controller
 
         $assets = $fixedAssetQuery->orderBy('asset_description', 'ASC')->useFilters()->dynamicPaginate();
 
-//         Return the result array
-        $assets->getCollection()->transform(function ($asset) {
-            return [
-                'id' => $asset->id,
-                'requestor_id' => [
-                    'id' => $asset->requestor->id ?? '-',
-                    'username' => $asset->requestor->username ?? '-',
-                    'first_name' => $asset->requestor->first_name ?? '-',
-                    'last_name' => $asset->requestor->last_name ?? '-',
-                    'employee_id' => $asset->requestor->employee_id ?? '-',
-                ],
-                'transaction_number' => $asset->transaction_number ?? '-',
-                'reference_number' => $asset->reference_number ?? '-',
-                'pr_number' => $asset->pr_number ?? '-',
-                'po_number' => $asset->po_number ?? '-',
-                'rr_number' => $asset->rr_number ?? '-',
-                'warehouse' => [
-                    'id' => $asset->warehouse->id ?? '-',
-                    'warehouse_name' => $asset->warehouse->warehouse_name ?? '-',
-                    'location' => $asset->warehouse->location->location_name ?? '-',
-                ],
-                'warehouse_number' => [
-                    'id' => $asset->warehouseNumber->id ?? '-',
-                    'warehouse_number' => $asset->warehouseNumber->warehouse_number ?? '-',
-                ],
-                'from_request' => $asset->from_request ?? '-',
-                'capex' => [
-                    'id' => $asset->capex->id ?? '-',
-                    'capex' => $asset->capex->capex ?? '-',
-                    'project_name' => $asset->capex->project_name ?? '-',
-                ],
-                'sub_capex' => [
-                    'id' => $asset->subCapex->id ?? '-',
-                    'sub_capex' => $asset->subCapex->sub_capex ?? '-',
-                    'sub_project' => $asset->subCapex->sub_project ?? '-',
-                ],
-                'vladimir_tag_number' => $asset->vladimir_tag_number,
-                'tag_number' => $asset->tag_number,
-                'tag_number_old' => $asset->tag_number_old,
-                'asset_description' => $asset->asset_description,
-                'is_released' => $asset->is_released,
-                'type_of_request' => [
-                    'id' => $asset->typeOfRequest->id ?? '-',
-                    'type_of_request_name' => $asset->typeOfRequest->type_of_request_name ?? '-',
-                ],
-                'asset_specification' => $asset->asset_specification,
-                'accountability' => $asset->accountability,
-                'accountable' => $asset->accountable,
-                'cellphone_number' => $asset->cellphone_number,
-                'brand' => $asset->brand ?? '-',
-                'supplier' => [
-                    'id' => $asset->supplier->id ?? '-',
-                    'supplier_code' => $asset->supplier->supplier_code ?? '-',
-                    'supplier_name' => $asset->supplier->supplier_name ?? '-',
-                ],
-                'division' => [
-                    'id' => $asset->department->division->id ?? '-',
-                    'division_name' => $asset->department->division->division_name ?? '-',
-                ],
-                'major_category' => [
-                    'id' => $asset->majorCategory->id ?? '-',
-                    'major_category_name' => $asset->majorCategory->major_category_name ?? '-',
-                ],
-                'minor_category' => [
-                    'id' => $asset->minorCategory->id ?? '-',
-                    'minor_category_name' => $asset->minorCategory->minor_category_name ?? '-',
-                ],
-                'est_useful_life' => $asset->majorCategory->est_useful_life ?? '-',
-                'voucher' => $asset->voucher,
-                'receipt' => $asset->receipt,
-                'is_additional_cost' => $asset->is_additional_cost,
-                'status' => $asset->is_active,
-                'quantity' => $asset->quantity,
-                'depreciation_method' => $asset->depreciation_method,
-                'uom' => [
-                    'id' => $asset->uom->id ?? '-',
-                    'uom_code' => $asset->uom->uom_code ?? '-',
-                    'uom_name' => $asset->uom->uom_name ?? '-',
-                ],
-                //                    'salvage_value' => $asset->salvage_value,
-                'acquisition_date' => $asset->acquisition_date,
-                'acquisition_cost' => $asset->acquisition_cost,
-                'asset_status' => [
-                    'id' => $asset->assetStatus->id ?? '-',
-                    'asset_status_name' => $asset->assetStatus->asset_status_name ?? '-',
-                ],
-                'cycle_count_status' => [
-                    'id' => $asset->cycleCountStatus->id ?? '-',
-                    'cycle_count_status_name' => $asset->cycleCountStatus->cycle_count_status_name ?? '-',
-                ],
-                'depreciation_status' => [
-                    'id' => $asset->depreciationStatus->id ?? '-',
-                    'depreciation_status_name' => $asset->depreciationStatus->depreciation_status_name ?? '-',
-                ],
-                'movement_status' => [
-                    'id' => $asset->movementStatus->id ?? '-',
-                    'movement_status_name' => $asset->movementStatus->movement_status_name ?? '-',
-                ],
-                'care_of' => $asset->care_of,
-                'company' => [
-                    'id' => $asset->company->id ?? '-',
-                    'company_code' => $asset->company->company_code ?? '-',
-                    'company_name' => $asset->company->company_name ?? '-',
-                ],
-                'business_unit' => [
-                    'id' => $asset->businessUnit->id ?? '-',
-                    'business_unit_code' => $asset->businessUnit->business_unit_code ?? '-',
-                    'business_unit_name' => $asset->businessUnit->business_unit_name ?? '-',
-                ],
-                'department' => [
-                    'id' => $asset->department->id ?? '-',
-                    'department_code' => $asset->department->department_code ?? '-',
-                    'department_name' => $asset->department->department_name ?? '-',
-                ],
-                'unit' => [
-                    'id' => $asset->unit->id ?? '-',
-                    'unit_code' => $asset->unit->unit_code ?? '-',
-                    'unit_name' => $asset->unit->unit_name ?? '-',
-                ],
-                'subunit' => [
-                    'id' => $asset->subunit->id ?? '-',
-                    'subunit_code' => $asset->subunit->sub_unit_code ?? '-',
-                    'subunit_name' => $asset->subunit->sub_unit_name ?? '-',
-                ],
-                'charged_department' => [
-                    'id' => $asset->department->id ?? '-',
-                    'department_code' => $asset->department->department_code ?? '-',
-                    'department_name' => $asset->department->department_name ?? '-',
-                ],
-                'location' => [
-                    'id' => $asset->location->id ?? '-',
-                    'location_code' => $asset->location->location_code ?? '-',
-                    'location_name' => $asset->location->location_name ?? '-',
-                ],
-                'account_title' => [
-                    'id' => $asset->accountTitle->id ?? '-',
-                    'account_title_code' => $asset->accountTitle->account_title_code ?? '-',
-                    'account_title_name' => $asset->accountTitle->account_title_name ?? '-',
-                ],
-                'initial_debit' => [
-                    'id' => $asset->accountTitle->initialDebit->id ?? '-',
-                    'account_title_code' => $asset->accountTitle->initialDebit->account_title_code ?? '-',
-                    'account_title_name' => $asset->accountTitle->initialDebit->account_title_name ?? '-',
-                ],
-                'initial_credit' => [
-                    'id' => $asset->accountTitle->initialCredit->id ?? '-',
-                    'account_title_code' => $asset->accountTitle->initialCredit->account_title_code ?? '-',
-                    'account_title_name' => $asset->accountTitle->initialCredit->account_title_name ?? '-',
-                ],
-                'depreciation_debit' => [
-                    'id' => $asset->accountTitle->depreciationDebit->id ?? '-',
-                    'account_title_code' => $asset->accountTitle->depreciationDebit->account_title_code ?? '-',
-                    'account_title_name' => $asset->accountTitle->depreciationDebit->account_title_name ?? '-',
-                ],
-                'depreciation_credit' => [
-                    'id' => $asset->accountTitle->depreciationCredit->id ?? '-',
-                    'account_title_code' => $asset->accountTitle->depreciationCredit->account_title_code ?? '-',
-                    'account_title_name' => $asset->accountTitle->depreciationCredit->account_title_name ?? '-',
-                ],
-                'remarks' => $asset->remarks,
-                'print_count' => $asset->print_count,
-                'last_printed' => $asset->last_printed,
-                'print' => $asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
-                'created_at' => $asset->created_at,
-            ];
-        });
+        if (method_exists($assets, 'getCollection')) {
+            // It's a paginator, use getCollection() method
+            $assets->setCollection(
+                $assets->getCollection()->transform(function ($asset) {
+                    // Your transformation code here
+                    return $this->response($asset);
+                })
+            );
+        } else if($filter == 1 || $smallTool == 1){
+            // It's already a collection, transform directly
+            $assets = $assets->transform(function ($asset) {
+                // Your transformation code here
+                return $this->response($asset);
+            });
+        }
         return $assets;
+    }
+
+    public function response($asset)
+    {
+        return [
+            'is_parent' => $asset->whereHas('assetSmallTools', function ($query) use ($asset) {
+                $query->where('fixed_asset_id', $asset->id);
+            })->exists() ? 1 : 0,
+            'id' => $asset->id,
+            'requestor_id' => [
+                'id' => $asset->requestor->id ?? '-',
+                'username' => $asset->requestor->username ?? '-',
+                'first_name' => $asset->requestor->firstname ?? '-',
+                'last_name' => $asset->requestor->lastname ?? '-',
+                'employee_id' => $asset->requestor->employee_id ?? '-',
+            ],
+            'transaction_number' => $asset->transaction_number ?? '-',
+            'reference_number' => $asset->reference_number ?? '-',
+            'pr_number' => $asset->ymir_pr_number ?? '-',
+            'po_number' => $asset->po_number ?? '-',
+            'rr_number' => $asset->rr_number ?? '-',
+            'warehouse' => [
+                'id' => $asset->warehouse->id ?? '-',
+                'warehouse_name' => $asset->warehouse->warehouse_name ?? '-',
+//                    'location' => $asset->warehouse->location->location_name ?? '-',
+            ],
+            'warehouse_number' => [
+                'id' => $asset->warehouseNumber->id ?? '-',
+                'warehouse_number' => $asset->warehouseNumber->warehouse_number ?? '-',
+            ],
+            'from_request' => $asset->from_request ?? '-',
+            'capex' => [
+                'id' => $asset->capex->id ?? '-',
+                'capex' => $asset->capex->capex ?? '-',
+                'project_name' => $asset->capex->project_name ?? '-',
+            ],
+            'sub_capex' => [
+                'id' => $asset->subCapex->id ?? '-',
+                'sub_capex' => $asset->subCapex->sub_capex ?? '-',
+                'sub_project' => $asset->subCapex->sub_project ?? '-',
+            ],
+            'vladimir_tag_number' => $asset->vladimir_tag_number,
+            'tag_number' => $asset->tag_number,
+            'tag_number_old' => $asset->tag_number_old,
+            'asset_description' => $asset->asset_description,
+            'is_released' => $asset->is_released,
+            'type_of_request' => [
+                'id' => $asset->typeOfRequest->id ?? '-',
+                'type_of_request_name' => $asset->typeOfRequest->type_of_request_name ?? '-',
+            ],
+            'asset_specification' => $asset->asset_specification,
+            'accountability' => $asset->accountability,
+            'accountable' => $asset->accountable,
+            'cellphone_number' => $asset->cellphone_number,
+            'brand' => $asset->brand ?? '-',
+            'supplier' => [
+                'id' => $asset->supplier->id ?? '-',
+                'supplier_code' => $asset->supplier->supplier_code ?? '-',
+                'supplier_name' => $asset->supplier->supplier_name ?? '-',
+            ],
+            'division' => [
+                'id' => $asset->department->division->id ?? '-',
+                'division_name' => $asset->department->division->division_name ?? '-',
+            ],
+            'major_category' => [
+                'id' => $asset->majorCategory->id ?? '-',
+                'major_category_name' => $asset->majorCategory->major_category_name ?? '-',
+            ],
+            'minor_category' => [
+                'id' => $asset->minorCategory->id ?? '-',
+                'minor_category_name' => $asset->minorCategory->minor_category_name ?? '-',
+            ],
+            'est_useful_life' => $asset->majorCategory->est_useful_life ?? '-',
+            'voucher' => $asset->voucher,
+            'receipt' => $asset->receipt,
+            'is_additional_cost' => $asset->is_additional_cost,
+            'status' => $asset->is_active,
+            'quantity' => $asset->quantity,
+            'depreciation_method' => $asset->depreciation_method,
+            'uom' => [
+                'id' => $asset->uom->id ?? '-',
+                'uom_code' => $asset->uom->uom_code ?? '-',
+                'uom_name' => $asset->uom->uom_name ?? '-',
+            ],
+            //                    'salvage_value' => $asset->salvage_value,
+            'acquisition_date' => $asset->acquisition_date,
+            'acquisition_cost' => $asset->acquisition_cost,
+            'asset_status' => [
+                'id' => $asset->assetStatus->id ?? '-',
+                'asset_status_name' => $asset->assetStatus->asset_status_name ?? '-',
+            ],
+            'cycle_count_status' => [
+                'id' => $asset->cycleCountStatus->id ?? '-',
+                'cycle_count_status_name' => $asset->cycleCountStatus->cycle_count_status_name ?? '-',
+            ],
+            'depreciation_status' => [
+                'id' => $asset->depreciationStatus->id ?? '-',
+                'depreciation_status_name' => $asset->depreciationStatus->depreciation_status_name ?? '-',
+            ],
+            'movement_status' => [
+                'id' => $asset->movementStatus->id ?? '-',
+                'movement_status_name' => $asset->movementStatus->movement_status_name ?? '-',
+            ],
+            'care_of' => $asset->care_of,
+            'company' => [
+                'id' => $asset->company->id ?? '-',
+                'company_code' => $asset->company->company_code ?? '-',
+                'company_name' => $asset->company->company_name ?? '-',
+            ],
+            'business_unit' => [
+                'id' => $asset->businessUnit->id ?? '-',
+                'business_unit_code' => $asset->businessUnit->business_unit_code ?? '-',
+                'business_unit_name' => $asset->businessUnit->business_unit_name ?? '-',
+            ],
+            'department' => [
+                'id' => $asset->department->id ?? '-',
+                'department_code' => $asset->department->department_code ?? '-',
+                'department_name' => $asset->department->department_name ?? '-',
+            ],
+            'unit' => [
+                'id' => $asset->unit->id ?? '-',
+                'unit_code' => $asset->unit->unit_code ?? '-',
+                'unit_name' => $asset->unit->unit_name ?? '-',
+            ],
+            'subunit' => [
+                'id' => $asset->subunit->id ?? '-',
+                'subunit_code' => $asset->subunit->sub_unit_code ?? '-',
+                'subunit_name' => $asset->subunit->sub_unit_name ?? '-',
+            ],
+            'charged_department' => [
+                'id' => $asset->department->id ?? '-',
+                'department_code' => $asset->department->department_code ?? '-',
+                'department_name' => $asset->department->department_name ?? '-',
+            ],
+            'location' => [
+                'id' => $asset->location->id ?? '-',
+                'location_code' => $asset->location->location_code ?? '-',
+                'location_name' => $asset->location->location_name ?? '-',
+            ],
+//            'account_title' => [
+//                'id' => $asset->accountTitle->id ?? '-',
+//                'account_title_code' => $asset->accountTitle->account_title_code ?? '-',
+//                'account_title_name' => $asset->accountTitle->account_title_name ?? '-',
+//            ],
+            'initial_debit' => [
+                'id' => $asset->accountTitle->initialDebit->id ?? '-',
+                'account_title_code' => $asset->accountTitle->initialDebit->account_title_code ?? '-',
+                'account_title_name' => $asset->accountTitle->initialDebit->account_title_name ?? '-',
+            ],
+            'initial_credit' => [
+                'id' => $asset->accountTitle->initialCredit->id ?? '-',
+                'account_title_code' => $asset->accountTitle->initialCredit->credit_code ?? '-',
+                'account_title_name' => $asset->accountTitle->initialCredit->credit_name ?? '-',
+            ],
+            'depreciation_debit' => [
+                'id' => $asset->accountTitle->depreciationDebit->id ?? '-',
+                'account_title_code' => $asset->accountTitle->depreciationDebit->account_title_code ?? '-',
+                'account_title_name' => $asset->accountTitle->depreciationDebit->account_title_name ?? '-',
+            ],
+            'depreciation_credit' => [
+                'id' => $asset->accountTitle->depreciationCredit->id ?? '-',
+                'account_title_code' => $asset->accountTitle->depreciationCredit->credit_code ?? '-',
+                'account_title_name' => $asset->accountTitle->depreciationCredit->credit_name ?? '-',
+            ],
+            'remarks' => $asset->remarks,
+            'print_count' => $asset->print_count,
+            'last_printed' => $asset->last_printed,
+            'print' => $asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
+            'created_at' => $asset->created_at,
+        ];
     }
 }

@@ -171,6 +171,11 @@ class RequestContainer extends Model implements HasMedia
         return $this->belongsTo(AccountTitle::class, 'account_title_id', 'id');
     }
 
+    public function accountingEntries()
+    {
+        return $this->belongsTo(AccountingEntries::class, 'account_title_id', 'id');
+    }
+
     public function uom()
     {
         return $this->belongsTo(UnitOfMeasure::class, 'uom_id', 'id');
@@ -186,6 +191,11 @@ class RequestContainer extends Model implements HasMedia
     {
         //move all item that has matching requestor id
         $assetRequest = RequestContainer::where('requester_id', $requestorId)->get();
+    }
+
+    public function item()
+    {
+        return $this->belongsTo(AssetSmallTool::class, 'item_id', 'id');
     }
 
 
@@ -204,6 +214,6 @@ class RequestContainer extends Model implements HasMedia
 
     public function receivingWarehouse()
     {
-        return $this->belongsTo(Warehouse::class, 'receiving_warehouse_id', 'id');
+        return $this->belongsTo(Warehouse::class, 'receiving_warehouse_id', 'sync_id');
     }
 }

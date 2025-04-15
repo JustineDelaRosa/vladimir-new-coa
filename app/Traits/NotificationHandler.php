@@ -33,6 +33,8 @@ trait NotificationHandler
 //                $response['toPR'] += $this->$function($user);
 //                break;
             case 'getTransferFaApproval':
+                $response['toTransferFaApproval'] += $this->$function($user);
+                break;
             case 'getToTransfer':
                 $response['toTransferApproveCount'] += $this->$function($user);
                 break;
@@ -135,7 +137,7 @@ trait NotificationHandler
         $approverId = Approvers::where('approver_id', $user->id)->value('id');
         $assetApproval = MovementApproval::where('approver_id', $approverId)->where('status', 'For Approval')->count();
         $movementFaApproval = MovementNumber::where('status', 'Approved')->where('is_fa_approved', 0)->distinct('id')->count();
-        return $assetApproval + $movementFaApproval;
+        return $movementFaApproval;
     }
 
     private function getToTransfer($user)

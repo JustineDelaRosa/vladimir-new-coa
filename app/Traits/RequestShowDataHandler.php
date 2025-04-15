@@ -17,7 +17,7 @@ trait RequestShowDataHandler
 
     use ApiResponse;
 
-    private function responseData($data)
+    public function responseData($data)
     {
         if ($data instanceof Collection) {
             return $this->collectionData($data);
@@ -52,11 +52,23 @@ trait RequestShowDataHandler
 
     private function response($ar)
     {
-        $letterOfRequestMedia = $ar->getMedia('letter_of_request')->first(); //change from firsty() to all()
+        $ar->load(['media' => function ($query) {
+            $query->whereIn('collection_name', [
+                'letter_of_request',
+                'quotation',
+                'specification_form',
+                'tool_of_trade',
+                'other_attachments'
+            ]);
+        }]);
+
+// Then retrieve individual items
+        $letterOfRequestMedia = $ar->getMedia('letter_of_request')->first();
         $quotationMedia = $ar->getMedia('quotation')->first();
         $specificationFormMedia = $ar->getMedia('specification_form')->first();
         $toolOfTradeMedia = $ar->getMedia('tool_of_trade')->first();
         $otherAttachmentsMedia = $ar->getMedia('other_attachments')->first();
+
         //sum all the total delivered of the asset request with the same transaction number
         $totalDelivered = AssetRequest::where('transaction_number', $ar->transaction_number)->sum('quantity_delivered');
         $totalOrdered = AssetRequest::where('transaction_number', $ar->transaction_number)->sum('quantity');
@@ -96,7 +108,7 @@ trait RequestShowDataHandler
 
         if (strpos($ar->status, 'For Approval') === 0) {
             $requestStatus = $ar->status;
-        } elseif ($ar->status == 'Returned'){
+        } elseif ($ar->status == 'Returned') {
             $requestStatus = $ar->status;
         } elseif ($ar->is_fa_approved) {
             $requestStatus = $ar->filter == 'Sent to Ymir' ? 'Sent to ymir for PO' : $ar->filter;
@@ -104,7 +116,12 @@ trait RequestShowDataHandler
             $requestStatus = 'Cancelled';
         } elseif ($ar->is_fa_approved) {
             $requestStatus = $ar->status;
+        } elseif ($ar->is_pr_returned) {
+            $requestStatus = 'Returned';
         }
+//        && $ar->is_fa_approved === 0
+        $faApproval = $ar->status === 'Approved' && $ar->is_fa_approved === 1 ? 1 : 0;
+        $finalApproval = $ar->status === 'Approved' && $ar->is_fa_approved === 0 ? 1 : 0;
 
         try {
             $YmirPRNumber = YmirPRTransaction::where('pr_number', $ar->pr_number)->first()->pr_year_number_id ?? null;
@@ -112,6 +129,7 @@ trait RequestShowDataHandler
             $YmirPRNumber = $ar->pr_number;
         }
         return [
+//            'testing' => 'testnlsdg',
             'is_removed' => $ar->trashed() ? 1 : 0,
             'is_pr_returned' => $ar->is_pr_returned ?? 0,
             //check if the requester_id is equal to delete_id then the requester deleted it else get the role name of the deleter
@@ -120,7 +138,8 @@ trait RequestShowDataHandler
             'can_add' => $isReleased ? 0 : 1,
             'can_resubmit' => $ar->is_fa_approved ? 0 : 1,
             'item_status' => $ar->item_status ?? '-',
-            'fa_approval' => $ar->status == 'Approved' && !$ar->is_fa_approved ? 1 : 0,
+            'final_approval' => $finalApproval,
+            'fa_approval' => $faApproval,
             'asset_approval_id' => $ar->assetApproval->first(function ($approval) {
                     return $approval->status == 'For Approval';
                 })->id ?? '',
@@ -148,12 +167,19 @@ trait RequestShowDataHandler
             'cellphone_number' => $ar->cellphone_number ?? '-',
             'brand' => $ar->brand ?? '-',
             'date_needed' => $ar->date_needed ?? '-',
-            'small_tool' => [
-                'id' => $ar->smallTool->id ?? '-',
-                'small_tool_name' => $ar->smallTool->small_tool_name ?? '-',
-                'small_tool_code' => $ar->smallTool->small_tool_code ?? '-',
-                'items' => $ar->smallTool->item ?? '-',
-            ],
+            /*            'small_tool' => $ar->assetSmallTool ? [
+                            'id' => $ar->assetSmallTool->id ?? '-',
+                            'small_tool_name' => $ar->assetSmallTool->small_tool_name ?? '-',
+                            'small_tool_code' => $ar->assetSmallTool->small_tool_code ?? '-',
+                            'items' => $ar->assetSmallTool->item ?? '-',
+                        ] : [],*/
+            'item' => $ar->item ? [
+                'id' => $ar->item->id ?? '-',
+                'description' => $ar->item->description ?? '-',
+                'specification' => $ar->item->specification ?? '-',
+                'quantity' => $ar->item->quantity ?? '-',
+
+            ] : [],
             'major_category' => [
                 'id' => $ar->majorCategory->id ?? '-',
                 'major_category_name' => $ar->majorCategory->major_category_name ?? '-',
@@ -161,9 +187,27 @@ trait RequestShowDataHandler
             'minor_category' => [
                 'id' => $ar->minorCategory->id ?? '-',
                 'minor_category_name' => $ar->minorCategory->minor_category_name ?? '-',
+//                'initial_debit' => $ar->minorCategory->initialDebit->sync_id ?? '-',
+//                'depreciation_credit' => $ar->minorCategory->depreciationCredit->sync_id ?? '-',
+                'initial_debit' => [
+                    'id' => $ar->minorCategory->initialDebit->id ?? '-',
+                    'sync_id' => $ar->minorCategory->initialDebit->sync_id ?? '-',
+                    'account_title_code' => $ar->minorCategory->initialDebit->account_title_code ?? '-',
+                    'account_title_name' => $ar->minorCategory->initialDebit->account_title_name ?? '-',
+                ],
+                'depreciation_credit' => [
+                    'id' => $ar->minorCategory->depreciationCredit->id ?? '-',
+                    'sync_id' => $ar->minorCategory->depreciationCredit->sync_id ?? '-',
+                    'account_title_code' => $ar->minorCategory->depreciationCredit->credit_code ?? '-',
+                    'account_title_name' => $ar->minorCategory->depreciationCredit->credit_name ?? '-',
+                ],
+                'major_category' => [
+                    'id' => $ar->minorCategory->majorCategory->id ?? '-',
+                    'major_category_name' => $ar->minorCategory->majorCategory->major_category_name ?? '-',
+                ],
             ],
-            'quantity' => $ar->quantity + $deletedQuantity ?? '-',
-            'ordered' => $ar->quantity + $deletedQuantity ?? '-',
+            'quantity' => $ar->quantity + $deletedQuantity ?? '-', //+ $deletedQuantity
+            'ordered' => $ar->quantity + $deletedQuantity ?? '-', //+ $deletedQuantity
             'delivered' => $ar->quantity_delivered ?? '-',
             'remaining' => $ar->trashed() ? 0 : ($ar->quantity - $ar->quantity_delivered ?? '-'),
             'cancelled' => AssetRequest::onlyTrashed()->where('transaction_number', $ar->transaction_number)->where('reference_number', $ar->reference_number)->sum('quantity') ?? '-',
@@ -172,7 +216,7 @@ trait RequestShowDataHandler
             //                'id' => $ar->fixedAsset->id ?? '-',
             //                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
             //            ],
-            'fixed_asset' => $ar->fixedAsset ? $this->transformSingleFixedAssetShowData($ar->fixedAsset) : '-',
+            'fixed_asset' => $ar->fixedAsset ? $this->transformSingleFixedAssetShowData($ar->fixedAsset) : [],
             'warehouse' => [
                 'id' => $ar->receivingWarehouse->id ?? '-',
                 'warehouse_name' => $ar->receivingWarehouse->warehouse_name ?? '-',
@@ -224,30 +268,32 @@ trait RequestShowDataHandler
                 'location_code' => $ar->location->location_code ?? '-',
                 'location_name' => $ar->location->location_name ?? '-',
             ],
-            'account_title' => [
-                'id' => $ar->accountTitle->id ?? '-',
-                'account_title_code' => $ar->accountTitle->account_title_code ?? '-',
-                'account_title_name' => $ar->accountTitle->account_title_name ?? '-',
-            ],
+            /*            'account_title' => [
+                            'id' => $ar->accountTitle->id ?? '-',
+                            'account_title_code' => $ar->accountTitle->account_title_code ?? '-',
+                            'account_title_name' => $ar->accountTitle->account_title_name ?? '-',
+                        ],*/
             'initial_debit' => [
-                'id' => $ar->minorCategory->accountingEntries->initialDebit->id ?? '-',
-                'account_title_code' => $ar->minorCategory->accountingEntries->initialDebit->account_title_code ?? '-',
-                'account_title_name' => $ar->minorCategory->accountingEntries->initialDebit->account_title_name ?? '-',
+                'id' => $ar->minorCategory->initialDebit->id ?? '-',
+                'sync_id' => $ar->minorCategory->initialDebit->sync_id ?? '-',
+                'account_title_code' => $ar->minorCategory->initialDebit->account_title_code ?? '-',
+                'account_title_name' => $ar->minorCategory->initialDebit->account_title_name ?? '-',
             ],
-            'initial_credit' => [
-                'id' => $ar->minorCategory->accountingEntries->initialCredit->id ?? '-',
-                'account_title_code' => $ar->minorCategory->accountingEntries->initialCredit->account_title_code ?? '-',
-                'account_title_name' => $ar->minorCategory->accountingEntries->initialCredit->account_title_name ?? '-',
+            /*'initial_credit' => [
+                'id' => $ar->minorCategory->initialCredit->id ?? '-',
+                'account_title_code' => $ar->minorCategory->initialCredit->account_title_code ?? '-',
+                'account_title_name' => $ar->minorCategory->initialCredit->account_title_name ?? '-',
             ],
             'depreciation_debit' => [
-                'id' => $ar->minorCategory->accountingEntries->depreciationDebit->id ?? '-',
-                'account_title_code' => $ar->minorCategory->accountingEntries->depreciationDebit->account_title_code ?? '-',
-                'account_title_name' => $ar->minorCategory->accountingEntries->depreciationDebit->account_title_name ?? '-',
-            ],
+                'id' => $ar->minorCategory->depreciationDebit->id ?? '-',
+                'account_title_code' => $ar->minorCategory->depreciationDebit->account_title_code ?? '-',
+                'account_title_name' => $ar->minorCategory->depreciationDebit->account_title_name ?? '-',
+            ],*/
             'depreciation_credit' => [
-                'id' => $ar->minorCategory->accountingEntries->depreciationCredit->id ?? '-',
-                'account_title_code' => $ar->minorCategory->accountingEntries->depreciationCredit->account_title_code ?? '-',
-                'account_title_name' => $ar->minorCategory->accountingEntries->depreciationCredit->account_title_name ?? '-',
+                'id' => $ar->minorCategory->depreciationCredit->id ?? '-',
+                'sync_id' => $ar->minorCategory->depreciationCredit->sync_id ?? '-',
+                'account_title_code' => $ar->minorCategory->depreciationCredit->credit_code ?? '-',
+                'account_title_name' => $ar->minorCategory->depreciationCredit->credit_name ?? '-',
             ],
             'supplier' => [
                 'id' => $ar->supplier->id ?? '-',
@@ -269,33 +315,56 @@ trait RequestShowDataHandler
                  */
                 'letter_of_request' => $letterOfRequestMedia ? [
                     'id' => $letterOfRequestMedia->id,
+                    'uuid' => $letterOfRequestMedia->uuid,
                     'file_name' => $letterOfRequestMedia->file_name,
                     'file_path' => $letterOfRequestMedia->getPath(),
                     'file_url' => $letterOfRequestMedia->getUrl(),
+                    'mime_type' => $letterOfRequestMedia->mime_type,
+                    'base64' => base64_encode(file_get_contents($letterOfRequestMedia->getPath())),
+//                        in_array($letterOfRequestMedia->mime_type, ['image/jpeg', 'image/png', 'application/pdf']) ? 'data:' . $letterOfRequestMedia->mime_type . ';base64,' . base64_encode(file_get_contents($letterOfRequestMedia->getPath())) : base64_encode(file_get_contents($otherAttachmentsMedia->getPath())),
                 ] : null,
                 'quotation' => $quotationMedia ? [
                     'id' => $quotationMedia->id,
+                    'uuid' => $quotationMedia->uuid,
                     'file_name' => $quotationMedia->file_name,
                     'file_path' => $quotationMedia->getPath(),
                     'file_url' => $quotationMedia->getUrl(),
+                    'mime_type' => $quotationMedia->mime_type,
+                    'base64' => base64_encode(file_get_contents($quotationMedia->getPath())),
+//                        in_array($quotationMedia->mime_type, ['image/jpeg', 'image/png', 'application/pdf']) ? 'data:' . $quotationMedia->mime_type . ';base64,' . base64_encode(file_get_contents($quotationMedia->getPath())) : base64_encode(file_get_contents($otherAttachmentsMedia->getPath())),
                 ] : null,
                 'specification_form' => $specificationFormMedia ? [
                     'id' => $specificationFormMedia->id,
+                    'uuid' => $specificationFormMedia->uuid,
                     'file_name' => $specificationFormMedia->file_name,
                     'file_path' => $specificationFormMedia->getPath(),
                     'file_url' => $specificationFormMedia->getUrl(),
+                    'mime_type' => $specificationFormMedia->mime_type,
+                    'base64' => base64_encode(file_get_contents($specificationFormMedia->getPath())),
+//                        in_array($specificationFormMedia->mime_type, ['image/jpeg', 'image/png', 'application/pdf']) ? 'data:' . $specificationFormMedia->mime_type . ';base64,' . base64_encode(file_get_contents($specificationFormMedia->getPath()))
+//                        : base64_encode(file_get_contents($otherAttachmentsMedia->getPath())),
                 ] : null,
                 'tool_of_trade' => $toolOfTradeMedia ? [
                     'id' => $toolOfTradeMedia->id,
+                    'uuid' => $toolOfTradeMedia->uuid,
                     'file_name' => $toolOfTradeMedia->file_name,
                     'file_path' => $toolOfTradeMedia->getPath(),
                     'file_url' => $toolOfTradeMedia->getUrl(),
+                    'mime_type' => $toolOfTradeMedia->mime_type,
+                    'base64' => base64_encode(file_get_contents($toolOfTradeMedia->getPath())),
+//                        in_array($toolOfTradeMedia->mime_type, ['image/jpeg', 'image/png', 'application/pdf']) ? 'data:' . $toolOfTradeMedia->mime_type . ';base64,' . base64_encode(file_get_contents($toolOfTradeMedia->getPath()))
+//                        : base64_encode(file_get_contents($otherAttachmentsMedia->getPath())),
                 ] : null,
                 'other_attachments' => $otherAttachmentsMedia ? [
                     'id' => $otherAttachmentsMedia->id,
+                    'uuid' => $otherAttachmentsMedia->uuid,
                     'file_name' => $otherAttachmentsMedia->file_name,
                     'file_path' => $otherAttachmentsMedia->getPath(),
                     'file_url' => $otherAttachmentsMedia->getUrl(),
+                    'mime_type' => $otherAttachmentsMedia->mime_type,
+                    'base64' => base64_encode(file_get_contents($otherAttachmentsMedia->getPath())),
+//                        in_array($otherAttachmentsMedia->mime_type, ['image/jpeg', 'image/png', 'application/pdf']) ? 'data:' . $otherAttachmentsMedia->mime_type . ';base64,' . base64_encode(file_get_contents($otherAttachmentsMedia->getPath()))
+//                        : base64_encode(file_get_contents($otherAttachmentsMedia->getPath())),
                 ] : null,
             ],
         ];
@@ -323,6 +392,21 @@ trait RequestShowDataHandler
             ],
             'from_request' => $fixed_asset->from_request ?? '-',
             'can_release' => $fixed_asset->can_release ?? '-',
+            'small_tools' => $fixed_asset->assetSmallTools()->withTrashed()->get() ?
+                $fixed_asset->assetSmallTools()->withTrashed()->get()->map(function ($smallTool) {
+                    return [
+                        'id' => $smallTool->id ?? '-',
+                        'description' => $smallTool->description ?? '-',
+                        'specification' => $smallTool->specification ?? '-',
+                        'pr_number' => $smallTool->pr_number ?? '-',
+                        'po_number' => $smallTool->po_number ?? '-',
+                        'rr_number' => $smallTool->rr_number ?? '-',
+                        'acquisition_cost' => $smallTool->acquisition_cost ?? '-',
+                        'quantity' => $smallTool->quantity ?? '-',
+                        'status' => $smallTool->is_active ?? '-',
+                        'status_description' => $smallTool->status_description,
+                    ];
+                }) : [],
             'capex' => [
                 'id' => $fixed_asset->capex->id ?? '-',
                 'capex' => $fixed_asset->capex->capex ?? '-',

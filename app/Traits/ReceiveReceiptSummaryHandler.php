@@ -32,7 +32,7 @@ trait ReceiveReceiptSummaryHandler
             $query->onlyTrashed();
         }
 
-        $fixedAssets = $query->useFilters()->get()->groupBy('receipt')->map(function ($fixed_asset) use ($status) {
+        $fixedAssets = $query->useFilters()->get()->groupBy('rr_id')->map(function ($fixed_asset) use ($status) {
             try {
                 $YmirPRNumber = YmirPRTransaction::where('pr_number', $fixed_asset->first()->pr_number)->first()->pr_year_number_id ?? null;
             } catch (\Exception $e) {
@@ -48,6 +48,7 @@ trait ReceiveReceiptSummaryHandler
                 'ymir_pr_number' => $YmirPRNumber ?: '-',
                 'pr_number' => $fixed_asset->first()->pr_number ?? '-',
                 'rr_number' => $fixed_asset->first()->receipt ?? '-',
+                'rr_id' => $fixed_asset->first()->rr_id ?? '-',
                 'po_number' => $fixed_asset->first()->po_number ?? '-',
                 'vladimir_tag_number' => $fixed_asset->pluck('vladimir_tag_number')->all(),
                 'item_count' => $fixed_asset->count(),

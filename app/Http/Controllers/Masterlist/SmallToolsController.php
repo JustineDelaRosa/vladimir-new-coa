@@ -66,7 +66,7 @@ class SmallToolsController extends Controller
 
         foreach ($smallToolsData as $smallTool) {
 
-//            return             $itemIds = array_column($smallTool['small_tools'], 'id');
+//            return $itemIds = array_column($smallTool['small_tools'], 'id');
             $uomId = UnitOfMeasure::where('sync_id', $smallTool['uom_id'])->first()->id;
             $sync_id = $smallTool['id'];
             $code = $smallTool['code'];

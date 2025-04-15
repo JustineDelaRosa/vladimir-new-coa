@@ -30,7 +30,7 @@ class ReceiveReceiptSummaryController extends Controller
     {
         $remarks = $request->get('reason');
         // Select all the fixed assets with the same rr number, including soft deleted ones
-        $fixedAssets = FixedAsset::withTrashed()->where('receipt', $rrNumber)->get();
+        $fixedAssets = FixedAsset::withTrashed()->where('rr_id', $rrNumber)->get();
         if ($fixedAssets->isEmpty()) {
             return $this->responseUnprocessable('RR Number not found');
         }
@@ -65,17 +65,18 @@ class ReceiveReceiptSummaryController extends Controller
         try {
             $uniqueReferenceNumbers = array_unique($referenceNumbers);
             foreach ($uniqueReferenceNumbers as $reference) {
-                $itemCount = FixedAsset::where('reference_number', $reference)->where('receipt', $rrNumber)->count();
+                $itemCount = FixedAsset::where('reference_number', $reference)->where('rr_id', $rrNumber)->count();
                 $assetRequest = AssetRequest::where('reference_number', $reference)->first();
 
                 if ($assetRequest) {
-                    $rrNumbers = explode(',', $assetRequest->rr_number);
+                    $rrNumbers = explode(',', $assetRequest->rr_id);
                     $rrNumbers = array_diff($rrNumbers, [$rrNumber]);
                     $rrNumbers = implode(',', $rrNumbers);
 
                     if (empty($rrNumbers)) {
                         $assetRequest->update([
                             'rr_number' => null, // or use an empty string if preferred
+                            'rr_id' => null,
                             'filter' => 'Sent to Ymir',
                             'remarks' => $remarks,
                             'synced' => 0,
@@ -84,6 +85,7 @@ class ReceiveReceiptSummaryController extends Controller
                     } else {
                         $assetRequest->update([
                             'rr_number' => $rrNumbers,
+                            'rr_id' => $rrNumbers,
                             'filter' => 'Sent to Ymir',
                             'remarks' => $remarks,
                             'quantity_delivered' => $assetRequest->quantity_delivered - $itemCount
