@@ -73,7 +73,7 @@ trait FormSettingHandler
         return $this->responseCreated('Created successfully');
     }
 
-    public function formSettingArrangeLayer(Request $request, $model, $id)
+    public function formSettingArrangeLayer(Request $request, $model, $id) //The is the subunit id
     {
         $subunitId = $id;
         $approverId = $request->approver_id;
