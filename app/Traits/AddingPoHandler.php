@@ -129,15 +129,15 @@ trait AddingPoHandler
     {
 
         $items = AssetRequest::where('transaction_number', $transactionNumber)->get();
-        $remainingQuantities = $items->map(function ($item) {
+        $remainingQuantities = $items->map(function ($item) use ($forTimeline) {
             $remaining = $item->quantity - $item->quantity_delivered;
-            if ($forTimeline = false) {
+            if ($forTimeline === false) {
                 $remaining = $remaining . "/" . $item->quantity;
             }
 
             return $remaining;
         });
-        if ($forTimeline = false) {
+        if ($forTimeline === false) {
             $remainingQuantities = $remainingQuantities->reduce(function ($carry, $item) {
                 $carry = explode("/", $carry);
                 $item = explode("/", $item);
@@ -264,7 +264,7 @@ trait AddingPoHandler
                 'depreciation_credit' => $accountingEntries->depreciation_credit,
             ]);
 
-
+            $depreciationMethod = FixedAsset::where('id', $asset->fixed_asset_id)->first()->depreciation_method;
             $formula->additionalCost()->create([
                 'requester_id' => $asset->requester_id,
                 'reference_number' => $asset->reference_number,
@@ -296,7 +296,7 @@ trait AddingPoHandler
                 'cellphone_number' => $asset->cellphone_number ?? '-',
                 'brand' => $asset->brand,
                 'quantity' => 1,
-                'depreciation_method' => $asset->depreciation_method,
+                'depreciation_method' => $depreciationMethod,
                 'acquisition_date' => $asset->acquisition_date,
                 'acquisition_cost' => $asset->acquisition_cost,
                 'asset_status_id' => AssetStatus::where('asset_status_name', 'Good')->first()->id,

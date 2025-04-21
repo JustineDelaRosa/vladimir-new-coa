@@ -31,9 +31,20 @@ class AccountingEntries extends Model
         return $this->belongsTo(Credit::class, 'depreciation_credit', 'sync_id');
     }
 
+    public function secondDepreciationCredit()
+    {
+        return $this->belongsTo(AccountTitle::class, 'second_depreciation_credit', 'sync_id');
+    }
+
+    public function secondDepreciationDebit()
+    {
+        return $this->belongsTo(AccountTitle::class, 'second_depreciation_debit', 'sync_id');
+    }
+
     public function requestContainer()
     {
         return $this->hasOne(RequestContainer::class, 'accounting_entry_id', 'id');
     }
+
 
 }

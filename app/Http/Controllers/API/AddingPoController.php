@@ -4,7 +4,11 @@ namespace App\Http\Controllers\API;
 
 use App\Models\Approvers;
 use App\Models\AssetRequest;
+use App\Models\AssetSmallTool;
 use App\Models\FixedAsset;
+use App\Models\Item;
+use App\Models\SmallTools;
+use App\Models\Supplier;
 use App\Models\YmirPRTransaction;
 use App\Traits\AssetReleaseHandler;
 use App\Traits\RequestShowDataHandler;
@@ -73,12 +77,17 @@ class AddingPoController extends Controller
 
     public function show(Request $request, $transactionNumber)
     {
-        $requiredRole = array_map('strtolower', ['Purchase Order', 'Admin', 'Super Admin', 'Warehouse', 'Purchase Request', 'Po-Receiving']);
+        $explicitRoles = ['Purchase Order', 'Admin', 'Super Admin', 'Warehouse', 'Purchase Request', 'Po-Receiving'];
         $checkUserRole = strtolower(auth('sanctum')->user()->role->role_name);
 
-        if (in_array($checkUserRole, $requiredRole)) {
+    // Check if user has an explicit role or any role containing "warehouse"
+        $hasRequiredRole = in_array($checkUserRole, array_map('strtolower', $explicitRoles), true) ||
+            str_contains($checkUserRole, 'warehouse');
+
+        if ($hasRequiredRole) {
             $nonSoftDeletedTransactionNumbers = AssetRequest::whereNull('deleted_at')->pluck('reference_number');
-            $assetRequest = AssetRequest::withTrashed()->where('transaction_number', $transactionNumber);
+//            $assetRequest = AssetRequest::withTrashed()->where('transaction_number', $transactionNumber);
+            $assetRequest = AssetRequest::where('transaction_number', $transactionNumber);
         } else {
             return $this->responseUnprocessable('You are not allowed to view this transaction.');
         }
@@ -134,53 +143,60 @@ class AddingPoController extends Controller
     {
         $userLocationId = auth('sanctum')->user()->location_id;
         $data = $request->get('result');
+        DB::beginTransaction();
+        try {
 
 
-        $apiUrl = config('ymir-api.ymir_put_api_url');
-        $bearerToken = config('ymir-api.ymir_put_api_token');
-        if ($data == null) {
-            return $this->responseUnprocessable('No data to sync');
-        }
-        if (is_null($apiUrl) || is_null($bearerToken)) {
-            return $this->responseUnprocessable('API URL or Bearer Token is not configured properly.');
-        }
+            $apiUrl = config('ymir-api.ymir_put_api_url');
+            $bearerToken = config('ymir-api.ymir_put_api_token');
+            if ($data == null) {
+                return $this->responseUnprocessable('No data to sync');
+            }
+            if (is_null($apiUrl) || is_null($bearerToken)) {
+                return $this->responseUnprocessable('API URL or Bearer Token is not configured properly.');
+            }
 
 //        return $this->receivingLog($data);
 
-        $itemReceivedCount = 0;
-        $cancelledCount = 0;
-        $poData = [];
-        $rrNumbers = [];
-        foreach ($data as $asset) {
-            $causer = $asset['causer'] ?? null;
-            $transactionNumber = $asset['transaction_no'];
-            $poNo = $asset['po_number'];
-            $prNo = $asset['pr_number'];
-            $deletedAt = $asset['cancelled_at'];
+            $itemReceivedCount = 0;
+            $cancelledCount = 0;
+            $poData = [];
+            $rrNumbers = [];
+            $rrNumberIdArray = [];
+            $totalQuantity = 0;
+            $totalQuantityDelivered = 0;
+//            foreach ($data as $asset) {
 
+//            $poNo = $asset['po_number'];
+            $deletedAt = $data['cancelled_at'];
+            $causer = $data['causer'] ?? null;
+            $rrNumber = $data['rr_year_number_id'];
+            foreach ($data['orders'] as $order) {
+                $supplier = $order['supplier'];
+                $unitPrice = $order['unit_price'];
+                $transactionNumber = $order['transaction_no'];
+                $referenceNumber = $order['reference_no'];
+                $remaining = $order['remaining'];
+                $itemName = $order['item_name'];
+                $quantityDelivered = $order['quantity_delivered'];
 
-            $assetRequest = AssetRequest::where('filter', 'Sent to Ymir')
-                ->where('transaction_number', $transactionNumber)
-                ->whereHas('receivingWarehouse', function ($query) use ($userLocationId) {
-                    $query->where('location_id', $userLocationId);
-                })->get();
-//            return $assetRequest;
-            if ($assetRequest->isEmpty()) {
-                continue;
-//                return $this->responseUnprocessable('No asset request found for transaction number ' . $transactionNumber);
-            }
-            if ($assetRequest) {
-                foreach ($asset['order'] as $order) {
-                    $supplier = $order['supplier'];
-                    $unitPrice = $order['unit_price'];
-                    $itemCode = $order['item_code'];
-                    $referenceNumber = $order['reference_no'];
-                    $remaining = $order['remaining'];
-                    $inclusion = $order['remarks'];
-                    $itemName = $order['item_name'];
-                    $quantityDelivered = $order['quantity_delivered'];
+//                $itemRequest = AssetRequest::where('reference_number', $referenceNumber)->first();
+//                $isPeso = $itemRequest->uom->uom_name === 'PESO';
 
-                    if ($deletedAt != null) {
+                $assetRequest = AssetRequest::whereIn('filter', ['Sent to Ymir', 'Partially Received', 'Po Created', 'Asset Tagging'])
+                    ->where('transaction_number', $transactionNumber)
+//                    ->where('asset_description', $itemName)
+//                    ->whereHas('receivingWarehouse', function ($query) use ($userLocationId) {
+//                        $query->where('location_id', $userLocationId);
+//                    })
+                    ->get();
+                $totalQuantity = $assetRequest->sum('quantity');
+
+                if ($assetRequest->isEmpty()) {
+                    continue;
+                }
+                if ($assetRequest) {
+                    /*if ($deletedAt != null) {
                         foreach ($assetRequest as $request) {
                             $replicatedAssetRequest = $request->replicate();
                             $replicatedAssetRequest->quantity = $remaining;
@@ -194,73 +210,219 @@ class AddingPoController extends Controller
 
                             $cancelledCount++;
                         }
-                    }
+                    }*/
                     $itemRequest = AssetRequest::where('transaction_number', $transactionNumber)
                         ->where('reference_number', $referenceNumber)
-                        ->where('pr_number', $prNo)
                         ->first();
 
                     $rrNumberArray = [];
-                    foreach ($order['rr_orders'] as $rr) {
+                    $poNumberArray = [];
 
-                        $deliveryDate = $rr['delivery_date'];
-                        $itemRemaining = $rr['remaining'];
-                        $rrNumber = $rr['rr_number'];
+//                    foreach ($order['rr_orders'] as $rr) {
+                    $inclusion = $order['rr_orders']['remarks'];
+                    $deliveryDate = $order['rr_orders']['delivery_date'];
+                    $itemRemaining = $order['rr_orders']['remaining'];
+                    $rrNumberId = $order['rr_orders']['rr_number'];
+//                    $poNumber = $order['rr_orders']['po_id'];
+                    $prYearNumber = $order['rr_orders']['pr_year_number_id'];
+//                    $rrNumber = $order['rr_orders']['pr_year_number_id'];
+                    $poNumber = $order['rr_orders']['po_year_number_id'];
+                    $initialCreditId = $order['rr_orders']['initial_credit_id'];
 
-                        // store the po_number in the array transaction number and reference number
-                        $poData[] = [
-                            'transaction_number' => $transactionNumber,
-                            'reference_number' => $referenceNumber,
-                            'po_number' => $poNo,
-                        ];
+                    // store the po_number in the array transaction number and reference number
+                    /*                    $poData[] = [
+                                            'transaction_number' => $transactionNumber,
+                                            'reference_number' => $referenceNumber,
+                                            'po_number' => $poNumber,
+                                        ];*/
 
-                        if (!in_array($rrNumber, $rrNumberArray)) {
-                            $rrNumberArray[] = $rrNumber;
-                        }
-                        $rrNumberString = implode(',', $rrNumberArray);
 
-                        if ($rr['sync'] == 1) {
-                            continue;
-                        }
-
-                        $itemRequest->update([
-                            'synced' => 1,
-//                            'pr_number' => $prNo,
-                            'po_number' => $poNo,
-                            'rr_number' => $rrNumberString,
-                            'supplier_id' => $supplier,
-                            'quantity_delivered' => $itemRequest->quantity_delivered + $rr['quantity_receive'],
-                            'acquisition_date' => $deliveryDate,
-                            'acquisition_cost' => $unitPrice,
-                            'received_at' => now(),
-                        ]);
-                        $this->createNewAssetRequests($itemRequest, $rr['quantity_receive'], $inclusion);
-                        $rrNumbers[] = $rr['rr_number'];
-
-                        $this->receivingLog($itemName, $rr['quantity_receive'], $transactionNumber, $causer);
-                        $itemReceivedCount++;
+                    //TODO: Do this also to PO Number(a request can have multiple PO Numbers)
+                    if (!in_array($rrNumber, $rrNumberArray)) {
+                        $rrNumberArray[] = $rrNumber;
                     }
+                    $rrNumberString = implode(',', $rrNumberArray);
+
+                    if (!in_array($rrNumberId, $rrNumberIdArray)) {
+                        $rrNumberIdArray[] = $rrNumberId;
+                    }
+                    $rrNumberIdString = implode(',', $rrNumberIdArray);
+
+                    if (!in_array($poNumber, $poNumberArray)) {
+                        $poNumberArray[] = $poNumber;
+                    }
+                    $poNumberString = implode(',', $poNumberArray);
+
+
+                    if ($order['rr_orders']['sync'] == 1) {
+                        continue;
+                    }
+                    $totalQuantityDelivered = $itemRequest->quantity_delivered + $order['rr_orders']['quantity_received'];
+                    $supplierCheck = Supplier::where('sync_id', $supplier)->first();
+                    if ($supplierCheck == null) {
+                        $this->responseUnprocessable('Supplier not found, Please sync vladimir Supplier first');
+                    }
+                    $itemRequest->update([
+                        'synced' => 1,
+                        //'pr_number' => $prNo,
+                        'po_number' => $poNumberString, //$poNumber,
+                        'rr_number' => $rrNumberString,
+                        'rr_id' => $rrNumberIdString,
+                        'ymir_pr_number' => $prYearNumber,
+                        'supplier_id' => $supplier,
+                        'quantity' => $itemRequest->quantity, //$isPeso ? 1 :
+                        'quantity_delivered' => $itemRequest->quantity_delivered + $order['rr_orders']['quantity_received'], //$isPeso ? 1 :
+//                        'filter' => $itemRequest->quantity_delivered + $order['rr_orders']['quantity_received'] == $itemRequest->quantity ? 'Received' : 'Partially Received',
+                        'acquisition_date' => $deliveryDate,
+                        'acquisition_cost' => $unitPrice,
+                        'received_at' => now(),
+                    ]);
+
+
+//                    $itemRequest->accountingEntries()->create([
+//                        'initial_debit' => $itemRequest->accountingEntries->initialDebit->sync_id,
+//                        'initial_credit' => $initialCreditId,
+//                        'depreciation_credit' => $itemRequest->accountingEntries->depreciationCredit->sync_id,
+//                    ]);
+
+                    if ($itemRemaining == 0) {
+                        $itemRequest->accountingEntries()->update([
+                            'initial_credit' => $initialCreditId,
+                        ]);
+                    }
+
+                    /*                    if ($itemRequest->item_id != null && $itemRequest->item_status == 'Replacement' && $itemRequest->fixed_asset_id != null) {
+                                            $item = Item::where('id', $itemRequest->item_id)->first();
+                                            $quantityReceived = $order['rr_orders']['quantity_received'];
+
+                                            for ($i = 0; $i < $quantityReceived; $i++) {
+                                                $assetSmallTools = AssetSmallTool::create([
+                                                    'fixed_asset_id' => $itemRequest->fixed_asset_id,
+                                                    'transaction_number' => $transactionNumber,
+                                                    'reference_number' => $referenceNumber,
+                                                    'receiving_warehouse_id' => $itemRequest->receiving_warehouse_id,
+                                                    'small_tool_id' => $item->id,
+                                                    'status_description' => 'Good',
+                                                    'pr_number' => $prYearNumber,
+                                                    'po_number' => $poNumber,
+                                                    'rr_number' => $rrNumber,
+                                                    'quantity' => 1,
+                                                    'is_active' => 1,
+                                                    'to_release' => 1,
+                                                ]);
+                                            }
+                                        } else {
+                                            $this->createNewAssetRequests($itemRequest, $order['rr_orders']['quantity_received'], $initialCreditId, $inclusion);
+                                        }*/
+
+                    $this->createNewAssetRequests($itemRequest, $order['rr_orders']['quantity_received'], $initialCreditId, $inclusion);
+                    $rrNumbers[] = $order['rr_orders']['rr_number'];
+
+                    $this->receivingLog($itemName, $order['rr_orders']['quantity_received'], $transactionNumber, $causer, $remaining);
+                    $updateFilter = AssetRequest::where('transaction_number', $transactionNumber)
+                        ->get();
+                    foreach ($updateFilter as $filter) {
+                        /*                     $filter->update([
+                                                 'filter' => $remaining == 0 ? 'Asset Tagging' : 'Partially Received',
+                                             ]);*/
+                        if ($filter->item_id != null && $filter->item_status == 'Replacement' && $filter->fixed_asset_id != null) {
+                            $filter->update([
+                                'filter' => $remaining == 0 ? 'Ready to Pickup' : 'Partially Received',
+                            ]);
+                        } else {
+                            $filter->update([
+                                'filter' => $remaining == 0 ? 'Asset Tagging' : 'Partially Received',
+                            ]);
+                        }
+
+                    }
+
+                    $itemReceivedCount++;
+//                    }
                     $rrNumberArray = [];
                     $this->updateRequestStatusFilter($itemRequest);
                 }
             }
-        }
-
+//            }
 
 //        $this->storePOs($poData);
-        if (!empty($rrNumbers)) {
-            Http::withHeaders(['Token' => 'Bearer ' . $bearerToken])
-                ->put($apiUrl, ['rr_number' => $rrNumbers]);
+            if (!empty($rrNumbers)) {
+                Http::withHeaders(['Token' => 'Bearer ' . $bearerToken])
+                    ->put($apiUrl, ['rr_number' => $rrNumbers]);
+            }
+
+            $data = [
+                'synced' => $itemReceivedCount,
+                'cancelled' => $cancelledCount,
+            ];
+            DB::commit();
+            return $this->responseSuccess('successfully sync received asset', $data);
+        } catch
+        (\Exception $e) {
+            DB::rollBack();
+            return $e;
+            return $this->responseUnprocessable('something went wrong, please contact the support team');
         }
 
-        $data = [
-            'synced' => $itemReceivedCount,
-            'cancelled' => $cancelledCount,
-        ];
-        return $this->responseSuccess('successfully sync received asset', $data);
     }
 
     public function cancelRemaining(Request $request)
+    {
+
+        $transactionNumber = $request->transaction_no;
+        $poNumber = $request->po_number;
+        $causer = $request->causer;
+        $reason = $request->reason;
+
+        DB::beginTransaction();
+        try {
+
+
+            $assetRequest = AssetRequest::where('filter', 'Sent to Ymir')
+                ->where('po_number', $poNumber)->get();
+
+            if ($assetRequest->isEmpty()) {
+                return $this->responseUnprocessable('No asset request found for transaction number ' . $transactionNumber);
+            }
+
+            foreach ($assetRequest as $aRequest) {
+                if ($aRequest->quantity_delivered == 0) {
+                    $aRequest->update([
+                        'filter' => 'Cancelled',
+                        'remarks' => $reason,
+                    ]);
+                    $this->receivingLog($request->description, $aRequest->quantity, $transactionNumber, $causer, $reason, true);
+                    $aRequest->delete();
+                    //skip the remaining code
+                    continue;
+                }
+
+                $remaining = $aRequest->quantity - $aRequest->quantity_delivered;
+                $replicatedAssetRequest = $aRequest->replicate();
+                $replicatedAssetRequest->quantity = $remaining;
+                $replicatedAssetRequest->quantity_delivered = 0;
+                $replicatedAssetRequest->filter = NULL;
+                $replicatedAssetRequest->remarks = $reason;
+                $replicatedAssetRequest->save();
+                $replicatedAssetRequest->delete();
+
+                $aRequest->quantity -= $remaining;
+                $aRequest->save();
+                $this->receivingLog($request->description, $remaining, $transactionNumber, $causer, $reason, true);
+            }
+
+            DB::commit();
+
+            return $this->responseSuccess('Successfully cancelled remaining items');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->responseUnprocessable('No asset request found for transaction number ' . $transactionNumber);
+        }
+
+
+    }
+
+    /*public function cancelRemaining(Request $request)
     {
 
 //        $userLocationId = auth('sanctum')->user()->location_id;
@@ -306,10 +468,10 @@ class AddingPoController extends Controller
 
         return $this->responseSuccess('Successfully cancelled remaining items');
 
-    }
+    }*/
 
 
-    public function receivingLog($itemName, $quantityDelivered, $transactionNumber, $causer, $reason = null, $isCancelled = false)
+    public function receivingLog($itemName, $quantityDelivered, $transactionNumber, $causer, $remaining = null, $reason = null, $isCancelled = false)
     {
         $assetRequests = new AssetRequest();
         activity()
@@ -318,6 +480,7 @@ class AddingPoController extends Controller
             ->withProperties(['asset_description' => $itemName,
                 $isCancelled ? 'quantity_cancelled'
                     : 'quantity_delivered' => $quantityDelivered,
+                'quantity_remaining' => $remaining,
                 'causer' => $causer,
                 'reason' => $reason
             ])
@@ -372,4 +535,57 @@ class AddingPoController extends Controller
 //
 //        return $this->responseSuccess('Successfully synced received asset');
 //    }
+
+
+    public function poCreatedActivity(Request $request)
+    {
+        $assetRequests = new AssetRequest();
+        activity()
+            ->performedOn($assetRequests)
+            ->inLog('PO Created')
+            ->withProperties([
+                'po_number' => $request->po_number,
+                'causer' => $request->causer,
+            ])
+            ->tap(function ($activity) use ($request) {
+                $activity->subject_id = $request->transaction_number;
+            })
+            ->log('PO Created');
+
+        $assetRequest = AssetRequest::where('transaction_number', $request->transaction_number)->get();
+        foreach ($assetRequest as $ar) {
+            $ar->update([
+                'filter' => 'Po Created',
+            ]);
+        }
+
+        return $this->responseSuccess('Activity Logged');
+    }
+
+    public function clientTest()
+    {
+        $apiUrl = 'http://10.10.10.15:9000/api/po-added';
+        $bearerToken = '3267|RkELQ3StvYNa38PrAvnvJ6Mcd4deMLO4p9OOkteD';
+
+        try {
+            $response = Http::withHeaders(['Token' => 'Bearer ' . $bearerToken])
+                ->patch(
+                    $apiUrl,
+                    [
+                        "transaction_number" => "0002",
+                        "causer" => "RDFFLFI-11143 Justine Dela Rosa",
+                        "po_number" => "2025-PO-9203"
+                    ]
+                );
+
+            if ($response->successful()) {
+                return $this->responseSuccess('Request was successful');
+            } else {
+                return $this->responseUnprocessable('Request failed with status: ' . $response->status());
+            }
+        } catch (\Exception $e) {
+//            \Log::error('Error in clientTest: ' . $e->getMessage());
+            return $this->responseUnprocessable('An error occurred: ' . $e->getMessage());
+        }
+    }
 }

@@ -6,6 +6,12 @@ namespace App\Http\Controllers\API;
 use App\Models\Approvers;
 use App\Models\AssetApproval;
 use App\Models\AssetRequest;
+use App\Models\BusinessUnit;
+use App\Models\Company;
+use App\Models\Department;
+use App\Models\Location;
+use App\Models\SubUnit;
+use App\Models\Unit;
 use App\Models\YmirPRItem;
 use App\Models\YmirPRTransaction;
 use App\Traits\AddingPRHandler;
@@ -169,12 +175,24 @@ class AddingPrController extends Controller
                     }
                 });
 
+            $company = Company::where('company_name', "RDF FLFI")->where('company_code', "01")->first();
+            $businessUnit = BusinessUnit::where('business_unit_name', 'RDF Corporate Services')->where('business_unit_code', "10")->first();
+            $department = Department::where('department_name', 'Corporate')->where('department_code', "100")->first();
+            $unit = Unit::where('unit_name', 'Corporate Common')->where('unit_code', "101")->first();
+            $subUnit = SubUnit::where('sub_unit_name', 'Corporate Common')->where('sub_unit_code', "11")->first();
+            $location = Location::where('location_name', 'Head Office')->where('location_code', "1")->first();
+
+            if($company === null || $businessUnit === null || $department === null || $unit === null || $subUnit === null || $location === null) {
+                return $this->responseUnprocessable('Please check the COA');
+            }
+
+
             $filteredAndGroupedAssetRequests = $assetRequests->fresh()
                 ->where('status', 'Approved')
                 ->where('is_fa_approved', true)
                 ->whereNull('deleted_at')
                 ->groupBy('transaction_number')
-                ->map(function ($assetRequestCollection) use ($transactionNumber) {
+                ->map(function ($assetRequestCollection) use ($transactionNumber, $company, $businessUnit, $department, $unit, $subUnit, $location) {
                     $latestDateNeeded = $assetRequestCollection->max('date_needed');
                     $assetRequest = $assetRequestCollection->first();
                     $assetRequest->date_needed = $latestDateNeeded;
@@ -186,7 +204,7 @@ class AddingPrController extends Controller
                             'item_id' => null,
                             'item_code' => null,
                             'item_name' => $item->asset_description . "-" . $item->asset_specification,
-                            'remarks' => $item->remarks ?? null,
+                            'remarks' => $item->additional_info ?? null,
                             'quantity' => $item->quantity,
                             'r_warehouse_id' => $item->receivingWarehouse->id,
                             'r_warehouse_name' => $item->receivingWarehouse->warehouse_name,
@@ -208,7 +226,19 @@ class AddingPrController extends Controller
                         "type_name" => "Asset",
                         'r_warehouse_id' => $assetRequest->receivingWarehouse->id,
                         'r_warehouse_name' => $assetRequest->receivingWarehouse->warehouse_name,
-                        'company_id' => $assetRequest->company->sync_id,
+                        'company_id' => $company->sync_id,
+                        'company_name' => $company->company_name,
+                        'business_unit_id' => $businessUnit->sync_id,
+                        'business_unit_name' => $businessUnit->business_unit_name,
+                        'department_id' => $department->sync_id,
+                        'department_name' => $department->department_name,
+                        'department_unit_id' => $unit->sync_id,
+                        'department_unit_name' => $unit->unit_name,
+                        'sub_unit_id' => $subUnit->sync_id,
+                        'sub_unit_name' => $subUnit->sub_unit_name,
+                        'location_id' => $location->sync_id,
+                        'location_name' => $location->location_name,
+/*                        'company_id' => $assetRequest->company->sync_id,
                         'company_name' => $assetRequest->company->company_name,
                         'business_unit_id' => $assetRequest->businessUnit->sync_id,
                         'business_unit_name' => $assetRequest->businessUnit->business_unit_name,
@@ -219,7 +249,7 @@ class AddingPrController extends Controller
                         'sub_unit_id' => $assetRequest->subunit->sync_id,
                         'sub_unit_name' => $assetRequest->subunit->sub_unit_name,
                         'location_id' => $assetRequest->location->sync_id,
-                        'location_name' => $assetRequest->location->location_name,
+                        'location_name' => $assetRequest->location->location_name,*/
                         'account_title_id' => $assetRequest->accountingEntries->initialDebit->sync_id,
                         'account_title_name' => $assetRequest->accountingEntries->initialDebit->account_title_name,
                         'initial_debit_id' => $assetRequest->accountingEntries->initialDebit->sync_id,
@@ -236,7 +266,7 @@ class AddingPrController extends Controller
                 })->values();
 
 
-            if (AssetRequest::where('transaction_number', $transactionNumber)->first()->is_pr_returned == 1) {
+            if (AssetRequest::where('transaction_number', $transactionNumber)->first()->is_pr_returned === 1) {
                 $filteredAndGroupedAssetRequests = $filteredAndGroupedAssetRequests->first();
             }
 
@@ -260,7 +290,7 @@ class AddingPrController extends Controller
             return $filteredAndGroupedAssetRequests;
         } catch (Exception $e) {
             DB::rollBack();
-            return $e->getMessage();
+//            return $e->getMessage();
             return $this->responseUnprocessable('An error occurred while processing the request.');
         }
     }
@@ -518,7 +548,7 @@ class AddingPrController extends Controller
 
             $assetRequests->each(function ($assetRequest) use ($reason) {
                 $assetRequest->update([
-                    'pr_number' => null,
+//                    'pr_number' => null,
                     'filter' => 'Cancelled',
                     'status' => 'Cancelled',
                     'is_fa_approved' => false,
@@ -597,7 +627,7 @@ class AddingPrController extends Controller
                     'ymir_pr_number' => $YmirPRNumber ?: '-',
                     'pr_number' => $assetRequest->pr_number,
                     'item_status' => $assetRequest->item_status,
-                    'status' => $assetRequest->status == 'Approved' ? ($assetRequest->is_fa_approved ? $assetRequest->filter : 'For Approval of FA') : $assetRequest->status,
+                    'status' => $assetRequest->status === 'Approved' ? ($assetRequest->is_fa_approved ? $assetRequest->filter : 'For Approval of FA') : $assetRequest->status,
                     'asset_description' => $assetRequest->asset_description,
                     'asset_specification' => $assetRequest->asset_specification,
                     'brand' => $assetRequest->brand ?? '-',
@@ -620,10 +650,10 @@ class AddingPrController extends Controller
 //                    'account_title' => $assetRequest->accountTitle->account_title_name,
                     'initial_debit_code' => $assetRequest->accountingEntries->initialDebit->account_title_code,
                     'initial_debit' => $assetRequest->accountingEntries->initialDebit->account_title_name,
-                    'initial_credit_code' => $assetRequest->accountingEntries->initialCredit->account_title_code,
-                    'initial_credit' => $assetRequest->accountingEntries->initialCredit->account_title_name,
-                    'depreciation_debit_code' => $assetRequest->accountingEntries->depreciationDebit->account_title_code,
-                    'depreciation_debit' => $assetRequest->accountingEntries->depreciationDebit->account_title_name,
+                    'initial_credit_code' => $assetRequest->accountingEntries->initialCredit->credit_code ?? '-',
+                    'initial_credit' => $assetRequest->accountingEntries->initialCredit->credit_name ?? '-',
+                    'depreciation_debit_code' => $assetRequest->accountingEntries->depreciationDebit->account_title_code ?? '-',
+                    'depreciation_debit' => $assetRequest->accountingEntries->depreciationDebit->account_title_name ?? '-',
                     'depreciation_credit_code' => $assetRequest->accountingEntries->depreciationCredit->credit_code,
                     'depreciation_credit' => $assetRequest->accountingEntries->depreciationCredit->credit_name,
                     'date_needed' => $assetRequest->date_needed,
@@ -639,7 +669,7 @@ class AddingPrController extends Controller
                 }
 
                 return [
-                    'status' => $assetRequestCollection->first()->status == 'Approved' ? ($assetRequestCollection->first()->is_fa_approved ? $assetRequestCollection->first()->filter : 'For Approval of FA') : $assetRequestCollection->status,
+                    'status' => $assetRequestCollection->first()->status === 'Approved' ? ($assetRequestCollection->first()->is_fa_approved ? $assetRequestCollection->first()->filter : 'For Approval of FA') : $assetRequestCollection->status,
                     'ymir_pr_number' => $YmirPRNumber ?: '-',
                     'pr_number' => $assetRequestCollection->first()->pr_number,
                     'pr_description' => $assetRequestCollection->first()->acquisition_details,
@@ -660,8 +690,8 @@ class AddingPrController extends Controller
 //                    'account_title_code' => $assetRequestCollection->first()->accountTitle->account_title_code,
                     'initial_debit_code' => $assetRequestCollection->first()->accountingEntries->initialDebit->account_title_code ?? '-',
                     'initial_debit' => $assetRequestCollection->first()->accountingEntries->initialDebit->account_title_name ?? '-',
-                    'initial_credit_code' => $assetRequestCollection->first()->accountingEntries->initialCredit->account_title_code ?? '-',
-                    'initial_credit' => $assetRequestCollection->first()->accountingEntries->initialCredit->account_title_name ?? '-',
+                    'initial_credit_code' => $assetRequestCollection->first()->accountingEntries->initialCredit->credit_code ?? '-',
+                    'initial_credit' => $assetRequestCollection->first()->accountingEntries->initialCredit->credit_name ?? '-',
                     'depreciation_debit_code' => $assetRequestCollection->first()->accountingEntries->depreciationDebit->account_title_code ?? '-',
                     'depreciation_debit' => $assetRequestCollection->first()->accountingEntries->depreciationDebit->account_title_name ?? '-',
                     'depreciation_credit_code' => $assetRequestCollection->first()->accountingEntries->depreciationCredit->credit_code ?? '-',
