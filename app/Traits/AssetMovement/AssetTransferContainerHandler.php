@@ -144,6 +144,7 @@ trait AssetTransferContainerHandler
                         'id' => $attachment->id,
                         'name' => $attachment->file_name,
                         'url' => $attachment->getUrl(),
+                        'base64' => base64_encode(file_get_contents($attachment->getPath())),
                     ];
                 }) : collect([]),
             ],
@@ -210,6 +211,7 @@ trait AssetTransferContainerHandler
                     'id' => $attachment->id,
                     'name' => $attachment->file_name,
                     'url' => $attachment->getUrl(),
+                    'base64' => base64_encode(file_get_contents($attachment->getPath())),
                 ];
             }) : collect([]),
         ];

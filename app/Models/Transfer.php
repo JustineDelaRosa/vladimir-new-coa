@@ -65,6 +65,11 @@ class Transfer extends Model implements HasMedia
         return $this->belongsTo(Location::class, 'location_id', 'id');
     }
 
+    public function depreciationDebit()
+    {
+        return $this->belongsTo(AccountTitle::class, 'depreciation_debit_id', 'sync_id');
+    }
+
     public function receiver()
     {
         return $this->belongsTo(User::class, 'receiver_id', 'id');

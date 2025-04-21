@@ -35,6 +35,8 @@ class AssetTransferServices
     public function getTransfers($request, $relation)
     {
 
+//        return Transfer::with('transferHistory')->get();
+
         $request->validate([
             'for_monitoring' => 'boolean',
             'status' => 'string|in:For Approval,Approved',
@@ -71,7 +73,7 @@ class AssetTransferServices
             $transferApprovalQuery->where('requester_id', $requesterId);
         }
 
-        $data = $transferApprovalQuery->orderByDesc('created_at')->get();
+        $data = $transferApprovalQuery->orderByDesc('created_at')->useFilters()->get();
         $data = $data->filter(function ($item) use ($relation) {
             return $item->$relation->isNotEmpty();
         })->values();
@@ -117,6 +119,8 @@ class AssetTransferServices
 //                return $businessUnit->business_unit_name;
 //            }
 
+//            return $this->responseUnprocessable($request->depreciation_debit_id);
+
             $transferApproval = AssetTransferApprover::where('subunit_id', $userSubUnit)
                 ->orderBy('layer', 'asc')
                 ->get();
@@ -128,17 +132,18 @@ class AssetTransferServices
             foreach ($fixedAssetIds as $index => $fixedAssetId) {
                 $transferRequest = Transfer::create([
                     'movement_id' => $movementNumber->id,
-                    'receiver_id' => $request->receiver_id,
+                    'receiver_id' => $fixedAssetId['receiver_id'],
                     'description' => $request->description,
                     'fixed_asset_id' => $fixedAssetId['fixed_asset_id'],
-                    'accountability' => $request->accountability,
-                    'accountable' => $request->accountable,
+                    'accountability' => $fixedAssetId['accountability'],
+                    'accountable' => $fixedAssetId['accountable'],
                     'company_id' => $request->company_id,
                     'business_unit_id' => $request->business_unit_id,
                     'department_id' => $request->department_id,
                     'unit_id' => $request->unit_id,
                     'subunit_id' => $request->subunit_id,
                     'location_id' => $request->location_id,
+                    'depreciation_debit_id' => $request->depreciation_debit_id,
 //                    'account_id' => $request->account_id,
                     'remarks' => $request->remarks,
                 ]);
@@ -165,7 +170,6 @@ class AssetTransferServices
 
     public function showTransfer($movementId, $request)
     {
-
         $is_receiver = $request->is_receiver;
 
         $transferMovement = MovementNumber::withTrashed()
@@ -204,7 +208,7 @@ class AssetTransferServices
     public function getNextTransferRequest($request, $approverId)
     {
         $status = $request->input('status', 'For Approval');
-
+        $finalApproval = $request->final_approval ?? false;
         $isUserFa = $this->isUserFa();
 
         $movementApprovalsQuery = MovementApproval::where('approver_id', $approverId)
@@ -223,7 +227,12 @@ class AssetTransferServices
         }
 
         $movementApprovals = $movementApprovalsQuery->where('status', $status)->get();
-        $movementNumbers = array_merge($movementNumbers, $movementApprovals->pluck('movement_number_id')->toArray());
+        if($finalApproval){
+            $movementNumbers = is_array($movementNumbers) ? $movementNumbers : [$movementNumbers];
+        } else {
+            $movementNumbers = $movementApprovals->pluck('movement_number_id')->toArray();
+        }
+//        $movementNumbers = array_merge($movementNumbers, $movementApprovals->pluck('movement_number_id')->toArray());
         $movementNumbers = Arr::flatten($movementNumbers);
 
         $transfer = MovementNumber::where('id', $movementNumbers)->first();
@@ -236,24 +245,30 @@ class AssetTransferServices
 
     public function updateTransfer($request, $movementId)
     {
+
         try {
             DB::beginTransaction();
             $newFixedAssetIds = collect($request->assets)->pluck('fixed_asset_id')->toArray();
+            $newAccountabilities = collect($request->assets)->pluck('accountability')->toArray();
+            $newAccountables = collect($request->assets)->pluck('accountable')->toArray();
+            $newReceiverIds = collect($request->assets)->pluck('receiver_id')->toArray();
+
             $attachments = $request->file('attachments');
             $user = auth('sanctum')->user();
             $userSubUnit = $user->subunit_id;
 
             $payload = [
                 'asset_ids' => $newFixedAssetIds,
-                'receiver_id' => $request->receiver_id,
+                'receiver_id' => $newReceiverIds,
                 'description' => $request->description,
-                'accountability' => $request->accountability,
-                'accountable' => $request->accountable,
+                'accountability' => $newAccountabilities,
+                'accountable' => $newAccountables,
                 'company_id' => $request->company_id,
                 'business_unit_id' => $request->business_unit_id,
                 'department_id' => $request->department_id,
                 'unit_id' => $request->unit_id,
                 'subunit_id' => $request->subunit_id,
+                'depreciation_debit_id' => $request->depreciation_debit_id,
                 'location_id' => $request->location_id,
                 'remarks' => $request->remarks,
             ];
@@ -265,15 +280,24 @@ class AssetTransferServices
                 return $attachment->getClientOriginalName();
             }, $attachments) : [];
 
-            $sortedExistingAssets = Transfer::where('movement_id', $movementId)->pluck('fixed_asset_id')->toArray();
-            sort($sortedExistingAssets);
-            $sortedNewAssets = $payload['asset_ids'];
-            sort($sortedNewAssets);
+            $sortedExistingAssets = Transfer::where('movement_id', $movementId)->pluck('fixed_asset_id')->sort()->toArray();
+            $sortedExistingReceiverIds = Transfer::where('movement_id', $movementId)->pluck('receiver_id')->sort()->toArray();
+            $sortedExistingAccountabilities = Transfer::where('movement_id', $movementId)->pluck('accountability')->sort()->toArray();
+            $sortedExistingAccountables = Transfer::where('movement_id', $movementId)->pluck('accountable')->sort()->toArray();
 
-            if ($toCompareTo->receiver_id == $payload['receiver_id'] &&
+            $sortedNewAssets = $payload['asset_ids'];
+            $sortedNewReceiverIds = $payload['receiver_id'];
+            $sortedNewAccountabilities = $payload['accountability'];
+            $sortedNewAccountables = $payload['accountable'];
+            sort($sortedNewAssets);
+            sort($sortedNewReceiverIds);
+            sort($sortedNewAccountabilities);
+            sort($sortedNewAccountables);
+
+            if ($sortedExistingReceiverIds == $sortedNewReceiverIds &&
                 $toCompareTo->description == $payload['description'] &&
-                $toCompareTo->accountability == $payload['accountability'] &&
-                $toCompareTo->accountable == $payload['accountable'] &&
+                $sortedExistingAccountabilities == $sortedNewAccountabilities &&
+                $sortedExistingAccountables == $sortedNewAccountables &&
                 $toCompareTo->company_id == $payload['company_id'] &&
                 $toCompareTo->business_unit_id == $payload['business_unit_id'] &&
                 $toCompareTo->department_id == $payload['department_id'] &&
@@ -281,11 +305,14 @@ class AssetTransferServices
                 $toCompareTo->subunit_id == $payload['subunit_id'] &&
                 $toCompareTo->location_id == $payload['location_id'] &&
                 $toCompareTo->remarks == $payload['remarks'] &&
+                $toCompareTo->depreciation_debit_id == $payload['depreciation_debit_id'] &&
                 $sortedExistingAssets == $sortedNewAssets &&
                 $newAttachments == []
             ) {
                 return $this->responseSuccess('No changes made');
             }
+
+//            return $this->responseUnprocessable('Changes made');
 
             $transferApproval = AssetTransferApprover::where('subunit_id', $userSubUnit)
                 ->orderBy('layer', 'asc')
@@ -320,24 +347,25 @@ class AssetTransferServices
             }
 
             // Add new fixed assets
-            foreach ($fixedAssetsToAdd as $fixedAssetId) {
+            foreach ($fixedAssetsToAdd as $index => $fixedAssetId) {
                 Transfer::create([
                     'movement_id' => $movementNumber->id,
-                    'receiver_id' => $request->receiver_id,
+                    'receiver_id' => $request->assets[$index]['receiver_id'],
                     'description' => $request->description,
                     'fixed_asset_id' => $fixedAssetId,
-                    'accountability' => $request->accountability,
-                    'accountable' => $request->accountable,
+                    'accountability' => $request->assets[$index]['accountability'],
+                    'accountable' => $request->assets[$index]['accountable'],
                     'company_id' => $request->company_id,
                     'business_unit_id' => $request->business_unit_id,
                     'department_id' => $request->department_id,
                     'unit_id' => $request->unit_id,
                     'subunit_id' => $request->subunit_id,
                     'location_id' => $request->location_id,
+                    'depreciation_debit_id' => $request->depreciation_debit_id,
                     'remarks' => $request->remarks,
                 ]);
             }
-            
+
 
             //remove the existing attachments
 
@@ -352,20 +380,22 @@ class AssetTransferServices
 
 
             // Update existing fixed assets
-            foreach ($newFixedAssetIds as $fixedAssetId) {
+            foreach ($newFixedAssetIds as $index => $fixedAssetId) {
+
                 Transfer::where('movement_id', $movementId)
                     ->where('fixed_asset_id', $fixedAssetId)
                     ->update([
-                        'receiver_id' => $request->receiver_id,
+                        'receiver_id' => $request->assets[$index]['receiver_id'],
                         'description' => $request->description,
-                        'accountability' => $request->accountability,
-                        'accountable' => $request->accountable,
+                        'accountability' => $request->assets[$index]['accountability'],
+                        'accountable' => $request->assets[$index]['accountable'],
                         'company_id' => $request->company_id,
                         'business_unit_id' => $request->business_unit_id,
                         'department_id' => $request->department_id,
                         'unit_id' => $request->unit_id,
                         'subunit_id' => $request->subunit_id,
                         'location_id' => $request->location_id,
+                        'depreciation_debit_id' => $request->depreciation_debit_id,
                         'remarks' => $request->remarks,
                     ]);
             }
@@ -426,7 +456,7 @@ class AssetTransferServices
             return $this->responseSuccess('Successfully Voided');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->responseServerError($e->getMessage());
+            return $this->responseServerError($e);
         }
     }
 
@@ -482,6 +512,8 @@ class AssetTransferServices
                 if (!$transfer) {
                     return $this->responseNotFound('Transfer not found');
                 }
+                $oldDebit = $transfer->fixedAsset->accountingEntries->depreciationDebit->sync_id;
+//                return $this->responseUnprocessable($transfer->fixedAsset->accountingEntries->depreciationDebit->sync_id);
 
                 $transfer->update([
                     'received_at' => now(),
@@ -509,12 +541,26 @@ class AssetTransferServices
                     ]);
 
                     $this->movementLogs($movementNumber->id, 'fully Received');
+                } else {
+                    $this->movementLogs($transfer->movement_id, 'item Received');
                 }
 
 
-                $this->movementLogs($transfer->movement_id, 'item Received');
-                $this->updateAssetData($transferId);
-                $this->addToMovementHistory($transferId);
+                $transfer = Transfer::where('id', $transferId)->first();
+                $attribute = [
+                    'company_id' => $transfer->company_id,
+                    'business_unit_id' => $transfer->business_unit_id,
+                    'department_id' => $transfer->department_id,
+                    'unit_id' => $transfer->unit_id,
+                    'subunit_id' => $transfer->subunit_id,
+                    'location_id' => $transfer->location_id,
+                    'accountability' => $transfer->accountability,
+                    'accountable' => $transfer->accountable,
+                    'remarks' => $transfer->remarks,
+                ];
+
+                $this->updateAssetData(FixedAsset::class, $transfer->fixed_asset_id, $attribute, $transfer->depreciation_debit_id);
+                $this->addToMovementHistory(FixedAsset::class, Transfer::class, $transfer->fixed_asset_id, $transferId, $oldDebit, 'From Transfer');
             }
 
             DB::commit();
@@ -525,10 +571,11 @@ class AssetTransferServices
         }
     }
 
-    public function addToMovementHistory($transferId)
+    /*public function addToMovementHistory($transferId)
     {
         $transfer = Transfer::where('id', $transferId)->first();
         $fixedAsset = FixedAsset::where('id', $transfer->fixed_asset_id)->first();
+        $transferModel = new Transfer();
 
         if ($fixedAsset) {
             $newMovementHistory = $fixedAsset->replicate();
@@ -536,11 +583,15 @@ class AssetTransferServices
             $newMovementHistory->fixed_asset_id = $fixedAsset->id;
             $newMovementHistory->remarks = 'From Transfer';
             $newMovementHistory->created_by_id = $transfer->movementNumber->requester_id;
+            $newMovementHistory->receiver_id = $transfer->receiver_id;
+            $newMovementHistory->subject_id = $transferId;
+            $newMovementHistory->subject_type = get_class($transferModel);
             $newMovementHistory->save();
         }
-    }
 
-    public function updateAssetData($transferId)
+    }*/
+
+    /*public function updateAssetData($transferId)
     {
         $transfer = Transfer::where('id', $transferId)->first();
         $assetId = $transfer->fixed_asset_id;
@@ -556,7 +607,5 @@ class AssetTransferServices
             'accountable' => $transfer->accountable,
             'remarks' => $transfer->remarks,
         ]);
-    }
-
-
+    }*/
 }

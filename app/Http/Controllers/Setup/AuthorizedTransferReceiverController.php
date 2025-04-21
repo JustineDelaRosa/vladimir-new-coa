@@ -16,8 +16,14 @@ class AuthorizedTransferReceiverController extends Controller
     {
         $status = $request->input('status');
         $isActiveStatus = $status === 'active' ? 1 : 0;
+        $department = $request->input('department');
 
         $authorizedTransferReceivers = AuthorizedTransferReceiver::withTrashed()->where('is_active', $isActiveStatus)
+            ->when($department, function ($query) use ($department) {
+                $query->whereHas('user', function ($query) use ($department) {
+                    $query->where('department_id', $department);
+                });
+            })
             ->orderBy('created_at', 'DESC')
             ->useFilters()
             ->dynamicPaginate();
@@ -33,8 +39,8 @@ class AuthorizedTransferReceiverController extends Controller
                     'username' => $authorizedTransferReceiver->user->username,
                     'is_coordinator' => $authorizedTransferReceiver->user->is_coordinator,
                     'full_id_number_full_name' => $authorizedTransferReceiver->user->employee_id . ' - ' . $authorizedTransferReceiver->user->firstname . ' ' . $authorizedTransferReceiver->user->lastname,
-
                 ],
+                'full_id_number_full_name' => $authorizedTransferReceiver->user->employee_id . ' - ' . $authorizedTransferReceiver->user->firstname . ' ' . $authorizedTransferReceiver->user->lastname,
                 'company' => [
                     'id' => $authorizedTransferReceiver->user->company->id ?? '-',
                     'company_code' => $authorizedTransferReceiver->user->company->company_code ?? '-',

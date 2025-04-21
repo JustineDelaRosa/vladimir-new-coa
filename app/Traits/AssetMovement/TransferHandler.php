@@ -21,9 +21,12 @@ trait TransferHandler
             if ($item->status == 'Returned' || $item->status == 'For Approval of Approver 1') {
                 $canDelete = 1;
             }
+
+            $isFinalApproval = $item->status === 'Approved' && $item->is_fa_approved === 0 ? 1 : 0;
             return [
                 'can_edit' => $canEdit,
                 'can_delete' => $canDelete,
+                'final_approval' => $isFinalApproval,
                 'id' => $item->transfer->map(function ($transferMovement) {
                     return $transferMovement->id;
                 })->values(),
@@ -82,6 +85,12 @@ trait TransferHandler
                     'location_code' => $transfer->fixedAsset->location->location_code ?? '-',
                     'location_name' => $transfer->fixedAsset->location->location_name ?? '-',
                 ],
+                'depreciation_debit_from' => [
+                    'id' => $transfer->fixedAsset->accountingEntries->depreciationDebit->id ?? '-',
+                    'sync_id' => $transfer->fixedAsset->accountingEntries->depreciationDebit->sync_id ?? '-',
+                    'account_title_code' => $transfer->fixedAsset->accountingEntries->depreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $transfer->fixedAsset->accountingEntries->depreciationDebit->account_title_name ?? '-',
+                ],
                 'company' => [
                     'id' => $transfer->company->id ?? '-',
                     'company_code' => $transfer->company->company_code ?? '-',
@@ -112,6 +121,12 @@ trait TransferHandler
                     'id' => $transfer->location->id ?? '-',
                     'location_code' => $transfer->location->location_code ?? '-',
                     'location_name' => $transfer->location->location_name ?? '-',
+                ],
+                'depreciation_debit' => [
+                    'id' => $transfer->depreciationDebit->id ?? '-',
+                    'sync_id' => $transfer->depreciationDebit->sync_id ?? '-',
+                    'account_title_code' => $transfer->depreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $transfer->depreciationDebit->account_title_name ?? '-',
                 ],
                 'created_at' => $transfer->created_at,
                 'attachments' => $attachments ? collect($attachments)->map(function ($attachment) {
@@ -177,6 +192,8 @@ trait TransferHandler
                     'id' => $attachment->id,
                     'name' => $attachment->file_name,
                     'url' => $attachment->getUrl(),
+                    'base64' => base64_encode(file_get_contents($attachment->getPath())),
+                    'uuid' => $attachment->uuid,
                 ];
             }) : collect([]),
         ];
@@ -196,7 +213,7 @@ trait TransferHandler
 //            'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id ?? '-',
 //            'is_received' => $transfer ? ($transfer->whereNotNull('received_at') ? 1 : 0) : '-',
-
+            //
             'receiver' => $transfer ? [
                 'id' => $transfer->receiver->id ?? '-',
                 'username' => $transfer->receiver->username ?? '-',
@@ -309,7 +326,8 @@ trait TransferHandler
             'end_depreciation' => $fixed_asset->formula->end_depreciation ?? '-',
             'depreciation_per_year' => $fixed_asset->formula->depreciation_per_year ?? '-',
             'depreciation_per_month' => $fixed_asset->formula->depreciation_per_month ?? '-',
-            'remaining_book_value' => $fixed_asset->formula->remaining_book_value ?? '-',
+//            'remaining_book_value' => $fixed_asset->formula->remaining_book_value ?? '-',
+            'remaining_book_value' => $fixed_asset->depreciationHistory->last() ? $fixed_asset->depreciationHistory->last()->remaining_book_value : $fixed_asset->formula->depreciable_basis,
             'release_date' => $fixed_asset->formula->release_date ?? '-',
             'start_depreciation' => $fixed_asset->formula->start_depreciation ?? '-',
             'company' => [
@@ -515,6 +533,8 @@ trait TransferHandler
                 'sub_unit_code' => $item->subUnit->sub_unit_code,
                 'location' => $item->location->location_name,
                 'location_code' => $item->location->location_code,
+                'depreciation_debit' => $item->depreciationDebit->account_title_name,
+                'depreciation_debit_code' => $item->depreciationDebit->account_title_code,
                 'created_at' => $item->created_at,
             ];
         });
