@@ -399,8 +399,8 @@ class AdditionalCostRepository
             ],
             'depreciation_credit' => [
                 'id' => $additional_cost->accountTitle->depreciationCredit->id ?? '-',
-                'account_title_code' => $additional_cost->accountTitle->depreciationCredit->account_title_code ?? '-',
-                'account_title_name' => $additional_cost->accountTitle->depreciationCredit->account_title_name ?? '-',
+                'account_title_code' => $additional_cost->accountTitle->depreciationCredit->credit_code ?? '-',
+                'account_title_name' => $additional_cost->accountTitle->depreciationCredit->credit_name ?? '-',
             ],
             'main' => [
                 'id' => $additional_cost->fixedAsset->id,
@@ -541,8 +541,8 @@ class AdditionalCostRepository
                 ],
                 'depreciation_credit' => [
                     'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
+                    'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->credit_code ?? '-',
+                    'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->credit_name ?? '-',
                 ],
                 'remarks' => $additional_cost->fixedAsset->remarks,
                 'print_count' => $additional_cost->fixedAsset->print_count,

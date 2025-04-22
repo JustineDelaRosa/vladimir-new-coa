@@ -2,8 +2,6 @@
 
 namespace App\Imports;
 
-use App\Models\AccountingEntries;
-use App\Models\AccountTitle;
 use App\Models\BusinessUnit;
 use App\Models\Company;
 use App\Models\Department;
@@ -19,6 +17,7 @@ use App\Models\Status\MovementStatus;
 use App\Models\SubUnit;
 use App\Models\TypeOfRequest;
 use App\Models\Unit;
+use App\Models\UnitOfMeasure;
 use App\Repositories\AdditionalCostRepository;
 use App\Repositories\CalculationRepository;
 use App\Rules\ImportValidation\ValidAccountCode;
@@ -178,6 +177,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             //check for unnecessary spaces and trim them to one space only
             'receipt' => preg_replace('/\s+/', ' ', ucwords(strtolower($collection['receipt']))),
             'quantity' => $collection['quantity'],
+            'uom_id' => UnitOfMeasure::where('uom_name', $collection['unit_of_measure'])->first()->id ?? 6,
             'depreciation_method' => strtoupper($collection['depreciation_method']) == 'STL'
                 ? strtoupper($collection['depreciation_method'])
                 : ucwords(strtolower($collection['depreciation_method'])),
@@ -264,7 +264,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
 
                 }
             ],
-
+            '*.unit_of_measure' => 'required|exists:unit_of_measures,uom_name',
             '*.voucher' => ['required',
 //                function ($attribute, $value, $fail) {
 //                    if ($value == '-') {
@@ -448,6 +448,8 @@ class AdditionalCostImport extends DefaultValueBinder implements
             '*.location_code.exists' => 'Location Code does not exist',
             '*.account_code.required' => 'Account Code is required',
             '*.account_code.exists' => 'Account Code does not exist',
+            '*.unit_of_measure.required' => 'Unit of Measure is required',
+            '*.unit_of_measure.exists' => 'Unit of Measure does not exist',
         ];
     }
 }

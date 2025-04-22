@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Masterlist;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AdditionalCost\AdditionalCostRequest;
 use App\Http\Requests\AdditionalCost\AdditionalCostSyncRequest;
+use App\Http\Requests\AdditionalCost\TaggingOfAddCostRequest;
 use App\Imports\AdditionalCostImport;
 use App\Imports\MasterlistImport;
 use App\Models\AccountingEntries;
@@ -288,6 +289,7 @@ class AdditionalCostController extends Controller
                     'id' => $additionalCost->accountTitle->initialDebit->id ?? '-',
                     'account_title_code' => $additionalCost->accountTitle->initialDebit->account_title_code ?? '-',
                     'account_title_name' => $additionalCost->accountTitle->initialDebit->account_title_name ?? '-',
+                    'depreciation_debit' => $additionalCost->initialDebit->depreciationDebit ?? '-',
                 ],
                 'initial_credit' => [
                     'id' => $additionalCost->accountTitle->initialCredit->id ?? '-',
@@ -301,8 +303,8 @@ class AdditionalCostController extends Controller
                 ],
                 'depreciation_credit' => [
                     'id' => $additionalCost->accountTitle->depreciationCredit->id ?? '-',
-                    'account_title_code' => $additionalCost->accountTitle->depreciationCredit->account_title_code ?? '-',
-                    'account_title_name' => $additionalCost->accountTitle->depreciationCredit->account_title_name ?? '-',
+                    'account_title_code' => $additionalCost->accountTitle->depreciationCredit->credit_code ?? '-',
+                    'account_title_name' => $additionalCost->accountTitle->depreciationCredit->credit_name ?? '-',
                 ],
             ],
             'default' => [
@@ -336,8 +338,8 @@ class AdditionalCostController extends Controller
                 ],
                 'depreciation_credit' => [
                     'id' => $additionalCost->accountTitle->depreciationCredit->id ?? '-',
-                    'account_title_code' => $additionalCost->accountTitle->depreciationCredit->account_title_code ?? '-',
-                    'account_title_name' => $additionalCost->accountTitle->depreciationCredit->account_title_name ?? '-',
+                    'account_title_code' => $additionalCost->accountTitle->depreciationCredit->credit_code ?? '-',
+                    'account_title_name' => $additionalCost->accountTitle->depreciationCredit->credit_name ?? '-',
                 ],
             ]
         ];
@@ -382,27 +384,69 @@ class AdditionalCostController extends Controller
         $path = storage_path('app/sample/additionalCost.xlsx');
         return response()->download($path);
     }
-    public function tagToAsset(Request $request){
+
+    public function tagToAsset(TaggingOfAddCostRequest $request)
+    {
+
+//        return 'test';
 //        $addCostItems = $request->input('assetTag');
 //        'add_cost_sequence' => $this->getAddCostSequence($request['fixed_asset_id']) ?? '-',
+        $changedTag = $request->input('replacement_tag', null);
+        $addedUsefulLife = $request->input('est_useful_life');
+        /*        $companyId = $request->input('company_id');
+                $businessUnitId = $request->input('business_unit_id');
+                $departmentId = $request->input('department_id');
+                $unitId = $request->input('unit_id');
+                $subUnitId = $request->input('subunit_id');
+                $locationId = $request->input('location_id');*/
+
 
         DB::beginTransaction();
         try {
+
             $additionalCosts = $request->assetTag;
             foreach ($additionalCosts as $additionalCost) {
-                $fixedAssetId = FixedAsset::where('vladimir_tag_number', $additionalCost['assetTag'])->first()->id;
-                $businessUnitQuery = BusinessUnit::where('id', $additionalCost['businessUnitId'])->first();
+                $tagNumber = $changedTag ?: $additionalCost['assetTag'];
+
+                $fixedAsset = FixedAsset::where('vladimir_tag_number', $tagNumber)->first();
+
+                if (!$fixedAsset) {
+                    return $this->responseUnprocessable('Asset Tag not found!');
+                }
+
+                //get the company, business unit, department, unit, subunit, location on the $fixedAsset
+                $companyId = $fixedAsset->company_id;
+                $businessUnitId = $fixedAsset->business_unit_id;
+                $departmentId = $fixedAsset->department_id;
+                $unitId = $fixedAsset->unit_id;
+                $subUnitId = $fixedAsset->subunit_id;
+                $locationId = $fixedAsset->location_id;
+                $depreciationMethod = $fixedAsset->depreciation_method;
+
+                $majorCategoryId = $fixedAsset->major_category_id;
+                $minorCategoryId = $fixedAsset->minor_category_id;
+                $uomId = $fixedAsset->uom_id;
+
+
+                $fixedAssetId = $fixedAsset->id;
+                $businessUnitQuery = BusinessUnit::where('id', $businessUnitId)->first();
                 $majorCategory = MajorCategory::whereRaw('LOWER(major_category_name) = ?', [strtolower($additionalCost['majorCategoryName'])])->first();
-                $majorCategoryId = $majorCategory->id;
                 $minorCategory = MinorCategory::whereRaw('LOWER(minor_category_name) = ?', [strtolower($additionalCost['minorCategoryName'])])->first();
-                $minorCategoryId = $minorCategory->id;
-                $depreciationMethod = $additionalCost['unitPrice'] < 10000 ? 'One Time' : 'STL';
+
+
+                // TODO: unmatached major, minor and uom to the project database
+//                $majorCategoryId = $majorCategory->id;
+//                $minorCategoryId = $minorCategory->id;
+//                $uomId = UnitOfMeasure::whereRaw('LOWER(uom_name) = ?', [strtolower($additionalCost['uom'])])->first()->id;
+
+
+//                $depreciationMethod = $fixedAsset->depreciation_method == 'One Time' ? 'One Time' : ($additionalCost['unitPrice'] < 10000 ? 'One Time' : 'STL');
                 $depreciationStatusId = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
+
                 $typeOfRequestId = TypeOfRequest::where('type_of_request_name', 'Asset')->first()->id;
                 $assetStatus = AssetStatus::where('asset_status_name', 'Good')->first()->id;
                 $cycleCountStatus = CycleCountStatus::where('cycle_count_status_name', 'On Site')->first()->id;
                 $movementStatus = MovementStatus::where('movement_status_name', 'New Item')->first()->id;
-                $uomId = UnitOfMeasure::whereRaw('LOWER(uom_name) = ?', [strtolower($additionalCost['uom'])])->first()->id;
 
 
                 $additionalCost['type_of_request_id'] = $typeOfRequestId;
@@ -424,24 +468,46 @@ class AdditionalCostController extends Controller
                 $additionalCost['depreciable_basis'] = $additionalCost['unitPrice'];
                 $additionalCost['months_depreciated'] = $this->calculationRepository->getMonthDifference($additionalCost['acquisitionDate'], date('Y-m-d'));
 
-                $additionalCost['company_id'] = $additionalCost['companyId'];
-                $additionalCost['business_unit_id'] = $additionalCost['businessUnitId'];
-                $additionalCost['department_id'] = $additionalCost['departmentId'];
-                $additionalCost['unit_id'] = $additionalCost['unitId'];
-                $additionalCost['subunit_id'] = $additionalCost['subUnitId'];
-                $additionalCost['location_id'] = $additionalCost['locationId'];
+                $additionalCost['company_id'] = $companyId;
+                $additionalCost['business_unit_id'] = $businessUnitId;
+                $additionalCost['department_id'] = $departmentId;
+                $additionalCost['unit_id'] = $unitId;
+                $additionalCost['subunit_id'] = $subUnitId;
+                $additionalCost['location_id'] = $locationId;
 
                 $additionalCost = $this->additionalCostRepository->storeAdditionalCost($additionalCost, $businessUnitQuery);
+                if ($additionalCost) {
+                    /*                    $depreciationStatus = DepreciationStatus::find($fixedAsset->depreciation_status_id);
+
+                                         update the end depreciation if the depreciation method is STL,add the added useful life to the end depreciation
+                                        if ($depreciationMethod === 'STL') {
+                                            $endDepreciation = date('Y-m', strtotime($fixedAsset->formula->end_depreciation . ' + ' . $addedUsefulLife . ' months')); //or years
+                                            $fixedAsset->formula->update(['end_depreciation' => $endDepreciation]);
+                                        }
+
+                                        if ( $depreciationStatus->depreciation_status_name === 'Fully Depreciated') {
+                                        when fully depreciated and is only one time method then depreciate only once,set the end deprecation on the next month of the current month
+                                            if ($depreciationMethod === 'One Time') {
+                                                $endDepreciation = date('Y-m', strtotime($fixedAsset->formula->end_depreciation . ' + 1 months'));
+                                                $fixedAsset->formula->update(['end_depreciation' => $endDepreciation]);
+                                            }
+                                            $fixedAsset->update(['depreciation_status_id' => $depreciationStatusId]);
+
+                                        }*/
+
+                    $fixedAsset->added_useful_life += $addedUsefulLife;
+                    $fixedAsset->save();
+                }
             }
             DB::commit();
-            return $this->responseSuccess('Successfully Tagged to Asset!');
+            return $this->responseSuccess('Successfully Tagged to Asset!', $fixedAsset->vladimir_tag_number);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $e->getMessage();
+            return $this->responseUnprocessable($e->getMessage());
         }
     }
 
-    public function syncData(AdditionalCostSyncRequest $request)
+    public function syncData(AdditionalCostSyncRequest $request) //not Used
     {
 
 //        return $additionalCosts = $request->assetTag;
@@ -483,5 +549,82 @@ class AdditionalCostController extends Controller
             DB::rollBack();
             return $this->responseUnprocessable($e->getMessage());
         }
+    }
+
+
+    public function addToAddCost(Request $request)
+    {
+        $mainAsset = $request->input('vTagNumber');
+        $addCost = $request->input('addCost', []);
+        if ($addCost === []) {
+            return $this->responseUnprocessable('No additional cost to add.');
+        }
+
+        $main = FixedAsset::where('vladimir_tag_number', $mainAsset)->first();
+
+        if (!$main) {
+            return $this->responseNotFound('Main asset not found.');
+        }
+
+        foreach ($addCost as $item) {
+            $item = FixedAsset::where('id', $item)->first();
+
+            $addCost = AdditionalCost::create([
+                'fixed_asset_id' => $main->id,
+                'requester_id' => $item->requester_id,
+                'transaction_number' => $item->transaction_number,
+                'reference_number' => $item->reference_number,
+                'is_memo_printed' => $item->is_memo_printed,
+                'inclusion' => $item->inclusion,
+                'supplier_id' => $item->supplier_id,
+                'uom_id' => $item->uom_id,
+                'ymir_pr_number' => $item->ymir_pr_number,
+                'pr_number' => $item->pr_number,
+                'po_number' => $item->po_number,
+                'rr_number' => $item->rr_number,
+                'rr_id' => $item->rr_id,
+                'warehouse_id' => $item->warehouse_id,
+                'warehouse_number_id' => $item->warehouse_number_id,
+                'from_request' => $item->from_request,
+                'can_release' => 1, //$item->can_release,
+                'is_released' => $item->is_released,
+                'add_cost_sequence' => $this->additionalCostRepository->getAddCostSequence($main->id),
+                'asset_description' => $item->asset_description,
+                'asset_specification' => $item->asset_specification,
+                'type_of_request_id' => $item->type_of_request_id,
+                'accountability' => $item->accountability,
+                'accountable' => $item->accountable,
+                'received_by' => $item->received_by,
+                'cellphone_number' => $item->cellphone_number,
+                'brand' => $item->brand,
+                'major_category_id' => $item->major_category_id,
+                'minor_category_id' => $item->minor_category_id,
+                'voucher' => $item->voucher,
+                'voucher_date' => $item->voucher_date,
+                'quantity' => $item->quantity,
+//                'depreciation_method' => $item->depreciation_method,
+                'acquisition_date' => $item->acquisition_date,
+                'acquisition_cost' => $item->acquisition_cost,
+                'asset_status_id' => $item->asset_status_id,
+                'cycle_count_status_id' => $item->cycle_count_status_id,
+                'depreciation_status_id' => $item->dep_status_id,
+                'movement_status_id' => $item->movement_status_id,
+                'care_of' => $item->care_of,
+                'company_id' => $item->company_id,
+                'business_unit_id' => $item->business_unit_id,
+                'department_id' => $item->department_id,
+                'unit_id' => $item->unit_id,
+                'subunit_id' => $item->subunit_id,
+                'location_id' => $item->location_id,
+                'account_id' => $item->account_id,
+                'remarks' => $item->remarks,
+                'formula_id' => $item->formula_id,
+            ]);
+
+            if ($addCost) {
+                $item->delete();
+            }
+        }
+        return $this->responseSuccess('Successfully Added To Additional Cost!');
     }
 }
