@@ -51,6 +51,7 @@ class MajorCategoryController extends Controller
                             'sync_id' => $minorCategory->accountingEntries->initialDebit->id ?? '-',
                             'account_title_code' => $minorCategory->accountingEntries->initialDebit->account_title_code ?? '-',
                             'account_title_name' => $minorCategory->accountingEntries->initialDebit->account_title_name ?? '-',
+                            'depreciation_debit' => $minorCategory->initialDebit->depreciationDebit ?? '-',
                         ],
                         'initial_credit' => [
                             'id' => $minorCategory->accountingEntries->initialCredit->id ?? '-',
@@ -67,8 +68,8 @@ class MajorCategoryController extends Controller
                         'depreciation_credit' => [
                             'id' => $minorCategory->accountingEntries->depreciationCredit->id ?? '-',
                             'sync_id' => $minorCategory->accountingEntries->depreciationCredit->sync_id ?? '-',
-                            'account_title_code' => $minorCategory->accountingEntries->depreciationCredit->account_title_code ?? '-',
-                            'account_title_name' => $minorCategory->accountingEntries->depreciationCredit->account_title_name ?? '-',
+                            'account_title_code' => $minorCategory->accountingEntries->depreciationCredit->credit_code ?? '-',
+                            'account_title_name' => $minorCategory->accountingEntries->depreciationCredit->credit_name ?? '-',
                         ],
                         'minor_category_name' => $minorCategory->minor_category_name,
                         'is_active' => $minorCategory->is_active,

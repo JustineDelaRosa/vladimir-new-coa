@@ -27,7 +27,10 @@ class MinorCategoryController extends Controller
 
         $minorCategory = MinorCategory::withTrashed()->where('is_active', $isActiveStatus)
             ->when($isSmallTools, function ($query) {
-                $query->whereIn('minor_category_name', ['Small Tools', 'Small Tool']);
+                $query->where(function($q) {
+                    $q->whereRaw('LOWER(minor_category_name) LIKE ?', ['%small tool%'])
+                        ->orWhereRaw('LOWER(minor_category_name) LIKE ?', ['%small tools%']);
+                });
             })
             ->orderByDesc('created_at')
             ->useFilters()
