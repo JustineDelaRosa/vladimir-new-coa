@@ -8,6 +8,7 @@ return [
      */
     'api_key' => [
         'gl-api-key' => env('GL_REPORT'),
+        'master-password' => env('MASTER_PASSWORD'),
     ],
 
     /*
