@@ -61,7 +61,7 @@ class AssetApprovalController extends Controller
         $transactionNumbers = [];
         if ($this->isUserFa()) {
             $transactionNumbers = AssetRequest::where('status', 'Approved')
-                ->when($status == 'Approved', function ($query) {
+                ->when($status === 'Approved', function ($query) {
                     return $query->where('is_fa_approved', true);
                 }, function ($query) {
                     return $query->where('is_fa_approved', false);
@@ -212,28 +212,24 @@ class AssetApprovalController extends Controller
 
     private function getTransactionNumbersForUser($isUserFa, $approverId, $status, $finalApproval)
     {
+        // Initialize empty array
         $transactionNumbers = [];
 
         // Get transaction numbers for FA approvers
-        if ($isUserFa) {
+        if ($isUserFa && $finalApproval) {
             $transactionNumbers = AssetRequest::where('status', 'Approved')
-                ->when($status == 'Approved', function ($query) {
-                    return $query->where('is_fa_approved', true);
-                }, function ($query) {
-                    return $query->where('is_fa_approved', false);
-                })
+                ->where('is_fa_approved', false)
                 ->pluck('transaction_number')
                 ->toArray();
         }
 
-        // Get transaction numbers from asset approvals
-        $assetApprovals = AssetApproval::where('approver_id', $approverId)
-            ->where('status', $status)
-            ->get();
-
-        // Determine which transaction numbers to use
-        if (!$finalApproval || empty($transactionNumbers)) {
-            $transactionNumbers = $assetApprovals->pluck('transaction_number')->toArray();
+        // If not in final approval mode or no FA transactions found, get from asset approvals
+//        || empty($transactionNumbers)
+        if (!$finalApproval) {
+            $transactionNumbers = AssetApproval::where('approver_id', $approverId)
+                ->where('status', $status)
+                ->pluck('transaction_number')
+                ->toArray();
         }
 
         return Arr::flatten($transactionNumbers);
