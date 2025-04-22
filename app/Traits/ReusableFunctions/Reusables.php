@@ -24,7 +24,7 @@ trait Reusables
     public function isUserFa(): bool
     {
         $user = auth('sanctum')->user()->id;
-        $faRoleIds = RoleManagement::whereIn('role_name', ['Fixed Assets', 'Fixed Asset', 'Fixed Asset Associate'])->pluck('id');
+        $faRoleIds = RoleManagement::whereIn('role_name', ['Fixed Assets', 'Fixed Asset', 'Fixed Asset Associate', 'Fixed Asset Specialist','Requestor-approver-fixed Asset'])->pluck('id');
         $user = User::where('id', $user)->whereIn('role_id', $faRoleIds)->exists();
         return $user ? 1 : 0;
     }
@@ -51,6 +51,9 @@ trait Reusables
     {
         $user = auth('sanctum')->user()->id;
         $approverId = Approvers::where('approver_id', $user)->first()->id;
+        if (!$approverId) {
+            return $this->responseNotFound('Approver not found');
+        }
 
         //check if the user is the approver for this request
         $nextApprover = $this->getNextApprover($approvalModelName, $uniqueNumber, $uniqueNumberValue, $approverId);
@@ -58,6 +61,10 @@ trait Reusables
             ->where('approver_id', $approverId)
             ->where('status', 'For Approval')
             ->first();
+
+//        if(!$isApprover){
+//            return $this->responseNotFound('Approver not found');
+//        }
 
         if (!$this->isUserFa() && !$this->isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName)) {
             if (!$isApprover) {
@@ -67,13 +74,32 @@ trait Reusables
 
         switch (strtolower($action)) {
             case 'approve':
+                $assetRequest = $model::where($uniqueNumber, $uniqueNumberValue)
+                    ->where('is_fa_approved', 1)
+                    ->first();
+                if ($assetRequest) {
+                    return $this->responseUnprocessable('Request not found');
+                }
                 if ($this->isUserFa() && $this->isRequestApproved($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName)) {
                     $this->faApproval($uniqueNumberValue, $uniqueNumber, $model);
                     break;
                 }
+                if (!$isApprover) {
+                    return $this->responseNotFound('Approver not found');
+                }
                 $this->approveRequest($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName, $nextApprover->layer ?? null);
                 break;
             case 'return':
+
+                $assetRequest = $model::where($uniqueNumber, $uniqueNumberValue)
+                    ->whereNull('filter')
+                    ->first();
+                if (!$assetRequest) {
+                    return $this->responseUnprocessable('Request not found');
+                }
+                if (!$isApprover && !$this->isUserFa()) {
+                    return $this->responseNotFound('Approver not found');
+                }
                 $this->returnRequest($uniqueNumberValue, $uniqueNumber, $model, $approvalModelName, $remarks);
                 break;
             default:
@@ -157,6 +183,7 @@ trait Reusables
         $approvalModelName::where($uniqueNumber, $uniqueNumberValue)
 //            ->where('status', 'For Approval')
             ->update(['status' => 'Returned']);
+
         $model::where($uniqueNumber, $uniqueNumberValue)
             ->update([
                 'status' => 'Returned',
@@ -196,7 +223,7 @@ trait Reusables
             ->performedOn($modelInstance)
             ->withProperties([
                 'action' => $action,
-                '$uniqueNumber' => $movementRequest->$uniqueNumber,
+                'uniqueNumber' => $movementRequest->$uniqueNumber,
                 'remarks' => $movementRequest->remarks ?? null,
                 'vladimir_tag_number' => $movementRequest->fixedAsset->vladimir_tag_number ?? null,
                 'description' => $movementRequest->description,
@@ -437,7 +464,7 @@ trait Reusables
                 ];
             })->toArray();
         } else if ($modelType instanceof PullOut) {
-            $requestApproversCollection = AssetPullOutApprover::where('subunit_id', $subUnitId)
+             $requestApproversCollection = AssetPullOutApprover::where('subunit_id', $subUnitId)
                 ->orderBy('layer', 'asc')
                 ->get();
             return $requestApproversCollection->map(function ($item) {
@@ -457,16 +484,19 @@ trait Reusables
     }
 
 
-    public function updateAssetData($modelClass, $id, array $attributes)
+    public function updateAssetData($modelClass, $id, array $attributes, $depreciationDebit = null)
     {
         $modelInstance = $modelClass::find($id);
 
         if ($modelInstance) {
             $modelInstance->update($attributes);
+            if($depreciationDebit) {
+                $modelInstance->accountingEntries()->update(['depreciation_debit' => $depreciationDebit]);
+            }
         }
     }
 
-    public function addToMovementHistory($modelClass, $subjectClass, $assetId, $id, $remarks)
+    public function addToMovementHistory($modelClass, $subjectClass, $assetId, $id, $oldDebit = null, $remarks = null)
     {
         $modelInstance = $modelClass::find($assetId);
         $movementInstance = $subjectClass::find($id);
@@ -480,6 +510,7 @@ trait Reusables
             $newMovementHistory->receiver_id = auth('sanctum')->user()->id;
             $newMovementHistory->subject_id = $id;
             $newMovementHistory->subject_type = $subjectClass;
+            $newMovementHistory->depreciation_debit_id = $oldDebit;
             $newMovementHistory->save();
         }
     }
