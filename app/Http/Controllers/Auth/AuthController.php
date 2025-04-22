@@ -203,11 +203,12 @@ class AuthController extends Controller
             'Purchase Request', 'Approver',
             'Warehouse', 'Fixed Assets', 'Fixed Asset',
             'ERP', 'Requester-approver', 'Fixed Asset Specialist', 'Requestor',
-            'Requestor-approver-fixed Asset'
+            'Requestor-approver-fixed Asset', 'Requestor And Warehouse',
         ];
         $response = [
             'toApproveCount' => 0,
             'toAcquisitionFaApproval' => 0,
+            'toTransferFaApproval' => 0,
 //            'toPR' => 0,
             'toReceive' => 0,
             'toTagCount' => 0,
@@ -221,6 +222,7 @@ class AuthController extends Controller
             return response()->json([
                 'toApproveCount' => 0,
                 'toAcquisitionFaApproval' => 0,
+                'toTransferFaApproval' => 0,
 //                'toPR' => 0,
                 'toReceive' => 0,
                 'toTagCount' => 0,
@@ -246,6 +248,7 @@ class AuthController extends Controller
             'ERP' => ['getToApproveCount', 'getToTagCount', 'getToRelease', 'getToPurchaseRequest', 'getToReceive', 'getToTransferReceiving'],
             'Requester-approver' => ['getToApproveCount', 'getToTransfer', 'getToTransferReceiving'],
             'Requestor' => ['getToTransfer', 'getToTransferReceiving'],
+            'Requestor And Warehouse' => ['getToRelease', 'getToReceive', 'getToTransferReceiving'],
         ];
 
         foreach ($roleFunctionMapping as $role => $functions) {
