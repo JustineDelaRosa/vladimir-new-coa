@@ -4,25 +4,17 @@ namespace App\Http\Controllers\Masterlist;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AccountingEntries\CreateAccountingEntriesRequest;
-use App\Http\Requests\FixedAsset\CreateSmallToolsRequest;
 use App\Http\Requests\FixedAsset\FixedAssetRequest;
 use App\Http\Requests\FixedAsset\FixedAssetUpdateRequest;
-use App\Http\Requests\FixedAsset\MemorPrintRequest;
-use App\Imports\MasterlistImport;
-use App\Models\AccountingEntries;
-use App\Models\AccountTitle;
 use App\Models\AdditionalCost;
 use App\Models\AssetMovementHistory;
+use App\Models\AssetRequest;
 use App\Models\BusinessUnit;
-use App\Models\Capex;
-use App\Models\Company;
 use App\Models\Department;
 use App\Models\DepreciationHistory;
 use App\Models\FixedAsset;
 use App\Models\Formula;
-use App\Models\Location;
 use App\Models\MajorCategory;
-use App\Models\MemoSeries;
 use App\Models\MinorCategory;
 use App\Models\PoBatch;
 use App\Models\PullOut;
@@ -30,15 +22,16 @@ use App\Models\Status\DepreciationStatus;
 use App\Models\SubCapex;
 use App\Models\Transfer;
 use App\Models\TypeOfRequest;
+use App\Models\User;
 use App\Models\YmirPRTransaction;
 use App\Repositories\CalculationRepository;
 use App\Repositories\FixedAssetRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class FixedAssetController extends Controller
@@ -57,15 +50,22 @@ class FixedAssetController extends Controller
 
     public function index(Request $request)
     {
+
+//                AssetMovementHistory::
+//        return FixedAsset::with('assetSmallTools')->wherehas('assetSmallTools')->get();
+
+//        return $smallTollItems = SmallTools::where('id', 1)->first()->item;
 //       return  auth('sanctum')->user()->department_id;
         $movement = $request->get('movement');
         $subUnitId = $request->get('sub_unit_id', null);
         $addCost = $request->get('add_cost', false);
         $ymir = $request->get('ymir', false);
+        $smallTools = $request->get('small_tools', false);
+        $replacement = $request->get('replacement', false);
 //        $data = Cache::get('fixed_assets_data');
-        return $this->fixedAssetRepository->faIndex($ymir, $addCost, $movement, $subUnitId);
-
-
+//        return FixedAsset::get();
+//        return DB::table('fixed_assets')->get();
+        return $this->fixedAssetRepository->faIndex($ymir, $addCost, $movement, $subUnitId, $smallTools);
 
 
 //        if ($data) {
@@ -80,55 +80,60 @@ class FixedAssetController extends Controller
 
     public function store(FixedAssetRequest $request)
     {
+        DB::beginTransaction();
 
-//        return $request->all();
-        $vladimirTagNumber = $this->vladimirTagGeneratorRepository->vladimirTagGenerator();
-        if (!is_numeric($vladimirTagNumber) || strlen($vladimirTagNumber) != 13) {
-            return response()->json([
-                'message' => 'The given data was invalid.',
-                'errors' => 'Wrong vladimir tag number format. Please try again.'
-            ], 422);
-        }
+        try {
+            $vladimirTagNumber = $this->vladimirTagGeneratorRepository->vladimirTagGenerator();
+            if (!is_numeric($vladimirTagNumber) || strlen($vladimirTagNumber) != 13) {
+                return response()->json([
+                    'message' => 'The given data was invalid.',
+                    'errors' => 'Wrong vladimir tag number format. Please try again.'
+                ], 422);
+            }
 
-        //minor Category check
-        $majorCategory = MajorCategory::withTrashed()->where('id', $request->major_category_id)
-            ->first();
-        $minorCategoryCheck = MinorCategory::withTrashed()->where('id', $request->minor_category_id)
-            ->where('major_category_id', $majorCategory->id)->exists();
+            // Minor Category check
+            $majorCategory = MajorCategory::withTrashed()->where('id', $request->major_category_id)->first();
+            $minorCategoryCheck = MinorCategory::withTrashed()->where('id', $request->minor_category_id)
+                ->where('major_category_id', $majorCategory->id)->exists();
 
-        if (!$minorCategoryCheck) {
-            return response()->json(
-                [
+            if (!$minorCategoryCheck) {
+                return response()->json([
                     'message' => 'The given data was invalid.',
                     'errors' => [
                         'minor_category' => [
                             'The minor category does not match the major category.'
                         ]
                     ]
-                ],
-                422
-            );
-        }
+                ], 422);
+            }
 
-//        $departmentQuery = Department::with('location')->where('id', $request->department_id)->first();
-        $businessUnitQuery = BusinessUnit::where('id', $request->business_unit_id)->first();
-        $fixedAsset = $this->fixedAssetRepository->storeFixedAsset($request->all(), $vladimirTagNumber, $businessUnitQuery);
-        if ($fixedAsset == "Not yet fully depreciated") {
-            return response()->json([
-                'message' => 'The given data was invalid.',
-                'errors' => [
-                    'end_depreciation' => [
-                        $fixedAsset
+            $businessUnitQuery = BusinessUnit::where('id', $request->business_unit_id)->first();
+            $fixedAsset = $this->fixedAssetRepository->storeFixedAsset($request->all(), $vladimirTagNumber, $businessUnitQuery);
+
+            if ($fixedAsset === "Not yet fully depreciated") {
+                return response()->json([
+                    'message' => 'The given data was invalid.',
+                    'errors' => [
+                        'end_depreciation' => [
+                            $fixedAsset
+                        ]
                     ]
-                ]
-            ], 422
-            );
+                ], 422);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Fixed Asset created successfully.',
+                'data' => $fixedAsset
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'An error occurred while creating the fixed asset.',
+                'errors' => $e->getMessage()
+            ], 500);
         }
-        //return the fixed asset and formula
-        return response()->json([
-            'message' => 'Fixed Asset created successfully.',
-            'data' => $fixedAsset
-        ], 201);
     }
 
     public function show(Request $request, int $id)
@@ -155,6 +160,18 @@ class FixedAssetController extends Controller
         ], 200);
     }
 
+    public function nextToDepreciate()
+    {
+        $fixed_asset = FixedAsset::whereNull('depreciation_method')->where('is_released', 1)->first();
+        if (!$fixed_asset) {
+            return $this->responseNotFound('Fixed Asset Route Not Found');
+        }
+
+        return $this->fixedAssetRepository->transformSingleFixedAsset($fixed_asset);
+
+//        'depreciation_method' => null, 'is_released' => 1
+    }
+
 
     //TODO: Ask on what should and should not be updated on the fixed asset
     public function update(FixedAssetUpdateRequest $request, int $id)
@@ -165,6 +182,19 @@ class FixedAssetController extends Controller
             ->first()->id;
         $minorCategoryCheck = MinorCategory::withTrashed()->where('id', $request->minor_category_id)
             ->where('major_category_id', $majorCategory)->exists();
+
+        $depreciationHistoryCheck = DepreciationHistory::where('fixed_asset_id', $id)->exists();
+
+        /*        if($depreciationHistoryCheck){
+                    return response()->json([
+                        'message' => 'The given data was invalid.',
+                        'errors' => [
+                            'depreciation_history' => [
+                                'This Asset has already been depreciated. You cannot update this asset.'
+                            ]
+                        ]
+                    ], 422);
+                }*/
 
         if (!$minorCategoryCheck) {
             return response()->json(
@@ -191,7 +221,7 @@ class FixedAssetController extends Controller
         $fixedAsset = FixedAsset::where('id', $id)->first();
         if ($fixedAsset) {
             $fixed_asset = $this->fixedAssetRepository->updateFixedAsset($request->all(), $businessUnitQuery, $id);
-            if ($fixed_asset == "Not yet fully depreciated") {
+            if ($fixed_asset === "Not yet fully depreciated") {
                 return response()->json([
                     'message' => 'The given data was invalid.',
                     'errors' => [
@@ -408,9 +438,9 @@ class FixedAssetController extends Controller
         $actualStartDepreciation = $formula->start_depreciation;
 
         $est_useful_life = $fixed_asset->majorCategory->est_useful_life ?? 0;
-        $est_useful_life += $fixed_asset->added_useful_life;
+        $est_useful_life += ($fixed_asset->added_useful_life / 12) ?? 0;
 
-        $addedUsefulLife = $fixed_asset->added_useful_life;
+        $addedUsefulLife = ($fixed_asset->added_useful_life / 12) ?? 0;
 //        $addedUsefulLife = 5 / 12;
 
         if ($formula->end_depreciation !== null) {
@@ -431,14 +461,15 @@ class FixedAssetController extends Controller
         $yearsDepreciated = floor(($monthsDepreciated + $actualMonthsDepreciated) / 12);
         $isDepreciated = $fixed_asset->depreciation_method !== null;
 
-        if ($fixed_asset->depreciation_method == "One Time") {
+        if ($fixed_asset->depreciation_method === "One Time") {
 
             $data = [
+                'is_small_tools' => $fixed_asset->typeOfRequest->type_of_request_name === 'Small Tools' ? 1 : 0,
                 'has_history' => $isDepreciated ? $depreciationHistory->isNotEmpty() : null,
                 'fixed_asset_id' => $fixed_asset->id,
                 'depreciated_date' => now()->format('Y-m'),
-                'est_useful_life' => $est_useful_life,
-                'remaining_useful_life' => $est_useful_life - $yearsDepreciated,
+                'est_useful_life' => round($est_useful_life, 2),
+//                'remaining_useful_life' => $est_useful_life - $yearsDepreciated,
                 'months_depreciated' => $monthsDepreciated + $actualMonthsDepreciated,
                 'depreciation_per_month' => $depreciation->depreciation_per_month ?? 0,
                 'depreciation_per_year' => $depreciation->depreciation_per_year ?? 0,
@@ -446,40 +477,97 @@ class FixedAssetController extends Controller
                 'remaining_book_value' => $depreciation->remaining_book_value ?? 0,
                 'depreciable_basis' => $depreciation->depreciation_basis ?? 0,
                 'acquisition_cost' => $depreciation->acquisition_cost ?? $formula->acquisition_cost,
-                'start_depreciation' => $formula->start_depreciation ?? '-',
+                'start_depreciation' => $actualStartDepreciation ?? '-',
                 'end_depreciation' => $end_depreciation ?? '-',
                 'scrap_value' => $formula->scrap_value,
                 'depreciation_method' => $fixed_asset->depreciation_method ?? '-',
                 'acquisition_date' => $fixed_asset->acquisition_date,
+                'major_category' => [
+                    'id' => $fixed_asset->majorCategory->id ?? '-',
+                    'major_category_code' => $fixed_asset->majorCategory->major_category_code ?? '-',
+                    'major_category_name' => $fixed_asset->majorCategory->major_category_name ?? '-',
+                ],
+                'minor_category' => [
+                    'id' => $fixed_asset->minorCategory->id ?? '-',
+                    'minor_category_code' => $fixed_asset->minorCategory->minor_category_code ?? '-',
+                    'minor_category_name' => $fixed_asset->minorCategory->minor_category_name ?? '-',
+                ],
+                'company' => [
+                    'id' => $fixed_asset->company->id ?? '-',
+                    'company_code' => $fixed_asset->company->company_code ?? '-',
+                    'company_name' => $fixed_asset->company->company_name ?? '-',
+                ],
+                'business_unit' => [
+                    'id' => $fixed_asset->businessUnit->id ?? '-',
+                    'business_unit_code' => $fixed_asset->businessUnit->business_unit_code ?? '-',
+                    'business_unit_name' => $fixed_asset->businessUnit->business_unit_name ?? '-',
+                ],
+                'department' => [
+                    'id' => $fixed_asset->department->id ?? '-',
+                    'department_code' => $fixed_asset->department->department_code ?? '-',
+                    'department_name' => $fixed_asset->department->department_name ?? '-',
+                ],
+                'unit' => [
+                    'id' => $fixed_asset->unit->id ?? '-',
+                    'unit_code' => $fixed_asset->unit->unit_code ?? '-',
+                    'unit_name' => $fixed_asset->unit->unit_name ?? '-',
+                ],
+                'sub_unit' => [
+                    'id' => $fixed_asset->subUnit->id ?? '-',
+                    'subunit_code' => $fixed_asset->subUnit->sub_unit_code ?? '-',
+                    'subunit_name' => $fixed_asset->subUnit->sub_unit_name ?? '-',
+                ],
+                'location' => [
+                    'id' => $fixed_asset->location->id ?? '-',
+                    'location_code' => $fixed_asset->location->location_code ?? '-',
+                    'location_name' => $fixed_asset->location->location_name ?? '-',
+                ],
                 'initial_debit' => [
-                    'id' => $fixed_asset->accountTitle->initialDebit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->initialDebit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->initialDebit->account_title_name ?? '-',
+                    'id' => $fixed_asset->accountingEntries->initialDebit->id ?? '-',
+                    'sync_id' => $fixed_asset->accountingEntries->initialDebit->sync_id ?? '-',
+                    'account_title_code' => $fixed_asset->accountingEntries->initialDebit->account_title_code ?? '-',
+                    'account_title_name' => $fixed_asset->accountingEntries->initialDebit->account_title_name ?? '-',
+                    'depreciation_debit' => $fixed_asset->accountingEntries->initialDebit->depreciationDebit ?? '-'
                 ],
                 'initial_credit' => [
-                    'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+                    'id' => $fixed_asset->accountingEntries->initialCredit->id ?? '-',
+                    'sync_id' => $fixed_asset->accountingEntries->initialCredit->sync_id ?? '-',
+                    'account_title_code' => $fixed_asset->accountingEntries->initialCredit->credit_code ?? '-',
+                    'account_title_name' => $fixed_asset->accountingEntries->initialCredit->credit_name ?? '-',
                 ],
                 'depreciation_debit' => $fixed_asset->depreciation_method !== null ? [
-                    'id' => $fixed_asset->accountTitle->depreciationDebit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->depreciationDebit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->depreciationDebit->account_title_name ?? '-',
+                    'id' => $fixed_asset->accountingEntries->depreciationDebit->id ?? '-',
+                    'sync_id' => $fixed_asset->accountingEntries->depreciationDebit->sync_id ?? '-',
+                    'account_title_code' => $fixed_asset->accountingEntries->depreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $fixed_asset->accountingEntries->depreciationDebit->account_title_name ?? '-',
                 ] : null,
-                'depreciation_credit' => $fixed_asset->depreciation_method !== null ? [
-                    'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
-                ] : null,
+                'depreciation_credit' => [
+                    'id' => $fixed_asset->accountingEntries->depreciationCredit->id ?? '-',
+                    'account_title_code' => $fixed_asset->accountingEntries->depreciationCredit->credit_code ?? '-',
+                    'account_title_name' => $fixed_asset->accountingEntries->depreciationCredit->credit_name ?? '-',
+                ],
+                'second_depreciation_debit' => [
+                    'id' => $fixed_asset->accountingEntries->secondDepreciationDebit->id ?? '-',
+                    'sync_id' => $fixed_asset->accountingEntries->secondDepreciationDebit->sync_id ?? '-',
+                    'account_title_code' => $fixed_asset->accountingEntries->secondDepreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $fixed_asset->accountingEntries->secondDepreciationDebit->account_title_name ?? '-',
+                ],
+                'second_depreciation_credit' => [
+                    'id' => $fixed_asset->accountingEntries->secondDepreciationCredit->id ?? '-',
+                    'sync_id' => $fixed_asset->accountingEntries->secondDepreciationCredit->sync_id ?? '-',
+                    'account_title_code' => $fixed_asset->accountingEntries->secondDepreciationCredit->account_title_code ?? '-',
+                    'account_title_name' => $fixed_asset->accountingEntries->secondDepreciationCredit->account_title_name ?? '-',
+                ],
             ];
         } else {
 
             $data = [
+                'is_small_tools' => $fixed_asset->typeOfRequest->type_of_request_name === 'Small Tools' ? 1 : 0,
                 'has_history' => $isDepreciated ? $depreciationHistory->isNotEmpty() : null,
                 'fixed_asset_id' => $fixed_asset->id,
                 'depreciated_date' => now()->format('Y-m'),
-                'est_useful_life' => $est_useful_life,
-                'remaining_useful_life' => $est_useful_life - $yearsDepreciated,
+                'est_useful_life' => round($est_useful_life, 2),
+//                'remaining_useful_life' => (($est_useful_life * 12) - $yearsDepreciated),
 //                'months_depreciated' => $monthsDepreciated + $actualMonthsDepreciated,
                 'months_depreciated' => $depreciation->months_depreciated ?? 0,
                 'depreciation_per_month' => $depreciation->depreciation_per_month ?? 0,
@@ -488,31 +576,88 @@ class FixedAssetController extends Controller
                 'remaining_book_value' => $depreciation->remaining_book_value ?? 0,
                 'depreciable_basis' => $depreciation->depreciation_basis ?? 0,
                 'acquisition_cost' => $depreciation->acquisition_cost ?? $formula->acquisition_cost,
-                'start_depreciation' => $formula->start_depreciation ?? '-',
+                'start_depreciation' => $actualStartDepreciation ?? '-',
                 'end_depreciation' => $end_depreciation ?? '-',
                 'scrap_value' => $formula->scrap_value,
                 'depreciation_method' => $fixed_asset->depreciation_method ?? '-',
                 'acquisition_date' => $fixed_asset->acquisition_date,
+                'major_category' => [
+                    'id' => $fixed_asset->majorCategory->id ?? '-',
+                    'major_category_code' => $fixed_asset->majorCategory->major_category_code ?? '-',
+                    'major_category_name' => $fixed_asset->majorCategory->major_category_name ?? '-',
+                ],
+                'minor_category' => [
+                    'id' => $fixed_asset->minorCategory->id ?? '-',
+                    'minor_category_code' => $fixed_asset->minorCategory->minor_category_code ?? '-',
+                    'minor_category_name' => $fixed_asset->minorCategory->minor_category_name ?? '-',
+                ],
+                'company' => [
+                    'id' => $fixed_asset->company->id ?? '-',
+                    'company_code' => $fixed_asset->company->company_code ?? '-',
+                    'company_name' => $fixed_asset->company->company_name ?? '-',
+                ],
+                'business_unit' => [
+                    'id' => $fixed_asset->businessUnit->id ?? '-',
+                    'business_unit_code' => $fixed_asset->businessUnit->business_unit_code ?? '-',
+                    'business_unit_name' => $fixed_asset->businessUnit->business_unit_name ?? '-',
+                ],
+                'department' => [
+                    'id' => $fixed_asset->department->id ?? '-',
+                    'department_code' => $fixed_asset->department->department_code ?? '-',
+                    'department_name' => $fixed_asset->department->department_name ?? '-',
+                ],
+                'unit' => [
+                    'id' => $fixed_asset->unit->id ?? '-',
+                    'unit_code' => $fixed_asset->unit->unit_code ?? '-',
+                    'unit_name' => $fixed_asset->unit->unit_name ?? '-',
+                ],
+                'sub_unit' => [
+                    'id' => $fixed_asset->subUnit->id ?? '-',
+                    'subunit_code' => $fixed_asset->subUnit->sub_unit_code ?? '-',
+                    'subunit_name' => $fixed_asset->subUnit->sub_unit_name ?? '-',
+                ],
+                'location' => [
+                    'id' => $fixed_asset->location->id ?? '-',
+                    'location_code' => $fixed_asset->location->location_code ?? '-',
+                    'location_name' => $fixed_asset->location->location_name ?? '-',
+                ],
                 'initial_debit' => [
-                    'id' => $fixed_asset->accountTitle->initialDebit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->initialDebit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->initialDebit->account_title_name ?? '-',
+                    'id' => $fixed_asset->accountingEntries->initialDebit->id ?? '-',
+                    'sync_id' => $fixed_asset->accountingEntries->initialDebit->sync_id ?? '-',
+                    'account_title_code' => $fixed_asset->accountingEntries->initialDebit->account_title_code ?? '-',
+                    'account_title_name' => $fixed_asset->accountingEntries->initialDebit->account_title_name ?? '-',
+                    'depreciation_debit' => $fixed_asset->accountingEntries->initialDebit->depreciationDebit ?? '-'
                 ],
                 'initial_credit' => [
-                    'id' => $fixed_asset->accountTitle->initialCredit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->initialCredit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->initialCredit->account_title_name ?? '-',
+                    'id' => $fixed_asset->accountingEntries->initialCredit->id ?? '-',
+                    'sync_id' => $fixed_asset->accountingEntries->initialCredit->sync_id ?? '-',
+                    'account_title_code' => $fixed_asset->accountingEntries->initialCredit->credit_code ?? '-',
+                    'account_title_name' => $fixed_asset->accountingEntries->initialCredit->credit_name ?? '-',
                 ],
                 'depreciation_debit' => $fixed_asset->depreciation_method !== null ? [
-                    'id' => $fixed_asset->accountTitle->depreciationDebit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->depreciationDebit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->depreciationDebit->account_title_name ?? '-',
+                    'id' => $fixed_asset->accountingEntries->depreciationDebit->id ?? '-',
+                    'sync_id' => $fixed_asset->accountingEntries->depreciationDebit->sync_id ?? '-',
+                    'account_title_code' => $fixed_asset->accountingEntries->depreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $fixed_asset->accountingEntries->depreciationDebit->account_title_name ?? '-',
                 ] : null,
-                'depreciation_credit' => $fixed_asset->depreciation_method !== null ? [
-                    'id' => $fixed_asset->accountTitle->depreciationCredit->id ?? '-',
-                    'account_title_code' => $fixed_asset->accountTitle->depreciationCredit->account_title_code ?? '-',
-                    'account_title_name' => $fixed_asset->accountTitle->depreciationCredit->account_title_name ?? '-',
-                ] : null,
+                'depreciation_credit' => [
+                    'id' => $fixed_asset->accountingEntries->depreciationCredit->id ?? '-',
+                    'sync_id' => $fixed_asset->accountingEntries->depreciationCredit->sync_id ?? '-',
+                    'account_title_code' => $fixed_asset->accountingEntries->depreciationCredit->credit_code ?? '-',
+                    'account_title_name' => $fixed_asset->accountingEntries->depreciationCredit->credit_name ?? '-',
+                ],
+                'second_depreciation_debit' => [
+                    'id' => $fixed_asset->accountingEntries->secondDepreciationDebit->id ?? '-',
+                    'sync_id' => $fixed_asset->accountingEntries->secondDepreciationDebit->sync_id ?? '-',
+                    'account_title_code' => $fixed_asset->accountingEntries->secondDepreciationDebit->account_title_code ?? '-',
+                    'account_title_name' => $fixed_asset->accountingEntries->secondDepreciationDebit->account_title_name ?? '-',
+                ],
+                'second_depreciation_credit' => [
+                    'id' => $fixed_asset->accountingEntries->secondDepreciationCredit->id ?? '-',
+                    'sync_id' => $fixed_asset->accountingEntries->secondDepreciationCredit->sync_id ?? '-',
+                    'account_title_code' => $fixed_asset->accountingEntries->secondDepreciationCredit->account_title_code ?? '-',
+                    'account_title_name' => $fixed_asset->accountingEntries->secondDepreciationCredit->account_title_name ?? '-',
+                ],
             ];
 
 
@@ -924,17 +1069,31 @@ class FixedAssetController extends Controller
         $referenceNumber = $request->input('reference_number');
         $vTagNumber = $request->input('vladimir_tag_number', null);
         $newInclusion = $request->input('inclusion');
+        if ($newInclusion[0]['description'] == null || $newInclusion[0]['quantity'] == null) {
+
+            return $this->responseUnprocessable('Inclusion description is required.');
+
+        }
+
 
         // Retrieve all FixedAsset records with the given reference number
-        $fixedAssetsQuery = FixedAsset::where('reference_number', $referenceNumber);
-
-        if ($vTagNumber !== null) {
-            $fixedAssetsQuery->where('vladimir_tag_number', $vTagNumber);
-        }
+//        $fixedAssetsQuery = FixedAsset::where('reference_number', $referenceNumber);
+        $fixedAssetsQuery = FixedAsset::where('vladimir_tag_number', $vTagNumber);
+        /* if ($vTagNumber !== null) {
+             $fixedAssetsQuery->where('vladimir_tag_number', $vTagNumber);
+         }*/
 
         $fixedAssets = $fixedAssetsQuery->get();
 
         foreach ($fixedAssets as $fixedAsset) {
+
+
+            if ($newInclusion[0]['description'] == null && $newInclusion[0]['quantity'] == null) {
+
+                return $this->responseUnprocessable('Inclusion description is required.');
+
+            }
+
             //remove inclusion if it is null
             $fixedAsset->update(['inclusion' => null]);
             // Add an id to each object in the updated inclusion array
@@ -955,11 +1114,11 @@ class FixedAssetController extends Controller
         $vTagNumber = $request->input('vladimir_tag_number', null);
 
         // Retrieve all FixedAsset records with the given reference number
-        $fixedAssetsQuery = FixedAsset::where('reference_number', $referenceNumber);
-
-        if ($vTagNumber !== null) {
-            $fixedAssetsQuery->where('vladimir_tag_number', $vTagNumber);
-        }
+//        $fixedAssetsQuery = FixedAsset::where('reference_number', $referenceNumber);
+        $fixedAssetsQuery = FixedAsset::where('vladimir_tag_number', $vTagNumber);
+        /*       if ($vTagNumber !== null) {
+                   $fixedAssetsQuery->where('vladimir_tag_number', $vTagNumber);
+               }*/
 
         $fixedAssets = $fixedAssetsQuery->get();
 
@@ -975,7 +1134,8 @@ class FixedAssetController extends Controller
         return $this->responseSuccess('Inclusion item removed successfully.');
     }
 
-    public function setMonthlyDepreciation(Request $request)
+    public
+    function setMonthlyDepreciation(Request $request)
     {
         //set monthly depreciation globally each month
         $runningDepreciationStatusId = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
@@ -985,33 +1145,69 @@ class FixedAssetController extends Controller
 
     public function accountingEntriesInput(CreateAccountingEntriesRequest $request, $vTagNumber)
     {
-        $initialDebit = $request->input('initial_debit_id');
-        $initialCredit = $request->input('initial_credit_id');
+//        $initialDebit = $request->input('initial_debit_id');
+//        $initialCredit = $request->input('initial_credit_id');
         $depreciationDebit = $request->input('depreciation_debit_id');
-        $depreciationCredit = $request->input('depreciation_credit_id');
+        $secondDepreciationDebit = $request->input('second_depreciation_debit_id');
+        $secondDepreciationCredit = $request->input('second_depreciation_credit_id');
+
+        $majorCategoryId = $request->input('major_category_id', null);
+        $minorCategoryId = $request->input('minor_category_id', null);
+//        $depreciationCredit = $request->input('depreciation_credit_id');
+
+        #COA
+        $companyId = $request->input('company_id');
+        $businessUnitId = $request->input('business_unit_id');
+        $departmentId = $request->input('department_id');
+        $unitId = $request->input('unit_id');
+        $subunitId = $request->input('subunit_id');
+        $locationId = $request->input('location_id');
 
         $fixedAsset = FixedAsset::where('vladimir_tag_number', $vTagNumber)
-            ->where('is_released', true)
+//            ->where('is_released', true)
             ->first();
-        if (!$fixedAsset) {
+        $fixedAssetValidation = FixedAsset::where('vladimir_tag_number', $vTagNumber)
+            ->where('is_released', true)
+            ->where('from_request', true)
+            ->first();
+
+        if (!$fixedAssetValidation && $fixedAsset->from_request) {
             return $this->responseUnprocessable('Fixed Asset not yet released.');
         }
-
-
-        $accountingEntries = AccountingEntries::create([
-            'initial_debit' => $initialDebit,
-            'initial_credit' => $initialCredit,
-            'depreciation_debit' => $depreciationDebit,
-            'depreciation_credit' => $depreciationCredit,
+        $fixedAsset->update([
+            'company_id' => $companyId,
+            'business_unit_id' => $businessUnitId,
+            'department_id' => $departmentId,
+            'unit_id' => $unitId,
+            'subunit_id' => $subunitId,
+            'location_id' => $locationId,
+            'major_category_id' => $majorCategoryId,
+            'minor_category_id' => $minorCategoryId,
         ]);
 
-        if ($accountingEntries) {
-            $fixedAsset = FixedAsset::where('vladimir_tag_number', $vTagNumber)->first();
-            $fixedAsset->update(['account_id' => $accountingEntries->id]);
+        $fixedAsset->accountingEntries()->update([
+            'depreciation_debit' => $depreciationDebit,
+            'second_depreciation_debit' => $secondDepreciationDebit,
+            'second_depreciation_credit' => $secondDepreciationCredit,
+            /*            'initial_debit' => $initialDebit,
+                        'initial_credit' => $initialCredit,
+                        'depreciation_credit' => $depreciationCredit,*/
+        ]);
 
-            // Call depreciateAsset method
-            $this->depreciateAsset($vTagNumber);
-        }
+
+        /*        $accountingEntries = AccountingEntries::create([
+                    'initial_debit' => $initialDebit,
+                    'initial_credit' => $initialCredit,
+                    'depreciation_debit' => $depreciationDebit,
+                    'depreciation_credit' => $depreciationCredit,
+                ]);*/
+
+        $fixedAsset = FixedAsset::where('vladimir_tag_number', $vTagNumber)->first();
+//            $fixedAsset->update(['account_id' => $accountingEntries->id]);
+
+        // Call depreciateAsset method
+        $this->depreciateAsset($vTagNumber);
+
         return $this->responseSuccess('Fixed Asset will now be depreciating.');
     }
 
@@ -1025,6 +1221,15 @@ class FixedAssetController extends Controller
             'depreciation_method' => $depreciationMethod,
             'depreciation_status_id' => $depreciationStatusId
         ]);
+        $additionalCosts = $fixedAsset->additionalCost ?? null;
+        if ($additionalCosts) {
+            $additionalCosts->each(function ($additionalCost) use ($depreciationMethod, $depreciationStatusId) {
+                $additionalCost->update([
+                    'depreciation_method' => $depreciationMethod,
+                    'depreciation_status_id' => $depreciationStatusId
+                ]);
+            });
+        }
         $formula = $fixedAsset->formula;
         $formula->update([
 //            'start_depreciation' => $this->calculationRepository->getStartDepreciation($depreciationMethod, $formula->release_date),
@@ -1034,7 +1239,8 @@ class FixedAssetController extends Controller
         ]);
     }
 
-    public function ymirFixedAsset(Request $request)
+    public
+    function ymirFixedAsset(Request $request)
     {
         $tagNumber = $request->input('tag_number');
         $assets = FixedAsset::where('vladimir_tag_number', 'LIKE', '%' . $tagNumber . '%')
@@ -1052,91 +1258,349 @@ class FixedAssetController extends Controller
     //Report for GL system
     public function reportGL(Request $request)
     {
+        $adjustmentMonth = $request->input('adjustment_month');
+        if ($adjustmentMonth == null) {
+            return $this->responseSuccess('Connection established.');
+        }
+        $perPage = $request->input('per_page', null);
+        $month2 = Carbon::parse($adjustmentMonth)->format('Ym');
+        /*        $fixedAssets = FixedAsset::whereNotNull('depreciation_method')
+                    ->when($adjustmentMonth, function ($query) use ($adjustmentMonth) {
+                        return $query->whereHas('depreciationHistory', function ($query) use ($adjustmentMonth) {
+                            $query->where('depreciated_date', $adjustmentMonth);
+                        });
+                    })
+                    ->get();*/
 
-        //todo: will adjust the response on the following days
-        $year = $request->input('year');
-        $month = $request->input('month');
+        $serviceProvider = User::where('employee_id', "RDFFLFI-10932")->where('username', "mjhidalgo")->first();
 
-        $fixedAssets = FixedAsset::whereNotNull('depreciation_method')
-            ->when($year && $month, function ($query) use ($year, $month) {
-                return $query->whereYear('created_at', $year)
-                    ->whereMonth('created_at', $month);
-            })->get();
+        $result = FixedAsset::whereNotNull('depreciation_method')
+            ->when($adjustmentMonth, function ($query) use ($adjustmentMonth) {
+                return $query->whereHas('depreciationHistory', function ($query) use ($adjustmentMonth) {
+                    $query->where('depreciated_date', $adjustmentMonth);
+                });
+            })
+            ->get()
+            ->flatMap(function ($item) use ($adjustmentMonth, $month2, $serviceProvider) {
+                $entries = [
+                    [
+                        // Debit
+                        "syncId" => "V" . $item->id,
+                        "mark1" => null,
+                        "mark2" => null,
+                        "assetCIP" => $item->additional_info ?? null,
+                        "accountingTag" => null,
+                        "transactionDate" => Carbon::parse($item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->depreciated_date . "-01")->format('Y-m-d'),
+                        "clientSupplier" => null,
+                        "accountTitleCode" => $item->accountingEntries->depreciationDebit->account_title_code,
+                        "accountTitle" => $item->accountingEntries->depreciationDebit->account_title_name,
+                        "companyCode" => $item->company->company_code,
+                        "company" => $item->company->company_name,
+                        "divisionCode" => $item->businessUnit->business_unit_code ?? null,
+                        "division" => $item->businessUnit->business_unit_name ?? null,
+                        "departmentCode" => $item->department->department_code,
+                        "department" => $item->department->department_name,
+                        "unitCode" => $item->unit->unit_code,
+                        "unit" => $item->unit->unit_name,
+                        "subUnitCode" => $item->subunit->sub_unit_code,
+                        "subUnit" => $item->subunit->sub_unit_name,
+                        "locationCode" => $item->location->location_code,
+                        "location" => $item->location->location_name,
+                        "poNumber" => $item->po_number ?? null,
+                        "rrNumber" => $item->rr_number ?? null,
+                        "referenceNo" => $item->from_request ? "Ymir" : "Beginning",
+                        "itemCode" => $item->item_code,
+                        "itemDescription" => $item->asset_description,
+                        "quantity" => $item->quantity,
+                        "uom" => $item->uom->uom_name,
+                        "unitPrice" => $item->acquisition_cost,
+                        "lineAmount" => $item->acquisition_cost,
+                        "voucherJournal" => $item->voucher,
+                        "accountType" => "Asset",
+                        "drcr" => "debit",
+                        "assetCode" => $item->tag_number ?? null,
+                        "asset" => $item->vladimir_tag_number,
+                        "serviceProviderCode" => $serviceProvider->employee_id ?? null,
+                        "serviceProvider" => $serviceProvider->firstname . " " . $serviceProvider->lastname ?? null,
+                        "boa" => "Fixed Asset Depreciation",
+                        "allocation" => null,
+                        "accountGroup" => null,
+                        "accountSubGroup" => null,
+                        "financialStatement" => null,
+                        "unitResponsible" => null,
+                        "batch" => null,
+                        "remarks" => $item->remarks,
+                        "payrollPeriod" => null,
+                        "position" => null,
+                        "payrollType" => null,
+                        "payrollType2" => null,
+                        "depreciationDescription" => $item->asset_specification,
+                        "remainingDepreciationValue" => $item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->remaining_book_value ?? null,
+                        "usefulLife" => $item->majorCategory->est_useful_life,
+                        "month" => Carbon::parse($item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->depreciated_date)->format('M'),
+                        "year" => Carbon::parse($item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->depreciated_date)->format('Y'),
+                        "particulars" => null,
+                        "month2" => $month2,
+                        "farmType" => null,
+                        "adjustment" => null,
+                        "from" => null,
+                        "changeTo" => null,
+                        "reason" => $item->remarks,
+                        "checkingRemarks" => $item->majorCategory->major_category_name,
+                        "bankName" => null,
+                        "chequeNumber" => null,
+                        "chequeVoucherNumber" => null,
+                        "chequeDate" => null,
+                        "releasedDate" => $item->formula->release_date ?? null,
+                        "boA2" => "Fixed Asset Depreciation",
+                        "system" => "Vladimir",
+                        "books" => "Journal Book",
+                    ],
+                    [
+                        // Credit
+                        "syncId" => "V" . $item->id . ".1",
+                        "mark1" => null,
+                        "mark2" => null,
+                        "assetCIP" => $item->additional_info ?? null,
+                        "accountingTag" => null,
+                        "transactionDate" => Carbon::parse($item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->depreciated_date . "-01")->format('Y-m-d'),
+                        "clientSupplier" => null,
+                        "accountTitleCode" => $item->accountingEntries->depreciationCredit->credit_code,
+                        "accountTitle" => $item->accountingEntries->depreciationCredit->credit_name,
+                        "companyCode" => $item->company->company_code,
+                        "company" => $item->company->company_name,
+                        "divisionCode" => $item->businessUnit->business_unit_code ?? null,
+                        "division" => $item->businessUnit->business_unit_name ?? null,
+                        "departmentCode" => $item->department->department_code,
+                        "department" => $item->department->department_name,
+                        "unitCode" => $item->unit->unit_code,
+                        "unit" => $item->unit->unit_name,
+                        "subUnitCode" => $item->subunit->sub_unit_code,
+                        "subUnit" => $item->subunit->sub_unit_name,
+                        "locationCode" => $item->location->location_code,
+                        "location" => $item->location->location_name,
+                        "poNumber" => $item->po_number ?? null,
+                        "rrNumber" => $item->rr_number ?? null,
+                        "referenceNo" => $item->from_request ? "Ymir" : "Beginning",
+                        "itemCode" => $item->item_code,
+                        "itemDescription" => $item->asset_description,
+                        "quantity" => $item->quantity,
+                        "uom" => $item->uom->uom_name,
+                        "unitPrice" => -1 * $item->acquisition_cost,
+                        "lineAmount" => -1 * $item->acquisition_cost,
+                        "voucherJournal" => $item->voucher,
+                        "accountType" => "Asset",
+                        "drcr" => "credit",
+                        "assetCode" => $item->tag_number ?? null,
+                        "asset" => $item->vladimir_tag_number,
+                        "serviceProviderCode" => $serviceProvider->employee_id ?? null,
+                        "serviceProvider" => $serviceProvider->firstname . " " . $serviceProvider->lastname ?? null,
+                        "boa" => "Fixed Asset Depreciation",
+                        "allocation" => null,
+                        "accountGroup" => null,
+                        "accountSubGroup" => null,
+                        "financialStatement" => null,
+                        "unitResponsible" => null,
+                        "batch" => null,
+                        "remarks" => $item->remarks,
+                        "payrollPeriod" => null,
+                        "position" => null,
+                        "payrollType" => null,
+                        "payrollType2" => null,
+                        "depreciationDescription" => $item->asset_specification,
+                        "remainingDepreciationValue" => $item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->remaining_book_value ?? null,
+                        "usefulLife" => $item->majorCategory->est_useful_life,
+                        "month" => Carbon::parse($item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->depreciated_date)->format('M'),
+                        "year" => Carbon::parse($item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->depreciated_date)->format('Y'),
+                        "particulars" => null,
+                        "month2" => $month2,
+                        "farmType" => null,
+                        "adjustment" => null,
+                        "from" => null,
+                        "changeTo" => null,
+                        "reason" => $item->remarks,
+                        "checkingRemarks" => $item->majorCategory->major_category_name,
+                        "bankName" => null,
+                        "chequeNumber" => null,
+                        "chequeVoucherNumber" => null,
+                        "chequeDate" => null,
+                        "releasedDate" => $item->formula->release_date ?? null,
+                        "boA2" => "Fixed Asset Depreciation",
+                        "system" => "Vladimir",
+                        "books" => "Journal Book",
+                    ],
+                ];
 
-        $fixedAssets->transform(function ($item) {
-            return [
-                "Sync Id" => $item->id,
-                "Mark" => "mark1",
-                "Mark 2" => "mark2",
-                "Asset / CIP #" => "assetCIP",
-                "Accounting Tag" => "accountingTag",
-                "Transaction Date" => $item->acquisition_date,
-                "Supplier / Customer" => $item->supplier->supplier_name ?? null,
-                "Account Title Code" => $item->accountTitle->initialCredit->account_title_code,
-                "Account Title" => $item->accountTitle->initialCredit->account_title_name,
-                "Company Code" => $item->company->company_code,
-                "Company" => $item->company->company_name,
-                "Division Code" => $item->department->division->division_name ?? null,
-                "Division" => $item->department->division->division_name ?? null,
-                "Department Code" => $item->department->department_code,
-                "Department" => $item->department->department_name,
-                "Unit Code" => $item->unit->unit_code,
-                "Unit" => $item->unit->unit_name,
-                "Sub Unit Code" => $item->subunit->sub_unit_code,
-                "Sub Unit" => $item->subunit->sub_unit_name,
-                "Location Code" => $item->location->location_code,
-                "Location" => $item->location->location_name,
-                "PO No." => $item->po_number ?? null,
-                "RR No." => $item->rr_number ?? null,
-                "Reference No." => $item->reference_number,
-                "Item Code" => $item->item_code,
-                "Description" => $item->asset_description,
-                "Quantity" => $item->quantity,
-                "unit" => $item->uom->uom_name,
-                "Unit Price" => $item->acquisition_cost,
-                "Line Amount" => "lineAmount",
-                "Voucher / GJ No." => $item->voucher,
-                "Account Type" => "accountType",
-                "DR / CR" => "drcp",
-                "Asset Code" => "assetCode",
-                "Asset" => "asset",
-                "Service Provider Code" => "serviceProviderCode",
-                "Service Provider" => "serviceProvider",
-                "BOA" => "boa",
-                "Allocation" => "allocation",
-                "Account Group" => "accountGroup",
-                "Account SubGroup" => "accountSubGroup",
-                "Financial Statement" => "financialStatement",
-                "Unit Responsible" => "unitResponsible",
-                "Batch" => "batch",
-                "Remarks" => "remarks",
-                "Payroll Period" => "payrollPeriod",
-                "Position" => "position",
-                "Payroll Type 1" => "payrollType",
-                "Payroll Type 2" => "payrollType2",
-                "Additional Description for DEPR" => "depreciationDescription",
-                "Remaining BV for DEPR" => "remainingDepreciationValue",
-                "Useful Life" => "usefulLife",
-                "Month" => "month",
-                "Year" => "year",
-                "Particulars" => "particulars",
-                "Month 2" => "month2",
-                "Farm Type" => "farmType",
-                "Jean Remarks" => "jeanRemarks",
-                "From" => "from",
-                "Changed To" => "changeTo",
-                "Reason" => "reason",
-                "Checking Remarks" => "checkingRemarks",
-                "Bank Name" => "bankName",
-                "Cheque No." => "chequeNumber",
-                "Cheque Voucher No." => "chequeVoucherNumber",
-                "BOA 2" => "boA2",
-                "System" => "system",
-                "Books" => "books",
-            ];
-        });
+                // Add second depreciation entries if both second_depreciation_debit and second_depreciation_credit exist
+                if ($item->accountingEntries->second_depreciation_debit && $item->accountingEntries->second_depreciation_credit) {
+                    // Second debit entry
+                    $entries[] = [
+                        "syncId" => "V" . $item->id . ".2",
+                        "mark1" => null,
+                        "mark2" => null,
+                        "assetCIP" => $item->additional_info ?? null,
+                        "accountingTag" => null,
+                        "transactionDate" => Carbon::parse($item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->depreciated_date . "-01")->format('Y-m-d'),
+                        "clientSupplier" => null,
+                        "accountTitleCode" => $item->accountingEntries->secondDepreciationDebit->account_title_code,
+                        "accountTitle" => $item->accountingEntries->secondDepreciationDebit->account_title_name,
+                        "companyCode" => $item->company->company_code,
+                        "company" => $item->company->company_name,
+                        "divisionCode" => $item->businessUnit->business_unit_code ?? null,
+                        "division" => $item->businessUnit->business_unit_name ?? null,
+                        "departmentCode" => $item->department->department_code,
+                        "department" => $item->department->department_name,
+                        "unitCode" => $item->unit->unit_code,
+                        "unit" => $item->unit->unit_name,
+                        "subUnitCode" => $item->subunit->sub_unit_code,
+                        "subUnit" => $item->subunit->sub_unit_name,
+                        "locationCode" => $item->location->location_code,
+                        "location" => $item->location->location_name,
+                        "poNumber" => $item->po_number ?? null,
+                        "rrNumber" => $item->rr_number ?? null,
+                        "referenceNo" => $item->from_request ? "Ymir" : "Beginning",
+                        "itemCode" => $item->item_code,
+                        "itemDescription" => $item->asset_description,
+                        "quantity" => $item->quantity,
+                        "uom" => $item->uom->uom_name,
+                        "unitPrice" => $item->acquisition_cost,
+                        "lineAmount" => $item->acquisition_cost,
+                        "voucherJournal" => $item->voucher,
+                        "accountType" => "Asset",
+                        "drcr" => "debit",
+                        "assetCode" => $item->tag_number ?? null,
+                        "asset" => $item->vladimir_tag_number,
+                        "serviceProviderCode" => $serviceProvider->employee_id ?? null,
+                        "serviceProvider" => $serviceProvider->firstname . " " . $serviceProvider->lastname ?? null,
+                        "boa" => "Fixed Asset Depreciation",
+                        "allocation" => null,
+                        "accountGroup" => null,
+                        "accountSubGroup" => null,
+                        "financialStatement" => null,
+                        "unitResponsible" => null,
+                        "batch" => null,
+                        "remarks" => $item->remarks,
+                        "payrollPeriod" => null,
+                        "position" => null,
+                        "payrollType" => null,
+                        "payrollType2" => null,
+                        "depreciationDescription" => $item->asset_specification,
+                        "remainingDepreciationValue" => $item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->remaining_book_value ?? null,
+                        "usefulLife" => $item->majorCategory->est_useful_life,
+                        "month" => Carbon::parse($item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->depreciated_date)->format('M'),
+                        "year" => Carbon::parse($item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->depreciated_date)->format('Y'),
+                        "particulars" => null,
+                        "month2" => $month2,
+                        "farmType" => null,
+                        "adjustment" => null,
+                        "from" => null,
+                        "changeTo" => null,
+                        "reason" => $item->remarks,
+                        "checkingRemarks" => $item->majorCategory->major_category_name,
+                        "bankName" => null,
+                        "chequeNumber" => null,
+                        "chequeVoucherNumber" => null,
+                        "chequeDate" => null,
+                        "releasedDate" => $item->formula->release_date ?? null,
+                        "boA2" => "Fixed Asset Depreciation",
+                        "system" => "Vladimir",
+                        "books" => "Journal Book",
+                    ];
 
-        return $this->responseSuccess('Report generated successfully.', $fixedAssets);
+                    // Second credit entry
+                    $entries[] = [
+                        "syncId" => "V" . $item->id . ".2.1  ",
+                        "mark1" => null,
+                        "mark2" => null,
+                        "assetCIP" => $item->additional_info ?? null,
+                        "accountingTag" => null,
+                        "transactionDate" => Carbon::parse($item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->depreciated_date . "-01")->format('Y-m-d'),
+                        "clientSupplier" => null,
+                        "accountTitleCode" => $item->accountingEntries->secondDepreciationCredit->account_title_code,
+                        "accountTitle" => $item->accountingEntries->secondDepreciationCredit->account_title_name,
+                        "companyCode" => $item->company->company_code,
+                        "company" => $item->company->company_name,
+                        "divisionCode" => $item->businessUnit->business_unit_code ?? null,
+                        "division" => $item->businessUnit->business_unit_name ?? null,
+                        "departmentCode" => $item->department->department_code,
+                        "department" => $item->department->department_name,
+                        "unitCode" => $item->unit->unit_code,
+                        "unit" => $item->unit->unit_name,
+                        "subUnitCode" => $item->subunit->sub_unit_code,
+                        "subUnit" => $item->subunit->sub_unit_name,
+                        "locationCode" => $item->location->location_code,
+                        "location" => $item->location->location_name,
+                        "poNumber" => $item->po_number ?? null,
+                        "rrNumber" => $item->rr_number ?? null,
+                        "referenceNo" => $item->from_request ? "Ymir" : "Beginning",
+                        "itemCode" => $item->item_code,
+                        "itemDescription" => $item->asset_description,
+                        "quantity" => $item->quantity,
+                        "uom" => $item->uom->uom_name,
+                        "unitPrice" => -1 * $item->acquisition_cost,
+                        "lineAmount" => -1 * $item->acquisition_cost,
+                        "voucherJournal" => $item->voucher,
+                        "accountType" => "Asset",
+                        "drcr" => "credit",
+                        "assetCode" => $item->tag_number ?? null,
+                        "asset" => $item->vladimir_tag_number,
+                        "serviceProviderCode" => $serviceProvider->employee_id ?? null,
+                        "serviceProvider" => $serviceProvider->firstname . " " . $serviceProvider->lastname ?? null,
+                        "boa" => "Fixed Asset Depreciation",
+                        "allocation" => null,
+                        "accountGroup" => null,
+                        "accountSubGroup" => null,
+                        "financialStatement" => null,
+                        "unitResponsible" => null,
+                        "batch" => null,
+                        "remarks" => $item->remarks,
+                        "payrollPeriod" => null,
+                        "position" => null,
+                        "payrollType" => null,
+                        "payrollType2" => null,
+                        "depreciationDescription" => $item->asset_specification,
+                        "remainingDepreciationValue" => $item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->remaining_book_value ?? null,
+                        "usefulLife" => $item->majorCategory->est_useful_life,
+                        "month" => Carbon::parse($item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->depreciated_date)->format('M'),
+                        "year" => Carbon::parse($item->depreciationHistory->where('depreciated_date', $adjustmentMonth)->first()->depreciated_date)->format('Y'),
+                        "particulars" => null,
+                        "month2" => $month2,
+                        "farmType" => null,
+                        "adjustment" => null,
+                        "from" => null,
+                        "changeTo" => null,
+                        "reason" => $item->remarks,
+                        "checkingRemarks" => $item->majorCategory->major_category_name,
+                        "bankName" => null,
+                        "chequeNumber" => null,
+                        "chequeVoucherNumber" => null,
+                        "chequeDate" => null,
+                        "releasedDate" => $item->formula->release_date ?? null,
+                        "boA2" => "Fixed Asset Depreciation",
+                        "system" => "Vladimir",
+                        "books" => "Journal Book",
+                    ];
+                }
+
+                return $entries;
+            })->values();
+
+
+        if ($perPage) {
+
+            $page = $request->input('page', 1);
+            $offset = ($page * $perPage) - $perPage;
+            $resultArray = $result->toArray();
+            return new LengthAwarePaginator(
+                array_slice($resultArray, $offset, $perPage, false),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 count($resultArray),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            )                      ;
+        }
+        return $result;
+
     }
 
 
@@ -1185,13 +1649,13 @@ class FixedAssetController extends Controller
             $item->to = $movementHistory->receiver->employee_id . ' - ' . $movementHistory->receiver->firstname . ' ' . $movementHistory->receiver->lastname;
             return [
                 'id' => $item->id,
-                'vladimir_tag_number' => $movementHistory->fixedAsset->vladimir_tag_number,
-                'asset_description' => $movementHistory->fixedAsset->asset_description,
-                'from' => $item->from,
-                'to' => $item->to,
+                'vladimir_tag_number' => $movementHistory->fixedAsset->vladimir_tag_number ?? '-',
+                'asset_description' => $movementHistory->fixedAsset->asset_description ?? '-',
+                'from' => $item->from ?? '-',
+                'to' => $item->to ?? '-',
                 'movement_type' => $movementTypes[$item->subject_type] ?? $item->subject_type,
-                'status' => $item->fixedAsset->assetStatus->asset_status_name,
-                'created_at' => $item->created_at,
+                'status' => $item->fixedAsset->assetStatus->asset_status_name ?? '-',
+                'created_at' => $item->created_at ?? '-',
             ];
         });
 
@@ -1300,4 +1764,5 @@ class FixedAssetController extends Controller
                 ];
             }
         }*/
+
 }

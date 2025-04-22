@@ -105,6 +105,10 @@ class FixedAsset extends Model implements HasMedia
         return $isInTransferApproval;
     }*/
 
+    public function memoSeries()
+    {
+        return $this->belongsTo(MemoSeries::class, 'memo_series_id', 'id');
+    }
     public function transfer()
     {
         return $this->hasMany(Transfer::class, 'fixed_asset_id', 'id');
