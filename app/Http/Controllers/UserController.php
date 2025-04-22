@@ -119,8 +119,10 @@ class UserController extends Controller
     public function store(UserRequest $request)
     {
         $employee_id = $request->employee_id;
-        $firstname = ucwords(strtolower($request->firstname));
-        $lastname = ucwords(strtolower($request->lastname));
+         $firstname = ucwords(strtolower($request->firstname)). ' ';
+//        $lastnameUcwords = ucwords(strtolower($request->lastname));
+
+        $lastname = mb_convert_case(mb_strtolower($request->lastname, 'UTF-8'), MB_CASE_TITLE, 'UTF-8');
         $username = $request->username;
         $role_id = $request->role_id;
         $isCoordinator = $request->is_coordinator;
@@ -239,7 +241,7 @@ class UserController extends Controller
         $updatedFields = [
             'employee_id' => $request->employee_id,
             'firstname' => ucwords(strtolower($request->firstname)),
-            'lastname' => ucwords(strtolower($request->lastname)),
+            'lastname' => mb_convert_case(mb_strtolower($request->lastname, 'UTF-8'), MB_CASE_TITLE, 'UTF-8'),
             'username' => $request->username,
             'role_id' => $request->role_id,
             'is_coordinator' => $request->is_coordinator,
