@@ -24,7 +24,6 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 class MasterlistExport implements
     FromQuery,
-    ShouldAutoSize,
     withMapping,
     WithHeadings,
     WithColumnFormatting,
@@ -59,9 +58,6 @@ class MasterlistExport implements
                 'minorCategory' => function ($query) {
                     $query->withTrashed();
                 },
-                'division' => function ($query) {
-                    $query->withTrashed();
-                },
             ])
             ->when($search, function ($query, $search) {
                 return $query->Where('project_name', $search)
@@ -78,9 +74,6 @@ class MasterlistExport implements
                     })
                     ->orWhereHas('minorCategory', function ($query) use ($search) {
                         $query->withTrashed()->where('minor_category_name', $search);
-                    })
-                    ->orWhereHas('division', function ($query) use ($search) {
-                        $query->withTrashed()->where('division_name', $search);
                     })
                     ->orWhereHas('company', function ($query) use ($search) {
                         $query->where('company_name', $search);
@@ -123,7 +116,6 @@ class MasterlistExport implements
             $fixedAsset->accountable,
             $fixedAsset->cellphone_number,
             $fixedAsset->brand,
-            $fixedAsset->division->division_name,
             $fixedAsset->majorCategory->major_category_name,
             $fixedAsset->minorCategory->minor_category_name,
             $fixedAsset->voucher,
@@ -171,7 +163,6 @@ class MasterlistExport implements
             'ACCOUNTABLE',
             'CELLPHONE NUMBER',
             'BRAND',
-            'DIVISION',
             'MAJOR CATEGORY',
             'MINOR CATEGORY',
             'VOUCHER',
