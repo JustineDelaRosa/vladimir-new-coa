@@ -7,16 +7,11 @@ use Essa\APIToolKit\Filters\Filterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Location extends Model
+class    Location extends Model
 {
     use HasFactory, Filterable;
 
-    protected $fillable = [
-        'sync_id',
-        'location_code',
-        'is_active',
-        'location_name'
-    ];
+    protected $guarded = [];
     protected $casts = [
         'is_active' => 'boolean'
     ];
@@ -49,5 +44,10 @@ class Location extends Model
             "sync_id",
             "sync_id"
         );
+    }
+
+    public function receivingWarehouse()
+    {
+        return $this->belongsTo(Warehouse::class, 'receiving_warehouse_id', 'sync_id');
     }
 }

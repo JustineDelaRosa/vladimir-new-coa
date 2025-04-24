@@ -14,6 +14,7 @@ class LocationController extends Controller
 {
 
     use ApiResponse, locationHandler;
+
     /**
      * Display a listing of the resource.
      *
@@ -30,6 +31,7 @@ class LocationController extends Controller
 
         $locationStatus = $request->status ?? 'active';
         $isActiveStatus = ($locationStatus === 'deactivated') ? 0 : 1;
+//        with('receivingWarehouse')->
         $location = Location::where('is_active', $isActiveStatus)
             ->orderBy('created_at', 'desc')
             ->useFilters()
@@ -252,5 +254,17 @@ class LocationController extends Controller
     //            }
     //        }
     //    }
+
+
+    public function warehouseTagging(Request $request, $id)
+    {
+        $warehouseId = $request->warehouse_id;
+        $location = Location::find($id);
+        if (!$location) {
+            return $this->responseNotFound('Location not found');
+        }
+        $location->update(['warehouse_id' => $warehouseId]);
+        return $this->responseSuccess('Warehouse Tagged Successfully');
+    }
 
 }
