@@ -219,7 +219,7 @@ class AddingPoController extends Controller
                     $poNumberArray = [];
 
 //                    foreach ($order['rr_orders'] as $rr) {
-                    $inclusion = $order['rr_orders']['remarks'];
+//                    $inclusion = $order['rr_orders']['remarks'];
                     $deliveryDate = $order['rr_orders']['delivery_date'];
                     $itemRemaining = $order['rr_orders']['remaining'];
                     $rrNumberId = $order['rr_orders']['rr_number'];
@@ -315,7 +315,7 @@ class AddingPoController extends Controller
                                             $this->createNewAssetRequests($itemRequest, $order['rr_orders']['quantity_received'], $initialCreditId, $inclusion);
                                         }*/
 
-                    $this->createNewAssetRequests($itemRequest, $order['rr_orders']['quantity_received'], $initialCreditId, $inclusion);
+                    $this->createNewAssetRequests($itemRequest, $order['rr_orders']['quantity_received'], $initialCreditId);
                     $rrNumbers[] = $order['rr_orders']['rr_number'];
 
                     $this->receivingLog($itemName, $order['rr_orders']['quantity_received'], $transactionNumber, $causer, $remaining);
