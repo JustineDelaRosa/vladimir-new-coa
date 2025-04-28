@@ -17,40 +17,40 @@ trait RequestShowDataHandler
 
     use ApiResponse;
 
-    public function responseData($data)
+    public function responseData($data, $isUserFa = false)
     {
         if ($data instanceof Collection) {
-            return $this->collectionData($data);
+            return $this->collectionData($data, $isUserFa);
         } elseif ($data instanceof LengthAwarePaginator) {
-            $data->getCollection()->transform(function ($item) {
-                return $this->transformItem($item);
+            $data->getCollection()->transform(function ($item) use ($isUserFa) {
+                return $this->transformItem($item, $isUserFa);
             });
             return $data;
         } else {
-            return $this->nonCollectionData($data);
+            return $this->nonCollectionData($data, $isUserFa);
         }
     }
 
-    private function collectionData($data)
+    private function collectionData($data, $isUserFa)
     {
-        return $data->transform(function ($ar) {
-            return $this->response($ar);
+        return $data->transform(function ($ar) use($isUserFa) {
+            return $this->response($ar, $isUserFa);
         });
     }
 
-    private function nonCollectionData($data)
+    private function nonCollectionData($data, $isUserFa)
     {
-        return $data->getCollection()->transform(function ($ar) {
-            return $this->response($ar);
+        return $data->getCollection()->transform(function ($ar) use($isUserFa) {
+            return $this->response($ar, $isUserFa);
         });
     }
 
-    private function transformItem($ar): array
+    private function transformItem($ar, $isUserFa): array
     {
-        return $this->response($ar);
+        return $this->response($ar, $isUserFa);
     }
 
-    private function response($ar)
+    private function response($ar, $isUserFa)
     {
         $ar->load(['media' => function ($query) {
             $query->whereIn('collection_name', [
@@ -140,6 +140,7 @@ trait RequestShowDataHandler
             'item_status' => $ar->item_status ?? '-',
             'final_approval' => $finalApproval,
             'fa_approval' => $faApproval,
+            'fa_edit' => $isUserFa,
             'asset_approval_id' => $ar->assetApproval->first(function ($approval) {
                     return $approval->status == 'For Approval';
                 })->id ?? '',
