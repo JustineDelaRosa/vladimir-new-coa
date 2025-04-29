@@ -62,6 +62,7 @@ trait NotificationHandler
     private function getToTagCount($user)
     {
         return FixedAsset::where('from_request', 1)->where('print_count', 0)
+            ->where('is_printable', 1)
             ->whereHas('typeOfRequest', function ($query) {
                 $query->whereNotIn('type_of_request_name', ['Small Tools', 'Small Tool']);
             })
