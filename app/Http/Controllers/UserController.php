@@ -32,15 +32,20 @@ class UserController extends Controller
         $isActiveStatus = ($userStatus === "deactivated") ? 0 : 1;
         $department = $request->input('department', null);
         $unit = $request->input('unit', null);
+        $receiverSetup = $request->input('is_receiver_setup', null);
 
         $currentUserId = auth('sanctum')->user()->id;
 
 
         $user = User::withTrashed()->where('is_active', $isActiveStatus)
-            ->when($department, function ($query) use ($department) {
+            ->when($department && !$receiverSetup, function ($query) use ($department) {
                 $query->whereHas('authorizedTransferReceiver', function ($q) use ($department) {
                     $q->where('department_id', $department);
                 });
+            })
+            ->when($department && $receiverSetup, function ($query) use ($department) {
+                $query->where('department_id', $department);
+
             })
             ->when($unit, function ($query) use ($unit, $currentUserId) {
                 $query->where('unit_id', $unit)
