@@ -28,7 +28,6 @@ class AddingPoController extends Controller
 
     public function index(Request $request)
     {
-        //validate the request
         $this->validate($request, [
             'toPo' => 'nullable|boolean',
             'from' => 'nullable|date',
@@ -41,28 +40,42 @@ class AddingPoController extends Controller
         $from = $request->get('from', null);
         $to = $request->get('to', null);
 
+        // Fetch all asset requests
+        $assetRequests = $this->createAssetRequestQuery($toPo, $from, $to)->get();
 
-        $assetRequest = $this->createAssetRequestQuery($toPo, $from, $to)->get()
-            ->groupBy('transaction_number')->map(function ($assetRequestCollection) {
-                $assetRequest = $assetRequestCollection->first();
-                $assetRequest->quantity = $assetRequestCollection->sum('quantity');
-                $assetRequest->quantity_delivered = $assetRequestCollection->sum('quantity_delivered');
-                //add all the quantity of soft deleted asset request
-                $cancelled = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
-                $anyRecentlyUpdated = $assetRequestCollection->contains(function ($item) {
-                    return $item->updated_at->diffInMinutes(now()) < 2;
-                });
-                $poNumber = $assetRequestCollection->pluck('po_number')->filter()->unique()->implode(',');
-                $rrNumber = $assetRequestCollection->pluck('rr_number')->filter()->unique()->implode(',');
-                $rrNumber = collect(explode(',', $rrNumber))->unique()->implode(',');
+        // Get all transaction numbers in one go
+        $transactionNumbers = $assetRequests->pluck('transaction_number')->unique();
 
+        // Fetch all cancelled (soft deleted) quantities in one query
+        $cancelledQuantities = AssetRequest::onlyTrashed()
+            ->whereIn('transaction_number', $transactionNumbers)
+            ->select('transaction_number', DB::raw('SUM(quantity) as cancelled'))
+            ->groupBy('transaction_number')
+            ->pluck('cancelled', 'transaction_number');
 
-                $assetRequest->po_number = $poNumber;
-                $assetRequest->rr_number = $rrNumber;
-                $assetRequest->cancelled = $cancelled;
-                $assetRequest->newly_sync = $anyRecentlyUpdated ? 1 : 0;
-                return $this->transformIndexAssetRequest($assetRequest);
-            })->values();
+        // Group and process in memory
+        $assetRequest = $assetRequests->groupBy('transaction_number')
+            ->map(function ($assetRequestCollection) use ($cancelledQuantities) {
+            $assetRequest = $assetRequestCollection->first();
+            $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+            $assetRequest->quantity_delivered = $assetRequestCollection->sum('quantity_delivered');
+            $transactionNumber = $assetRequest->transaction_number;
+
+            $cancelled = $cancelledQuantities[$transactionNumber] ?? 0;
+            $anyRecentlyUpdated = $assetRequestCollection->contains(function ($item) {
+                return $item->updated_at->diffInMinutes(now()) < 2;
+            });
+
+            $poNumber = $assetRequestCollection->pluck('po_number')->filter()->unique()->implode(',');
+            $rrNumber = $assetRequestCollection->pluck('rr_number')->filter()->unique()->implode(',');
+            $rrNumber = collect(explode(',', $rrNumber))->unique()->implode(',');
+
+            $assetRequest->po_number = $poNumber;
+            $assetRequest->rr_number = $rrNumber;
+            $assetRequest->cancelled = $cancelled;
+            $assetRequest->newly_sync = $anyRecentlyUpdated ? 1 : 0;
+            return $this->transformIndexAssetRequest($assetRequest);
+        })->values();
 
         if ($perPage !== null) {
             $assetRequest = $this->paginate($request, $assetRequest, $perPage);
@@ -376,10 +389,9 @@ class AddingPoController extends Controller
 
         DB::beginTransaction();
         try {
-
-
-            $assetRequest = AssetRequest::where('filter', 'Sent to Ymir')
-                ->where('po_number', $poNumber)->get();
+//where('filter', 'Sent to Ymir')
+            $assetRequest = AssetRequest::where('filter', 'Partially Received')
+           ->whereRaw('po_number = ?', ['"' . $poNumber . '"'])->get();
 
             if ($assetRequest->isEmpty()) {
                 return $this->responseUnprocessable('No asset request found for transaction number ' . $transactionNumber);
