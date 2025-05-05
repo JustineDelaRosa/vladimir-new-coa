@@ -135,7 +135,7 @@ class AssetApprovalController extends Controller
         }
         $assetRequest = AssetRequest::where('transaction_number', $assetApproval->transaction_number)
             ->dynamicPaginate();
-        return $this->responseData($assetRequest);
+        return $this->responseData($assetRequest, $this->isUserFa());
     }
 
     public function update(UpdateAssetApprovalRequest $request, AssetApproval $assetApproval): JsonResponse
