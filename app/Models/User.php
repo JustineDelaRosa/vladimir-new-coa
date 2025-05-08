@@ -96,10 +96,10 @@ class User extends Authenticatable
         return $this->belongsTo(RoleManagement::class, 'role_id', 'id');
     }
 
-    public function requester()
-    {
-        return $this->hasMany(UserApprover::class, 'requester_id', 'id');
-    }
+//    public function requester()
+//    {
+//        return $this->hasMany(UserApprover::class, 'requester_id', 'id');
+//    }
 
     public function approvers()
     {
