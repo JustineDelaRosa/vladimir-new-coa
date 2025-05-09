@@ -140,7 +140,7 @@ trait RequestShowDataHandler
             'item_status' => $ar->item_status ?? '-',
             'final_approval' => $finalApproval,
             'fa_approval' => $faApproval,
-            'fa_edit' => $isUserFa,
+            'fa_edit' => $isUserFa ? 1 : 0,
             'asset_approval_id' => $ar->assetApproval->first(function ($approval) {
                     return $approval->status == 'For Approval';
                 })->id ?? '',

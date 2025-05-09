@@ -333,77 +333,71 @@ trait Reusables
 //
 //        $filteredAndGroupedAssetRequests = $assetRequests->fresh()
 //            ->where('status', 'Approved')
-//            ->where('is_fa_approved', false)
-////            ->whereNotNull('pr_number')
+//            ->where('is_fa_approved', true)
 //            ->whereNull('deleted_at')
-////            ->useFilters()
-////            ->orderBy('created_at', 'desc')
-////            ->get()
 //            ->groupBy('transaction_number')
-//            ->map(function ($assetRequestCollection) {
+//            ->map(function ($assetRequestCollection) use ($transactionNumber, $company, $businessUnit, $department, $unit, $subUnit, $location) {
 //                $latestDateNeeded = $assetRequestCollection->max('date_needed');
 //                $assetRequest = $assetRequestCollection->first();
 //                $assetRequest->date_needed = $latestDateNeeded;
-//                $listOfItems = $assetRequestCollection->map(function ($item) {
+//                $listOfItems = $assetRequestCollection->map(function ($item) use ($transactionNumber) {
 //                    return [
-////                        'item_id' => $item->id,
-//                        'reference_number' => $item->pr_number,
-//                        'item_code' => $item->reference_number,
-//                        'item_name' => $item->asset_description,
-//                        'remarks' => $item->remarks ?? null, //TODO:check
+//                        'id' => AssetRequest::where('transaction_number', $transactionNumber)->first()->is_pr_returned == 1 ? $item->ymir_id : $item->id,
+//                        'reference_no' => $item->reference_number,
+//                        'asset_description' => $item->asset_description . "-" . $item->asset_specification,
+//                        'item_id' => null,
+//                        'item_code' => null,
+//                        'item_name' => $item->asset_description . "-" . $item->asset_specification,
+//                        'remarks' => $item->additional_info ?? null,
 //                        'quantity' => $item->quantity,
-////                        'created_at' => $item->created_at,
-//                        //                        'additional_info' => $item->additional_info,
-////                        'accountability' => $item->accountability,
-////                        'accountable' => $item->accountable == '-' ? null : $item->accountable,
-////                        'cell_number' => $item->cell_number,
-////                        'brand' => $item->brand,
-////                        'remarks' => $item->remarks,
-//
+//                        'r_warehouse_id' => $item->receivingWarehouse->id,
+//                        'r_warehouse_name' => $item->receivingWarehouse->warehouse_name,
 //                        'date_needed' => $item->date_needed,
 //                        'uom_id' => $item->uom->sync_id,
 //                        'uom_code' => $item->uom->uom_code,
 //                        'uom_name' => $item->uom->uom_name,
-//                        // Add more fields as needed
+////                            $this->sendTransactionWithAttachments($referenceNumber),
 //                    ];
 //                })->toArray();
 //                return [
-//                    'vrid' => $assetRequest->requester_id, //vladimir requester ID\
+//                    'v_name' => $assetRequest->requestor->firstname . ' ' . $assetRequest->requestor->lastname,
+//                    'rdf_id' => $assetRequest->requestor->employee_id, //preg_replace('/\D/', '', $employee_id),
+//                    'vrid' => $assetRequest->requester_id,
 //                    'pr_description' => $assetRequest->acquisition_details,
-//                    'pr_number' => $assetRequest->pr_number,
+//                    'pr_number' => (string)$assetRequest->pr_number,
 //                    'transaction_number' => $assetRequest->transaction_number,
 //                    "type_id" => "4",
 //                    "type_name" => "Asset",
 //                    'r_warehouse_id' => $assetRequest->receivingWarehouse->id,
 //                    'r_warehouse_name' => $assetRequest->receivingWarehouse->warehouse_name,
-//
-//                    'company_id' => $assetRequest->company->sync_id,
-////                    'company_code' => $assetRequest->company->company_code,
-//                    'company_name' => $assetRequest->company->company_name,
-//
-//                    'business_unit_id' => $assetRequest->businessUnit->sync_id,
-////                    'business_unit_code' => $assetRequest->businessUnit->business_unit_code,
-//                    'business_unit_name' => $assetRequest->businessUnit->business_unit_name,
-//
-//                    'department_id' => $assetRequest->department->sync_id,
-////                    'department_code' => $assetRequest->department->department_code,
-//                    'department_name' => $assetRequest->department->department_name,
-//
-//                    'department_unit_id' => $assetRequest->unit->sync_id,
-////                    'department_unit_code' => $assetRequest->unit->unit_code,
-//                    'department_unit_name' => $assetRequest->unit->unit_name,
-//
-//                    'sub_unit_id' => $assetRequest->subunit->sync_id,
-////                    'subunit_code' => $assetRequest->subunit->sub_unit_code,
-//                    'sub_unit_name' => $assetRequest->subunit->sub_unit_name,
-//
-//                    'location_id' => $assetRequest->location->sync_id,
-////                    'location_code' => $assetRequest->location->location_code,
-//                    'location_name' => $assetRequest->location->location_name,
-//
-//                    'account_title_id' => $assetRequest->accountTitle->sync_id,
-////                    'account_title_code' => $assetRequest->accountTitle->account_title_code,
-//                    'account_title_name' => $assetRequest->accountTitle->account_title_name,
+//                    'company_id' => $company->sync_id,
+//                    'company_name' => $company->company_name,
+//                    'business_unit_id' => $businessUnit->sync_id,
+//                    'business_unit_name' => $businessUnit->business_unit_name,
+//                    'department_id' => $department->sync_id,
+//                    'department_name' => $department->department_name,
+//                    'department_unit_id' => $unit->sync_id,
+//                    'department_unit_name' => $unit->unit_name,
+//                    'sub_unit_id' => $subUnit->sync_id,
+//                    'sub_unit_name' => $subUnit->sub_unit_name,
+//                    'location_id' => $location->sync_id,
+//                    'location_name' => $location->location_name,
+//                    /*                        'company_id' => $assetRequest->company->sync_id,
+//                                            'company_name' => $assetRequest->company->company_name,
+//                                            'business_unit_id' => $assetRequest->businessUnit->sync_id,
+//                                            'business_unit_name' => $assetRequest->businessUnit->business_unit_name,
+//                                            'department_id' => $assetRequest->department->sync_id,
+//                                            'department_name' => $assetRequest->department->department_name,
+//                                            'department_unit_id' => $assetRequest->unit->sync_id,
+//                                            'department_unit_name' => $assetRequest->unit->unit_name,
+//                                            'sub_unit_id' => $assetRequest->subunit->sync_id,
+//                                            'sub_unit_name' => $assetRequest->subunit->sub_unit_name,
+//                                            'location_id' => $assetRequest->location->sync_id,
+//                                            'location_name' => $assetRequest->location->location_name,*/
+//                    'account_title_id' => $assetRequest->accountingEntries->initialDebit->sync_id,
+//                    'account_title_name' => $assetRequest->accountingEntries->initialDebit->account_title_name,
+//                    'initial_debit_id' => $assetRequest->accountingEntries->initialDebit->sync_id,
+//                    'initial_debit_name' => $assetRequest->accountingEntries->initialDebit->account_title_name,
 //                    'description' => $assetRequest->acquisition_details,
 //                    'created_at' => $assetRequest->created_at,
 //                    'date_needed' => $assetRequest->date_needed,
@@ -413,8 +407,12 @@ trait Reusables
 //                    'f2' => null,
 //                    'order' => $listOfItems
 //                ];
-//            })
-//            ->values();
+//            })->values();
+//
+//
+//        if (AssetRequest::where('transaction_number', $transactionNumber)->first()->is_pr_returned === 1) {
+//            $filteredAndGroupedAssetRequests = $filteredAndGroupedAssetRequests->first();
+//        }
 //
 //
 ////        if ($perPage !== null && $pagination == null) {
@@ -464,7 +462,7 @@ trait Reusables
                 ];
             })->toArray();
         } else if ($modelType instanceof PullOut) {
-             $requestApproversCollection = AssetPullOutApprover::where('subunit_id', $subUnitId)
+            $requestApproversCollection = AssetPullOutApprover::where('subunit_id', $subUnitId)
                 ->orderBy('layer', 'asc')
                 ->get();
             return $requestApproversCollection->map(function ($item) {
@@ -491,7 +489,13 @@ trait Reusables
         if ($modelInstance) {
             $modelInstance->update($attributes);
             if($depreciationDebit) {
-                $modelInstance->accountingEntries()->update(['depreciation_debit' => $depreciationDebit]);
+//                $modelInstance->accountingEntries()->update(['depreciation_debit' => $depreciationDebit]);
+                $accountingEntry = $modelInstance->accountingEntries()->first();
+                if ($accountingEntry && $accountingEntry->second_depreciation_debit !== null) {
+                    $modelInstance->accountingEntries()->update(['second_depreciation_debit' => $depreciationDebit]);
+                } else {
+                    $modelInstance->accountingEntries()->update(['depreciation_debit' => $depreciationDebit]);
+                }
             }
         }
     }

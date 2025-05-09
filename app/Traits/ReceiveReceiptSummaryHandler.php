@@ -51,6 +51,17 @@ trait ReceiveReceiptSummaryHandler
                 'rr_id' => $fixed_asset->first()->rr_id ?? '-',
                 'po_number' => $fixed_asset->first()->po_number ?? '-',
                 'vladimir_tag_number' => $fixed_asset->pluck('vladimir_tag_number')->all(),
+                'request_details' => $fixed_asset->map(function ($query) {
+                    return [
+                        'id' => $query->id,
+                        'vladimir_tag_number' => $query->vladimir_tag_number,
+                        'asset_description' => $query->asset_description,
+                        'asset_specification' => $query->asset_specification,
+                        'acquisition_cost' => $query->acquisition_cost,
+                        'type_of_request' => TypeOfRequest::where('id', $query->type_of_request_id)->first()->type_of_request_name ?? '-',
+                        'quantity' => $query->quantity,
+                    ];
+                })->values(),
                 'item_count' => $fixed_asset->count(),
                 'remarks' => $status == 'deactivated' ? AssetRequest::where('pr_number', $fixed_asset->first()->pr_number)->first()->remarks ?? '-' : '-',
                 'created_at' => $fixed_asset->first()->created_at
@@ -103,4 +114,33 @@ trait ReceiveReceiptSummaryHandler
             'inclusion' => $fixedAssetData->inclusion,
         ];
     }
+
+
+
+/*'request_details' => $fixed_asset
+->groupBy(function ($item) {
+    return md5(
+        $item->asset_description . '|' .
+        $item->asset_specification . '|' .
+        $item->acquisition_cost . '|' .
+        ($item->type_of_request_id ?? '')
+    );
+})
+->map(function ($group) {
+    $first = $group->first();
+    return [
+        'id' => $first->id,
+//                            'vladimir_tag_number' => $first->vladimir_tag_number,
+        'asset_description' => $first->asset_description,
+        'asset_specification' => $first->asset_specification,
+        'acquisition_cost' => $first->acquisition_cost,
+        'type_of_request' => \App\Models\TypeOfRequest::where('id', $first->type_of_request_id)->first()->type_of_request_name ?? '-',
+        'quantity' => $group->sum('quantity'),
+    ];
+})->values(),*/
 }
+
+
+
+
+
