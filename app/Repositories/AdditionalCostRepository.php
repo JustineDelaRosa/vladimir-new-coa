@@ -71,7 +71,9 @@ class AdditionalCostRepository
 
     private function prepareAdditionalCostDataForStore($request, $businessUnitQuery): array
     {
-        $accountingEntry = MinorCategory::where('id', $request['minor_category_id'])->first()->accounting_entries_id;
+//        $accountingEntry = MinorCategory::where('id', $request['minor_category_id'])->first()->accounting_entries_id;
+
+        $fixedAssetAccountingEntry = FixedAsset::where('id', $request['fixed_asset_id'])->first()->account_id;
 
         return [
             'fixed_asset_id' => $request['fixed_asset_id'],
@@ -87,6 +89,7 @@ class AdditionalCostRepository
             'minor_category_id' => $request['minor_category_id'],
             'voucher' => $request['voucher'] ?? '-',
             'voucher_date' => $request['voucher_date'] ?? null,
+            'is_released' => 1,
             'receipt' => $request['receipt'] ?? '-',
             'quantity' => $request['quantity'],
             'depreciation_method' => strtoupper($request['depreciation_method']) == 'STL'
@@ -105,7 +108,7 @@ class AdditionalCostRepository
             'unit_id' => $request['unit_id'],
             'subunit_id' => $request['subunit_id'] ?? '-',
             'location_id' => $request['location_id'] ?? '-',
-            'account_id' => $accountingEntry,
+            'account_id' => $fixedAssetAccountingEntry,
             'uom_id' => $request['uom_id'] ?? null,
         ];
     }
@@ -404,6 +407,7 @@ class AdditionalCostRepository
             ],
             'main' => [
                 'id' => $additional_cost->fixedAsset->id,
+                'is_printable' => $additional_cost->fixedAsset->is_printable,
                 'capex' => [
                     'id' => $additional_cost->fixedAsset->capex->id ?? '-',
                     'capex' => $additional_cost->fixedAsset->capex->capex ?? '-',

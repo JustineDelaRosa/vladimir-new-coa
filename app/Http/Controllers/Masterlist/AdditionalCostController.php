@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Masterlist;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AddCostRequest\AddtoAddCostRequest;
 use App\Http\Requests\AdditionalCost\AdditionalCostRequest;
 use App\Http\Requests\AdditionalCost\AdditionalCostSyncRequest;
 use App\Http\Requests\AdditionalCost\TaggingOfAddCostRequest;
@@ -503,7 +504,8 @@ class AdditionalCostController extends Controller
             return $this->responseSuccess('Successfully Tagged to Asset!', $fixedAsset->vladimir_tag_number);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->responseUnprocessable($e->getMessage());
+            return $e;
+            return $this->responseUnprocessable($e);
         }
     }
 
@@ -552,9 +554,10 @@ class AdditionalCostController extends Controller
     }
 
 
-    public function addToAddCost(Request $request)
+    public function addToAddCost(AddtoAddCostRequest $request)
     {
         $mainAsset = $request->input('vTagNumber');
+        $months = $request->input('usefulLife');
         $addCost = $request->input('addCost', []);
         if ($addCost === []) {
             return $this->responseUnprocessable('No additional cost to add.');
@@ -565,6 +568,10 @@ class AdditionalCostController extends Controller
         if (!$main) {
             return $this->responseNotFound('Main asset not found.');
         }
+
+        //update the additional useful life of the main asset
+        $main->added_useful_life += $months;
+        $main->save();
 
         foreach ($addCost as $item) {
             $item = FixedAsset::where('id', $item)->first();
