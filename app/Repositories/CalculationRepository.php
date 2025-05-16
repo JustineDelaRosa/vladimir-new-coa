@@ -14,13 +14,13 @@ class CalculationRepository
     {
         $start_depreciation = Carbon::parse($start_depreciation);
         $current_month = Carbon::parse($current_month);
-        return $start_depreciation->diffInMonths($current_month->addMonth(1));
+        return $start_depreciation->diffInMonths($current_month->addMonths());
     }
 
     public function getMonthlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life): float
     {
         //if acquisition cost and scrap value are equal to zero, return zero
-        if ($acquisition_cost == 0 && $scrap_value == 0 || ($est_useful_life == 0)) {
+        if (($acquisition_cost == 0 && $scrap_value == 0) || ($est_useful_life == 0)) {
             return 0;
         }
         $est_useful_life = floor($est_useful_life) * 12 + (($est_useful_life - floor($est_useful_life)) * 12);
@@ -29,7 +29,7 @@ class CalculationRepository
 
     public function getYearlyDepreciation($acquisition_cost, $scrap_value, $est_useful_life): float
     {
-        if ($acquisition_cost == 0 && $scrap_value == 0 || ($est_useful_life == 0)) {
+        if (($acquisition_cost == 0 && $scrap_value == 0) || ($est_useful_life == 0)) {
             return 0;
         }
         $est_useful_life = floor($est_useful_life) + (($est_useful_life - floor($est_useful_life)) * 12) / 12;
@@ -60,22 +60,23 @@ class CalculationRepository
     {
         $start_depreciation = Carbon::parse($start_depreciation);
 
-        if ($depreciation_method == 'One Time') {
+        if ($depreciation_method === 'One Time') {
             $end_depreciation = $start_depreciation->addMonth();
         } else {
             $years_added = floor($est_useful_life);
-            $months_added = floor(($est_useful_life - $years_added) * 12);
+//            $months_added = floor(($est_useful_life - $years_added) * 12);
 
-            $end_depreciation = $start_depreciation->addYears($years_added)->addMonths($months_added); //->subMonth(1)
+            $end_depreciation = $start_depreciation->addYears($years_added); //->subMonth(1) //->addMonths($months_added)
+//            dd($end_depreciation->format('Y-m'));
         }
-
+//        dd($end_depreciation->format('Y-m'));
         return $end_depreciation->format('Y-m') ?? null;
     }
 
     //TODO: will change and used the voucher date
     public function getStartDepreciation($method, $release_date = null): ?string //$release_date
     {
-        if ($method == 'One Time') {
+        if ($method === 'One Time') {
             $release_date = Carbon::parse($release_date)->startOfMonth();
             return $release_date->addMonth()->startOfMonth()->format('Y-m') ?? null;
         } else {
