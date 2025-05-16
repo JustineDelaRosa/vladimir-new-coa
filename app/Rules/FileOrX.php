@@ -31,11 +31,11 @@ class FileOrX implements Rule
                 'application/pdf',
                 'application/msword',
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-/*                'image/jpeg',
+//                'application/vnd.ms-excel',
+//                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'image/jpeg',
                 'image/png',
-                'image/jpg',*/
+                'image/jpg',
             ]);
         }
         return $value === 'x';
