@@ -98,6 +98,7 @@ trait AssetReleaseHandler
         $userWarehouseId = auth('sanctum')->user()->warehouse_id;
 
         $firstQuery = FixedAsset::select($fixedAssetFields)
+            ->leftJoin('formulas', 'fixed_assets.formula_id', '=', 'formulas.id')
             ->where('from_request', 1)
             ->where('can_release', 1)
             ->where('is_released', $isReleased)
@@ -117,6 +118,7 @@ trait AssetReleaseHandler
             });
 
         $secondQuery = AdditionalCost::select($additionalCostFields)
+            ->leftJoin('formulas', 'additional_costs.formula_id', '=', 'formulas.id')
             ->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
             ->where('additional_costs.from_request', 1)
             ->where('additional_costs.can_release', 1)
@@ -135,61 +137,62 @@ trait AssetReleaseHandler
     private function getFixedAssetFields(): array
     {
         return [
-            'id',
-            'requester_id',
-            'ymir_pr_number',
-            'pr_number',
-            'po_number',
-            'rr_number',
-            'warehouse_id',
-            'warehouse_number_id',
-            'capex_id',
-            'sub_capex_id',
-            'vladimir_tag_number',
-            'tag_number',
-            'tag_number_old',
-            'from_request',
-            'can_release',
-            'is_released',
-            'asset_description',
-            'type_of_request_id',
-            'asset_specification',
-            'accountability',
-            'accountable',
-            'received_by',
-            'capitalized',
-            'cellphone_number',
-            'brand',
-            'supplier_id',
-            'major_category_id',
-            'minor_category_id',
-            'voucher',
-            'voucher_date',
-            'receipt',
-            'quantity',
-            'depreciation_method',
-            'acquisition_cost',
-            'asset_status_id',
-            'cycle_count_status_id',
-            'depreciation_status_id',
-            'movement_status_id',
-            'is_old_asset',
-            'is_additional_cost',
-            'is_active',
-            'care_of',
-            'company_id',
-            'business_unit_id',
-            'department_id',
-            'unit_id',
-            'subunit_id',
-            'charged_department',
-            'location_id',
-            'account_id',
-            'remarks',
-            'created_at',
-            'print_count',
-            'last_printed',
-            'is_printable',
+            'fixed_assets.id',
+            'fixed_assets.requester_id',
+            'fixed_assets.ymir_pr_number',
+            'fixed_assets.pr_number',
+            'fixed_assets.po_number',
+            'fixed_assets.rr_number',
+            'fixed_assets.warehouse_id',
+            'fixed_assets.warehouse_number_id',
+            'fixed_assets.capex_id',
+            'fixed_assets.sub_capex_id',
+            'fixed_assets.vladimir_tag_number',
+            'fixed_assets.tag_number',
+            'fixed_assets.tag_number_old',
+            'fixed_assets.from_request',
+            'fixed_assets.can_release',
+            'fixed_assets.is_released',
+            'fixed_assets.asset_description',
+            'fixed_assets.type_of_request_id',
+            'fixed_assets.asset_specification',
+            'fixed_assets.accountability',
+            'fixed_assets.accountable',
+            'fixed_assets.received_by',
+            'fixed_assets.capitalized',
+            'fixed_assets.cellphone_number',
+            'fixed_assets.brand',
+            'fixed_assets.supplier_id',
+            'fixed_assets.major_category_id',
+            'fixed_assets.minor_category_id',
+            'fixed_assets.voucher',
+            'fixed_assets.voucher_date',
+            'fixed_assets.receipt',
+            'fixed_assets.quantity',
+            'fixed_assets.depreciation_method',
+            'fixed_assets.acquisition_cost',
+            'fixed_assets.asset_status_id',
+            'fixed_assets.cycle_count_status_id',
+            'fixed_assets.depreciation_status_id',
+            'fixed_assets.movement_status_id',
+            'fixed_assets.is_old_asset',
+            'fixed_assets.is_additional_cost',
+            'fixed_assets.is_active',
+            'fixed_assets.care_of',
+            'fixed_assets.company_id',
+            'fixed_assets.business_unit_id',
+            'fixed_assets.department_id',
+            'fixed_assets.unit_id',
+            'fixed_assets.subunit_id',
+            'fixed_assets.charged_department',
+            'fixed_assets.location_id',
+            'fixed_assets.account_id',
+            'fixed_assets.remarks',
+            'fixed_assets.created_at',
+            'fixed_assets.print_count',
+            'fixed_assets.last_printed',
+            'fixed_assets.is_printable',
+            'formulas.release_date',
             DB::raw("NULL as add_cost_sequence"),
         ];
     }
@@ -251,7 +254,8 @@ trait AssetReleaseHandler
             'additional_costs.created_at',
             'fixed_assets.print_count',
             'fixed_assets.last_printed',
-            DB::raw("0 as add_cost_sequence"),
+            'fixed_assets.is_printable',
+            'formulas.release_date',
             'additional_costs.add_cost_sequence',
         ];
     }
@@ -268,10 +272,10 @@ trait AssetReleaseHandler
 
     public function transformSingleFixedAsset($fixed_asset): array
     {
-        $signature = $fixed_asset->getMedia(Str::slug($fixed_asset->received_by) . '-signature')->first();
-        $receiverImg = $fixed_asset->getMedia('receiverImg')->first();
-        $assignmentMemoImg = $fixed_asset->getMedia('assignmentMemoImg')->first();
-        $authorizationMemoImg = $fixed_asset->getMedia('authorizationMemoImg')->first();
+//        $signature = $fixed_asset->getMedia(Str::slug($fixed_asset->received_by) . '-signature')->first();
+        $receiverImg = $fixed_asset->getMedia('receiverImg')->last();
+        $assignmentMemoImg = $fixed_asset->getMedia('assignmentMemoImg')->last();
+        $authorizationMemoImg = $fixed_asset->getMedia('authorizationMemoImg')->last();
         return [
 //            'additional_cost_count' => $fixed_asset->additional_cost_count,
 
@@ -285,9 +289,11 @@ trait AssetReleaseHandler
             ],
             'item_status' => $fixed_asset->asset_condition,
             'pr_number' => $fixed_asset->pr_number ?? '-',
+            'ymir_pr_number' => $fixed_asset->ymir_pr_number ?? '-',
             'po_number' => $fixed_asset->po_number ?? '-',
             'rr_number' => $fixed_asset->rr_number ?? '-',
             'is_released' => $fixed_asset->is_released ?? '-',
+            'release_date' => $fixed_asset->formula->release_date ?? '-',
             'warehouse_number' => [
                 'id' => $fixed_asset->warehouseNumber->id ?? '-',
                 'warehouse_number' => $fixed_asset->warehouseNumber->warehouse_number ?? '-',
@@ -710,6 +716,7 @@ trait AssetReleaseHandler
             'po_number' => $fixed_asset->po_number ?? '-',
             'rr_number' => $fixed_asset->rr_number ?? '-',
             'is_released' => $fixed_asset->is_released ?? '-',
+            'release_date' => $fixed_asset->release_date ?? '-',
             'warehouse_number' => [
                 'id' => $fixed_asset->warehouseNumber->id ?? '-',
                 'warehouse_number' => $fixed_asset->warehouseNumber->warehouse_number ?? '-',
@@ -931,6 +938,20 @@ trait AssetReleaseHandler
     }
 
 
+
+
+
+
+    public function transformAdditionalCost($additionalCost): array
+    {
+        $additionalCostArr = [];
+
+        foreach ($additionalCost as $additionalCosts) {
+            $additionalCostArr[] = $this->transformSingleAdditionalCost($additionalCosts);
+        }
+        return $additionalCostArr;
+    }
+
     public function transformSingleAdditionalCost($additional_cost): array
     {
 //        $signature = $additional_cost->getMedia(Str::slug($additional_cost->received_by) . '-signature')->first();
@@ -954,9 +975,11 @@ trait AssetReleaseHandler
                 'employee_id' => $additional_cost->requestor->employee_id ?? '-',
             ],
             'pr_number' => $additional_cost->pr_number ?? '-',
+            'ymir_pr_number' => $additional_cost->ymir_pr_number ?? '-',
             'po_number' => $additional_cost->po_number ?? '-',
             'rr_number' => $additional_cost->rr_number ?? '-',
             'is_released' => $additional_cost->is_released ?? '-',
+
             'warehouse_number' => [
                 'id' => $additional_cost->warehouseNumber->id ?? '-',
                 'warehouse_number' => $additional_cost->warehouseNumber->warehouse_number ?? '-',

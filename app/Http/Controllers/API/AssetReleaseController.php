@@ -15,6 +15,7 @@ use App\Repositories\FixedAssetRepository;
 use App\Repositories\VladimirTagGeneratorRepository;
 use App\Traits\AssetReleaseHandler;
 use App\Traits\AssetRequestHandler;
+use Carbon\Carbon;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,10 +33,19 @@ class AssetReleaseController extends Controller
         $per_page = $request->get('per_page');
         $page = $request->get('page');
         $isReleased = $request->get('isReleased');
+        $from = $request->get('from');
+        $to = $request->get('to');
         $userWarehouseId = auth('sanctum')->user()->warehouse_id;
+
+        //start hours to from and end hour to to
+        if ($from && $to) {
+            $from = $from ? Carbon::parse($from)->startOfDay() : null;
+            $to = $to ? Carbon::parse($to)->endOfDay() : null;
+        }
         if ($per_page == null) {
-            $query = FixedAsset::where('can_release', 1)
+            $fixedAsset = FixedAsset::where('can_release', 1)
                 ->where('from_request', 1)
+                ->where('is_released', $isReleased)
                 ->where('warehouse_id', $userWarehouseId)
 //                ->whereHas('warehouse', function ($query) use ($userWarehouseId) {
 //                    $query->where('id', $userWarehouseId);
@@ -51,14 +61,60 @@ class AssetReleaseController extends Controller
 //                                ->where('asset_condition', 'New')
                                 ->whereNotNull('memo_series_id');
                         });
+                })->when($from && !$to, function ($query) use ($from) {
+                    return $query->where('created_at', '>=', $from);
+                })
+                ->when(!$from && $to, function ($query) use ($to) {
+                    return $query->where('created_at', '<=', $to);
+                })->when($from && $to, function ($query) use ($from, $to) {
+                    return $query->whereBetween('created_at', [$from, $to]);
                 });
 
-            $fixed_assets = $query->orderByDesc('created_at')->get();
 
-            return $this->transformFixedAsset($fixed_assets);
-        } else {
-            return $this->searchFixedAsset($search, $page, $isReleased, $per_page);
+
+            $fixed_assets = $fixedAsset->orderByDesc('created_at')->get();
+
+
+            $additionalCost = AdditionalCost::where('can_release', 1)
+                ->where('from_request', 1)
+                ->where('is_released', $isReleased)
+                ->where('warehouse_id', $userWarehouseId)
+                ->when($from && !$to, function ($query) use ($from) {
+                    return $query->where('created_at', '>=', $from);
+                })
+                ->when(!$from && $to, function ($query) use ($to) {
+                    return $query->where('created_at', '<=', $to);
+                })->when($from && $to, function ($query) use ($from, $to) {
+                    return $query->whereBetween('created_at', [$from, $to]);
+                });
+////                ->whereHas('warehouse', function ($query) use ($userWarehouseId) {
+////                    $query->where('id', $userWarehouseId);
+////                })
+//                ->where(function ($query) {
+//                    $query->where('accountabi
+//lity', 'Common')
+//                        ->where('memo_series_id', null)
+//                        ->orWhere(function ($query) {
+//                            $query->where('accountability', 'Personal Issued');
+////                                ->where('asset_condition', '!=', 'New');
+//                        })->orWhere(function ($query) {
+//                            $query->where('accountability', 'Personal Issued')
+////                                ->where('asset_condition', 'New')
+//                                ->whereNotNull('memo_series_id');
+//                        });
+//                });
+
+            $additional_cost = $additionalCost->orderByDesc('created_at')->get();
+
+            $response = array_merge(
+                $this->transformFixedAsset($fixed_assets),
+                $this->transformAdditionalCost($additional_cost)
+            );
+
+            return $this->responseSuccess('Assets retrieved successfully', $response);
         }
+
+        return $this->searchFixedAsset($search, $page, $isReleased, $per_page);
     }
 
     public function updateAccountability(UpdateAccountabilityRequest $request)
@@ -181,16 +237,26 @@ class AssetReleaseController extends Controller
                     // If all assets are released, update the asset request
                     if ($unreleasedFixedAssets == 0 && $unreleasedAdditionalCosts == 0) {
 //                        $assetRequest = AssetRequest::where('transaction_number', $transactionNumber)->get();
+                        $unreleased = AssetRequest::where('transaction_number', $transactionNumber)
+                            ->where('is_asset_small_tool', 0)
+                            ->where('is_claimed', 0)
+                            ->count();
+
                         AssetRequest::where('transaction_number', $transactionNumber)->update([
                             'is_claimed' => 1,
 //                            'filter' => 'Claimed'
                         ]);
-                        AssetRequest::where('transaction_number', $transactionNumber)
-                            ->whereColumn('quantity', 'quantity_delivered')
+
+
+//                        return $this->responseUnprocessable($unreleased);
+                        if ($unreleased <= 1) {
+                            AssetRequest::where('transaction_number', $transactionNumber)
+                                ->whereColumn('quantity', 'quantity_delivered')
 //                            ->whereNull('item_id')
-                            ->update([
-                                'filter' => 'Claimed'
-                            ]);
+                                ->update([
+                                    'filter' => 'Claimed'
+                                ]);
+                        }
                     }
                 }
             }
