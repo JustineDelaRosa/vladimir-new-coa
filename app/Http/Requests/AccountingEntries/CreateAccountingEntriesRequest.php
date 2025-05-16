@@ -34,12 +34,16 @@ class CreateAccountingEntriesRequest extends FormRequest
 //            'initial_credit_id' => 'required|exists:account_titles,id',
             'depreciation_debit_id' => 'required|exists:account_titles,id',
 //            'depreciation_credit_id' => 'required|exists:account_titles,id',
+            "second_depreciation_debit_id" => 'nullable|exists:account_titles,sync_id',
+            "second_depreciation_credit_id" => 'nullable|exists:account_titles,sync_id',
             'company_id' => 'nullable|exists:companies,id',
             'business_unit_id' => ['nullable', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
             'department_id' => ['nullable', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
             'unit_id' => ['nullable', 'exists:units,id', new UnitValidation(request()->department_id)],
             'subunit_id' => ['nullable', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
             'location_id' => ['nullable', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
+            'major_category_id' => 'nullable|exists:major_categories,id',
+            'minor_category_id' => 'nullable|exists:minor_categories,id',
         ];
     }
 
@@ -65,6 +69,8 @@ class CreateAccountingEntriesRequest extends FormRequest
             'unit_id.required' => 'The unit field is required.',
             'subunit_id.required' => 'The subunit field is required.',
             'location_id.required' => 'The location field is required.',
+            'major_category_id.exists' => 'The selected major category is invalid.',
+            'minor_category_id.exists' => 'The selected minor category is invalid.',
 
         ];
     }
