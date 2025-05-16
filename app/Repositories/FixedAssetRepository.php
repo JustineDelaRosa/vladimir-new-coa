@@ -274,10 +274,9 @@ class FixedAssetRepository
     public function searchFixedAsset($search, $status, $page, $per_page = null, $filter = null)
     {
         $filter = $filter ? array_map('trim', explode(',', $filter)) : [];
-        //check if filter only contains 'With Voucher'
-//        if (count($filter) == 1 && $filter[0] == 'With Voucher') {
-//            return $this->faWithVoucherView($page, $per_page);
-//        }
+
+        $runningDepreciation = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
+        $fullyDepreciated = DepreciationStatus::where('depreciation_status_name', 'Fully Depreciated')->first()->id;
 
         $firstQuery = ($status === 'deactivated')
             ? FixedAsset::onlyTrashed()->select($this->fixedAssetFields())
@@ -294,6 +293,149 @@ class FixedAssetRepository
             'Additional Cost' => ['is_additional_cost' => 1],
             'From Request' => ['from_request' => 1],
             'Small Tools' => ['type_of_request_id' => $smallToolsId],
+            'Running Depreciation' => ['depreciation_status_id' => $runningDepreciation, 'is_additional_cost' => 0],
+            'Fully Depreciated' => ['depreciation_status_id' => $fullyDepreciated, 'is_additional_cost' => 0],
+        ];
+
+        // Apply filters first
+        if (!empty($filter)) {
+            $this->applyFilters($firstQuery, $filter, $conditions);
+            $this->applyFilters($secondQuery, $filter, $conditions, 'additional_costs');
+        }
+
+
+        $relationAttributes = [
+            'subCapex' => ['sub_capex', 'sub_project'],
+            'majorCategory' => ['major_category_name'],
+            'minorCategory' => ['minor_category_name'],
+            'department' => ['department_name'],
+            'department.division' => ['division_name'],
+            'assetStatus' => ['asset_status_name'],
+            'typeOfRequest' => ['type_of_request_name'],
+            'cycleCountStatus' => ['cycle_count_status_name'],
+            'depreciationStatus' => ['depreciation_status_name'],
+            'movementStatus' => ['movement_status_name'],
+            'location' => ['location_name'],
+            'company' => ['company_name'],
+            'accountTitle.initialCredit' => ['credit_name'],
+        ];
+        // Then apply search within those filters
+        if (!empty($search)) {
+            $mainAttributesFixedAsset = [
+                'vladimir_tag_number', 'tag_number', 'tag_number_old',
+                'asset_description', 'accountability', 'accountable',
+                'brand', 'depreciation_method', 'transaction_number',
+                'reference_number', 'po_number', 'rr_number', 'ymir_pr_number',
+            ];
+
+            $mainAttributesAdditionalCost = [
+                'vladimir_tag_number', 'tag_number', 'tag_number_old',
+                'additional_costs.po_number', 'additional_costs.rr_number',
+            ];
+
+
+
+            // Special case for "To Depreciate" filter
+            if (count($filter) == 1 && $filter[0] == 'To Depreciate') {
+                // Skip additional costs query entirely
+                $secondQuery->where('additional_costs.id', 0);
+
+                // Search only within the filtered fixed assets
+                $firstQuery->where(function ($query) use ($mainAttributesFixedAsset, $search, $relationAttributes) {
+                    // Search in main attributes
+                    foreach ($mainAttributesFixedAsset as $attribute) {
+                        $query->orWhere($attribute, 'like', '%' . $search . '%');
+                    }
+
+                    // Search in relation attributes
+                    foreach ($relationAttributes as $relation => $attributes) {
+                        foreach ($attributes as $attribute) {
+                            $query->orWhereHas($relation, function ($whereQuery) use ($attribute, $search) {
+                                $whereQuery->where($attribute, 'like', '%' . $search . '%');
+                            });
+                        }
+                    }
+                });
+            } else {
+
+
+                // Apply search for fixed assets
+                $firstQuery->where(function ($query) use ($mainAttributesFixedAsset, $relationAttributes, $search) {
+                    // Search in main attributes
+                    foreach ($mainAttributesFixedAsset as $attribute) {
+                        $query->orWhere($attribute, 'like', '%' . $search . '%');
+                    }
+
+                    // Search in relation attributes
+                    foreach ($relationAttributes as $relation => $attributes) {
+                        foreach ($attributes as $attribute) {
+                            $query->orWhereHas($relation, function ($whereQuery) use ($attribute, $search) {
+                                $whereQuery->where($attribute, 'like', '%' . $search . '%');
+                            });
+                        }
+                    }
+                });
+
+                // Apply search for additional costs
+                $secondQuery->where(function ($query) use ($mainAttributesAdditionalCost, $relationAttributes, $search) {
+                    // Search in main attributes
+                    foreach ($mainAttributesAdditionalCost as $attribute) {
+                        $query->orWhere($attribute, 'like', '%' . $search . '%');
+                    }
+
+                    // Search in relation attributes
+                    foreach ($relationAttributes as $relation => $attributes) {
+                        // Skip subCapex for additional costs
+                        if ($relation !== 'subCapex') {
+                            foreach ($attributes as $attribute) {
+                                $query->orWhereHas($relation, function ($whereQuery) use ($attribute, $search) {
+                                    $whereQuery->where($attribute, 'like', '%' . $search . '%');
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        $results = $firstQuery->unionAll($secondQuery)->orderBy('asset_description')->get();
+        $results = $this->paginateResults($results, $page, $per_page);
+        $results->setCollection($results->getCollection()->values());
+        $results->getCollection()->transform(function ($item) {
+            return $this->transformSearchFixedAsset($item);
+        });
+
+        return $results;
+    }
+
+
+    //todo: this is the old search function
+/*    public function searchFixedAsset($search, $status, $page, $per_page = null, $filter = null)
+    {
+        $filter = $filter ? array_map('trim', explode(',', $filter)) : [];
+        //check if filter only contains 'With Voucher'
+//        if (count($filter) == 1 && $filter[0] == 'With Voucher') {
+//            return $this->faWithVoucherView($page, $per_page);
+//        }
+
+        $runningDepreciation = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
+
+        $firstQuery = ($status === 'deactivated')
+            ? FixedAsset::onlyTrashed()->select($this->fixedAssetFields())
+            : FixedAsset::select($this->fixedAssetFields());
+
+        $secondQuery = ($status === 'deactivated')
+            ? AdditionalCost::onlyTrashed()->select($this->additionalCostFields())->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id')
+            : AdditionalCost::select($this->additionalCostFields())->leftJoin('fixed_assets', 'additional_costs.fixed_asset_id', '=', 'fixed_assets.id');
+
+        $smallToolsId = TypeOfRequest::where('type_of_request_name', 'Small Tools')->first()->id;
+        $conditions = [
+            'To Depreciate' => ['depreciation_method' => null, 'is_released' => 1, 'is_additional_cost' => 0],
+            'Fixed Asset' => ['is_additional_cost' => 0],
+            'Additional Cost' => ['is_additional_cost' => 1],
+            'From Request' => ['from_request' => 1],
+            'Small Tools' => ['type_of_request_id' => $smallToolsId],
+            'Running Depreciation' => ['depreciation_status_id' => $runningDepreciation, 'is_additional_cost' => 0],
         ];
 
         if (!empty($filter)) {
@@ -428,7 +570,7 @@ class FixedAssetRepository
             return $this->transformSearchFixedAsset($item);
         });
         return $results;
-    }
+    }*/
 
     function applyFilters($query, $filter, $conditions, $prefix = '')
     {
@@ -473,6 +615,7 @@ class FixedAssetRepository
             'total_adcost' => $this->calculationRepository->getTotalCost($fixed_asset->additionalCostWithTrashed->where('is_released', 1)),
             'can_add' => $fixed_asset->is_released ? 1 : 0,
             'can_update' => $fixed_asset->accountingEntries->depreciationDebit ? 0 : 1,  //DepreciationHistory::where('fixed_asset_id', $fixed_asset->id)->exists() ? 0 : 1,
+            'is_depreciated' => $fixed_asset->accountingEntries->depreciationDebit ? 1 : 0,
             'additional_cost_count' => $fixed_asset->additional_cost_count,
             'id' => $fixed_asset->id,
             'transaction_number' => $fixed_asset->transaction_number,
@@ -687,7 +830,8 @@ class FixedAssetRepository
             'last_printed' => $fixed_asset->last_printed,
             'tagging' => $fixed_asset->print_count > 0 ? 'Tagged' : 'Ready to Tag',
             'created_at' => $fixed_asset->created_at,
-            'additional_cost' => isset($fixed_asset->additionalCostWithTrashed) ? $fixed_asset->additionalCostWithTrashed->where('is_released', 1)->map(function ($additional_cost) {
+            //->where('is_released', 1)
+            'additional_cost' => isset($fixed_asset->additionalCostWithTrashed) ? $fixed_asset->additionalCostWithTrashed->map(function ($additional_cost) {
                 return [
                     'id' => $additional_cost->id ?? '-',
                     'requestor' => [
@@ -1699,8 +1843,8 @@ class FixedAssetRepository
                         $query->where('fixed_assets.from_request', 0)
                             ->orWhere(function ($query) {
                                 $query->where('fixed_assets.from_request', 1)
-                                    ->where('fixed_assets.is_released', 1)
-                                    ->where('fixed_assets.depreciation_method', '!=', null);
+                                    ->where('fixed_assets.is_released', 1);
+//                                    ->where('fixed_assets.depreciation_method', '!=', null);
                             });
                     });
 

@@ -51,11 +51,59 @@ class FixedAssetController extends Controller
     public function index(Request $request)
     {
 
+//        // Create an array to store results
+//        $calculationResults = [];
+//
+//        FixedAsset::with([
+//            'formula',
+//            'additionalCost.depreciationStatus',
+//            'depreciationStatus',
+//            'majorCategory',
+//            'depreciationHistory'
+//        ])->whereNotNull('depreciation_method')
+//            ->chunk(200, function ($assets) use (&$calculationResults) {
+//                $selectedAssets = $assets->map(function ($fixedAsset) {
+//                    // Adjust end_depreciation if there are additional costs
+//                    if ($fixedAsset->additionalCost->isNotEmpty()) {
+//                        $addedUsefulLifeYears = $fixedAsset->added_useful_life ?? 0;
+//                        $addedUsefulLifeMonths = $addedUsefulLifeYears * 12;
+//                        $fixedAsset->formula->end_depreciation = \Carbon\Carbon::parse($fixedAsset->formula->end_depreciation)
+//                            ->addMonths($addedUsefulLifeMonths)
+//                            ->format('Y-m');
+//                    }
+//                    return $fixedAsset;
+//                })->filter(function ($fixedAsset) {
+//                    // Exclude fully depreciated assets and their costs
+//                    $isFullyDepreciated = $fixedAsset->depreciationStatus->depreciation_status_name === 'Fully Depreciated';
+//                    $allCostsDepreciated = $fixedAsset->additionalCost->every(function ($cost) {
+//                        return $cost->depreciationStatus->depreciation_status_name === 'Fully Depreciated';
+//                    });
+//
+//                    if ($isFullyDepreciated && $allCostsDepreciated) return false;
+//
+//                    // Date comparisons
+//                    $start = Carbon::parse($fixedAsset->formula->start_depreciation)->startOfMonth();
+//                    $end = Carbon::parse($fixedAsset->formula->end_depreciation)->startOfMonth();
+//                    $now = now()->startOfMonth();
+//
+//                    return $start <= $now && $end >= $now;
+//                });
+//
+//                foreach ($selectedAssets as $asset) {
+//                    // Capture calculation results instead of processing them
+//                    $calculationResults[] = $this->processAssetDepreciation($asset);
+//                }
+//            });
+//
+//// Return the calculation results
+//        return $calculationResults;
+
 //                AssetMovementHistory::
 //        return FixedAsset::with('assetSmallTools')->wherehas('assetSmallTools')->get();
 
 //        return $smallTollItems = SmallTools::where('id', 1)->first()->item;
-//       return  auth('sanctum')->user()->department_id;
+//       return  auth('sanctum')->user()->department_id
+//;
         $movement = $request->get('movement');
         $subUnitId = $request->get('sub_unit_id', null);
         $addCost = $request->get('add_cost', false);
@@ -76,6 +124,213 @@ class FixedAssetController extends Controller
 //            return $this->fixedAssetRepository->faIndex();
 //        }
     }
+
+//THIS IS FOR DEPRECIATION SCHEDULER
+    /*    protected function processAssetDepreciation($fixedAsset)
+        {
+            $formula = $fixedAsset->formula;
+            $lastHistory = $fixedAsset->depreciationHistory->sortByDesc('depreciated_date')->first();
+            $currentDate = now()->startOfMonth();
+
+
+            // Check if a depreciation record already exists for the current month
+            $existingRecord = $fixedAsset->depreciationHistory
+                ->where('depreciated_date', $currentDate->format('Y-m'))
+                ->first();
+
+            if ($existingRecord) {
+                // Skip processing if a record for the current month already exists
+                return;
+            }
+
+            // Check if this is a One Time depreciation method
+            if ($fixedAsset->depreciation_method === 'One Time') {
+                // For One Time depreciation, the entire depreciable basis is depreciated in a single period
+                $totalBasis = $formula->depreciable_basis;
+                $scrapValue = $formula->scrap_value ?? 0;
+
+                // Get all additional costs
+                $additionalCosts = $fixedAsset->additionalCost;
+
+                // Check for new additional costs that need to be depreciated
+                $newCosts = $additionalCosts->filter(function ($cost) use ($lastHistory, $currentDate) {
+                    $costDate = \Carbon\Carbon::parse($cost->created_at)->addMonth()->startOfMonth();
+
+                    // A cost is new if it was created in the previous month
+                    // and there's no history record for this month yet
+                    return $costDate->format('Y-m') === $currentDate->format('Y-m') &&
+                        (!$lastHistory || $lastHistory->depreciated_date !== $currentDate->format('Y-m'));
+                });
+
+                // If there are no new costs and the asset is already depreciated, skip
+                if ($newCosts->isEmpty() && $lastHistory) {
+                    return;
+                }
+
+                // Calculate total basis including additional costs
+                $totalAdditionalBasis = round($additionalCosts->sum(function ($cost) {
+                    return $cost->formula->depreciable_basis ?? 0;
+                }), 2);
+
+                $totalBasis += $totalAdditionalBasis;
+                $monthlyDepr = $totalBasis - $scrapValue; // Full amount in one go
+                $accumulatedDepr = $monthlyDepr;
+                $remainingValue = $scrapValue;
+                $totalMonthsDepr = 1; // One time depreciation
+            } else {
+                $startDate = Carbon::parse($formula->start_depreciation);
+
+                // Original depreciation parameters
+                $originalBasis = $formula->depreciable_basis;
+                $scrapValue = $formula->scrap_value ?? 0;
+                $originalLifeMonths = $fixedAsset->majorCategory->est_useful_life * 12;
+                $originalMonthlyDepr = max(round(($originalBasis - $scrapValue) / $originalLifeMonths, 2), 0);
+
+                // Additional costs
+                $additionalCosts = $fixedAsset->additionalCost;
+                $totalAddedLife = $fixedAsset->added_useful_life ?? 0;
+
+                // Get the last history record
+                if ($lastHistory) {
+                    // Use the previous accumulated cost as the base
+                    $previousAccumulatedCost = $lastHistory->accumulated_cost;
+                    $totalMonthsDepr = $lastHistory->months_depreciated + 1;
+
+                    // Calculate the current monthly depreciation
+                    // Check if any additional costs were added since the last depreciation
+                    $newCosts = $additionalCosts->filter(function ($cost) use ($lastHistory) {
+                        return Carbon::parse($cost->created_at)->greaterThan(Carbon::parse($lastHistory->depreciated_date));
+                    });
+
+                    if ($newCosts->isNotEmpty()) {
+                        // Recalculate depreciation with new costs
+                        $newCostBasis = round($newCosts->sum(function ($cost) {
+                            return $cost->formula->depreciable_basis ?? 0;
+                        }), 2);
+
+                        $totalAdditionalBasis = round($additionalCosts->sum(function ($cost) {
+                            return $cost->formula->depreciable_basis ?? 0;
+                        }), 2);
+
+                        // Calculate remaining life
+                        $remainingLife = ($originalLifeMonths + $totalAddedLife) - $totalMonthsDepr + 1;
+                        $remainingLife = max($remainingLife, 1); // Prevent division by zero
+
+                        // Calculate new monthly depreciation
+                        $remainingBookValue = $lastHistory->remaining_book_value + $newCostBasis;
+                        $monthlyDepr = max(round(($remainingBookValue - $scrapValue) / $remainingLife, 2), 0);
+
+                        // Update total basis
+                        $totalBasis = round($originalBasis + $totalAdditionalBasis, 2);
+                    } else {
+                        // Continue with the same monthly depreciation
+                        $monthlyDepr = $lastHistory->depreciation_per_month;
+                        $totalBasis = $lastHistory->depreciation_basis;
+                    }
+
+                    // Calculate new accumulated cost
+                    $accumulatedDepr = round($previousAccumulatedCost + $monthlyDepr, 2);
+                } else {
+                    // First depreciation record
+                    $totalAdditionalBasis = round($additionalCosts->sum(function ($cost) {
+                        return $cost->formula->depreciable_basis ?? 0;
+                    }), 2);
+
+                    $totalBasis = round($originalBasis + $totalAdditionalBasis, 2);
+                    $monthlyDepr = max(round(($totalBasis - $scrapValue) / $originalLifeMonths, 2), 0);
+
+                    $totalMonthsDepr = $this->calculationRepository->getMonthDifference($startDate, $currentDate);
+    //                    $startDate->diffInMonths($currentDate);
+                    $totalMonthsDepr = max($totalMonthsDepr, 1); // Ensure at least 1 month
+
+                    // For the first entry, accumulated cost is the monthly depreciation
+                    // multiplied by the number of months since the start date
+                    $accumulatedDepr = round($monthlyDepr * $totalMonthsDepr, 2);
+                }
+
+                // Ensure accumulated depreciation doesn't exceed depreciable basis
+                $maxAccumulated = max(round($totalBasis - $scrapValue, 2), 0);
+                $accumulatedDepr = min($accumulatedDepr, $maxAccumulated);
+                $remainingValue = max(round($totalBasis - $accumulatedDepr, 2), 0);
+            }
+
+            // Check if it got transferred to other COA
+            $company_id = $fixedAsset->company_id;
+            $business_unit_id = $fixedAsset->business_unit_id;
+            $department_id = $fixedAsset->department_id;
+            $unit_id = $fixedAsset->unit_id;
+            $subunit_id = $fixedAsset->subunit_id;
+            $location_id = $fixedAsset->location_id;
+    //        $account_id = $fixedAsset->account_id;
+            $isTransferred = 0;
+
+            try {
+                $depreciation_debit_id = $fixedAsset->accountingEntries->depreciationDebit->sync_id ?? null;
+            } catch (\Exception $e) {
+                $depreciation_debit_id = null;
+            }
+
+            if ($lastHistory && $lastHistory->is_transferred == 0) {
+    //            $company_id = $lastHistory->company_id == $company_id ? $company_id : $lastHistory->company_id;
+    //            $business_unit_id = $lastHistory->business_unit_id == $business_unit_id ? $business_unit_id : $lastHistory->business_unit_id;
+    //            $department_id = $lastHistory->department_id == $department_id ? $department_id : $lastHistory->department_id;
+    //            $unit_id = $lastHistory->unit_id == $unit_id ? $unit_id : $lastHistory->unit_id;
+    //            $subunit_id = $lastHistory->subunit_id == $subunit_id ? $subunit_id : $lastHistory->subunit_id;
+    //            $location_id = $lastHistory->location_id == $location_id ? $location_id : $lastHistory->location_id;
+    //            $depreciation_debit_id = isset($lastHistory->depreciation_debit_id) && $depreciation_debit_id ?
+    //                ($lastHistory->depreciation_debit_id == $depreciation_debit_id ? $depreciation_debit_id : $lastHistory->depreciation_debit_id) :
+    //                $depreciation_debit_id;
+                $isTransferred = $lastHistory->subunit_id == $subunit_id ? 0 : 1;
+            }
+
+
+            return ['fixed_asset_id' => $fixedAsset->id,
+                'depreciated_date' => $currentDate->format('Y-m'),
+                'depreciation_per_month' => round($monthlyDepr, 2),
+                'depreciation_per_year' => $fixedAsset->depreciation_method === 'One Time' ? 0 : round($monthlyDepr * 12, 2),
+                'months_depreciated' => $totalMonthsDepr,
+                'accumulated_cost' => round($accumulatedDepr, 2),
+                'remaining_book_value' => round($remainingValue, 2),
+                'depreciation_basis' => round($totalBasis, 2),
+                'acquisition_cost' => round($formula->acquisition_cost + $additionalCosts->sum('acquisition_cost'), 2),
+                'company_id' => $company_id,
+                'business_unit_id' => $business_unit_id,
+                'department_id' => $department_id,
+                'unit_id' => $unit_id,
+                'subunit_id' => $subunit_id,
+                'location_id' => $location_id,
+                'depreciation_debit_id' => $depreciation_debit_id,
+                'is_transferred' => $isTransferred];
+            // Create or update depreciation record
+    //        if ($totalMonthsDepr !== 0) {
+    //            \App\Models\DepreciationHistory::create([
+    //                'fixed_asset_id' => $fixedAsset->id,
+    //                'depreciated_date' => $currentDate->format('Y-m'),
+    //                'depreciation_per_month' => round($monthlyDepr, 2),
+    //                'depreciation_per_year' => $fixedAsset->depreciation_method === 'One Time' ? 0 : round($monthlyDepr * 12, 2),
+    //                'months_depreciated' => $totalMonthsDepr,
+    //                'accumulated_cost' => round($accumulatedDepr, 2),
+    //                'remaining_book_value' => round($remainingValue, 2),
+    //                'depreciation_basis' => round($totalBasis, 2),
+    //                'acquisition_cost' => round($formula->acquisition_cost + $additionalCosts->sum('acquisition_cost'), 2),
+    //                'company_id' => $company_id,
+    //                'business_unit_id' => $business_unit_id,
+    //                'department_id' => $department_id,
+    //                'unit_id' => $unit_id,
+    //                'subunit_id' => $subunit_id,
+    //                'location_id' => $location_id,
+    //                'depreciation_debit_id' => $depreciation_debit_id,
+    //                'is_transferred' => $isTransferred,
+    //            ]);
+    //
+    //            // Update status if fully depreciated
+    //            if ($remainingValue <= 0 || $fixedAsset->depreciation_method === 'One Time') {
+    //                $statusId = DepreciationStatus::firstWhere('depreciation_status_name', 'Fully Depreciated')->id;
+    //                $fixedAsset->update(['depreciation_status_id' => $statusId]);
+    //                $fixedAsset->additionalCost->each->update(['depreciation_status_id' => $statusId]);
+    //            }
+    //        }
+        }*/
 
 
     public function store(FixedAssetRequest $request)
@@ -176,6 +431,7 @@ class FixedAssetController extends Controller
     //TODO: Ask on what should and should not be updated on the fixed asset
     public function update(FixedAssetUpdateRequest $request, int $id)
     {
+
         $request->validated();
         //minor Category check
         $majorCategory = MajorCategory::withTrashed()->where('id', $request->major_category_id)
@@ -219,6 +475,9 @@ class FixedAssetController extends Controller
         $departmentQuery = Department::where('id', $request->department_id)->first();
         $businessUnitQuery = BusinessUnit::where('id', $request->business_unit_id)->first();
         $fixedAsset = FixedAsset::where('id', $id)->first();
+        if ($fixedAsset->depreciation_method === null) {
+            return $this->responseUnprocessable('You can\'t update the asset if it is not yet depreciated or released');
+        }
         if ($fixedAsset) {
             $fixed_asset = $this->fixedAssetRepository->updateFixedAsset($request->all(), $businessUnitQuery, $id);
             if ($fixed_asset === "Not yet fully depreciated") {
@@ -1213,10 +1472,32 @@ class FixedAssetController extends Controller
 
     public function depreciateAsset($vTagNumber)
     {
+
         $fixedAsset = FixedAsset::where('vladimir_tag_number', $vTagNumber)->first();
+        $typeOfRequest = TypeOfRequest::where('id', $fixedAsset->type_of_request_id)->first()->type_of_request_name;
         $depreciationStatusId = DepreciationStatus::where('depreciation_status_name', 'Running Depreciation')->first()->id;
         $acquisitionCost = $fixedAsset->acquisition_cost;
         $depreciationMethod = $acquisitionCost < 10000 ? 'One Time' : 'STL';
+
+        if (in_array($typeOfRequest, ['Small Tools', 'Small Tool']) && $acquisitionCost >= 10000) {
+            //check if the minor category was 1 year or 1 time (Small Tools - 1 Year
+            //Small Tools - 1 Time) if one yea
+
+            /*            $minorCategory = MinorCategory::where('id', $fixedAsset->minor_category_id)->first();
+                        if (stripos($minorCategory->minor_category_name, '1 Year') !== false) {
+                            $depreciationMethod = 'STL';
+                        } elseif (stripos($minorCategory->minor_category_name, '1 Time') !== false) {
+                            $depreciationMethod = 'One Time';
+                        }*/
+
+            $majorCategory = MajorCategory::where('id', $fixedAsset->major_category_id)->first();
+            if (stripos($majorCategory->major_category_name, '1 Year') !== false) {
+                $depreciationMethod = 'STL';
+            } elseif (stripos($majorCategory->major_category_name, '1 Time') !== false) {
+                $depreciationMethod = 'One Time';
+            }
+
+        }
         $fixedAsset->update([
             'depreciation_method' => $depreciationMethod,
             'depreciation_status_id' => $depreciationStatusId
@@ -1329,7 +1610,7 @@ class FixedAssetController extends Controller
                         "financialStatement" => null,
                         "unitResponsible" => null,
                         "batch" => null,
-                        "remarks" => $item->remarks,
+                        "remarks" => $item->minorCategory->minor_category_name,
                         "payrollPeriod" => null,
                         "position" => null,
                         "payrollType" => null,
@@ -1346,7 +1627,7 @@ class FixedAssetController extends Controller
                         "from" => null,
                         "changeTo" => null,
                         "reason" => $item->remarks,
-                        "checkingRemarks" => $item->majorCategory->major_category_name,
+                        "checkingRemarks" => $item->minorCategory->minor_category_name,
                         "bankName" => null,
                         "chequeNumber" => null,
                         "chequeVoucherNumber" => null,
@@ -1402,7 +1683,7 @@ class FixedAssetController extends Controller
                         "financialStatement" => null,
                         "unitResponsible" => null,
                         "batch" => null,
-                        "remarks" => $item->remarks,
+                        "remarks" => $item->minorCategory->minor_category_name,
                         "payrollPeriod" => null,
                         "position" => null,
                         "payrollType" => null,
@@ -1419,7 +1700,7 @@ class FixedAssetController extends Controller
                         "from" => null,
                         "changeTo" => null,
                         "reason" => $item->remarks,
-                        "checkingRemarks" => $item->majorCategory->major_category_name,
+                        "checkingRemarks" => $item->minorCategory->minor_category_name,
                         "bankName" => null,
                         "chequeNumber" => null,
                         "chequeVoucherNumber" => null,
@@ -1479,7 +1760,7 @@ class FixedAssetController extends Controller
                         "financialStatement" => null,
                         "unitResponsible" => null,
                         "batch" => null,
-                        "remarks" => $item->remarks,
+                        "remarks" => $item->minorCategory->minor_category_name,
                         "payrollPeriod" => null,
                         "position" => null,
                         "payrollType" => null,
@@ -1496,7 +1777,7 @@ class FixedAssetController extends Controller
                         "from" => null,
                         "changeTo" => null,
                         "reason" => $item->remarks,
-                        "checkingRemarks" => $item->majorCategory->major_category_name,
+                        "checkingRemarks" => $item->minorCategory->minor_category_name,
                         "bankName" => null,
                         "chequeNumber" => null,
                         "chequeVoucherNumber" => null,
@@ -1553,7 +1834,7 @@ class FixedAssetController extends Controller
                         "financialStatement" => null,
                         "unitResponsible" => null,
                         "batch" => null,
-                        "remarks" => $item->remarks,
+                        "remarks" => $item->minorCategory->minor_category_name,
                         "payrollPeriod" => null,
                         "position" => null,
                         "payrollType" => null,
@@ -1570,7 +1851,7 @@ class FixedAssetController extends Controller
                         "from" => null,
                         "changeTo" => null,
                         "reason" => $item->remarks,
-                        "checkingRemarks" => $item->majorCategory->major_category_name,
+                        "checkingRemarks" => $item->minorCategory->minor_category_name,
                         "bankName" => null,
                         "chequeNumber" => null,
                         "chequeVoucherNumber" => null,
@@ -1593,11 +1874,11 @@ class FixedAssetController extends Controller
             $resultArray = $result->toArray();
             return new LengthAwarePaginator(
                 array_slice($resultArray, $offset, $perPage, false),
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 count($resultArray),
+                count($resultArray),
                 $perPage,
                 $page,
                 ['path' => $request->url(), 'query' => $request->query()]
-            )                      ;
+            );
         }
         return $result;
 
@@ -1764,5 +2045,33 @@ class FixedAssetController extends Controller
                 ];
             }
         }*/
+
+    public function updateDescription(Request $request, $id)
+    {
+        $isAddCost = $request->input('is_add_cost', false);
+        $description = $request->input('description', null);
+
+        if ($isAddCost) {
+            $additionalCost = AdditionalCost::where('is_released', 1)->where('id', $id)->first();
+
+            if (!$additionalCost) {
+                return $this->responseUnprocessable('No Data Found');
+            }
+
+            $additionalCost->update([
+                'asset_description' => $description
+            ]);
+        } else {
+            $fixedAsset = FixedAsset::where('is_released', 1)->where('id', $id)->first();
+
+            if (!$fixedAsset) {
+                return $this->responseUnprocessable('No Data Found');
+            }
+            $fixedAsset->update([
+                'asset_description' => $description
+            ]);
+        }
+        return $this->responseSuccess('Description updated successfully');
+    }
 
 }
