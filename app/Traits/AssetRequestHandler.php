@@ -50,11 +50,35 @@ trait AssetRequestHandler
                 ],
                 'asset_request' => [
 //                    'id' => $transactionNumbers->transaction_number ?? '-',
+                    'process_count' => $this->getProcessCount($transactionNumbers) ?? 0,
                     'transaction_number' => $transactionNumbers->transaction_number ?? '-',
                     'date_requested' => $transactionNumbers->created_at ?? '-',
+                    'date_approved' => Activity::where('subject_type', AssetRequest::class)
+                            ->where('subject_id', $transactionNumbers->transaction_number)
+                            ->where('causer_id', auth('sanctum')->user()->id)
+                            ->where('log_name', 'Approved')
+                            ->value('created_at') ?? '-',
                     'status' => $transactionNumbers->status ?? '-',
                     'additional_info' => $transactionNumbers->additional_info ?? '-',
                     'acquisition_details' => $transactionNumbers->acquisition_details ?? '-',
+                    'history' => Activity::whereSubjectType(AssetRequest::class)
+                        ->whereSubjectId($transactionNumbers->transaction_number)
+                        ->get()
+                        ->map(function ($activityLog) use ($transactionNumbers) {
+                            return [
+                                'id' => $activityLog->id,
+                                'action' => $activityLog->log_name,
+                                'causer' => $activityLog->causer,
+                                'created_at' => $activityLog->created_at,
+                                'remarks' => $activityLog->properties['remarks'] ?? null,
+                                'received_by' => $activityLog->properties['received_by'] ?? null,
+                                'asset_description' => $activityLog->properties['description'] ?? null,
+                                'vladimir_tag_number' => $activityLog->properties['vladimir_tag_number'] ?? null,
+                                'pr_number' => $activityLog->properties['pr_number'] ?? null,
+                                'aging' => $this->calculateAging($activityLog, $transactionNumbers),
+                            ];
+                        }),
+                    'steps' => $this->getSteps($transactionNumbers),
                 ],
             ];
         }
@@ -101,7 +125,7 @@ trait AssetRequestHandler
 
     public function updateAssetRequest($assetRequest, $request, $save = true)
     {
-        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountingEntries->id;
+//        $accountTitleID = MinorCategory::with('accountTitle')->where('id', $request->minor_category_id)->first()->accountingEntries->id;
         // Make changes to the $assetRequest object but don't save them
         $assetRequest->fill([
             'type_of_request_id' => $request->type_of_request_id,
@@ -110,7 +134,8 @@ trait AssetRequestHandler
             'capex_number' => $request->capex_number,
             'accountability' => $request->accountability,
             'accountable' => $request->accountable ?? null,
-            'small_tool_id' => $request->small_tool_id ?? null,
+//            'small_tool_id' => $request->small_tool_id ?? null,
+            'item_id' => $request->item_id ?? null,
             'asset_description' => $request->asset_description,
             'asset_specification' => $request->asset_specification ?? null,
             'cellphone_number' => $request->cellphone_number ?? null,
@@ -129,15 +154,22 @@ trait AssetRequestHandler
             'unit_id' => $request->unit_id,
             'subunit_id' => $request->subunit_id,
             'location_id' => $request->location_id,
-            'account_title_id' => $accountTitleID,
+//            'account_title_id' => $accountTitleID,
             'uom_id' => $request->uom_id ?? null,
             'receiving_warehouse_id' => $request->receiving_warehouse_id,
+//            'initial_debit_id' => $request->initial_debit_id,
+//            'depreciation_credit_id' => $request->depreciation_credit_id,
         ]);
 
         $this->updateOtherRequestChargingDetails($assetRequest, $request, $save);
         if ($save) {
             $assetRequest->save();
+            /*$assetRequest->accountingEntries()->update([
+                'initial_debit_id' => $request->initial_debit_id,
+                'depreciation_credit_id' => $request->depreciation_credit_id,
+            ]);*/
         }
+
         return $assetRequest;
     }
 
@@ -179,33 +211,38 @@ trait AssetRequestHandler
         $totalBeforeCount = 0;
         $totalAfterCount = 0;
 
+// Flag to track if any files were updated
+        $filesUpdated = false;
+
         foreach ($collections as $collection) {
-            // Get the count of media items in the collection before the update
-            $beforeCount = $assetRequest->getMedia($collection)->count();
+            // Get the media items before update
+            $beforeMedia = $assetRequest->getMedia($collection);
+            $beforeCount = $beforeMedia->count();
             $totalBeforeCount += $beforeCount;
 
             if ($request->$collection !== 'x') {
                 if (isset($request->$collection)) {
+                    // If we're clearing and adding new files, mark as updated
+                    $filesUpdated = true;
                     $assetRequest->clearMediaCollection($collection);
                     $assetRequest->addMultipleMediaFromRequest([$collection], $collection)->each(function ($fileAdder) use ($collection) {
                         $fileAdder->toMediaCollection($collection);
                     });
                 } else {
+                    // If we're clearing files that existed before, mark as updated
+                    if ($beforeCount > 0) {
+                        $filesUpdated = true;
+                    }
                     $assetRequest->clearMediaCollection($collection);
                 }
             }
 
-            // Get the count of media items in the collection after the update
             $afterCount = $assetRequest->getMedia($collection)->count();
             $totalAfterCount += $afterCount;
+        }
 
-        }
-        //TODO: Make this last for only 20 mins if there is bug
-        if ($totalAfterCount !== $totalBeforeCount) {
-            Cache::put('isFileDataUpdated', true, now()->addMinutes(20));
-        } else {
-            Cache::put('isFileDataUpdated', false, now()->addMinutes(20));
-        }
+// Use the direct flag rather than just comparing counts
+        Cache::put('isFileDataUpdated', $filesUpdated, now()->addMinutes(20));
     }
 
     private function removeMediaAttachments($assetRequest)
@@ -223,20 +260,85 @@ trait AssetRequestHandler
         }
     }
 
-    public function transformIndexAssetRequest($assetRequest)
+    public function transformIndexAssetRequest($assetRequest, $prefetchedActivityLogs = null, $ymirPrTransactions = [])
     {
-        $deletedQuantity = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
-        try {
-            $YmirPRNumber = YmirPRTransaction::where('pr_number', $assetRequest->pr_number)->first()->pr_year_number_id ?? null;
-        } catch (\Exception $e) {
+        // Use the cancelled quantity from the assetRequest object if available, otherwise fetch it
+        $deletedQuantity = isset($assetRequest->cancelled) ? $assetRequest->cancelled : 
+            AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
+
+        // Use prefetched Ymir PR data if available
+        if ($assetRequest->ymir_pr_number) {
             $YmirPRNumber = $assetRequest->pr_number;
+        } elseif (!empty($ymirPrTransactions) && isset($assetRequest->pr_number) && isset($ymirPrTransactions[$assetRequest->pr_number])) {
+            $YmirPRNumber = $ymirPrTransactions[$assetRequest->pr_number];
+        } else {
+            try {
+                $YmirPRNumber = YmirPRTransaction::where('pr_number', $assetRequest->pr_number)->first()->pr_year_number_id ?? null;
+            } catch (\Exception $e) {
+                $YmirPRNumber = $assetRequest->ymir_pr_number;
+            }
         }
+
+        // Prepare the history data using prefetched activity logs if available
+        $history = [];
+        if ($prefetchedActivityLogs !== null) {
+            $history = $prefetchedActivityLogs->map(function ($activityLog) use ($assetRequest) {
+                return [
+                    'id' => $activityLog->id,
+                    'action' => $activityLog->log_name,
+                    'causer' => isset($activityLog->properties['causer']) ? [
+                        "employee_id" => $activityLog->properties['causer'],
+                        "firstname" => "",
+                        "lastname" => "",
+                    ] : $activityLog->causer,
+                    'created_at' => $activityLog->created_at,
+                    'remarks' => $activityLog->properties['remarks'] ?? null,
+                    'received_by' => $activityLog->properties['received_by'] ?? null,
+                    'asset_description' => $activityLog->properties['description'] ?? null,
+                    'vladimir_tag_number' => $activityLog->properties['vladimir_tag_number'] ?? null,
+                    'pr_number' => $activityLog->properties['pr_number'] ?? null,
+                    'quantity_cancelled' => $activityLog->properties['quantity_cancelled'] ?? null,
+                    'quantity_delivered' => $activityLog->properties['quantity_delivered'] ?? null,
+                    'quantity_remaining' => $activityLog->properties['quantity_remaining'] ?? null,
+                    'ymir_causer' => $activityLog->properties['causer'] ?? null,
+                    'aging' => $this->calculateAging($activityLog, $assetRequest),
+                ];
+            });
+        } else {
+            // Fallback to fetching activity logs if not prefetched
+            $history = Activity::whereSubjectType(AssetRequest::class)
+                ->whereSubjectId($assetRequest->transaction_number)
+                ->get()
+                ->map(function ($activityLog) use ($assetRequest) {
+                    return [
+                        'id' => $activityLog->id,
+                        'action' => $activityLog->log_name,
+                        'causer' => isset($activityLog->properties['causer']) ? [
+                            "employee_id" => $activityLog->properties['causer'],
+                            "firstname" => "",
+                            "lastname" => "",
+                        ] : $activityLog->causer,
+                        'created_at' => $activityLog->created_at,
+                        'remarks' => $activityLog->properties['remarks'] ?? null,
+                        'received_by' => $activityLog->properties['received_by'] ?? null,
+                        'asset_description' => $activityLog->properties['description'] ?? null,
+                        'vladimir_tag_number' => $activityLog->properties['vladimir_tag_number'] ?? null,
+                        'pr_number' => $activityLog->properties['pr_number'] ?? null,
+                        'quantity_cancelled' => $activityLog->properties['quantity_cancelled'] ?? null,
+                        'quantity_delivered' => $activityLog->properties['quantity_delivered'] ?? null,
+                        'quantity_remaining' => $activityLog->properties['quantity_remaining'] ?? null,
+                        'ymir_causer' => $activityLog->properties['causer'] ?? null,
+                        'aging' => $this->calculateAging($activityLog, $assetRequest),
+                    ];
+                });
+        }
+
         return [
-            'is_newly_sync' => $assetRequest->newly_sync,
+            'is_newly_sync' => $assetRequest->newly_syncb ?? 0,
             'id' => $assetRequest->transaction_number,
             'transaction_number' => $assetRequest->transaction_number,
-            'item_count' => $assetRequest->quantity + $deletedQuantity ?? 0,
-            'ymir_pr_number' => $YmirPRNumber ?: '-',
+            'item_count' => $assetRequest->quantity ?? 0,
+            'ymir_pr_number' => $YmirPRNumber ?? '-',
             'can_edit' => $assetRequest->is_fa_approved ? 0 : 1,
             'can_resubmit' => $assetRequest->is_fa_approved ? 0 : 1,
             'cancel_count' => $deletedQuantity ?? 0,
@@ -251,11 +353,6 @@ trait AssetRequestHandler
             'po_number' => $assetRequest->po_number ?? '-',
             'rr_number' => $assetRequest->rr_number ?? '-',
             'is_addcost' => $assetRequest->is_addcost ?? 0,
-//            'dated_delivered' => $assetRequest->getLastestDeliveryDate() ?? '-',
-//            'fixed_asset' => [
-//                'id' => $ar->fixedAsset->id ?? '-',
-//                'vladimir_tag_number' => $ar->fixedAsset->vladimir_tag_number ?? '-',
-//            ],
             'acquisition_details' => $assetRequest->acquisition_details ?? '-',
             'warehouse' => [
                 'id' => $assetRequest->receivingWarehouse->id ?? '-',
@@ -268,25 +365,7 @@ trait AssetRequestHandler
             'process_count' => $this->getProcessCount($assetRequest) ?? 0,
             'current_approver' => $this->getCurrentApprover($assetRequest),
             'requestor' => $this->getRequestor($assetRequest),
-            'history' => Activity::whereSubjectType(AssetRequest::class)
-                ->whereSubjectId($assetRequest->transaction_number)
-                ->get()
-                ->map(function ($activityLog) use ($assetRequest) {
-                    return [
-                        'id' => $activityLog->id,
-                        'action' => $activityLog->log_name,
-                        'causer' => $activityLog->causer,
-                        'created_at' => $activityLog->created_at,
-                        'remarks' => $activityLog->properties['remarks'] ?? null,
-                        'received_by' => $activityLog->properties['received_by'] ?? null,
-                        'asset_description' => $activityLog->properties['description'] ?? null,
-                        'vladimir_tag_number' => $activityLog->properties['vladimir_tag_number'] ?? null,
-                        'pr_number' => $activityLog->properties['pr_number'] ?? null,
-                        'aging' => $this->calculateAging($activityLog, $assetRequest),
-                    ];
-                }),
-
-//                $this->getHistory($assetRequest),
+            'history' => $history,
             'steps' => $this->getSteps($assetRequest),
         ];
     }
@@ -373,6 +452,13 @@ trait AssetRequestHandler
             if ($assetRequest->is_fa_approved == true) {
                 return 'Sent to ymir for PO';
             }
+            if ($assetRequest->filter == "Po Created") {
+                return 'Po Created';
+            }
+
+            if ($assetRequest->filter == "Partially Received") {
+                return 'Partially Received';
+            }
 
             if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Asset Tagging") {
                 return 'Asset Tagging';
@@ -392,43 +478,153 @@ trait AssetRequestHandler
         return 'Something went wrong';
     }
 
+    /*    private function getAfterApprovedStatus($assetRequest): string
+        {
+            $approvers = $assetRequest->status == 'Approved';
+    //        $faApproved = $assetRequest->is_fa_approved == true;
+            $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number);
+            if ($approvers) {
+
+                if (!$assetRequest->is_fa_approved) {
+                    return 'For Approval of FA';
+                }
+                if ($assetRequest->is_fa_approved && $assetRequest->filter == 'Sent to Ymir') {
+                    return 'Sent to ymir for PO';
+                }
+
+                if ($assetRequest->filter == "Po Created") {
+                    return 'Po Created';
+                }
+                if ($assetRequest->filter == "Partially Received") {
+                    return 'Partially Received';
+                }
+
+    //            if ($assetRequest->pr_number == null) {
+    //                return 'Inputting of PR No.';
+    //            }
+                //check if null po number
+    //            if (($assetRequest->po_number == null && $assetRequest->pr_number != null) ||
+    //                ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
+    //            ) {
+    //                return 'Inputting of PO No. and RR No.';
+    //            }
+                //$assetRequest->is_addcost != 1 && $assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count != $assetRequest->quantity
+
+                // Check if any non-addcost items in the transaction are still in Asset Tagging
+                $hasItemsInTagging = AssetRequest::where('transaction_number', $assetRequest->transaction_number)
+                    ->where('is_addcost', '!=', 1)
+                    ->where('filter', 'Asset Tagging')
+                    ->exists();
+
+                if ($hasItemsInTagging) {
+                    return 'Asset Tagging';
+                }
+
+
+                if ($assetRequest->filter == "Ready to Pickup") {
+                    // Check if all items in the transaction are ready for pickup
+                    $allItemsReady = AssetRequest::where('transaction_number', $assetRequest->transaction_number)
+                            ->where(function ($query) {
+                                $query->where('filter', 'Ready to Pickup')
+                                    ->orWhere('is_addcost', 1);
+                            })
+                            ->count() === AssetRequest::where('transaction_number', $assetRequest->transaction_number)
+                            ->count();
+
+                    if ($allItemsReady) {
+                        return 'Ready to Pickup';
+                    }
+                }
+
+                $allItemsClaimed = AssetRequest::where('transaction_number', $assetRequest->transaction_number)
+                        ->where(function($query) {
+                            $query->where('filter', 'Claimed')
+                                ->orWhere('is_addcost', 1);
+                        })
+                        ->count() === AssetRequest::where('transaction_number', $assetRequest->transaction_number)
+                        ->count();
+
+                if ($allItemsClaimed) {
+                    return 'Claimed';
+                }
+    //            if (($assetRequest->is_claimed == 1 && $assetRequest->filter == "Claimed") || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) {
+    //                return 'Claimed';
+    //            }
+            }
+    //        $this->deletedItemCheck($assetRequest);
+
+            return 'Something went wrong';
+        }*/
+
     private function getAfterApprovedStatus($assetRequest): string
     {
-        $approvers = $assetRequest->status == 'Approved';
-//        $faApproved = $assetRequest->is_fa_approved == true;
-        $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number);
-        if ($approvers) {
+        if ($assetRequest->status !== 'Approved') {
+            return 'Something went wrong';
+        }
 
-            if (!$assetRequest->is_fa_approved) {
-                return 'For Approval of FA';
-            }
-            if ($assetRequest->is_fa_approved && $assetRequest->filter == 'Sent to Ymir') {
-                return 'Sent to ymir for PO';
-            }
-//            if ($assetRequest->pr_number == null) {
-//                return 'Inputting of PR No.';
-//            }
-            //check if null po number
-//            if (($assetRequest->po_number == null && $assetRequest->pr_number != null) ||
-//                ($remaining !== 0 && $assetRequest->po_number != null && $assetRequest->pr_number != null)
-//            ) {
-//                return 'Inputting of PO No. and RR No.';
-//            }
-            //$assetRequest->is_addcost != 1 && $assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count != $assetRequest->quantity
-            if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Asset Tagging") {
-                return 'Asset Tagging';
-            }
+        // Check FA approval first
+        if (!$assetRequest->is_fa_approved) {
+            return 'For Approval of FA';
+        }
 
-            //($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->print_count >= $assetRequest->quantity && $assetRequest->is_claimed == 0) ||
-            //                ($assetRequest->po_number != null && $assetRequest->pr_number != null && $assetRequest->is_claimed == 0 && $assetRequest->is_addcost == 1)
-            if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) {
+        // Check sequential statuses that don't require additional queries
+        if ($assetRequest->is_fa_approved && $assetRequest->filter === 'Sent to Ymir') {
+            return 'Sent to ymir for PO';
+        }
+
+        if ($assetRequest->filter === 'Po Created') {
+            return 'Po Created';
+        }
+
+        if ($assetRequest->filter === 'Partially Received') {
+            return 'Partially Received';
+        }
+
+        // Get all items in the transaction with a single query
+        $transactionItems = AssetRequest::where('transaction_number', $assetRequest->transaction_number)
+            ->select('filter', 'is_addcost')
+            ->get();
+
+        $totalItems = $transactionItems->count();
+
+        // Check for Asset Tagging
+        $hasItemsInTagging = $transactionItems->contains(function ($item) {
+            return $item->is_addcost != 1 && $item->filter === 'Asset Tagging';
+        });
+
+        if ($hasItemsInTagging) {
+            return 'Asset Tagging';
+        }
+
+        //Check for Sent to Ymir For PO
+        $hasItemsInYmir = $transactionItems->contains(function ($item) {
+            return $item->filter === 'Sent to Ymir';
+        });
+
+        if ($hasItemsInYmir) {
+            return 'Sent to Ymir for PO';
+        }
+
+
+        // Check for Ready to Pickup
+        if ($assetRequest->filter === 'Ready to Pickup') {
+            $readyItems = $transactionItems->filter(function ($item) {
+                return $item->filter === 'Ready to Pickup' || $item->is_addcost == 1;
+            })->count();
+
+            if ($readyItems === $totalItems) {
                 return 'Ready to Pickup';
             }
-            if (($assetRequest->is_claimed == 1 && $assetRequest->filter == "Claimed") || ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) {
-                return 'Claimed';
-            }
         }
-//        $this->deletedItemCheck($assetRequest);
+
+        // Check for Claimed
+        $claimedItems = $transactionItems->filter(function ($item) {
+            return $item->filter === 'Claimed' || $item->is_addcost == 1;
+        })->count();
+
+        if ($claimedItems === $totalItems) {
+            return 'Claimed';
+        }
 
         return 'Something went wrong';
     }
@@ -445,7 +641,9 @@ trait AssetRequestHandler
         }
         $steps[] = 'For Approval of FA';
         $steps[] = 'Sent to ymir for PO.';
+        $steps[] = 'Po Created';
 //        $steps[] = 'Inputting of PO No. and RR No.';
+        $steps[] = 'Partially Received';
         $steps[] = 'Asset Tagging';
         $steps[] = 'Ready to Pickup';
         $steps[] = 'Claimed';
@@ -453,11 +651,41 @@ trait AssetRequestHandler
         return $steps;
     }
 
+    /*    private function getProcessCount($assetRequest)
+        {
+    //        return 5;
+
+            // return $this->calculateRemainingQuantity($assetRequest->transaction_number);
+            $statusForApproval = $assetRequest->assetApproval->where('status', 'For Approval');
+            $highestLayerNumber = $assetRequest->assetApproval()->max('layer');
+            $statusForApprovalCount = $statusForApproval->count();
+            $returnStatus = $assetRequest->assetApproval->whereIn('status', ['Returned', 'Returned From Ymir'])->count();
+            $remaining = $this->calculateRemainingQuantity($assetRequest->transaction_number);
+
+            if ($statusForApprovalCount > 0) {
+                $lastLayer = $statusForApproval->first()->layer;
+            } elseif ($returnStatus > 0) {
+                $lastLayer = 1;
+            } else {
+                $lastLayer = $highestLayerNumber ?? 0;
+    //            dd($assetRequest->pr_number);
+                if ($assetRequest->is_fa_approved == false) $lastLayer++;
+                if ($assetRequest->is_fa_approved == true) $lastLayer += 2;
+                if ($assetRequest->filter == "Po Created") $lastLayer += 1;
+                if ($assetRequest->filter == "Partially Received") $lastLayer += 2; //partially delivered
+                if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Asset Tagging") $lastLayer += 3;
+                if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) $lastLayer += 4;
+                if (($assetRequest->is_claimed == 1 && $assetRequest->filter == "Claimed") ||
+                    ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) $lastLayer += 6;
+
+                if ($this->deletedItemCheck($assetRequest) != null) $lastLayer = -1;
+    //            if($assetRequest->filter == "Returned From Ymir") $lastLayer = 1;
+            }
+            return $lastLayer;
+        }*/
+
     private function getProcessCount($assetRequest)
     {
-//        return 5;
-
-        // return $this->calculateRemainingQuantity($assetRequest->transaction_number);
         $statusForApproval = $assetRequest->assetApproval->where('status', 'For Approval');
         $highestLayerNumber = $assetRequest->assetApproval()->max('layer');
         $statusForApprovalCount = $statusForApproval->count();
@@ -470,16 +698,40 @@ trait AssetRequestHandler
             $lastLayer = 1;
         } else {
             $lastLayer = $highestLayerNumber ?? 0;
-//            dd($assetRequest->pr_number);
+
             if ($assetRequest->is_fa_approved == false) $lastLayer++;
             if ($assetRequest->is_fa_approved == true) $lastLayer += 2;
-            if ($assetRequest->is_addcost != 1 && $assetRequest->filter == "Received") $lastLayer++;
-            if (($assetRequest->filter == "Ready to Pickup") || ($assetRequest->is_addcost == 1 && $assetRequest->filter == "Ready to Pickup")) $lastLayer += 2;
+            if ($assetRequest->filter == "Po Created") $lastLayer += 1;
+            if ($assetRequest->filter == "Partially Received") $lastLayer += 2;
+
+            // Check if any non-addcost items in the transaction are still in Asset Tagging
+            $hasItemsInTagging = AssetRequest::where('transaction_number', $assetRequest->transaction_number)
+                ->where('is_addcost', '!=', 1)
+                ->where('filter', 'Asset Tagging')
+                ->exists();
+
+            if ($hasItemsInTagging) {
+                $lastLayer += 3; // Show Asset Tagging status
+            } else {
+                // Only proceed to Ready to Pickup if all items are ready
+                $allItemsReady = AssetRequest::where('transaction_number', $assetRequest->transaction_number)
+                        ->where(function ($query) {
+                            $query->where('filter', 'Ready to Pickup')
+                                ->orWhere('is_addcost', 1);
+                        })
+                        ->count() === AssetRequest::where('transaction_number', $assetRequest->transaction_number)
+                        ->count();
+
+                if ($allItemsReady) {
+                    $lastLayer += 4;
+                }
+            }
+
             if (($assetRequest->is_claimed == 1 && $assetRequest->filter == "Claimed") ||
-                ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed")) $lastLayer += 3;
+                ($assetRequest->is_claimed == 1 && $assetRequest->is_addcost == 1 && $assetRequest->filter == "Claimed"))
+                $lastLayer += 6;
 
             if ($this->deletedItemCheck($assetRequest) != null) $lastLayer = -1;
-//            if($assetRequest->filter == "Returned From Ymir") $lastLayer = 1;
         }
         return $lastLayer;
     }
@@ -580,6 +832,7 @@ trait AssetRequestHandler
                         'file_name' => $media->file_name,
                         'file_path' => $media->getPath(),
                         'file_url' => $media->getUrl(),
+                        'base64' => base64_encode(file_get_contents($media->getPath())),
                     ];
                 }),
                 'quotation' => $assetRequest->getMedia('quotation')->map(function ($media) {
@@ -588,6 +841,7 @@ trait AssetRequestHandler
                         'file_name' => $media->file_name,
                         'file_path' => $media->getPath(),
                         'file_url' => $media->getUrl(),
+                        'base64' => base64_encode(file_get_contents($media->getPath())),
                     ];
                 }),
                 'specification_form' => $assetRequest->getMedia('specification_form')->map(function ($media) {
@@ -596,6 +850,7 @@ trait AssetRequestHandler
                         'file_name' => $media->file_name,
                         'file_path' => $media->getPath(),
                         'file_url' => $media->getUrl(),
+                        'base64' => base64_encode(file_get_contents($media->getPath())),
                     ];
                 }),
                 'tool_of_trade' => $assetRequest->getMedia('tool_of_trade')->map(function ($media) {
@@ -604,6 +859,7 @@ trait AssetRequestHandler
                         'file_name' => $media->file_name,
                         'file_path' => $media->getPath(),
                         'file_url' => $media->getUrl(),
+                        'base64' => base64_encode(file_get_contents($media->getPath())),
                     ];
                 }),
                 'other_attachments' => $assetRequest->getMedia('other_attachments')->map(function ($media) {
@@ -612,6 +868,7 @@ trait AssetRequestHandler
                         'file_name' => $media->file_name,
                         'file_path' => $media->getPath(),
                         'file_url' => $media->getUrl(),
+                        'base64' => base64_encode(file_get_contents($media->getPath())),
                     ];
                 }),
             ]
@@ -663,24 +920,32 @@ trait AssetRequestHandler
         ];
     }
 
-    public function deleteRequestItem($referenceNumber, $transactionNumber): JsonResponse
+    public function deleteRequestItem($referenceNumber, $transactionNumber)
     {
 
         $approverId = $this->isUserAnApprover($transactionNumber);
+
+        $isYmirReturn = AssetRequest::where('reference_number', $referenceNumber)->first()->is_pr_returned;
+        if ($isYmirReturn) {
+            return ['error' => true, 'message' => 'Unable to Delete Request Item that is Returned From Ymir'];
+        }
 
         // return $this->responseUnprocessable($assetRequest);
         if (!$approverId) {
             $assetRequest = $this->getAssetRequest('reference_number', $referenceNumber);
             if (!$assetRequest) {
-                return $this->responseUnprocessable('Unable to Delete Request Item.');
+//                return $this->responseUnprocessable('Unable to Delete Request Item.');
+                return ['error' => true, 'message' => 'Unable to Delete Request Item.'];
             }
         } else {
             $assetRequest = $this->getAssetRequestForApprover('reference_number', $transactionNumber, $referenceNumber);
         }
 
+
         // $assetRequest->transaction_number
         if ($this->requestCount($transactionNumber) == 1) {
-            return $this->responseUnprocessable('You cannot delete the last item.');
+//            return $this->responseUnprocessable('You cannot delete the last item.');
+            return ['error' => true, 'message' => 'You cannot delete the last item.'];
         }
         $this->activityForRequestorDelete($assetRequest);
 //        $this->removeMediaAttachments($assetRequest);
@@ -696,13 +961,21 @@ trait AssetRequestHandler
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $cookie = cookie('is_changed', true);
-        return $this->responseSuccess('Asset Request deleted Successfully')->withCookie($cookie);
+        Cache::put('isDataUpdated', true, now()->addMinutes(5));
+        return ['success' => true, 'message' => 'Item Deleted Successfully'];
+//        return $this->responseSuccess('Asset Request deleted Successfully')->withCookie($cookie);
+//        return $this->responseSuccess('Asset Request deleted Successfully');
     }
 
     public function deleteAssetRequest($transactionNumber)
     {
         // return $this->responseSuccess($this->isUserAnApprover($transactionNumber));
         $approverId = $this->isUserAnApprover($transactionNumber);
+
+        $isYmirReturn = AssetRequest::where('transaction_number', $transactionNumber)->first()->is_pr_returned;
+        if ($isYmirReturn) {
+            return $this->responseUnprocessable('Unable to Delete Request that is Returned From Ymir');
+        }
 
         // return $this->responseUnprocessable($assetRequest);
         if ($approverId == null) {

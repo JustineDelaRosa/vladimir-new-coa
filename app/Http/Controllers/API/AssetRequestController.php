@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
+use Illuminate\Support\LazyCollection;
 use App\Http\Requests\AssetRequest\CreateAssetRequestRequest;
 use App\Http\Requests\AssetRequest\UpdateAssetRequestRequest;
 use App\Models\AdditionalCost;
@@ -10,6 +12,7 @@ use App\Models\AssetApproval;
 use App\Models\AssetRequest;
 use App\Models\DepartmentUnitApprovers;
 use App\Models\FixedAsset;
+use App\Models\Location;
 use App\Models\RequestContainer;
 use App\Models\RoleManagement;
 use App\Models\User;
@@ -19,6 +22,7 @@ use App\Repositories\ApprovedRequestRepository;
 use App\Traits\AssetRequestHandler;
 use App\Traits\ItemDetailsHandler;
 use App\Traits\RequestShowDataHandler;
+use Carbon\Carbon;
 use Essa\APIToolKit\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,160 +44,556 @@ class AssetRequestController extends Controller
         $this->approveRequestRepository = $approveRequestRepository;
     }
 
+
     public function index(Request $request)
     {
-//        return AssetRequest::with('fixedAssetTransactionNumber')->get();
-
-//        return YmirPRTransaction::get();
-
         $request->validate([
             'for_monitoring' => 'boolean',
             'filter' => ['nullable', 'string'],
+            'search' => ['nullable', 'string'], // Add search validation
         ]);
 
-        $forMonitoring = $request->for_monitoring ?? false;
-
-        $requesterId = auth('sanctum')->user()->id;
-        $role = Cache::remember("user_role_$requesterId", 60, function () use ($requesterId) {
-            return User::find($requesterId)->roleManagement->role_name;
-        });
-        // $role = User::find($requesterId)->roleManagement->role_name;
-        $adminRoles = ['Super Admin', 'Admin', 'ERP'];
-
-        $perPage = $request->input('per_page', null);
+        $forMonitoring = $request->for_monitoring ?? 0;
+        $warehouseMonitoring = $request->warehouse_monitoring ?? 0;
+        $user = auth('sanctum')->user();
+        $userWarehouse = $user->warehouse_id ?? null;
+        $requesterId = $user->id;
+        $perPage = $request->input('per_page', 15);
         $status = $request->input('status', 'active');
         $filter = $request->input('filter', null);
-        $filter = $filter ? explode(',', $filter) : [];
-        $filter = array_map('trim', $filter);
+        $claimedFilter = $request->input('claimed', null);
+        $search = $request->input('search', null); // Get the search term
 
-        $conditions = [
-            'Returned' => ['status' => 'Returned', 'filter' => 'Returned From Ymir'],
-            'For Approval' => ['status' => ['like', 'For Approval%']],
-            'For FA Approval' => ['status' => 'Approved', 'is_fa_approved' => 0],
-            'Sent To Ymir' => ['status' => 'Approved', 'filter' => 'Sent to Ymir'],
-            'For Tagging' => ['status' => 'Approved', 'filter' => 'Received'], //'filter' => 'Ready to Pickup'
-            'For Pickup' => ['status' => 'Approved', 'filter' => 'Ready to Pickup'],
-            'Released' => ['is_claimed' => 1],
-        ];
-
-        $assetRequest = AssetRequest::query();
-
-        if (!in_array($role, $adminRoles)) {
-            $forMonitoring = false;
+        if ($claimedFilter == 'Claimed') {
+            $filter = 'Claimed';
         }
         if ($status == 'deactivated') {
-            $assetRequest->withTrashed();
+            $filter = null;
         }
 
-        if (!$forMonitoring) {
-            $assetRequest->where('requester_id', $requesterId);
-        }
-
-        if (!empty($filter)) {
-            $assetRequest->where(function ($query) use ($filter, $conditions) {
-                foreach ($filter as $key) {
-                    if (isset($conditions[$key])) {
-                        $query->orWhere(function ($query) use ($conditions, $key) {
-                            foreach ($conditions[$key] as $field => $value) {
-                                if (is_array($value)) {
-                                    $query->where($field, $value[0], $value[1]);
-                                } else {
-                                    $query->where($field, $value);
-                                }
-                            }
-                        });
-                    }
-                }
-            });
-        }
-
-        $assetRequest = $assetRequest->orderByDesc('created_at')->useFilters();
-        $assetRequest = $assetRequest
-            ->get()
-            ->groupBy('transaction_number')
-            ->map(function ($assetRequestCollection) use ($filter, $status) {
-                // If 'Deleted' filter is active and all items in the group are trashed, include the group in the result
-                //                if (in_array('Deleted', $filter) && $assetRequestCollection->every->trashed()) {
-                //                    $assetRequest = $assetRequestCollection->first();
-                //                    $assetRequest->quantity = $assetRequestCollection->sum('quantity');
-                //                    return $this->transformIndexAssetRequest($assetRequest);
-                //                }
-                // If status is 'deactivated', check if all items in the group are trashed
-                if ($status == 'deactivated' && $assetRequestCollection->every->trashed()) {
-                    $assetRequest = $assetRequestCollection->first();
-                    $assetRequest->quantity = $assetRequestCollection->sum('quantity');
-                    $assetRequest->quantity_delivered = $assetRequestCollection->sum('quantity_delivered');
-                    //add all the quantity of soft deleted asset request
-                    $cancelled = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
-                    $anyRecentlyUpdated = $assetRequestCollection->contains(function ($item) {
-                        return $item->updated_at->diffInMinutes(now()) < 2;
-                    });
-                    $assetRequest->cancelled = $cancelled;
-
-                    return $this->transformIndexAssetRequest($assetRequest);
-                } // If status is 'active', check if any item in the group is not trashed id all is trash return null
-                else if ($status == 'active' && !$assetRequestCollection->every->trashed()) {
-                    $assetRequest = $assetRequestCollection->first();
-                    $assetRequest->quantity = $assetRequestCollection->sum('quantity');
-                    $assetRequest->quantity_delivered = $assetRequestCollection->sum('quantity_delivered');
-                    //add all the quantity of soft deleted asset request
-                    $cancelled = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
-                    $anyRecentlyUpdated = $assetRequestCollection->contains(function ($item) {
-                        return $item->updated_at->diffInMinutes(now()) < 2;
-                    });
-                    $assetRequest->cancelled = $cancelled;
-                    return $this->transformIndexAssetRequest($assetRequest);
-                }
+        $baseQuery = AssetRequest::select(
+            'transaction_number',
+            DB::raw('MAX(requester_id) as requester_id'),
+            DB::raw('MAX(id) as id'),
+            DB::raw('MAX(created_at) as created_at'),
+            DB::raw('SUM(quantity) as total_quantity'),
+            DB::raw('SUM(quantity_delivered) as total_quantity_delivered'),
+            DB::raw('COUNT(*) as total_items'),
+            DB::raw('SUM(CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END) as deleted_items')
+        )
+            ->when($forMonitoring != 1, function ($query) use ($requesterId) {
+                $query->where('requester_id', $requesterId);
             })
-            ->filter()
-            ->values();
+            ->when($filter == "Returned", function ($query) {
+                $query->where('status', 'like', 'Returned%');
+            })
+            ->when($filter == "For Approval", function ($query) {
+                $query->where('status', 'like', 'For Approval%');
+            })
+            ->when($filter == "For FA Approval", function ($query) {
+                $query->where('status', 'Approved')->where('is_fa_approved', 0);
+            })
+            ->when($filter == "Sent To Ymir", function ($query) {
+                $query->where('status', 'Approved')->where('filter', 'Sent to Ymir');
+            })
+            ->when($filter == "For Tagging", function ($query) {
+                $query->where('status', 'Approved')->where('filter', 'Asset Tagging');
+            })
+            ->when($filter == "For Pickup", function ($query) {
+                $query->where('status', 'Approved')->where('filter', 'Ready to Pickup');
+            })
+            ->when($filter == "Claimed", function ($query) {
+                $query->where('is_claimed', 1)->where('filter', 'Claimed');
+            })
+            ->when($warehouseMonitoring == 1, function ($query) use ($userWarehouse) {
+                $query->where('receiving_warehouse_id', $userWarehouse);
+            })
+            ->when(!$filter && $status == 'active', function ($query) {
+                $query->where(function ($q) {
+                    $q->where('filter', '!=', 'Claimed')
+                        ->orWhereRaw('quantity != quantity_delivered');
+                });
+            })
+            ->when($status == 'deactivated', function ($query) {
+                $query->withTrashed();
+            })
+            ->when($search, function ($query) use ($search) { // Add search condition
+                $query->where(function ($q) use ($search) {
+                    $q->where('transaction_number', 'like', "%{$search}%")
+                        ->orWhere('status', 'like', "%{$search}%")
+                        ->orWhere('acquisition_details', 'like', "%{$search}%")
+                        ->orWhere('pr_number', 'like', "%{$search}%")
+                        ->orWhere('asset_description', 'like', "%{$search}%")
+                        ->orWhere('asset_specification', 'like', "%{$search}%")
+                        ->orWhereHas('requestor', function ($q) use ($search) {
+                            $q->where('firstname', 'like', "%{$search}%")
+                                ->orWhere('lastname', 'like', "%{$search}%")
+                                ->orWhere('employee_id', 'like', "%{$search}%");
+                        })->orWhereHas('receivingWarehouse', function ($q) use ($search) {
+                            $q->where('warehouse_name', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->groupBy('transaction_number');
 
-        if ($perPage !== null) {
-            $page = $request->input('page', 1);
-            $offset = $page * $perPage - $perPage;
-            $assetRequest = new LengthAwarePaginator($assetRequest->slice($offset, $perPage)->values(), $assetRequest->count(), $perPage, $page, [
-                'path' => $request->url(),
-                'query' => $request->query(),
-            ]);
+        if ($status == 'deactivated') {
+            $baseQuery->havingRaw('deleted_items = total_items');
+        } else {
+            $baseQuery->havingRaw('deleted_items < total_items');
         }
-        return $assetRequest;
+
+        $total = DB::table(DB::raw("({$baseQuery->toSql()}) as count_table"))
+            ->mergeBindings($baseQuery->getQuery())
+            ->count();
+
+        $paginatedQuery = (clone $baseQuery)
+            ->orderByDesc('created_at')
+            ->useFilters()
+            ->skip(($request->input('page', 1) - 1) * $perPage)
+            ->take($perPage);
+
+        $transactionData = $paginatedQuery->get();
+
+        $ids = $transactionData->pluck('id')->filter()->toArray();
+
+        $assetRequests = AssetRequest::when($status == 'deactivated', function ($q) {
+            $q->withTrashed();
+        })
+            ->with(['requestor', 'company:id,company_name', 'department:id,department_name'])
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
+        $result = $transactionData->map(function ($item) use ($assetRequests) {
+            if (!isset($assetRequests[$item->id])) {
+                return null;
+            }
+
+            $assetRequest = $assetRequests[$item->id];
+            $assetRequest->quantity = $item->total_quantity;
+            $assetRequest->quantity_delivered = $item->total_quantity_delivered;
+            return $this->transformIndexAssetRequest($assetRequest);
+        })->filter()->values();
+
+        return new LengthAwarePaginator(
+            $result,
+            $total,
+            $perPage,
+            $request->input('page', 1),
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
     }
+
+
+//    public function indexOld(Request $request)
+//    {
+////        return AssetRequest::with('fixedAssetTransactionNumber')->get();
+//
+////        return YmirPRTransaction::get();
+//
+//        $request->validate([
+//            'for_monitoring' => 'boolean',
+//            'filter' => ['nullable', 'string'],
+//        ]);
+//
+//        $forMonitoring = $request->for_monitoring ?? false;
+//        $user = auth('sanctum')->user();
+//
+//        $requesterId = $user->id;
+////        $role = Cache::remember("user_role_$requesterId", 60, function () use ($requesterId) {
+////            return User::find($requesterId)->roleManagement->role_name;
+////        });
+////        // $role = User::find($requesterId)->roleManagement->role_name;
+////        $adminRoles = ['Super Admin', 'Admin', 'ERP'];
+//
+//        $perPage = $request->input('per_page', null);
+//        $status = $request->input('status', 'active');
+//        $filter = $request->input('filter', null);
+////        $filter = $filter ? explode(',', $filter) : [];
+////        $filter = array_map('trim', $filter);
+//        $claimedFilter = $request->input('claimed', null);
+//
+//        $conditions = [
+//            'Returned' => ['status' => ['like', 'Returned%']],
+//            'For Approval' => ['status' => ['like', 'For Approval%']],
+//            'For FA Approval' => ['status' => 'Approved', 'is_fa_approved' => 0],
+//            'Sent To Ymir' => ['status' => 'Approved', 'filter' => 'Sent to Ymir'],
+//            'For Tagging' => ['status' => 'Approved', 'filter' => 'Asset Tagging'],//'filter' => 'Ready to Pickup'
+//            'For Pickup' => ['status' => 'Approved', 'filter' => 'Ready to Pickup'],
+//            'Claimed' => ['is_claimed' => 1, 'filter' => 'Claimed'],
+//        ];
+//
+//        if ($claimedFilter == 'Claimed') {
+//            $filter = 'Claimed';
+//        }
+//
+//        $assetRequest = AssetRequest::query();
+//
+////        if (!in_array($role, $adminRoles)) {
+////            $forMonitoring = false;
+////        }
+//        if ($status == 'deactivated') {
+//            $assetRequest->withTrashed();
+//        }
+//
+//        if (!$forMonitoring) {
+//            $assetRequest->where('requester_id', $requesterId);
+//        }
+//
+////        if (!empty($filter)) {
+////            $assetRequest->where(function ($query) use ($filter, $conditions) {
+////                foreach ($filter as $key) {
+////                    if (isset($conditions[$key])) {
+////                        $query->orWhere(function ($query) use ($conditions, $key) {
+////                            foreach ($conditions[$key] as $field => $value) {
+////                                if (is_array($value)) {
+////                                    $query->where($field, $value[0], $value[1]);
+////                                } else {
+////                                    $query->where($field, $value);
+////                                }
+////                            }
+////                        });
+////                    }
+////                }
+////            });
+////        }
+//
+//        if ($filter) {
+//            $assetRequest->when($filter == "Returned", function ($query) {
+//                $query->where('status', 'like', 'Returned%');
+//            })->when($filter == "For Approval", function ($query) {
+//                $query->where('status', 'like', 'For Approval%');
+//            })->when($filter == "For FA Approval", function ($query) {
+//                $query->where('status', 'Approved')->where('is_fa_approved', 0);
+//            })->when($filter == "Sent To Ymir", function ($query) {
+//                $query->where('status', 'Approved')->where('filter', 'Sent to Ymir');
+//            })->when($filter == "For Tagging", function ($query) {
+//                $query->where('status', 'Approved')->where('filter', 'Asset Tagging');
+//            })->when($filter == "For Pickup", function ($query) {
+//                $query->where('status', 'Approved')->where('filter', 'Ready to Pickup');
+//            })->when($filter == "Claimed", function ($query) {
+//                $query->where('is_claimed', 1)->where('filter', 'Claimed');
+//            });
+//        } else {
+//            $assetRequest->where(function ($query) {
+//                $query->where('filter', '!=', 'Claimed')
+//                    ->orWhereRaw('quantity != quantity_delivered');
+//            });
+//        }
+//
+//
+//        $assetRequest = $assetRequest->orderByDesc('created_at')->useFilters();
+//        $assetRequest = $assetRequest
+//            ->get()
+//            ->groupBy('transaction_number')
+//            ->map(function ($assetRequestCollection) use ($filter, $status, $claimedFilter) {
+//                // If 'Deleted' filter is active and all items in the group are trashed, include the group in the result
+//                //                if (in_array('Deleted', $filter) && $assetRequestCollection->every->trashed()) {
+//                //                    $assetRequest = $assetRequestCollection->first();
+//                //                    $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+//                //                    return $this->transformIndexAssetRequest($assetRequest);
+//                //                }
+//                // If status is 'deactivated', check if all items in the group are trashed
+//                if ($status == 'deactivated' && $assetRequestCollection->every->trashed()) {
+//                    $assetRequest = $assetRequestCollection->first();
+//                    $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+//                    $assetRequest->quantity_delivered = $assetRequestCollection->sum('quantity_delivered');
+//                    //add all the quantity of soft deleted asset request
+//                    /*                    $cancelled = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
+//                                        $anyRecentlyUpdated = $assetRequestCollection->contains(function ($item) {
+//                                            return $item->updated_at->diffInMinutes(now()) < 2;
+//                                        });
+//                                        $assetRequest->cancelled = $cancelled;*/
+//
+//                    return $this->transformIndexAssetRequest($assetRequest);
+//                } // If status is 'active', check if any item in the group is not trashed id all is trash return null
+//                else if ($status == 'active' && !$assetRequestCollection->every->trashed()) {
+//                    $assetRequest = $assetRequestCollection->first();
+//                    $assetRequest->quantity = $assetRequestCollection->sum('quantity');
+//                    $assetRequest->quantity_delivered = $assetRequestCollection->sum('quantity_delivered');
+//
+//                    // Exclude the item if quantity and quantity_delivered are equal
+//                    /*                    if (($assetRequest->quantity == $assetRequest->quantity_delivered) && $assetRequest->filter == 'Claimed' && $claimedFilter !== 'claimed') {
+//                                            return null;
+//                                        }*/
+//
+//                    //add all the quantity of soft deleted asset request
+//                    /*                    $cancelled = AssetRequest::onlyTrashed()->where('transaction_number', $assetRequest->transaction_number)->sum('quantity');
+//                                        $anyRecentlyUpdated = $assetRequestCollection->contains(function ($item) {
+//                                            return $item->updated_at->diffInMinutes(now()) < 2;
+//                                        });
+//                                        $assetRequest->cancelled = $cancelled;*/
+//                    return $this->transformIndexAssetRequest($assetRequest);
+//                }
+//            })
+//            ->filter()
+//            ->values();
+//
+//        if ($perPage !== null) {
+//            $page = $request->input('page', 1);
+//            $offset = $page * $perPage - $perPage;
+//            $assetRequest = new LengthAwarePaginator($assetRequest->slice($offset, $perPage)->values(), $assetRequest->count(), $perPage, $page, [
+//                'path' => $request->url(),
+//                'query' => $request->query(),
+//            ]);
+//        }
+//        return $assetRequest;
+//    }
+
+
+    /*    public function indexRevamp(Request $request)
+        {
+    //        return AssetRequest::with('fixedAssetTransactionNumber')->get();
+
+    //        return YmirPRTransaction::get();
+
+            $request->validate([
+                'for_monitoring' => 'boolean',
+                'filter' => ['nullable', 'string'],
+            ]);
+
+            $forMonitoring = $request->for_monitoring ?? false;
+            $user = auth('sanctum')->user();
+
+            $requesterId = $user->id;
+    //        $role = Cache::remember("user_role_$requesterId", 60, function () use ($requesterId) {
+    //            return User::find($requesterId)->roleManagement->role_name;
+    //        });
+    //        // $role = User::find($requesterId)->roleManagement->role_name;
+    //        $adminRoles = ['Super Admin', 'Admin', 'ERP'];
+
+            $perPage = $request->input('per_page', null);
+            $status = $request->input('status', 'active');
+            $filter = $request->input('filter', null);
+    //        $filter = $filter ? explode(',', $filter) : [];
+    //        $filter = array_map('trim', $filter);
+            $claimedFilter = $request->input('claimed', null);
+
+            $conditions = [
+                'Returned' => ['status' => ['like', 'Returned%']],
+                'For Approval' => ['status' => ['like', 'For Approval%']],
+                'For FA Approval' => ['status' => 'Approved', 'is_fa_approved' => 0],
+                'Sent To Ymir' => ['status' => 'Approved', 'filter' => 'Sent to Ymir'],
+                'For Tagging' => ['status' => 'Approved', 'filter' => 'Asset Tagging'],//'filter' => 'Ready to Pickup'
+                'For Pickup' => ['status' => 'Approved', 'filter' => 'Ready to Pickup'],
+                'Released' => ['is_claimed' => 1, 'filter' => 'Claimed'],
+            ];
+
+    //        if ($claimedFilter == 'claimed') {
+    //            $filter[] = 'Released';
+    //        }
+
+            // Group and aggregate in the database query
+            $query = AssetRequest::select([
+                'transaction_number',
+                DB::raw('MAX(status) as status'),
+                DB::raw('MAX(filter) as filter'),
+                DB::raw('MAX(is_claimed) as is_claimed'),
+                DB::raw('MAX(is_fa_approved) as is_fa_approved'),
+                DB::raw('MAX(created_at) as created_at'),
+                DB::raw('MAX(updated_at) as updated_at'),
+                DB::raw('MAX(requester_id) as requester_id'),
+                DB::raw('MAX(company_id) as company_id'),
+                DB::raw('MAX(business_unit_id) as business_unit_id'),
+                DB::raw('MAX(department_id) as department_id'),
+                DB::raw('MAX(unit_id) as unit_id'),
+                DB::raw('MAX(subunit_id) as subunit_id'),
+                DB::raw('MAX(location_id) as location_id'),
+                DB::raw('MAX(major_category_id) as major_category_id'),
+                DB::raw('MAX(minor_category_id) as minor_category_id'),
+                DB::raw('MAX(uom_id) as uom_id'),
+                DB::raw('MAX(type_of_request_id) as type_of_request_id'),
+                DB::raw('MAX(supplier_id) as supplier_id'),
+                DB::raw('MAX(fixed_asset_id) as fixed_asset_id'),
+                DB::raw('MAX(account_title_id) as account_title_id'),
+                DB::raw('MAX(accountable) as accountable'),
+                DB::raw('MAX(asset_description) as asset_description'),
+                DB::raw('MAX(asset_specification) as asset_specification'),
+                DB::raw('MAX(cellphone_number) as cellphone_number'),
+                DB::raw('MAX(brand) as brand'),
+                DB::raw('MAX(receiving_warehouse_id) as receiving_warehouse_id'),
+                DB::raw('MAX(pr_number) as pr_number'),
+                DB::raw('MAX(is_addcost) as is_addcost'),
+                DB::raw('MAX(attachment_type) as attachment_type'),
+                DB::raw('MAX(additional_info) as additional_info'),
+                DB::raw('MAX(acquisition_details) as acquisition_details'),
+                DB::raw('SUM(quantity) as quantity'),
+                DB::raw('SUM(quantity_delivered) as quantity_delivered'),
+                DB::raw('MIN(id) as id')
+            ])
+                ->with([
+                    'requestor:id,username,employee_id,firstname,lastname',
+                    'company:id,company_code,company_name',
+                    'businessUnit:id,business_unit_code,business_unit_name',
+                    'department:id,department_code,department_name,sync_id',
+                    'unit:id,unit_code,unit_name',
+                    'subunit:id,sub_unit_code,sub_unit_name',
+                    'location:id,location_code,location_name',
+                    'majorCategory:id,major_category_name',
+                    'minorCategory.initialDebit:id,sync_id,account_title_code,account_title_name',
+                    'minorCategory.depreciationCredit:id,sync_id,credit_code,credit_name',
+                    'uom:id,uom_code,uom_name',
+                    'typeOfRequest:id,type_of_request_name',
+                    'supplier:id,supplier_code,supplier_name',
+                    'fixedAsset',
+                    'assetApproval'
+                ])
+                ->groupBy('transaction_number')
+                ->orderByDesc('created_at')
+                ->useFilters();
+
+            // Handle filters and status conditions in the query
+            if ($status == 'deactivated') {
+                $query->withTrashed()->whereRaw('EXISTS (
+            SELECT 1 FROM asset_requests
+            WHERE transaction_number = asset_requests.transaction_number
+            AND deleted_at IS NOT NULL
+        )');
+            } else {
+                // For active status, exclude where all are trashed
+                $query->whereRaw('EXISTS (
+            SELECT 1 FROM asset_requests
+            WHERE transaction_number = asset_requests.transaction_number
+            AND deleted_at IS NULL
+        )');
+            }
+
+            // Apply $filter filter for claimed items
+            if ($claimedFilter != 'Claimed') {
+                $query->where(function ($q) {
+                    $q->where('filter', '!=', 'Claimed')
+                        ->WhereRaw('quantity != quantity_delivered');
+                })->whereNull('deleted_at');
+            } else {
+                $filter = 'Claimed';
+            }
+
+            if ($filter) {
+                $query->when($filter == 'Returned', function ($q) {
+                    $q->where('status', 'like', 'Returned%');
+                })->when($filter == 'For Approval', function ($q) {
+                    $q->where('status', 'like', 'For Approval%');
+                })->when($filter == 'For FA Approval', function ($q) {
+                    $q->where('status', 'Approved')->where('is_fa_approved', 0);
+                })->when($filter == 'Sent To Ymir', function ($q) {
+                    $q->where('status', 'Approved')->where('filter', 'Sent to Ymir');
+                })->when($filter == 'For Tagging', function ($q) {
+                    $q->where('status', 'Approved')->where('filter', 'Asset Tagging');
+                })->when($filter == 'For Pickup', function ($q) {
+                    $q->where('status', 'Approved')->where('filter', 'Ready to Pickup');
+                })->when($filter == 'Claimed', function ($q) {
+                    $q->where('is_claimed', 1)->where('filter', 'Claimed');
+                });
+            }else{
+                $query->where(function ($q) {
+                    $q->where('filter', '!=', 'Claimed')
+                        ->orWhereRaw('quantity != quantity_delivered');
+                });
+            }
+
+
+            // Add this before the map function
+            $cancelledCounts = AssetRequest::onlyTrashed()
+                ->select('transaction_number', DB::raw('SUM(quantity) as cancelled_count'))
+                ->groupBy('transaction_number')
+                ->pluck('cancelled_count', 'transaction_number')
+                ->toArray();
+
+
+            if ($perPage !== null) {
+                // Get the total count for pagination
+                $total = $query->toBase()->getCountForPagination();
+
+                // Get the current page
+                $page = $request->input('page', 1);
+
+                // Apply pagination limits to the database query itself
+                $items = $query->forPage($page, $perPage)->get();
+
+                // Apply the transformation
+                $transformedItems = collect($items)->map(function ($item) use ($cancelledCounts) {
+                    $item->cancelled = $cancelledCounts[$item->transaction_number] ?? 0;
+                    return $this->transformIndexAssetRequest($item);
+                })->values(); // Use values() to re-index the collection
+
+                // Create paginator with correctly indexed items
+                $assetRequests = new LengthAwarePaginator(
+                    $transformedItems,
+                    $total,
+                    $perPage,
+                    $page,
+                    ['path' => $request->url(), 'query' => $request->query()]
+                );
+            } else {
+                // No pagination needed
+                $assetRequests = $query->get()->map(function ($item) use ($cancelledCounts) {
+                    $item->cancelled = $cancelledCounts[$item->transaction_number] ?? 0;
+                    return $this->transformIndexAssetRequest($item);
+                });
+            }
+            return $assetRequests; // Fix the variable name here as well
+        }*/
 
 
     public function show($transactionNumber)
     {
-        $requestorId = auth('sanctum')->user();
-        $roleName = $requestorId->role->role_name;
-        $adminCheck = ($roleName == 'Admin' || $roleName == 'Super Admin');
+        $user = auth('sanctum')->user();
+//        $isAdmin = in_array($user->role->role_name, ['Admin', 'Super Admin']);
 
-        // Get the transaction numbers of the non-soft-deleted records
-        $nonSoftDeletedTransactionNumbers = AssetRequest::whereNull('deleted_at')->pluck('reference_number');
+        $query = AssetRequest::with([
+            'requestor:id,username,employee_id,firstname,lastname',
+            'company:id,company_code,company_name',
+            'businessUnit:id,business_unit_code,business_unit_name',
+            'department:id,department_code,department_name,sync_id',
+            'unit:id,unit_code,unit_name',
+            'subunit:id,sub_unit_code,sub_unit_name',
+            'location:id,location_code,location_name',
+            'majorCategory:id,major_category_name',
+            'minorCategory.initialDebit:id,sync_id,account_title_code,account_title_name',
+            'minorCategory.depreciationCredit:id,sync_id,credit_code,credit_name',
+            'uom:id,uom_code,uom_name',
+            'typeOfRequest:id,type_of_request_name',
+            'supplier:id,supplier_code,supplier_name',
+            'fixedAsset',
+            'assetApproval'
+        ])->where('transaction_number', $transactionNumber);
 
-        $assetRequestQuery = AssetRequest::withTrashed()->where('transaction_number', $transactionNumber);
+        // Add requester filter for non-admins
+//        if (!$isAdmin) {
+//            $query->where('requester_id', $user->id);
+//        }
 
-        if (!$adminCheck) {
-            $assetRequestQuery->where('requester_id', $requestorId->id);
+        // Get total and soft deleted count for the transaction
+        $totalCount = AssetRequest::withTrashed()
+            ->where('transaction_number', $transactionNumber)
+            ->count();
+
+        $deletedCount = AssetRequest::onlyTrashed()
+            ->where('transaction_number', $transactionNumber)
+            ->count();
+
+        // If all items are soft deleted, include them in results
+        if ($totalCount === $deletedCount) {
+            $query->withTrashed();
+        } else {
+            // If not all items are deleted, only show non-deleted items
+            $query->whereNull('deleted_at');
         }
 
-        // Exclude the soft-deleted records that have the same transaction number as the non-soft-deleted records
-        $assetRequestQuery->where(function ($query) use ($nonSoftDeletedTransactionNumbers) {
-            $query->whereNull('deleted_at')
-                ->orWhere(function ($query) use ($nonSoftDeletedTransactionNumbers) {
-                    $query->whereNotNull('deleted_at')
-                        ->whereNotIn('reference_number', $nonSoftDeletedTransactionNumbers);
-                });
-        });
+        // Optimize ordering
+        $query->orderByRaw('ISNULL(deleted_at) DESC, created_at DESC');
 
-        $assetRequestQuery->orderByRaw('deleted_at IS NULL DESC');
+        // Get paginated results
+        $assetRequests = $query->dynamicPaginate();
 
-        $assetRequest = $this->responseData($assetRequestQuery->dynamicPaginate());
-
-        if ($assetRequest->isEmpty()) {
+        if ($assetRequests->isEmpty()) {
             return $this->responseUnprocessable('Asset Request not found.');
         }
 
-        return $assetRequest;
+        // Transform data using the trait
+        return $this->responseData($assetRequests);
     }
+
 
     public function update(UpdateAssetRequestRequest $request, $referenceNumber): JsonResponse
     {
@@ -240,41 +640,57 @@ class AssetRequestController extends Controller
         }
     }
 
+
     public function updateRequest(UpdateAssetRequestRequest $request, $referenceNumber)
     {
-//        return $request->all();
+        DB::beginTransaction();
 
-        $transactionNumber = AssetRequest::where('reference_number', $referenceNumber)->first()->transaction_number ?? null;
+        try {
+            $transactionNumber = AssetRequest::where('reference_number', $referenceNumber)->first()->transaction_number ?? null;
+            $request->merge([
+                'receiving_warehouse_id' => Department::where('id', $request->department_id)->pluck('receiving_warehouse_id')->first(),
+                'is_addcost' => $request->item_id ? 1 : 0,
+            ]);
 
-        $assetRequest = $this->getAssetRequestForApprover('reference_number', $transactionNumber, $referenceNumber);
+            $assetRequest = $this->getAssetRequestForApprover('reference_number', $transactionNumber, $referenceNumber);
+//            return $assetRequest;
+            if (!$assetRequest) {
+                return $this->responseUnprocessable('Asset Request not found.');
+            }
 
-        if (!$assetRequest) {
-            return $this->responseUnprocessable('Asset Request not found.');
-        }
+            // Make changes to the $assetRequest and $ar objects but don't save them
+            $assetRequest = $this->updateAssetRequest($assetRequest, $request, $save = false);
+            // Check if the $assetRequest and $ar objects are dirty
+            $isDataUpdated = (bool)$assetRequest->isDirty();
 
-        // Make changes to the $assetRequest and $ar objects but don't save them
-        $assetRequest = $this->updateAssetRequest($assetRequest, $request, $save = false);
-        // Check if the $assetRequest and $ar objects are dirty
-        $isDataUpdated = (bool)$assetRequest->isDirty();
+            // Save the changes to the $assetRequest and $ar objects
+            $assetRequest->accountingEntries()->update([
+                'initial_debit' => $request->initial_debit_id,
+                'depreciation_credit' => $request->depreciation_credit_id,
+            ]);
+            $assetRequest->save();
 
-        // Save the changes to the $assetRequest and $ar objects
-        $assetRequest->save();
+            $this->handleMediaAttachments($assetRequest, $request);
 
-        $this->handleMediaAttachments($assetRequest, $request);
+            //TODO: Make this last for only 20 mins if there is bug
+            Cache::put('isDataUpdated', $isDataUpdated, now()->addMinutes(5));
+            $this->approveRequestRepository->isApproverChange($transactionNumber, $isDataUpdated);
 
-        //TODO: Make this last for only 20 mins if there is bug
-        Cache::put('isDataUpdated', $isDataUpdated, now()->addMinutes(20));
-        $this->approveRequestRepository->isApproverChange($transactionNumber, $isDataUpdated);
+            if (Cache::get('isDataUpdated') || Cache::get('isFileDataUpdated')) {
+                $this->resubmitAssetRequest($transactionNumber);
+//                $this->invalidateCache();
+            }
 
-        if (Cache::get('isDataUpdated') || Cache::get('isFileDataUpdated')) {
-            $this->resubmitAssetRequest($transactionNumber);
-        }
+            DB::commit();
 
-        return $this->responseSuccess('AssetRequest updated Successfully',
-            [
+            return $this->responseSuccess('AssetRequest updated Successfully', [
                 'isDataUpdates' => Cache::get('isDataUpdated') || Cache::get('isFileDataUpdated') ? 1 : 0,
-            ]
-        );
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+//            return $e->getMessage();
+            return $this->responseUnprocessable('Something went wrong, please try again.');
+        }
     }
 
     public function removeRequestItem($transactionNumber, $referenceNumber = null)
@@ -282,7 +698,14 @@ class AssetRequestController extends Controller
 
         if ($transactionNumber && $referenceNumber) {
             //            return 'both';
-            return $this->deleteRequestItem($referenceNumber, $transactionNumber);
+            $item = $this->deleteRequestItem($referenceNumber, $transactionNumber);
+            if (isset($item['error'])) {
+                return $this->responseUnprocessable($item['message']);
+            }
+            if (Cache::get('isDataUpdated')) {
+                $this->resubmitAssetRequest($transactionNumber);
+            }
+            return $this->responseSuccess('AssetRequest Item removed Successfully');
         }
         if ($transactionNumber) {
             //            return 'single';
@@ -313,7 +736,7 @@ class AssetRequestController extends Controller
         $assetRequests = $items->map(function ($item) use ($transactionNumber) {
             $fileKeys = ['letter_of_request', 'quotation', 'specification_form', 'tool_of_trade', 'other_attachments'];
             $assetRequest = new AssetRequest($item->only([
-                'status', 'is_addcost', 'item_status', 'small_tool_id', 'fixed_asset_id', 'requester_id', 'type_of_request_id', 'attachment_type',
+                'status', 'is_addcost', 'item_status', 'item_id', 'fixed_asset_id', 'requester_id', 'type_of_request_id', 'attachment_type',
                 'additional_info', 'acquisition_details', 'accountability', 'major_category_id', 'minor_category_id',
                 'uom_id', 'company_id', 'business_unit_id', 'department_id', 'unit_id', 'subunit_id', 'location_id',
                 'account_title_id', 'accountable', 'asset_description', 'asset_specification', 'cellphone_number', 'brand',
@@ -350,8 +773,6 @@ class AssetRequestController extends Controller
                 $activity->subject_id = $transactionNumber;
             })
             ->log('Requested Asset Request with Transaction Number: ' . $transactionNumber);
-
-
     }
 
 
@@ -404,7 +825,7 @@ class AssetRequestController extends Controller
         $perPage = $request->input('per_page', null);
 //        $search = $request->input('search', null);
         $user = auth('sanctum')->user();
-        $allowedRole = ['Super Admin', 'Admin', 'ERP'];
+//        $allowedRole = ['Super Admin', 'Admin', 'ERP'];
 
 
         $fixedAsset = $this->getFAItemDetails($referenceNumber);
@@ -412,9 +833,9 @@ class AssetRequestController extends Controller
         $assetRequest = $this->getARItemDetails($referenceNumber);
 
         $unionQuery = $fixedAsset->concat($additionalCost)->concat($assetRequest);
-        if (!in_array($user->role->role_name, $allowedRole)) {
-            $unionQuery = $unionQuery->where('requester', $user->username);
-        }
+//        if (!in_array($user->role->role_name, $allowedRole)) {
+//            $unionQuery = $unionQuery->where('requester', $user->username);
+//        }
 
         if ($perPage !== null) {
             $page = request()->get('page', 1); // Get the current page or default to 1
@@ -589,14 +1010,17 @@ class AssetRequestController extends Controller
     public function exportAging(Request $request)
     {
         $user = auth('sanctum')->user();
+        $userWarehouse = $user->warehouse_id ?? null;
         $from = $request->input('from');
         $to = $request->input('to');
         $dataAll = $request->input('data_all', 0);
-
+        $exportMonitoring = $request->input('export_monitoring', 0);
         //check if the user is admin then allow the dataAll to be 1 else 0
-        if ($user->role->role_name != 'Admin') {
-            $dataAll = 0;
-        }
+//        if ($user->role->role_name !== 'Admin') {
+//            $dataAll = 0;
+//        }
+        $from = $from ? Carbon::parse($from)->startOfDay() : null;
+        $to = $to ? Carbon::parse($to)->endOfDay() : null;
 
 
 //        $status = $request->input('status');
@@ -605,6 +1029,9 @@ class AssetRequestController extends Controller
         $assetRequest = AssetRequest::when($from && $to, function ($query) use ($from, $to) {
             return $query->whereBetween('created_at', [$from, $to]);
         })
+            ->when($exportMonitoring, function ($query) use ($userWarehouse) {
+                return $query->where('receiving_warehouse_id', $userWarehouse);
+            })
             ->when($from && !$to, function ($query) use ($from) {
                 return $query->where('created_at', '>=', $from);
             })
@@ -652,10 +1079,11 @@ class AssetRequestController extends Controller
                 'transaction_number' => $item->transaction_number,
 //                'reference_number' => $item->reference_number,
                 'requester' => $item->requestor->username,
+                'receiving_warehouse' => $item->receivingWarehouse->warehouse_name,
                 'ymir_pr_number' => $YmirPRNumber,
-                'pr_number' => $item->pr_number,
-//                'po_number' => $item->po_number,
-//                'rr_number' => $item->rr_number,
+                'pr_number' => $item->pr_number ?? '-',
+                'po_number' => $item->po_number ?? '-',
+                'rr_number' => $item->rr_number ?? '-',
                 'item_status' => $item->item_status,
                 'acquisition_details' => $item->acquisition_details,
                 'quantity' => $item->quantity,

@@ -95,7 +95,7 @@ class AssetRequest extends Model implements HasMedia
             }
         }
 
-        return $this->responseNotFound('PR generation failed, please try again');
+        return $this->responseNotFound('PR generation failed, please try again, tried ' . $attempts);
     }
 
 
@@ -123,14 +123,30 @@ class AssetRequest extends Model implements HasMedia
 
     public function scopeWhereHasTransactionNumberSynced($query, $toPo)
     {
-        return $query->whereIn('transaction_number', function ($query) use ($toPo) {
-            $query->select('transaction_number')
-                ->from('asset_requests')
-                ->whereNull('deleted_at') // Exclude soft deleted records
-                ->where('synced', 1)
-                ->groupBy('transaction_number')
-                ->havingRaw('SUM(quantity) ' . ($toPo == 1 ? '>' : '=') . ' SUM(quantity_delivered)');
-        });
+        // First find transaction numbers that have at least one synced item
+        $syncedTransactionNumbers = DB::table('asset_requests')
+            ->select('transaction_number')
+            ->whereNull('deleted_at')
+            ->where('synced', 1)
+            ->distinct()
+            ->pluck('transaction_number');
+
+        // Then get all items from those transactions and analyze quantities
+        $filteredTransactionNumbers = DB::table('asset_requests')
+            ->select('transaction_number')
+            ->whereNull('deleted_at')
+            ->whereIn('transaction_number', $syncedTransactionNumbers)
+            ->groupBy('transaction_number')
+            ->havingRaw('SUM(quantity) ' . ($toPo == 1 ? '>' : '=') . ' SUM(quantity_delivered)')
+            ->pluck('transaction_number');
+
+        // Finally return all items with the filtered transaction numbers
+        return $query->whereIn('transaction_number', $filteredTransactionNumbers);
+    }
+
+    public function accountingEntries()
+    {
+        return $this->belongsTo(AccountingEntries::class, 'account_title_id', 'id');
     }
 
     public function assetApproval(): HasMany
@@ -235,7 +251,7 @@ class AssetRequest extends Model implements HasMedia
 
     public function supplier(): BelongsTo
     {
-        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'sync_id');
     }
 
     public function fixedAsset(): BelongsTo
@@ -255,12 +271,17 @@ class AssetRequest extends Model implements HasMedia
 
     public function receivingWarehouse()
     {
-        return $this->belongsTo(Warehouse::class, 'receiving_warehouse_id', 'id');
+        return $this->belongsTo(Warehouse::class, 'receiving_warehouse_id', 'sync_id');
     }
 
-    public function smallTool()
+//    public function assetSmallTool()
+//    {
+//        return $this->belongsTo(AssetSmallTool::class, 'small_tool_id', 'id');
+//    }
+
+    public function item()
     {
-        return $this->belongsTo(SmallTools::class, 'small_tool_id', 'id');
+        return $this->belongsTo(AssetSmallTool::class, 'item_id', 'id');
     }
 
     public function getInclusion()
@@ -318,6 +339,16 @@ class AssetRequest extends Model implements HasMedia
     public function getLatestDeliveryDate()
     {
         $fixedAssets = FixedAsset::where('transaction_number', $this->transaction_number)->get();
-        return $fixedAssets->max('created_at');
+        $additionalCosts = AdditionalCost::where('transaction_number', $this->transaction_number)->get();
+        if ($fixedAssets->count() > 0) {
+            return $fixedAssets->max('created_at');
+        } elseif ($additionalCosts->count() > 0) {
+            return $additionalCosts->max('created_at');
+        }
+    }
+
+
+    public function scopeUseFilters($query){
+
     }
 }

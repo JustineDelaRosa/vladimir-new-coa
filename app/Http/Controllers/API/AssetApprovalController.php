@@ -58,6 +58,7 @@ class AssetApprovalController extends Controller
         if (!$forMonitoring) {
             $assetApprovalsQuery->where('approver_id', $approverId)->get();
         }
+
         $transactionNumbers = [];
         if ($this->isUserFa()) {
             $transactionNumbers = AssetRequest::where('status', 'Approved')
