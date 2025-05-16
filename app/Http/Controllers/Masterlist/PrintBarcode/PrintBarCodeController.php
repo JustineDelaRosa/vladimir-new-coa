@@ -320,6 +320,7 @@ class PrintBarCodeController extends Controller
                     $query->where('accountability', 'Personal Issued')
                         ->where('memo_series_id', null)
                         ->where('is_released', 0)
+                        ->where('from_request', 1)
 //                        ->where('asset_condition', 'New')
                         ->whereIn('can_release', [0, 1]);
                 });
@@ -380,6 +381,7 @@ class PrintBarCodeController extends Controller
             'pr_number' => $asset->ymir_pr_number ?? '-',
             'po_number' => $asset->po_number ?? '-',
             'rr_number' => $asset->rr_number ?? '-',
+            'ymir_ref_number' => $asset->ymir_ref_number ?? '-',
             'warehouse' => [
                 'id' => $asset->warehouse->id ?? '-',
                 'warehouse_name' => $asset->warehouse->warehouse_name ?? '-',

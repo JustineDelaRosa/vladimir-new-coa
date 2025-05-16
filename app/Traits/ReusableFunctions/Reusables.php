@@ -21,7 +21,7 @@ trait Reusables
 {
     use ApiResponse;
 
-    public function isUserFa(): bool
+    public function isUserFa()
     {
         $user = auth('sanctum')->user()->id;
         $faRoleIds = RoleManagement::whereIn('role_name', ['Fixed Assets', 'Fixed Asset', 'Fixed Asset Associate', 'Fixed Asset Specialist','Requestor-approver-fixed Asset'])->pluck('id');
