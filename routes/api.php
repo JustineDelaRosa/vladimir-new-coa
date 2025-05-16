@@ -223,6 +223,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::PATCH('add-cost/archived-add-cost/{id}', [AdditionalCostController::class, 'archived']);
     Route::POST('import-add-cost', [AdditionalCostController::class, 'additionalCostImport']);
     Route::POST('asset-to-addcost', [AdditionalCostController::class, 'addToAddCost']);
+    //UPDATE DESCRIPTION ONLY
+    Route::PATCH('fixed-asset/update-description/{id}', [FixedAssetController::class, 'updateDescription']);
+
     //FISTO VOUCHER
     Route::GET('fisto-voucher', [FixedAssetController::class, 'getVoucher']);
 
@@ -334,6 +337,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::RESOURCE('asset-transfer-approver', AssetTransferApproverController::class);
     Route::PUT('update-transfer-approver/{id}', [AssetTransferApproverController::class, 'arrangeLayer']);
 
+
     Route::RESOURCE('asset-pullout-approver', AssetPullOutApproverController::class);
     Route::PUT('update-pullout-approver/{id}', [AssetPullOutApproverController::class, 'arrangeLayer']);
 
@@ -395,6 +399,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::PATCH('received-confirmation', [TransferController::class, 'movementConfirmation']);
     Route::GET('transfer-receiver', [TransferController::class, 'movementReceiverViewing']);
     Route::GET('show-receiving/{transferId}', [TransferController::class, 'singleViewing']);
+    Route::PATCH('update-depreciation/{movementId}', [TransferController::class, 'editDepreciationDebit']);
+    Route::PATCH('reject-transfer', [TransferController::class, 'rejectItem']);
 
     //NEW PULLOUT
     Route::RESOURCE('pullout', PullOutController::class);
@@ -425,8 +431,9 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::RESOURCE('rr-summary', ReceiveReceiptSummaryController::class);
     Route::PATCH('cancel-rr/{rrNumber}', [ReceiveReceiptSummaryController::class, 'cancelledRR']);
 
-
-    Route::GET('depreciation_history/{vTagNumber}', [DepreciationHistoryController::class, 'showHistory']);
+    //DEPRECIATION HISTORY
+    Route::GET('depreciation_history/{vTagNumber}', [DepreciationHistoryController::class, 'showHistory']); //todo change this to use this -
+    Route::GET('depreciation-report', [DepreciationHistoryController::class, 'monthlyDepreciationReport']);
 
     Route::GET('pr-report', [AddingPrController::class, 'prReport']);
 
