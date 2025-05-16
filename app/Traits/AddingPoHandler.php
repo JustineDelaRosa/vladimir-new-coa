@@ -48,11 +48,14 @@ trait AddingPoHandler
                     ->whereDate('received_at', '<=', $to);
             })
             ->whereNull('deleted_at');
+
         if ($toPo !== null) {
             $query->whereHasTransactionNumberSynced($toPo);
         }
+
         $query->orderBy('created_at', 'desc')
             ->useFilters();
+
         return $query;
     }
 
@@ -127,31 +130,22 @@ trait AddingPoHandler
 
     public function calculateRemainingQuantity($transactionNumber, $forTimeline = false)
     {
+        // Use a more efficient query with aggregation functions
+        if ($forTimeline) {
+            // For timeline, we just need the sum of remaining quantities
+            $result = AssetRequest::where('transaction_number', $transactionNumber)
+                ->selectRaw('SUM(quantity - quantity_delivered) as remaining')
+                ->first();
 
-        $items = AssetRequest::where('transaction_number', $transactionNumber)->get();
-        $remainingQuantities = $items->map(function ($item) use ($forTimeline) {
-            $remaining = $item->quantity - $item->quantity_delivered;
-            if ($forTimeline === false) {
-                $remaining = $remaining . "/" . $item->quantity;
-            }
-
-            return $remaining;
-        });
-        if ($forTimeline === false) {
-            $remainingQuantities = $remainingQuantities->reduce(function ($carry, $item) {
-                $carry = explode("/", $carry);
-                $item = explode("/", $item);
-                $carry[0] = $carry[0] + $item[0];
-                $carry[1] = $carry[1] + $item[1];
-                return $carry[0] . "/" . $carry[1];
-            }, "0/0");
+            return $result ? (int)$result->remaining : 0;
         } else {
-            $remainingQuantities = $remainingQuantities->reduce(function ($carry, $item) {
-                return $carry + $item;
-            }, 0);
-        }
+            // For non-timeline, we need both remaining and total quantities
+            $result = AssetRequest::where('transaction_number', $transactionNumber)
+                ->selectRaw('SUM(quantity - quantity_delivered) as remaining, SUM(quantity) as total')
+                ->first();
 
-        return $remainingQuantities;
+            return $result ? $result->remaining . "/" . $result->total : "0/0";
+        }
     }
 
     public function updatePoAssetRequest($assetRequest, $request)
@@ -216,21 +210,21 @@ trait AddingPoHandler
         }
     }
 
-    private function createNewAssetRequests($assetRequest, $quantityDelivered, $initialCreditId, $inclusion = null)
+    private function createNewAssetRequests($assetRequest, $quantityDelivered, $initialCreditId, $ymirReferenceNumber)
     {
 
         if ($assetRequest->quantity > 1) {
             foreach (range(1, $quantityDelivered) as $index) {
-                $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost, $initialCreditId, $inclusion);
+                $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost, $initialCreditId, $ymirReferenceNumber);
             }
         } else {
-            $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost, $initialCreditId, $inclusion);
+            $this->addToFixedAssets($assetRequest, $assetRequest->is_addcost, $initialCreditId, $ymirReferenceNumber);
         }
 
     }
 
 
-    private function addToFixedAssets($asset, $isAddCost, $initialCreditId, $inclusion = null)
+    private function addToFixedAssets($asset, $isAddCost, $initialCreditId, $ymirReferenceNumber)
     {
         $rrNumbers = $asset->rr_number;
         $rrNumbersArr = explode(',', $rrNumbers);
@@ -272,10 +266,10 @@ trait AddingPoHandler
                 'ymir_pr_number' => $asset->ymir_pr_number,
                 'pr_number' => $asset->pr_number,
                 'po_number' => $asset->po_number,
-                'inclusion' => $inclusion,
                 'receipt' => $rrNumber,
                 'rr_number' => $rrNumber,
                 'rr_id' => $asset->rr_id,
+                'ymir_ref_number' => $ymirReferenceNumber,
                 'warehouse_id' => $asset->receiving_warehouse_id,
                 'warehouse_number_id' => $warehouseNumber->id,
                 'fixed_asset_id' => $asset->fixed_asset_id,
@@ -353,8 +347,8 @@ trait AddingPoHandler
                 'vladimir_tag_number' => $this->vladimirTagGeneratorRepository->vladimirTagGenerator(),
                 'rr_number' => $rrNumber,
                 'rr_id' => $asset->rr_id,
+                'ymir_ref_number' => $ymirReferenceNumber,
                 'receipt' => $rrNumber,
-                'inclusion' => $inclusion,
                 'capex_number' => $asset->capex_number,
                 'warehouse_id' => $asset->receiving_warehouse_id,
                 'warehouse_number_id' => $warehouseNumber->id,

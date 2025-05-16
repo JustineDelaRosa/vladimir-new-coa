@@ -200,7 +200,7 @@ class AddingPrController extends Controller
                         return [
                             'id' => AssetRequest::where('transaction_number', $transactionNumber)->first()->is_pr_returned == 1 ? $item->ymir_id : $item->id,
                             'reference_no' => $item->reference_number,
-                            'asset_description' => $item->asset_description . "-" . $item->asset_specification,
+                            'asset_descriptionmysqldump -h 127.0.0.1 -u root -P 3306 --no-data vladimir > C:\Users\JustineDelaRosa\Desktop\vladimir_schema.sql' => $item->asset_description . "-" . $item->asset_specification,
                             'item_id' => null,
                             'item_code' => null,
                             'item_name' => $item->asset_description . "-" . $item->asset_specification,
@@ -290,7 +290,7 @@ class AddingPrController extends Controller
             return $filteredAndGroupedAssetRequests;
         } catch (Exception $e) {
             DB::rollBack();
-//            return $e->getMessage();
+            return $e;
             return $this->responseUnprocessable('An error occurred while processing the request.');
         }
     }
