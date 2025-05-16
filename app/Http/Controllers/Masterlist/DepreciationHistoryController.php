@@ -135,6 +135,22 @@ class DepreciationHistoryController extends Controller
                                 'location_code' => $monthGroup->first()->location->location_code,
                                 'location_name' => $monthGroup->first()->location->location_name
                             ],
+                            'initial_debit' => [
+                                'account_title_code' => $monthGroup->first()->fixedAsset->accountingEntries->initialDebit->account_title_code,
+                                'account_title_name' => $monthGroup->first()->fixedAsset->accountingEntries->initialDebit->account_title_name
+                            ],
+                            'initial_credit' => [
+                                'account_title_code' => $monthGroup->first()->fixedAsset->accountingEntries->initialCredit->credit_code,
+                                'account_title_name' => $monthGroup->first()->fixedAsset->accountingEntries->initialCredit->credit_name
+                            ],
+                            'depreciation_debit' => [
+                                'account_title_code' => $monthGroup->first()->depreciationDebit->account_title_code,
+                                'account_title_name' => $monthGroup->first()->depreciationDebit->account_title_name
+                            ],
+                            'depreciation_credit' => [
+                                'account_title_code' => $monthGroup->first()->fixedAsset->accountingEntries->depreciationCredit->credit_code,
+                                'account_title_name' => $monthGroup->first()->fixedAsset->accountingEntries->depreciationCredit->credit_name
+                            ],
 
                         ];
                     })->values()
@@ -142,5 +158,95 @@ class DepreciationHistoryController extends Controller
             })->values()
         ];
         return $data;
+    }
+
+
+    public function monthlyDepreciationReport(Request $request)
+    {
+        $yearMonth = Carbon::parse($request->input('year_month'))->format('Y-m');
+
+        $depreciationHistory = DepreciationHistory::where('depreciated_date', $yearMonth)->dynamicPaginate();
+
+        //transform the data to be returned, check first if the data is paginated or not
+        if ($depreciationHistory instanceof \Illuminate\Pagination\LengthAwarePaginator) {
+            $depreciationHistory->getCollection()->transform(function ($history) {
+                return $this->transformedData($history);
+            });
+        } else {
+            $depreciationHistory = $depreciationHistory->transform(function ($history) {
+                return $this->transformedData($history);
+            });
+        }
+
+        return $depreciationHistory;
+    }
+
+
+    public function transformedData($data)
+    {
+        return [
+            'vladimir_tag_number' => $data->fixedAsset->vladimir_tag_number,
+            'tag_number' => $data->fixedAsset->tag_number ?? "-",
+            'tag_number_old'=> $data->fixedAsset->tag_number_old ?? "-",
+            'asset_description' => $data->fixedAsset->asset_description,
+            'asset_specification' => $data->fixedAsset->asset_specification,
+            'acquisition_cost' => $data->acquisition_cost,
+            'depreciation_basis' => $data->depreciable_basis,
+            'depreciated_date' => $data->depreciated_date,
+            'months_depreciated' => $data->months_depreciated,
+            'monthly_depreciation' => $data->depreciation_per_month,
+            'yearly_depreciation' => $data->depreciation_per_year,
+            'accumulated_depreciation' => $data->accumulated_cost,
+            'remaining_book_value' => $data->remaining_book_value,
+            'company' => [
+                'company_code' => $data->company->company_code,
+                'company_name' => $data->company->company_name
+            ],
+            'business_unit' => [
+                'business_unit_code' => $data->businessUnit->business_unit_code,
+                'business_unit_name' => $data->businessUnit->business_unit_name
+            ],
+            'department' => [
+                'department_code' => $data->department->department_code,
+                'department_name' => $data->department->department_name
+            ],
+            'unit' => [
+                'unit_code' => $data->unit->unit_code,
+                'unit_name' => $data->unit->unit_name
+            ],
+            'sub_unit' => [
+                'sub_unit_code' => $data->subUnit->sub_unit_code,
+                'sub_unit_name' => $data->subUnit->sub_unit_name
+            ],
+            'location' => [
+                'location_code' => $data->location->location_code,
+                'location_name' => $data->location->location_name
+            ],
+            'initial_debit' => [
+                'debit_code' => $data->fixedAsset->accountingEntries->initialDebit->account_title_code,
+                'debit_name' => $data->fixedAsset->accountingEntries->initialDebit->account_title_name
+            ],
+            'initial_credit' => [
+                'credit_code' => $data->fixedAsset->accountingEntries->initialCredit->credit_code,
+                'credit_name' => $data->fixedAsset->accountingEntries->initialCredit->credit_name
+            ],
+            'depreciation_debit' => [
+                'debit_code' => $data->depreciationDebit->account_title_code ?? null,
+                'debit_name' => $data->depreciationDebit->account_title_name?? null
+            ],
+            'depreciation_credit' => [
+                'credit_code' => $data->fixedAsset->accountingEntries->depreciationCredit->credit_code,
+                'credit_name' => $data->fixedAsset->accountingEntries->depreciationCredit->credit_name
+            ],
+            'secondary_depreciation_debit' => [
+                'debit_code' => $data->fixedAsset->accountingEntries->secondDepreciationDebit->account_title_code ?? null,
+                'debit_name' => $data->fixedAsset->accountingEntries->secondDepreciationDebit->account_title_name ?? null
+            ],
+            'secondary_depreciation_credit' => [
+                'credit_code' => $data->fixedAsset->accountingEntries->secondDepreciationCredit->account_title_code ?? null,
+                'credit_name' => $data->fixedAsset->accountingEntries->secondDepreciationCredit->account_title_name ?? null
+            ],
+            'created_at' => $data->created_at,
+        ];
     }
 }

@@ -46,7 +46,11 @@ class DepreciationHistory extends Model
         return $this->belongsTo(Location::class, 'location_id', 'id');
     }
 
-    public function accountingEntries(){
-        return $this->hasMany(AccountingEntries::class, 'depreciation_id', 'id');
+    /*public function accountingEntries(){
+        return $this->belongsTo(AccountingEntries::class, 'account_id', 'id');
+    }*/
+
+    public function depreciationDebit(){
+        return $this->belongsTo(AccountTitle::class, 'depreciation_debit_id', 'sync_id');
     }
 }
