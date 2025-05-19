@@ -18,6 +18,7 @@ use App\Services\AssetTransferServices;
 use App\Services\MovementApprovalServices;
 use App\Traits\AssetMovement\TransferHandler;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TransferController extends AssetMovementBaseController
 {
@@ -57,5 +58,84 @@ class TransferController extends AssetMovementBaseController
         }
 
         return $this->transformSingleFixedAssetShowData($fixedAsset, $movementNumber, $transfer);
+    }
+
+    public function editDepreciationDebit(Request $request, $movementId)
+    {
+        $depreciationDebitId = $request->input('depreciation_debit_id');
+
+        DB::beginTransaction();
+
+        try {
+            $movement = MovementNumber::find($movementId);
+            if (!$movement) {
+                DB::rollBack();
+                return $this->responseNotFound('No Data Found');
+            }
+
+            $transfer = Transfer::where('movement_id', $movementId)->get();
+            if ($transfer->isEmpty()) {
+                DB::rollBack();
+                return $this->responseNotFound('No Data Found');
+            }
+
+            foreach ($transfer as $item) {
+                $item->depreciation_debit_id = $depreciationDebitId;
+                $item->save();
+            }
+
+            DB::commit();
+            return $this->responseSuccess('Depreciation Debit Updated');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->responseUnprocessable('Something went wrong');
+        }
+    }
+
+    public function rejectItem(Request $request)
+    {
+        $request->validate(
+            [
+                'reason' => 'required|string|max:255',
+            ],
+            [
+                'reason.required' => 'Reason is required',
+                'reason.string' => 'Reason must be a string',
+                'reason.max' => 'Reason must not exceed 255 characters',
+            ]
+        );
+
+        DB::beginTransaction();
+
+        try {
+            $transferId = $request->input('transfer_id');
+
+            foreach ($transferId as $id) {
+                $transfer = Transfer::find($id);
+                if (!$transfer) {
+                    DB::rollBack();
+                    return $this->responseNotFound('No Data Found');
+                }
+
+                $movementId = $transfer->movement_id;
+                $userId = auth('sanctum')->user()->id;
+                $reason = $request->input('reason');
+
+                if ($transfer->receiver_id != $userId) {
+                    DB::rollBack();
+                    return $this->responseNotFound('You are not the receiver of this transfer');
+                }
+
+                $transfer->delete();
+
+                $this->movementLogs($movementId, 'Rejected', $reason);
+            }
+
+            DB::commit();
+            return $this->responseSuccess('Transfer Rejected');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->responseUnprocessable('Something went wrong', $e);
+        }
     }
 }

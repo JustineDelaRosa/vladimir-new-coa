@@ -547,6 +547,7 @@ class AssetTransferServices
 
 
                 $transfer = Transfer::where('id', $transferId)->first();
+
                 $attribute = [
                     'company_id' => $transfer->company_id,
                     'business_unit_id' => $transfer->business_unit_id,
@@ -555,10 +556,9 @@ class AssetTransferServices
                     'subunit_id' => $transfer->subunit_id,
                     'location_id' => $transfer->location_id,
                     'accountability' => $transfer->accountability,
-                    'accountable' => $transfer->accountable,
+                    'accountable' => str_replace(['ñ', 'Ñ'], ['n', 'N'], $transfer->accountable),
                     'remarks' => $transfer->remarks,
                 ];
-
                 $this->updateAssetData(FixedAsset::class, $transfer->fixed_asset_id, $attribute, $transfer->depreciation_debit_id);
                 $this->addToMovementHistory(FixedAsset::class, Transfer::class, $transfer->fixed_asset_id, $transferId, $oldDebit, 'From Transfer');
             }

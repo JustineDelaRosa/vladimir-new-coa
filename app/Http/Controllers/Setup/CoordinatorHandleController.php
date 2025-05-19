@@ -30,16 +30,20 @@ class CoordinatorHandleController extends Controller
             ->when($user_id, function ($query) use ($user_id) {
                 $query->where('user_id', $user_id);
             });
-        $groupedHandles = $query->useFilters()->get()->groupBy('user_id')->map(function ($handles) {
+        $data = $query->useFilters()->get()->groupBy('user_id')->map(function ($handles) {
             return $this->indexData($handles);
         })->values();
 
         if ($perPage) {
-            //use lengthAwarePaginator to paginate the collection
+            $dataArray = $data->toArray(); // Convert the collection to an array
             $page = $request->input('page', 1);
-            $groupedHandles = new LengthAwarePaginator(
-                $groupedHandles->forPage($page, $perPage),
-                $groupedHandles->count(),
+            $offset = ($page * $perPage) - $perPage;
+            $paginatedData = array_slice($dataArray, $offset, $perPage, true);
+            $paginatedData = array_values($paginatedData); // Reindex the array
+
+            return new LengthAwarePaginator(
+                $paginatedData,
+                count($dataArray),
                 $perPage,
                 $page,
                 ['path' => $request->url(), 'query' => $request->query()]
