@@ -315,9 +315,12 @@ class PrintBarCodeController extends Controller
                     ->where('print_count', 0)
                     ->where('can_release', 0);
             })
-            ->when($printMemo == 1, function ($query) {
-                return $query->where(function ($query) {
-                    $query->where('accountability', 'Personal Issued')
+            ->when($printMemo == 1, function ($query) use ($smallTool) {
+                return $query->where(function ($query) use ($smallTool){
+                    $query->whereHas('TypeOfRequest', function ($query) use ($smallTool) {
+                        $typeNames = $smallTool == 1 ? ['Small Tool', 'Small Tools'] : ['Asset', 'Assets'];
+                        $query->whereIn('type_of_request_name', $typeNames);
+                    })->where('accountability', 'Personal Issued')
                         ->where('memo_series_id', null)
                         ->where('is_released', 0)
                         ->where('from_request', 1)
@@ -352,7 +355,7 @@ class PrintBarCodeController extends Controller
                     return $this->response($asset);
                 })
             );
-        } else if($filter == 1 || $smallTool == 1){
+        } else if ($filter == 1 || $smallTool == 1) {
             // It's already a collection, transform directly
             $assets = $assets->transform(function ($asset) {
                 // Your transformation code here
