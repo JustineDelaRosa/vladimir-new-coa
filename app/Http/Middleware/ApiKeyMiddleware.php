@@ -28,7 +28,11 @@ class ApiKeyMiddleware
             return $this->responseUnAuthenticated('Invalid API Key','Unauthorized');
         }
 
-        if ($apiKey !== config('app.api_key.gl-api-key')) {
+        // Get all valid API keys from config
+        $validApiKeys = config('app.api_keys', []);
+
+        // Check if the provided key exists in the array of valid keys
+        if (!in_array($apiKey, $validApiKeys)) {
             return $this->responseUnAuthenticated('Invalid API Key','Unauthorized');
         }
 
@@ -36,3 +40,6 @@ class ApiKeyMiddleware
     }
 
 }
+
+
+
