@@ -216,4 +216,9 @@ class RequestContainer extends Model implements HasMedia
     {
         return $this->belongsTo(Warehouse::class, 'receiving_warehouse_id', 'sync_id');
     }
+
+    public function oneCharging()
+    {
+        return $this->belongsTo(OneCharging::class, 'one_charging_id', 'id');
+    }
 }

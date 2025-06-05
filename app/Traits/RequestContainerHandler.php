@@ -61,6 +61,7 @@ trait RequestContainerHandler
             'date_needed' => $request->date_needed,
             'major_category_id' => $request->major_category_id,
             'minor_category_id' => $request->minor_category_id,
+            'one_charging_id' => $request->one_charging_id,
             'company_id' => $request->company_id,
             'business_unit_id' => $request->business_unit_id,
             'department_id' => $request->department_id,
@@ -116,9 +117,10 @@ trait RequestContainerHandler
 
     private function updateRequestContainer($request, $requestContainer)
     {
-        if ($requestContainer->first()->subunit_id != $request->subunit_id) {
+        if (($requestContainer->first()->subunit_id != $request->subunit_id) || ($requestContainer->first()->one_charging_id != $request->one_charging_id)) {
             foreach ($requestContainer as $requestContainerItem) {
                 $requestContainerItem->update([
+                    'one_charging_id' => $request->one_charging_id,
                     'company_id' => $request->company_id,
                     'business_unit_id' => $request->business_unit_id,
                     'department_id' => $request->department_id,

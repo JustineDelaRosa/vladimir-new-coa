@@ -32,6 +32,7 @@ class RequestContainerController extends Controller
 
     public function index()
     {
+
         $requesterId = auth('sanctum')->user()->id;
         $requestContainer = RequestContainer::where('requester_id', $requesterId)
             //            ->orderBy('created_at', 'desc')
@@ -79,7 +80,7 @@ class RequestContainerController extends Controller
             return $this->responseCreated('Added successfully', $accountingEntries);
         } catch (Exception $e) {
             DB::rollback();
-//            return $e->getFile() . ' ' . $e->getLine() . ' ' . $e->getMessage();
+            return $e;
             return $this->responseUnprocessable('Something went wrong. Please try again later.');
         }
     }
@@ -158,8 +159,8 @@ class RequestContainerController extends Controller
                 'type_of_request_id' => $request->type_of_request_id,
                 'capex_number' => $request->capex_number,
                 'attachment_type' => $request->attachment_type,
+                'one_charging_id' => $request->one_charging_id,
                 'company_id' => $request->company_id,
-//                'small_tool_id' => $request->small_tool_id ?? null,
                 'item_id' => $request->item_id ?? null,
                 'is_addcost' => $request->item_id ? 1 : 0,
                 'business_unit_id' => $request->business_unit_id,
@@ -192,7 +193,7 @@ class RequestContainerController extends Controller
             return $this->responseSuccess('Request updated Successfully');
         } catch (Exception $e) {
             DB::rollback();
-            return $e->getFile() . ' ' . $e->getLine() . ' ' . $e->getMessage();
+//            return $e->getFile() . ' ' . $e->getLine() . ' ' . $e->getMessage();
             return $this->responseUnprocessable('Something went wrong. Please try again later.');
         }
     }

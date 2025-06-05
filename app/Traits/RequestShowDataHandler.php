@@ -238,6 +238,7 @@ trait RequestShowDataHandler
                 'uom_code' => $ar->uom->uom_code ?? '-',
                 'uom_name' => $ar->uom->uom_name ?? '-',
             ],
+            'one_charging' => $ar->oneCharging ?? '-',
             'company' => [
                 'id' => $ar->company->id ?? '-',
                 'company_code' => $ar->company->company_code ?? '-',
@@ -493,6 +494,7 @@ trait RequestShowDataHandler
             'remaining_book_value' => $fixed_asset->formula->remaining_book_value ?? '-',
             'release_date' => $fixed_asset->formula->release_date ?? '-',
             'start_depreciation' => $fixed_asset->formula->start_depreciation ?? '-',
+            'one_charging' => $fixed_asset->oneCharging ?? '-',
             'company' => [
                 'id' => $fixed_asset->department->company->id ?? '-',
                 'company_code' => $fixed_asset->department->company->company_code ?? '-',
@@ -618,6 +620,7 @@ trait RequestShowDataHandler
                     'remaining_book_value' => $additional_cost->formula->remaining_book_value ?? '-',
                     'release_date' => $additional_cost->formula->release_date ?? '-',
                     'start_depreciation' => $additional_cost->formula->start_depreciation ?? '-',
+                    'one_charging' => $additional_cost->oneCharging ?? '-',
                     'company' => [
                         'id' => $additional_cost->department->company->id ?? '-',
                         'company_code' => $additional_cost->department->company->company_code ?? '-',
