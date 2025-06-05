@@ -192,6 +192,11 @@ class AdditionalCost extends Model implements HasMedia
         return $this->belongsTo(Warehouse::class, 'warehouse_id', 'sync_id');
     }
 
+    public function oneCharging()
+    {
+        return $this->belongsTo(OneCharging::class, 'one_charging_id', 'id');
+    }
+
 //    public function getAccountableAttribute($value)
 //    {
 //        return $value ? json_decode($value) : null;

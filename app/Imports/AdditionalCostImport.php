@@ -10,6 +10,7 @@ use App\Models\Formula;
 use App\Models\Location;
 use App\Models\MajorCategory;
 use App\Models\MinorCategory;
+use App\Models\OneCharging;
 use App\Models\Status\AssetStatus;
 use App\Models\Status\CycleCountStatus;
 use App\Models\Status\DepreciationStatus;
@@ -188,6 +189,7 @@ class AdditionalCostImport extends DefaultValueBinder implements
             'depreciation_status_id' => DepreciationStatus::where('depreciation_status_name', $collection['depreciation_status'])->first()->id,
             'movement_status_id' => MovementStatus::where('movement_status_name', $collection['movement_status'])->first()->id,
             'care_of' => ucwords(strtolower($collection['care_of'])),
+            'one_charging_id' => OneCharging::where('code' , $collection['one_charging_code'])->first()->id,
             'company_id' => Company::where('company_code', $collection['company_code'])->first()->id,
             'business_unit_id' => BusinessUnit::where('business_unit_code', $collection['business_unit_code'])->first()->id,
             'department_id' => Department::where('department_code', $collection['department_code'])->first()->id,
@@ -387,13 +389,17 @@ class AdditionalCostImport extends DefaultValueBinder implements
                     $this->calculationRepository->validationForDate($attribute, $value, $fail);
                 }
             ],
-            '*.company_code' => ['required', new ValidCompanyCode($collections[$index]['company'])],
-            '*.business_unit_code' => ['required', new ValidBusinessUnitCode($collections[$index]['company_code'], $collections[$index]['business_unit'])],
-            '*.department_code' => ['required', new ValidDepartmentCode($collections[$index]['business_unit_code'], $collections[$index]['department'])],
-            '*.unit_code' => ['required', new ValidUnitCode($collections[$index]['department_code'], $collections[$index]['unit'])],
-            '*.subunit_code' => ['required', new ValidSubunitCode($collections[$index]['unit_code'], $collections[$index]['subunit'])],
-            '*.location_code' => ['required', new ValidLocationCode($collections[$index]['subunit_code'], $collections[$index]['location'])],
-            '*.account_code' => ['required', new ValidAccountCode($collections[$index]['account_title'])],
+            '*.one_charging_code' => [
+                'required',
+                Rule::exists('one_chargings', 'code')->whereNull('deleted_at'),
+            ],
+//            '*.company_code' => ['required', new ValidCompanyCode($collections[$index]['company'])],
+//            '*.business_unit_code' => ['required', new ValidBusinessUnitCode($collections[$index]['company_code'], $collections[$index]['business_unit'])],
+//            '*.department_code' => ['required', new ValidDepartmentCode($collections[$index]['business_unit_code'], $collections[$index]['department'])],
+//            '*.unit_code' => ['required', new ValidUnitCode($collections[$index]['department_code'], $collections[$index]['unit'])],
+//            '*.subunit_code' => ['required', new ValidSubunitCode($collections[$index]['unit_code'], $collections[$index]['subunit'])],
+//            '*.location_code' => ['required', new ValidLocationCode($collections[$index]['subunit_code'], $collections[$index]['location'])],
+//            '*.account_code' => ['required', new ValidAccountCode($collections[$index]['account_title'])],
         ];
     }
 

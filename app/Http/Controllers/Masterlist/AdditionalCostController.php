@@ -27,6 +27,7 @@ use App\Models\TypeOfRequest;
 use App\Models\UnitOfMeasure;
 use App\Repositories\AdditionalCostRepository;
 use App\Repositories\CalculationRepository;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -571,6 +572,7 @@ class AdditionalCostController extends Controller
 
         //update the additional useful life of the main asset
         $main->added_useful_life += $months;
+//        $main->formula->end_depreciation = Carbon::now()->addMonths($months)->format('Y-m');
         $main->save();
 
         foreach ($addCost as $item) {
