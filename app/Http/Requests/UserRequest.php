@@ -41,12 +41,13 @@ class UserRequest extends FormRequest
                 'lastname' => 'required',
                 'username' => 'required|unique:users,username',
                 'is_coordinator' => 'nullable|boolean',
-                'company_id' => 'required|exists:companies,id',
-                'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
-                'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
-                'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
-                'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
-                'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
+                'one_charging_id' => ['required', Rule::exists('one_chargings', 'id')->whereNull('deleted_at')],
+//                'company_id' => 'required|exists:companies,id',
+//                'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+//                'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+//                'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+//                'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
+//                'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
                 'role_id' => 'required|exists:role_management,id',
                 'warehouse_id' => $roleName === 'Warehouse' ? 'required|exists:warehouses,sync_id' : 'nullable|exists:warehouses,sync_id',
             ];
@@ -58,13 +59,14 @@ class UserRequest extends FormRequest
                 // 'major_category_id' => 'exists:major_categories,id,deleted_at,NULL',
                 'username' => ['required', Rule::unique('users', 'username')->ignore($id)],
                 'role_id' => 'required|exists:role_management,id',
-                'company_id' => 'required|exists:companies,id',
+                'one_charging_id' => ['required', Rule::exists('one_chargings', 'id')->whereNull('deleted_at')],
                 'is_coordinator' => 'nullable|boolean',
-                'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
-                'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
-                'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
-                'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
-                'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
+//                'company_id' => 'required|exists:companies,id',
+//                'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+//                'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+//                'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+//                'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, false)],
+//                'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
                 'warehouse_id' => $roleName === 'Warehouse' ? 'required|exists:warehouses,sync_id' : 'nullable|exists:warehouses,sync_id',
             ];
         }
@@ -84,5 +86,23 @@ class UserRequest extends FormRequest
             return true;
         }
         return false;
+    }
+
+    function messages()
+    {
+        return [
+            'employee_id.required' => 'Employee is required.',
+            'employee_id.unique' => 'Employee already exists.',
+            'firstname.required' => 'First name is required.',
+            'lastname.required' => 'Last name is required.',
+            'username.required' => 'Username is required.',
+            'username.unique' => 'Username already exists.',
+            'one_charging_id.required' => 'One Charging is required.',
+            'one_charging_id.exists' => 'One Charging does not exist or has been deleted.',
+            'role_id.required' => 'Role is required.',
+            'role_id.exists' => 'Role does not exist.',
+            'warehouse_id.required' => 'Warehouse is required for Warehouse role.',
+            'warehouse_id.exists' => 'Warehouse does not exist.',
+        ];
     }
 }

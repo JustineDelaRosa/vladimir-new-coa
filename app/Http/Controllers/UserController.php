@@ -75,6 +75,7 @@ class UserController extends Controller
                     'warehouse_code' => $item->warehouse->warehouse_code ?? null,
                     'warehouse_name' => $item->warehouse->warehouse_name ?? null,
                 ],
+                'one_charging' => $item->oneCharging ?? "-",
                 'company' => [
                     'id' => $item->company->id ?? null,
                     'company_code' => $item->company->company_code ?? null,
@@ -131,6 +132,7 @@ class UserController extends Controller
         $username = $request->username;
         $role_id = $request->role_id;
         $isCoordinator = $request->is_coordinator;
+        $oneChargingId = $request->one_charging_id;
         $company_id = $request->company_id;
         $business_unit_id = $request->business_unit_id;
         $department_id = $request->department_id;
@@ -148,6 +150,7 @@ class UserController extends Controller
             'lastname' => $lastname,
             'username' => $username,
             'password' => Crypt::encryptString($username),
+            'one_charging_id' => $oneChargingId,
             'company_id' => $company_id,
             'is_coordinator' => $isCoordinator,
             'business_unit_id' => $business_unit_id,
@@ -250,6 +253,7 @@ class UserController extends Controller
             'username' => $request->username,
             'role_id' => $request->role_id,
             'is_coordinator' => $request->is_coordinator,
+            'one_charging_id' => $request->one_charging_id,
             'company_id' => $request->company_id,
             'business_unit_id' => $request->business_unit_id,
             'department_id' => $request->department_id,
