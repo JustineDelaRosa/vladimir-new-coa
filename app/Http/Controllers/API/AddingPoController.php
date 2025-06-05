@@ -72,43 +72,75 @@ class AddingPoController extends Controller
         }
 
         // Group and process in memory
-        $assetRequest = $assetRequests->groupBy('transaction_number')
-            ->map(function ($assetRequestCollection) use ($cancelledQuantities, $activityLogs, $ymirPrTransactions) {
-                $assetRequest = $assetRequestCollection->first();
-                $assetRequest->quantity = $assetRequestCollection->sum('quantity');
-                $assetRequest->quantity_delivered = $assetRequestCollection->sum('quantity_delivered');
-                $transactionNumber = $assetRequest->transaction_number;
+        // Create an array to hold results directly to avoid excessive collection manipulations
+           $result = [];
 
-                $cancelled = $cancelledQuantities[$transactionNumber] ?? 0;
-                $anyRecentlyUpdated = $assetRequestCollection->contains(function ($item) {
-                    return $item->updated_at->diffInMinutes(now()) < 2;
-                });
+// Process each transaction group and build results array directly
+        foreach ($assetRequests->groupBy('transaction_number') as $transactionNumber => $assetRequestCollection) {
+            $assetRequest = $assetRequestCollection->first();
 
-                // Use array_unique and implode for better performance than collect()->unique()->implode()
-                $poNumbers = array_filter(array_unique($assetRequestCollection->pluck('po_number')->toArray()));
-                $poNumber = implode(',', $poNumbers);
+            // Sum quantities in one pass
+            $totalQuantity = 0;
+            $totalDelivered = 0;
+            $recentlyUpdated = false;
+            $poNumbersSet = [];
+            $rrNumbersAll = '';
+            $now = now();
 
-                // More efficient approach to handle RR numbers without using array_merge in a loop
-                $rrNumbers = array_filter(array_unique($assetRequestCollection->pluck('rr_number')->toArray()));
-                $rrNumbersExploded = [];
-                if (!empty($rrNumbers)) {
-                    // Join all RR numbers with commas, then explode once
-                    $allRrNumbers = implode(',', $rrNumbers);
-                    $rrNumbersExploded = explode(',', $allRrNumbers);
+            // Single loop to extract all needed data
+            foreach ($assetRequestCollection as $item) {
+                $totalQuantity += $item->quantity;
+                $totalDelivered += $item->quantity_delivered;
+
+                // Check for recently updated items (only once if found)
+                if (!$recentlyUpdated && $item->updated_at->diffInMinutes($now) < 2) {
+                    $recentlyUpdated = true;
                 }
-                $rrNumber = implode(',', array_unique($rrNumbersExploded));
 
-                $assetRequest->po_number = $poNumber;
-                $assetRequest->rr_number = $rrNumber;
-                $assetRequest->cancelled = $cancelled;
-                $assetRequest->newly_sync = $anyRecentlyUpdated ? 1 : 0;
+                // Collect PO numbers without duplicates
+                if (!empty($item->po_number)) {
+                    $poNumbersSet[$item->po_number] = true;
+                }
 
-                // Pass the prefetched data to reduce queries in transformIndexAssetRequest
-                return $this->transformIndexAssetRequest($assetRequest, $activityLogs[$transactionNumber] ?? collect([]), $ymirPrTransactions);
-            })->values();
+                // Concatenate RR numbers for later processing
+                if (!empty($item->rr_number)) {
+                    $rrNumbersAll .= $item->rr_number . ',';
+                }
+            }
+
+            // Assign the computed values
+            $assetRequest->quantity = $totalQuantity;
+            $assetRequest->quantity_delivered = $totalDelivered;
+            $assetRequest->cancelled = $cancelledQuantities[$transactionNumber] ?? 0;
+            $assetRequest->newly_sync = $recentlyUpdated ? 1 : 0;
+
+            // Process PO numbers
+            $assetRequest->po_number = implode(',', array_keys($poNumbersSet));
+
+            // Process RR numbers - only do string operations if we have data
+            if (!empty($rrNumbersAll)) {
+                $rrNumbersUnique = [];
+                foreach (explode(',', rtrim($rrNumbersAll, ',')) as $rrNum) {
+                    if (!empty($rrNum)) {
+                        $rrNumbersUnique[$rrNum] = true;
+                    }
+                }
+                $assetRequest->rr_number = implode(',', array_keys($rrNumbersUnique));
+            } else {
+                $assetRequest->rr_number = '';
+            }
+
+            // Transform and add to results array
+            $result[] = $this->transformIndexAssetRequest(
+                $assetRequest,
+                $activityLogs[$transactionNumber] ?? collect([]),
+                $ymirPrTransactions
+            );
+        }
+
 
         if ($perPage !== null) {
-            $assetRequest = $this->paginate($request, $assetRequest, $perPage);
+            $assetRequest = $this->paginate($request, collect($result), $perPage);
         }
 
         return $assetRequest;
@@ -347,12 +379,29 @@ class AddingPoController extends Controller
                 $poNumberString = implode(',', $poNumberArray);
 
                 // Calculate total quantity delivered
-                $totalQuantityDelivered = $itemRequest->quantity_delivered + $quantityReceived;
+//                $totalQuantityDelivered = $itemRequest->quantity_delivered + $quantityReceived;
 
                 // Check supplier
                 $supplierCheck = $suppliers[$supplier] ?? null;
                 if ($supplierCheck == null) {
                     return $this->responseUnprocessable('Supplier not found, Please sync vladimir Supplier first');
+                }
+
+                // Calculate total quantity delivered
+                $totalQuantityDelivered = $itemRequest->quantity_delivered + $quantityReceived;
+
+                // Ensure total quantity delivered doesn't exceed requested quantity
+                if ($totalQuantityDelivered > $itemRequest->quantity) {
+                    // Log this attempt to over-deliver
+//                    \Log::warning("Attempted to deliver more than requested for transaction {$transactionNumber},
+//                  reference {$referenceNumber}. Requested: {$itemRequest->quantity},
+//                  Attempted delivery: {$totalQuantityDelivered}");
+
+                    // give an error insterad of silently capping
+                    return $this->responseUnprocessable("Cannot deliver more than requested quantity for transaction {$transactionNumber}");
+
+                    // Cap the quantity delivered at the maximum requested amount
+//                    $totalQuantityDelivered = $itemRequest->quantity;
                 }
 
                 // Update item request
