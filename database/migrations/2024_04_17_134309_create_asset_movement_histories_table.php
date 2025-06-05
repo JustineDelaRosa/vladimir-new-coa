@@ -68,6 +68,7 @@ class CreateAssetMovementHistoriesTable extends Migration
             $table->boolean('is_additional_cost')->default(false);
             $table->boolean('is_active')->default(true);
             $table->string('care_of')->nullable();
+            $table->unsignedInteger('one_charging_id')->nullable();
             $table->unsignedInteger('company_id');
             $table->unsignedInteger('business_unit_id');
             $table->unsignedInteger('department_id');
@@ -166,6 +167,10 @@ class CreateAssetMovementHistoriesTable extends Migration
             $table->foreign('fixed_asset_id')
                 ->references('id')
                 ->on('fixed_assets')
+                ->onDelete('cascade');
+            $table->foreign('one_charging_id')
+                ->references('id')
+                ->on('one_chargings')
                 ->onDelete('cascade');
         });
     }

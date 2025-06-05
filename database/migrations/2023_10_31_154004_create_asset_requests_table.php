@@ -89,6 +89,7 @@ class CreateAssetRequestsTable extends Migration
             $table->double('scrap_value')->nullable();
             $table->double('depreciable_basis')->nullable();
             //COA
+            $table->unsignedInteger('one_charging_id')->nullable();
             $table->unsignedInteger('company_id')->nullable();
             $table->unsignedInteger('business_unit_id')->nullable();
             $table->unsignedInteger('department_id')->nullable();
@@ -179,6 +180,9 @@ class CreateAssetRequestsTable extends Migration
             $table->foreign('uom_id')
                 ->references('id')
                 ->on('unit_of_measures');
+            $table->foreign('one_charging_id')
+                ->references('id')
+                ->on('one_chargings');
             $table->timestamp('received_at')->nullable();
             $table->timestamps();
         });

@@ -22,6 +22,7 @@ class CreateCoordinatorHandlesTable extends Migration
             $table->unsignedInteger('unit_id');
             $table->unsignedInteger('subunit_id');
             $table->unsignedInteger('location_id');
+            $table->unsignedInteger('one_charging_id')->nullable();
             $table->boolean('is_active')->default(true);
             $table->softDeletes();
             $table->timestamps();
@@ -33,6 +34,7 @@ class CreateCoordinatorHandlesTable extends Migration
             $table->foreign('unit_id')->references('id')->on('units');
             $table->foreign('subunit_id')->references('id')->on('sub_units');
             $table->foreign('location_id')->references('id')->on('locations');
+            $table->foreign('one_charging_id')->references('id')->on('one_chargings');
 
         });
     }

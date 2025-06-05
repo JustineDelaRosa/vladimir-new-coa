@@ -21,6 +21,7 @@ class CreateUsersTable extends Migration
             $table->string('username');
             $table->string('password');
             $table->unsignedInteger('warehouse_id')->nullable();
+            $table->unsignedInteger('one_charging_id')->nullable();
             $table->unsignedInteger('company_id');
             $table->unsignedInteger('business_unit_id');
             $table->unsignedInteger('department_id');

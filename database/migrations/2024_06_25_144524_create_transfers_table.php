@@ -28,6 +28,7 @@ class CreateTransfersTable extends Migration
             $table->unsignedInteger('subunit_id')->nullable();
             $table->unsignedInteger('location_id');
             $table->unsignedInteger('account_id');
+            $table->unsignedInteger('one_charging_id');
             $table->string('remarks')->nullable();
             $table->timestamp('received_at')->nullable();
             $table->softDeletes();
@@ -71,6 +72,10 @@ class CreateTransfersTable extends Migration
             $table->foreign('movement_id')
                 ->references('id')
                 ->on('movement_numbers')
+                ->onDelete('cascade');
+            $table->foreign('one_charging_id')
+                ->references('id')
+                ->on('one_chargings')
                 ->onDelete('cascade');
         });
     }

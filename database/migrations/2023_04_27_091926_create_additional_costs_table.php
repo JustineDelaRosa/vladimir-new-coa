@@ -62,6 +62,7 @@ class CreateAdditionalCostsTable extends Migration
             $table->unsignedInteger('depreciation_status_id')->nullable();
             $table->unsignedInteger('movement_status_id')->nullable();
             $table->string('care_of')->nullable();
+            $table->unsignedInteger('one_charging_id')->nullable();;
             $table->unsignedInteger('company_id');
             $table->unsignedInteger('business_unit_id');
             $table->unsignedInteger('department_id');
@@ -152,6 +153,10 @@ class CreateAdditionalCostsTable extends Migration
             $table->foreign('warehouse_id')
                 ->references('id')
                 ->on('warehouses')
+                ->onDelete('cascade');
+            $table->foreign('one_charging_id')
+                ->references('id')
+                ->on('one_chargings')
                 ->onDelete('cascade');
         });
     }

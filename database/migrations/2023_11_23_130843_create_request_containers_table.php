@@ -77,6 +77,7 @@ class CreateRequestContainersTable extends Migration
             $table->double('scrap_value')->nullable();
             $table->double('depreciable_basis')->nullable();
             //COA
+            $table->unsignedInteger('one_charging_id')->nullable();
             $table->unsignedInteger('company_id')->nullable();
             $table->unsignedInteger('business_unit_id')->nullable();
             $table->unsignedInteger('department_id')->nullable();
@@ -119,6 +120,7 @@ class CreateRequestContainersTable extends Migration
             $table->foreign('movement_status_id')->references('id')->on('movement_statuses');
             $table->foreign('fixed_asset_id')->references('id')->on('fixed_assets');
             $table->foreign('uom_id')->references('id')->on('unit_of_measures');
+            $table->foreign('one_charging_id')->references('id')->on('one_chargings');
 
             $table->timestamps();
         });

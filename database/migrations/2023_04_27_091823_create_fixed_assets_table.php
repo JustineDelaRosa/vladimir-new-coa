@@ -68,6 +68,7 @@ class CreateFixedAssetsTable extends Migration
             $table->boolean('is_additional_cost')->default(false);
             $table->boolean('is_active')->default(true);
             $table->string('care_of')->nullable();
+            $table->unsignedInteger('one_charging_id')->nullable();
             $table->unsignedInteger('company_id');
             $table->unsignedInteger('business_unit_id');
             $table->unsignedInteger('department_id');
@@ -157,18 +158,19 @@ class CreateFixedAssetsTable extends Migration
                 ->references('id')
                 ->on('formulas')
                 ->onDelete('cascade');
-            $table
-                ->foreign('supplier_id')
+            $table->foreign('supplier_id')
                 ->references('id')
                 ->on('suppliers');
-            $table
-                ->foreign('uom_id')
+            $table->foreign('uom_id')
                 ->references('id')
                 ->on('unit_of_measures');
-            $table
-                ->foreign('warehouse_id')
+            $table->foreign('warehouse_id')
                 ->references('id')
                 ->on('warehouses');
+            $table->foreign('one_charging_id')
+                ->references('id')
+                ->on('one_chargings')
+                ->onDelete('cascade');
         });
     }
 
