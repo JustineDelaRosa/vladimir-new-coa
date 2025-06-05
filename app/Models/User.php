@@ -49,6 +49,7 @@ class User extends Authenticatable
         'status' => 'boolean',
     ];
 
+
     protected string $default_filters = UserFilters::class;
     // public function modules() {
     //     return $this->belongsToMany(Module::class, 'access__permissions');
@@ -121,5 +122,9 @@ class User extends Authenticatable
     }
     public function warehouse(){
         return $this->belongsTo(Warehouse::class, 'warehouse_id', 'sync_id');
+    }
+
+    public function oneCharging(){
+        return $this->belongsTo(OneCharging::class, 'one_charging_id', 'id');
     }
 }
