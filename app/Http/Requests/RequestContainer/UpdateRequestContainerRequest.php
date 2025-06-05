@@ -116,7 +116,7 @@ class UpdateRequestContainerRequest extends FormRequest
 
                 $requestItemCount = AssetRequest::where('item_id', $value)
                     ->where('fixed_asset_id', $fixedAsset->id)
-                    ->where(function($query) {
+                    ->where(function ($query) {
                         $query->where('status', '!=', 'Cancelled')
                             ->orWhere('filter', '!=', 'Claimed');
                     })
@@ -139,12 +139,12 @@ class UpdateRequestContainerRequest extends FormRequest
 
                 $faContainerCheck = RequestContainer::where('fixed_asset_id', $value)->count();
                 $faRequestCheck = AssetRequest::where('fixed_asset_id', $value)
-                    ->where(function($query) {
+                    ->where(function ($query) {
                         $query->where('status', '!=', 'Cancelled')
                             ->orWhere('filter', '!=', 'Claimed');
                     })->count();
 
-                if($faContainerCheck || $faRequestCheck){
+                if ($faContainerCheck || $faRequestCheck) {
                     $fail('The selected fixed asset is already requested.');
                 }
             }],
@@ -203,20 +203,24 @@ class UpdateRequestContainerRequest extends FormRequest
             'letter_of_request' => ['nullable', 'required-if:attachment_type,Unbudgeted', 'max:10000', new FileOrX],
             'quotation' => ['nullable', 'max:10000', new FileOrX],
             'specification_form' => ['nullable', 'max:10000', new FileOrX],
-            'tool_of_trade' => [ 'nullable', 'max:10000', new FileOrX],
+            'tool_of_trade' => ['nullable', 'max:10000', new FileOrX],
             'other_attachments' => ['nullable', 'required-if:type_of_request_id,2', 'max:10000', new FileOrX],
-            'company_id' => 'required|exists:companies,id',
-            'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
-            'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id), function ($attribute, $value, $fail) {
+//            'company_id' => 'required|exists:companies,id',
+//            'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+            'one_charging_id' => [
+                'required',
+                Rule::exists('one_chargings', 'id')->whereNull('deleted_at')
+            ],
+            'department_id' => ['required', 'exists:departments,id', function ($attribute, $value, $fail) {
                 $department = Department::where('id', $value)->first();
                 //check if the location has a warehouse
                 if ($department->receivingWarehouse == null) {
-                    $fail('The selected location does not have a warehouse.');
+                    $fail('The selected department does not have a warehouse.');
                 }
             }],
-            'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
-            'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
-            'location_id' => ['nullable', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
+//            'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+//            'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
+//            'location_id' => ['nullable', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
 //            'account_title_id' => 'required|exists:account_titles,id',
             'initial_debit_id' => 'required|exists:account_titles,sync_id',
             'depreciation_credit_id' => 'required|exists:account_titles,sync_id',
@@ -227,6 +231,8 @@ class UpdateRequestContainerRequest extends FormRequest
     function messages(): array
     {
         return [
+            'one_charging_id.exists' => 'The selected charging is invalid.',
+            'one_charging_id.required' => 'The charging is required.',
             'type_of_request_id.required' => 'The type of request field is required.',
             'type_of_request_id.exists' => 'The selected type of request is invalid.',
             'attachment_type.required' => 'The attachment type field is required.',

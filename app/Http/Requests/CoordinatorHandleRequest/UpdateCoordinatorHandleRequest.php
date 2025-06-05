@@ -41,6 +41,7 @@ class UpdateCoordinatorHandleRequest extends FormRequest
             'handles.*.unit_id' => ['required', 'exists:units,id'],
             'handles.*.subunit_id' => ['required', 'exists:sub_units,id'],
             'handles.*.location_id' => ['required', 'exists:locations,id'],
+            'handles.*.one_charging_id' => ['required', 'exists:one_chargings,id'],
         ];
     }
 
@@ -62,6 +63,8 @@ class UpdateCoordinatorHandleRequest extends FormRequest
             'handles.*.subunit_id.exists' => 'Subunit does not exist',
             'handles.*.location_id.required' => 'Location is required',
             'handles.*.location_id.exists' => 'Location does not exist',
+            'handles.*.one_charging_id.required' => 'Charging is required',
+            'handles.*.one_charging_id.exists' => 'Charging does not exist',
         ];
     }
 }

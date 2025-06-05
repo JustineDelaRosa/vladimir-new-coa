@@ -13,6 +13,7 @@ use App\Rules\NewCoaValidation\LocationValidation;
 use App\Rules\NewCoaValidation\SubunitValidation;
 use App\Rules\NewCoaValidation\UnitValidation;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateAssetTransferRequestRequest extends FormRequest
 {
@@ -53,19 +54,23 @@ class UpdateAssetTransferRequestRequest extends FormRequest
                 }*/
             }],
             'assets.*.receiver_id' => 'required|exists:users,id',
+            'one_charging_id' => [
+                'required',
+                Rule::exists('one_chargings', 'id')->whereNull('deleted_at'),
+            ],
 
-            'company_id' => 'required|exists:companies,id',
-            'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
-            'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
-            'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
-            'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true), function ($attribute, $value, $fail) {
+//            'company_id' => 'required|exists:companies,id',
+//            'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+//            'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id)],
+//            'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+//            'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true), function ($attribute, $value, $fail) {
 //                $user = auth('sanctum')->user();
 //                $userSubunit = $user->subunit_id;
 //                if ($userSubunit == $value) {
 //                    $fail('You are not allowed to transfer assets to this subunit');
 //                }
-            }],
-            'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
+//            }],
+//            'location_id' => ['required', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
 //            'account_title_id' => ['required', 'exists:account_titles,id'],
 //            'accountability' => 'required|in:Common,Personal Issued',
 //            'accountable' => 'nullable|required_if:accountability,Personal Issued',
@@ -108,6 +113,8 @@ class UpdateAssetTransferRequestRequest extends FormRequest
             'attachments.max' => 'Attachment must not be greater than 10MB',
             'depreciation_debit_id.required' => 'Depreciation credit is required',
             'depreciation_debit_id.exists' => 'Depreciation credit does not exist',
+            'one_charging_id.required' => 'One Charging is required',
+            'one_charging_id.exists' => 'One Charging does not exist',
         ];
     }
 }

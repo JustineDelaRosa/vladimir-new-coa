@@ -194,18 +194,22 @@ class UpdateAssetRequestRequest extends FormRequest
             'acquisition_details' => 'required|string',
             'brand' => 'nullable',
             'quantity' => 'required|numeric|min:1',
-            'company_id' => 'required|exists:companies,id',
-            'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
-            'department_id' => ['required', 'exists:departments,id', new DepartmentValidation(request()->business_unit_id), function ($attribute, $value, $fail) {
+            'one_charging_id' => [
+                'required',
+                Rule::exists('one_chargings', 'id')->whereNull('deleted_at')
+            ],
+//            'company_id' => 'required|exists:companies,id',
+//            'business_unit_id' => ['required', 'exists:business_units,id', new BusinessUnitValidation(request()->company_id)],
+            'department_id' => ['required', 'exists:departments,id', function ($attribute, $value, $fail) {
                 $department = Department::where('id', $value)->first();
                 //check if the location has a warehouse
                 if ($department->receivingWarehouse == null) {
-                    $fail('The selected location does not have a warehouse.');
+                    $fail('The selected department does not have a warehouse.');
                 }
             }],
-            'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
-            'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
-            'location_id' => ['nullable', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
+//            'unit_id' => ['required', 'exists:units,id', new UnitValidation(request()->department_id)],
+//            'subunit_id' => ['required', 'exists:sub_units,id', new SubunitValidation(request()->unit_id, true)],
+//            'location_id' => ['nullable', 'exists:locations,id', new LocationValidation(request()->subunit_id)],
 //            'account_title_id' => 'required|exists:account_titles,id',
             'letter_of_request' => ['bail', 'nullable', 'required-if:attachment_type,Unbudgeted', 'max:10000', new FileOrX],
             'quotation' => ['bail', 'nullable', 'max:10000', new FileOrX],
@@ -221,6 +225,8 @@ class UpdateAssetRequestRequest extends FormRequest
     function messages(): array
     {
         return [
+            'one_charging_id.exists' => 'The selected charging is invalid.',
+            'one_charging_id.required' => 'The charging is required.',
             'type_of_request_id.required' => 'The type of request field is required',
             'type_of_request_id.exists' => 'The selected type of request is invalid',
             'sub_capex_id.required_if' => 'The sub capex field is required when type of request is capex',
